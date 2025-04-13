@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Loader2, Upload, User as UserIcon } from 'lucide-react';
+import { Check, Loader2, Upload } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
@@ -37,6 +37,17 @@ export default function ProfileSettings() {
       setEmail(user.email || '');
     }
   }, [user]);
+
+  // Get initials for avatar fallback
+  const getInitials = () => {
+    if (!user?.name) return 'U';
+    return user.name
+      .split(' ')
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
 
   const handleProfileUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -131,7 +142,7 @@ export default function ProfileSettings() {
           <div className="flex flex-col md:flex-row gap-8">
             {/* Profile Image */}
             <div className="flex flex-col items-center gap-4">
-              <div className="relative h-32 w-32 rounded-full overflow-hidden border border-border bg-muted">
+              <div className="relative h-32 w-32 rounded-lg overflow-hidden border border-border bg-muted">
                 {previewImage || user?.imageUrl ? (
                   <Image
                     src={previewImage || user?.imageUrl || ''}
@@ -141,7 +152,9 @@ export default function ProfileSettings() {
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-muted">
-                    <UserIcon className="h-12 w-12 text-muted-foreground" />
+                    <span className="text-2xl font-medium text-muted-foreground">
+                      {getInitials()}
+                    </span>
                   </div>
                 )}
               </div>
