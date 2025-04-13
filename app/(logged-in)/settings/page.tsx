@@ -1,0 +1,264 @@
+'use client';
+
+import { Check, Loader2, Upload, User as UserIcon } from 'lucide-react';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+
+import { updateAccount } from '@/app/(logged-out)/actions';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+type FormState = {
+  error?: string;
+  success?: string;
+} | null;
+
+type ActionData = Record<string, unknown>;
+
+// Mocked user hook until the real implementation is available
+const useUserInfo = () => {
+  const [user, setUser] = useState<{
+    name?: string;
+    email?: string;
+    imageUrl?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    // Mock user data
+    setTimeout(() => {
+      setUser({
+        name: 'John Doe',
+        email: 'john@example.com',
+        imageUrl: '',
+      });
+    }, 500);
+  }, []);
+
+  return {
+    user,
+    loading: !user,
+    refresh: () => {
+      console.log('Refreshing user data');
+    },
+  };
+};
+
+// Mocked toast hook until the real implementation is available
+const useToast = () => {
+  return {
+    toast: ({
+      title,
+      description,
+      variant,
+    }: {
+      title: string;
+      description: string;
+      variant?: 'default' | 'destructive';
+    }) => {
+      console.log(`Toast: ${title} - ${description} (${variant || 'default'})`);
+    },
+  };
+};
+
+export default function ProfileSettings() {
+  const { toast } = useToast();
+  const { user, loading: userLoading, refresh } = useUserInfo();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [formState, setFormState] = useState<FormState>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Initialize form with user data when available
+  useEffect(() => {
+    if (user) {
+      setName(user.name || '');
+      setEmail(user.email || '');
+    }
+  }, [user]);
+
+  const handleProfileUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+    try {
+      const result = await updateAccount({} as ActionData, formData);
+      setFormState(result as FormState);
+
+      if (result?.success) {
+        refresh(); // Refresh user data
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      setFormState({ error: 'Failed to update profile. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload image
+      handleImageUpload(file);
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('profileImage', file);
+
+    try {
+      // Mock the profile image update
+      setTimeout(() => {
+        toast({
+          title: 'Profile image updated',
+          description: 'Your profile image has been successfully updated.',
+        });
+        refresh(); // Refresh user data
+        setIsUploading(false);
+      }, 1000);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to upload image. Please try again.',
+        variant: 'destructive',
+      });
+      setIsUploading(false);
+    }
+  };
+
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>Update your personal information.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Profile Image */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="relative h-32 w-32 rounded-full overflow-hidden border border-border bg-muted">
+                {previewImage || user?.imageUrl ? (
+                  <Image
+                    src={previewImage || user?.imageUrl || ''}
+                    alt="Profile"
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-muted">
+                    <UserIcon className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <div className="relative">
+                <Button variant="outline" className="flex gap-2" disabled={isUploading}>
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      Change Image
+                    </>
+                  )}
+                  <Input
+                    type="file"
+                    id="profileImage"
+                    name="profileImage"
+                    accept="image/*"
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                    onChange={handleImageChange}
+                    disabled={isUploading}
+                  />
+                </Button>
+              </div>
+            </div>
+
+            {/* Profile Information */}
+            <div className="flex-1">
+              <form onSubmit={handleProfileUpdate} className="space-y-6">
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="name">Name</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Your name"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your.email@example.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {formState?.error && (
+                  <div className="rounded-md bg-destructive/10 p-3">
+                    <div className="text-sm text-destructive">{formState.error}</div>
+                  </div>
+                )}
+
+                {formState?.success && (
+                  <div className="rounded-md bg-green-500/10 p-3 flex items-center gap-2">
+                    <Check className="h-4 w-4 text-green-500" />
+                    <div className="text-sm text-green-500">{formState.success}</div>
+                  </div>
+                )}
+
+                <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </Button>
+              </form>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
