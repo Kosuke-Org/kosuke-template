@@ -1,15 +1,15 @@
 version: '3.8'
 
 services:
-  nextjs:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  postgres:
+    image: postgres:16.4-alpine
+    container_name: kosuke_template_postgres
+    env_file:
+      - .env
     ports:
-      - '3000:3000'
+      - '54321:5432'
     volumes:
-      - .:/app
-    environment:
-      - NODE_ENV=development
-      - NEXT_TELEMETRY_DISABLED=1
-    restart: unless-stopped
+      - kosuke_template_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  kosuke_template_postgres_data:
