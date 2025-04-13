@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, Loader2 } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { useUserInfo } from '@/lib/hooks/use-user-info';
+import { useToast } from '@/lib/hooks/use-toast';
 
 type FormState = {
   error?: string;
@@ -14,22 +16,75 @@ type FormState = {
 } | null;
 
 export default function NotificationsPage() {
+  const { user, loading: userLoading, refresh } = useUserInfo();
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formState, setFormState] = useState<FormState>(null);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [marketingEmails, setMarketingEmails] = useState(false);
 
+  // Initialize switch states from user data
+  useEffect(() => {
+    if (user) {
+      // Initialize marketing emails from user preferences
+      // emailNotifications doesn't have a DB field but could be added in the future
+      setMarketingEmails(user.marketingEmails === true);
+    }
+  }, [user]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // In a real application, you would call an API endpoint to update the user's notification preferences
-    // For now, we'll simulate a successful update after a short delay
-    setTimeout(() => {
-      setFormState({ success: 'Notification preferences updated successfully.' });
+    try {
+      const response = await fetch('/api/user/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          emailNotifications,
+          marketingEmails,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setFormState({ success: data.success || 'Notification preferences updated successfully.' });
+        toast({
+          title: 'Success',
+          description: 'Notification preferences updated successfully.',
+        });
+        refresh(); // Refresh user data
+      } else {
+        setFormState({ error: data.error || 'Failed to update notification preferences.' });
+        toast({
+          title: 'Error',
+          description: data.error || 'Failed to update notification preferences.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error updating notifications:', error);
+      setFormState({ error: 'Failed to update notification preferences.' });
+      toast({
+        title: 'Error',
+        description: 'Failed to update notification preferences.',
+        variant: 'destructive',
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
+
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

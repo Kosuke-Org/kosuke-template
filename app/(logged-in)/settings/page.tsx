@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/lib/hooks/use-toast';
+import { useUserInfo } from '@/lib/hooks/use-user-info';
 
 type FormState = {
   error?: string;
@@ -16,51 +18,6 @@ type FormState = {
 } | null;
 
 type ActionData = Record<string, unknown>;
-
-// Mocked user hook until the real implementation is available
-const useUserInfo = () => {
-  const [user, setUser] = useState<{
-    name?: string;
-    email?: string;
-    imageUrl?: string;
-  } | null>(null);
-
-  useEffect(() => {
-    // Mock user data
-    setTimeout(() => {
-      setUser({
-        name: 'John Doe',
-        email: 'john@example.com',
-        imageUrl: '',
-      });
-    }, 500);
-  }, []);
-
-  return {
-    user,
-    loading: !user,
-    refresh: () => {
-      console.log('Refreshing user data');
-    },
-  };
-};
-
-// Mocked toast hook until the real implementation is available
-const useToast = () => {
-  return {
-    toast: ({
-      title,
-      description,
-      variant,
-    }: {
-      title: string;
-      description: string;
-      variant?: 'default' | 'destructive';
-    }) => {
-      console.log(`Toast: ${title} - ${description} (${variant || 'default'})`);
-    },
-  };
-};
 
 export default function ProfileSettings() {
   const { toast } = useToast();
@@ -122,15 +79,27 @@ export default function ProfileSettings() {
     formData.append('profileImage', file);
 
     try {
-      // Mock the profile image update
-      setTimeout(() => {
+      // Upload the image to the server
+      const response = await fetch('/api/user/profile-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
         toast({
           title: 'Profile image updated',
           description: 'Your profile image has been successfully updated.',
         });
         refresh(); // Refresh user data
-        setIsUploading(false);
-      }, 1000);
+      } else {
+        toast({
+          title: 'Error',
+          description: result.error || 'Failed to upload image',
+          variant: 'destructive',
+        });
+      }
     } catch (error) {
       console.error('Error uploading image:', error);
       toast({
@@ -138,6 +107,7 @@ export default function ProfileSettings() {
         description: 'Failed to upload image. Please try again.',
         variant: 'destructive',
       });
+    } finally {
       setIsUploading(false);
     }
   };
