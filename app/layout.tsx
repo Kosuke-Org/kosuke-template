@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
+import { OrganizationJsonLd } from 'next-seo';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -25,6 +26,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <OrganizationJsonLd
+          useAppDir={true}
+          type="Organization"
+          id={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.example.com'}/#organization`}
+          logo={process.env.NEXT_PUBLIC_ORG_LOGO_URL || 'https://www.example.com/logo.png'}
+          name={process.env.NEXT_PUBLIC_ORG_NAME || 'Your Organization Name'}
+          url={process.env.NEXT_PUBLIC_SITE_URL || 'https://www.example.com'}
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
