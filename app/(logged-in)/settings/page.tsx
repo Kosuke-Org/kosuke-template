@@ -4,11 +4,11 @@ import { Check, Loader2, Upload } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
-import { updateAccount } from '@/app/(logged-out)/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { userApi } from '@/lib/api/client';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useUserInfo } from '@/lib/hooks/use-user-info';
 
@@ -53,12 +53,14 @@ export default function ProfileSettings() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const formData = new FormData(e.currentTarget);
     try {
-      const result = await updateAccount({} as ActionData, formData);
-      setFormState(result as FormState);
-
-      if (result?.success) {
+      // Use the API client to update the account
+      const response = await userApi.updateAccount(name, email);
+      
+      if (response.error) {
+        setFormState({ error: response.error });
+      } else {
+        setFormState({ success: response.message || 'Profile updated successfully' });
         refresh(); // Refresh user data
       }
     } catch (error) {
@@ -90,15 +92,10 @@ export default function ProfileSettings() {
     formData.append('profileImage', file);
 
     try {
-      // Upload the image to the server
-      const response = await fetch('/api/user/profile-image', {
-        method: 'POST',
-        body: formData,
-      });
+      // Use the API client to upload the profile image
+      const response = await userApi.uploadProfileImage(formData);
 
-      const result = await response.json();
-
-      if (response.ok) {
+      if (!response.error) {
         toast({
           title: 'Profile image updated',
           description: 'Your profile image has been successfully updated.',
@@ -107,7 +104,7 @@ export default function ProfileSettings() {
       } else {
         toast({
           title: 'Error',
-          description: result.error || 'Failed to upload image',
+          description: response.error || 'Failed to upload image',
           variant: 'destructive',
         });
       }

@@ -1,29 +1,65 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { eq } from 'drizzle-orm';
+import { NextRequest } from 'next/server';
+
+import { ApiErrorHandler } from '@/lib/api/errors';
+import { ApiResponseHandler } from '@/lib/api/responses';
+import { withAuth } from '@/lib/auth/middleware';
+import { db } from '@/lib/db/drizzle';
 import { getUser } from '@/lib/db/queries';
-import { updateProfileImage } from '@/app/(logged-out)/actions';
+import { users, ActivityType, activityLogs } from '@/lib/db/schema';
 
-export async function POST(request: NextRequest) {
+// Log user activity
+async function logActivity(userId: number, type: ActivityType) {
+  await db.insert(activityLogs).values({
+    userId,
+    action: type,
+    ipAddress: '',
+  });
+}
+
+export const POST = withAuth(async (request: NextRequest) => {
   try {
-    // Get the user from session
+    // Get the user from the database
     const user = await getUser();
-
     if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      return ApiErrorHandler.unauthorized('User not authenticated');
     }
-
+    
     // Get the form data from the request
     const formData = await request.formData();
-
-    // Pass the formData to the updateProfileImage action
-    const result = await updateProfileImage(formData, formData);
-
-    if (result.error) {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+    
+    // Get current user to access the existing imageUrl
+    const currentUser = await db.query.users.findFirst({
+      where: eq(users.id, user.id),
+    });
+    
+    // Handle profile image upload
+    const profileImage = formData.get('profileImage');
+    if (profileImage && typeof profileImage !== 'string' && profileImage.size > 0) {
+      // Import the storage utility dynamically to prevent server/client mismatch
+      const { uploadProfileImage, deleteProfileImage } = await import('@/lib/storage');
+      
+      // Delete previous image if exists
+      if (currentUser?.imageUrl) {
+        await deleteProfileImage(currentUser.imageUrl);
+      }
+      
+      // Upload new image
+      const imageUrl = await uploadProfileImage(profileImage, user.id);
+      
+      // Update the image URL in the database
+      await db.update(users).set({ imageUrl, updatedAt: new Date() }).where(eq(users.id, user.id));
+      
+      await logActivity(user.id, ActivityType.UPDATE_PROFILE);
+      
+      return ApiResponseHandler.success({
+        message: 'Profile image updated successfully',
+        imageUrl
+      });
     }
-
-    return NextResponse.json({ success: result.success });
+    
+    return ApiErrorHandler.badRequest('No image provided');
   } catch (error) {
-    console.error('Error uploading profile image:', error);
-    return NextResponse.json({ error: 'Failed to upload profile image' }, { status: 500 });
+    return ApiErrorHandler.handleError(error);
   }
-}
+});

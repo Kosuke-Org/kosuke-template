@@ -3,11 +3,11 @@
 import { Check, Loader2, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
-import { updatePassword, deleteAccount } from '@/app/(logged-out)/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { userApi } from '@/lib/api/client';
 
 type FormState = {
   error?: string;
@@ -28,14 +28,26 @@ export default function SecurityPage() {
     setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
-    const result = await updatePassword({} as ActionData, formData);
+    const currentPassword = formData.get('currentPassword') as string;
+    const newPassword = formData.get('newPassword') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
 
-    setFormState(result as FormState);
-    setIsSubmitting(false);
-
-    // Reset form if successful
-    if (result?.success) {
-      e.currentTarget.reset();
+    try {
+      // Use the API client to update the password
+      const response = await userApi.updatePassword(currentPassword, newPassword, confirmPassword);
+      
+      if (response.error) {
+        setFormState({ error: response.error });
+      } else {
+        setFormState({ success: response.message || 'Password updated successfully' });
+        // Reset form if successful
+        e.currentTarget.reset();
+      }
+    } catch (error) {
+      console.error('Error updating password:', error);
+      setFormState({ error: 'Failed to update password. Please try again.' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -44,12 +56,19 @@ export default function SecurityPage() {
     setIsDeleting(true);
 
     const formData = new FormData(e.currentTarget);
+    const password = formData.get('password') as string;
+
     try {
-      const result = await deleteAccount({} as ActionData, formData);
-      setDeleteFormState(result as FormState);
+      // Use the API client to delete the account
+      const response = await userApi.deleteAccount(password);
+      
+      // If we get here without a redirect, there was an error
+      if (response.error) {
+        setDeleteFormState({ error: response.error });
+      }
     } catch (error) {
-      // The deleteAccount action redirects on success, so we'll only get here on error
       console.error('Error deleting account:', error);
+      setDeleteFormState({ error: 'Failed to delete account. Please try again.' });
     } finally {
       setIsDeleting(false);
     }

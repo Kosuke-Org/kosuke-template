@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { userApi } from '@/lib/api/client';
 import { useUserInfo } from '@/lib/hooks/use-user-info';
 import { useToast } from '@/lib/hooks/use-toast';
 
@@ -37,33 +38,23 @@ export default function NotificationsPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/user/notifications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          emailNotifications,
-          marketingEmails,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setFormState({ success: data.success || 'Notification preferences updated successfully.' });
+      // Use the API client to update notification preferences
+      const response = await userApi.updateNotifications(marketingEmails);
+      
+      if (response.error) {
+        setFormState({ error: response.error });
+        toast({
+          title: 'Error',
+          description: response.error || 'Failed to update notification preferences.',
+          variant: 'destructive',
+        });
+      } else {
+        setFormState({ success: response.message || 'Notification preferences updated successfully.' });
         toast({
           title: 'Success',
           description: 'Notification preferences updated successfully.',
         });
         refresh(); // Refresh user data
-      } else {
-        setFormState({ error: data.error || 'Failed to update notification preferences.' });
-        toast({
-          title: 'Error',
-          description: data.error || 'Failed to update notification preferences.',
-          variant: 'destructive',
-        });
       }
     } catch (error) {
       console.error('Error updating notifications:', error);

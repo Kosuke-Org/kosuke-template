@@ -13,6 +13,8 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { authApi } from '@/lib/api/client';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -38,8 +40,8 @@ export function NavUser() {
 
   const handleSignOut = async () => {
     try {
-      await fetch('/api/auth/signout', { method: 'POST' });
-      router.push('/sign-in');
+      await authApi.signOut();
+      // Note: The API client handles the redirect automatically
     } catch (error) {
       console.error('Error signing out:', error);
     }
