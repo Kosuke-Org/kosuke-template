@@ -13,3 +13,17 @@ services:
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
     restart: unless-stopped
+
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    ports:
+      - "9000:9000"
+      - "9443:9443"
+    restart: unless-stopped
+
+volumes:
+  portainer_data:
