@@ -38,7 +38,7 @@ export function NavUser() {
   const handleSignOut = async () => {
     try {
       await user.signOut();
-      router.push('/sign-in');
+      router.push('/handler/sign-in');
     } catch (error) {
       console.error('Error signing out:', error);
     }
