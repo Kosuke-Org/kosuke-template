@@ -15,7 +15,6 @@ export async function GET() {
 
     // Ensure user is synced to local database
     const localUser = await ensureUserSynced(stackAuthUser);
-    console.log('✅ User synced for subscription check - Local ID:', localUser.id);
 
     // Get user's active subscription from StackAuth-compatible table
     const activeSubscription = await db.query.userSubscriptions.findFirst({
