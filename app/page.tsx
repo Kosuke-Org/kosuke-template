@@ -1,6 +1,6 @@
 'use client';
 
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { Navbar } from '@/components/navbar';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -29,21 +29,7 @@ export default function Home() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <motion.div
-          className="flex justify-between w-full items-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <motion.h2
-            className="text-xl font-bold"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Kosuke Template
-          </motion.h2>
-          <ThemeToggle />
-        </motion.div>
+        <Navbar />
 
         <motion.div
           className="text-center sm:text-left w-full"
