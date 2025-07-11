@@ -8,7 +8,6 @@ import {
   LogOut,
   Shield,
   Sparkles,
-  User as UserIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -29,49 +28,28 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useUserInfo } from '@/lib/hooks/use-user-info';
+import { useUser } from '@stackframe/stack';
 
 export function NavUser() {
-  const { user, loading } = useUserInfo();
+  const user = useUser({ or: 'redirect' });
   const { isMobile } = useSidebar();
   const router = useRouter();
 
   const handleSignOut = async () => {
     try {
-      await fetch('/api/auth/signout', { method: 'POST' });
+      await user.signOut();
       router.push('/sign-in');
     } catch (error) {
       console.error('Error signing out:', error);
     }
   };
 
-  // Show empty avatar if no user or loading
-  if (!user || loading) {
-    return (
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton size="lg">
-            <Avatar className="h-8 w-8 rounded-lg">
-              <AvatarFallback className="rounded-lg">
-                <UserIcon className="h-4 w-4" />
-              </AvatarFallback>
-            </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-semibold">Guest</span>
-              <span className="truncate text-xs">Loading...</span>
-            </div>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
-    );
-  }
-
   // Get initials for avatar fallback
   const getInitials = () => {
-    if (!user.name) return 'U';
-    return user.name
+    if (!user.displayName) return 'U';
+    return user.displayName
       .split(' ')
-      .map((part) => part[0])
+      .map((part: string) => part[0])
       .join('')
       .toUpperCase()
       .substring(0, 2);
@@ -87,12 +65,12 @@ export function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.imageUrl || ''} alt={user.name || 'User'} />
+                <AvatarImage src={user.profileImageUrl || ''} alt={user.displayName || 'User'} />
                 <AvatarFallback className="rounded-lg">{getInitials()}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name || 'User'}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-semibold">{user.displayName || 'User'}</span>
+                <span className="truncate text-xs">{user.primaryEmail}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -106,12 +84,12 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.imageUrl || ''} alt={user.name || 'User'} />
+                  <AvatarImage src={user.profileImageUrl || ''} alt={user.displayName || 'User'} />
                   <AvatarFallback className="rounded-lg">{getInitials()}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name || 'User'}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-semibold">{user.displayName || 'User'}</span>
+                  <span className="truncate text-xs">{user.primaryEmail}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

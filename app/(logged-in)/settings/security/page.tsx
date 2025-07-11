@@ -1,207 +1,57 @@
 'use client';
 
-import { Check, Loader2, AlertTriangle } from 'lucide-react';
-import { useState } from 'react';
+import { ExternalLink, Shield } from 'lucide-react';
 
-import { updatePassword, deleteAccount } from '@/app/(logged-out)/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-
-type FormState = {
-  error?: string;
-  success?: string;
-} | null;
-
-type ActionData = Record<string, unknown>;
+import { useUser } from '@stackframe/stack';
 
 export default function SecurityPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [formState, setFormState] = useState<FormState>(null);
-  const [deleteFormState, setDeleteFormState] = useState<FormState>(null);
+  const user = useUser({ or: 'redirect' });
 
-  const handlePasswordUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    const formData = new FormData(e.currentTarget);
-    const result = await updatePassword({} as ActionData, formData);
-
-    setFormState(result as FormState);
-    setIsSubmitting(false);
-
-    // Reset form if successful
-    if (result?.success) {
-      e.currentTarget.reset();
-    }
-  };
-
-  const handleAccountDelete = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsDeleting(true);
-
-    const formData = new FormData(e.currentTarget);
-    try {
-      const result = await deleteAccount({} as ActionData, formData);
-      setDeleteFormState(result as FormState);
-    } catch (error) {
-      // The deleteAccount action redirects on success, so we'll only get here on error
-      console.error('Error deleting account:', error);
-    } finally {
-      setIsDeleting(false);
-    }
+  const handleManageSecurity = () => {
+    // Redirect to Stack's account settings for security management
+    window.location.href = '/handler/account-settings';
   };
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Password</CardTitle>
-          <CardDescription>Update your password to keep your account secure.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handlePasswordUpdate} className="space-y-6">
-            <div className="flex flex-col space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
-                <Input
-                  id="currentPassword"
-                  name="currentPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="newPassword">New Password</Label>
-                <Input
-                  id="newPassword"
-                  name="newPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-            </div>
-
-            {formState?.error && (
-              <div className="rounded-md bg-destructive/10 p-3">
-                <div className="text-sm text-destructive">{formState.error}</div>
-              </div>
-            )}
-
-            {formState?.success && (
-              <div className="rounded-md bg-green-500/10 p-3 flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
-                <div className="text-sm text-green-500">{formState.success}</div>
-              </div>
-            )}
-
-            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                'Update Password'
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card className="border-destructive/20">
-        <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardTitle>Security Settings</CardTitle>
           <CardDescription>
-            Permanently delete your account and all associated data.
+            Manage your password, authentication, and account security.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {!showDeleteConfirm ? (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Once you delete your account, there is no going back. This action cannot be undone.
-              </p>
-              <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
-                Delete Account
-              </Button>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground">Current User</h3>
+              <p className="text-base">{user?.primaryEmail}</p>
             </div>
-          ) : (
-            <form onSubmit={handleAccountDelete} className="space-y-6">
-              <div className="rounded-md bg-destructive/10 p-4 flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-medium text-destructive">
-                    Warning: This action is irreversible
-                  </h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    All your data, including projects, settings, and history will be permanently
-                    deleted.
-                  </p>
-                </div>
-              </div>
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground">Security Management</h3>
+              <p className="text-sm text-muted-foreground">
+                Password changes, two-factor authentication, and account deletion are managed
+                through your account settings.
+              </p>
+            </div>
+          </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="deletePassword" className="text-destructive">
-                  Enter your password to confirm
-                </Label>
-                <Input
-                  id="deletePassword"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                  className="border-destructive/50 focus-visible:ring-destructive"
-                />
-              </div>
+          <div className="flex items-center gap-2 p-4 border rounded-lg bg-muted/50">
+            <Shield className="h-5 w-5 text-blue-600" />
+            <div>
+              <p className="text-sm font-medium">Secure Account Management</p>
+              <p className="text-xs text-muted-foreground">
+                Your security settings are protected and managed by Stack Auth
+              </p>
+            </div>
+          </div>
 
-              {deleteFormState?.error && (
-                <div className="rounded-md bg-destructive/10 p-3">
-                  <div className="text-sm text-destructive">{deleteFormState.error}</div>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                    setDeleteFormState(null);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" variant="destructive" disabled={isDeleting}>
-                  {isDeleting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    'Confirm Delete'
-                  )}
-                </Button>
-              </div>
-            </form>
-          )}
+          <Button onClick={handleManageSecurity} className="w-full sm:w-auto">
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Manage Security Settings
+          </Button>
         </CardContent>
       </Card>
     </div>

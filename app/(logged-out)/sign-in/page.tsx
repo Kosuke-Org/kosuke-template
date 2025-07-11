@@ -1,11 +1,6 @@
-import { Suspense } from 'react';
-
-import { Login } from '../../../components/auth/login-form';
+import { redirect } from 'next/navigation';
 
 export default function SignInPage() {
-  return (
-    <Suspense>
-      <Login mode="signin" />
-    </Suspense>
-  );
+  // Redirect to Stack's sign-in handler
+  redirect('/handler/sign-in');
 }
