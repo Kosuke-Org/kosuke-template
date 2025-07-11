@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { getUser } from '@/lib/db/queries';
+import { stackServerApp } from '../../stack';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 
@@ -9,10 +9,10 @@ interface LayoutProps {
 }
 
 async function AuthCheck({ children }: LayoutProps) {
-  const user = await getUser();
+  const user = await stackServerApp.getUser();
 
   if (!user) {
-    redirect('/sign-in');
+    redirect('/handler/sign-in');
   }
 
   return <>{children}</>;

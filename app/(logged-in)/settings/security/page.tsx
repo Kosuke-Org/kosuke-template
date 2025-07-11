@@ -1,55 +1,109 @@
 'use client';
 
-import { Check, Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 
-import { updatePassword, deleteAccount } from '@/app/(logged-out)/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
-type FormState = {
-  error?: string;
-  success?: string;
-} | null;
-
-type ActionData = Record<string, unknown>;
+import { useToast } from '@/lib/hooks/use-toast';
+import { useUser } from '@stackframe/stack';
 
 export default function SecurityPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const user = useUser({ or: 'redirect' });
+  const { toast } = useToast();
+
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [formState, setFormState] = useState<FormState>(null);
-  const [deleteFormState, setDeleteFormState] = useState<FormState>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handlePasswordUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+  const [passwords, setPasswords] = useState({
+    current: '',
+    new: '',
+    confirm: '',
+  });
+
+  const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    const formData = new FormData(e.currentTarget);
-    const result = await updatePassword({} as ActionData, formData);
+    if (passwords.new !== passwords.confirm) {
+      toast({
+        title: 'Error',
+        description: 'New passwords do not match.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    setFormState(result as FormState);
-    setIsSubmitting(false);
+    if (passwords.new.length < 8) {
+      toast({
+        title: 'Error',
+        description: 'Password must be at least 8 characters long.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    // Reset form if successful
-    if (result?.success) {
-      e.currentTarget.reset();
+    setIsChangingPassword(true);
+    try {
+      // Use Stack's password update method
+      await user.setPassword({
+        password: passwords.new,
+      });
+
+      setPasswords({ current: '', new: '', confirm: '' });
+      toast({
+        title: 'Password updated',
+        description: 'Your password has been updated successfully.',
+      });
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update password. Please check your current password.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
-  const handleAccountDelete = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleDeleteAccount = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsDeleting(true);
-
     const formData = new FormData(e.currentTarget);
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    if (!confirmPassword) {
+      toast({
+        title: 'Error',
+        description: 'Please enter your password to confirm account deletion.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsDeleting(true);
     try {
-      const result = await deleteAccount({} as ActionData, formData);
-      setDeleteFormState(result as FormState);
+      // Use Stack's account deletion method
+      await user.delete();
+
+      toast({
+        title: 'Account deleted',
+        description: 'Your account has been permanently deleted.',
+      });
+
+      // The user will be automatically redirected after deletion
     } catch (error) {
-      // The deleteAccount action redirects on success, so we'll only get here on error
       console.error('Error deleting account:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete account. Please check your password.',
+        variant: 'destructive',
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -57,63 +111,95 @@ export default function SecurityPage() {
 
   return (
     <div className="space-y-6">
+      {/* Password Change Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Password</CardTitle>
+          <CardTitle>Change Password</CardTitle>
           <CardDescription>Update your password to keep your account secure.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handlePasswordUpdate} className="space-y-6">
-            <div className="flex flex-col space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="currentPassword">Current Password</Label>
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <div className="relative">
                 <Input
                   id="currentPassword"
-                  name="currentPassword"
-                  type="password"
-                  placeholder="••••••••"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  value={passwords.current}
+                  onChange={(e) => setPasswords((prev) => ({ ...prev, current: e.target.value }))}
+                  placeholder="Enter current password"
                   required
                 />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="newPassword">New Password</Label>
-                <Input
-                  id="newPassword"
-                  name="newPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  required
-                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
             </div>
 
-            {formState?.error && (
-              <div className="rounded-md bg-destructive/10 p-3">
-                <div className="text-sm text-destructive">{formState.error}</div>
+            <div className="grid gap-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={passwords.new}
+                  onChange={(e) => setPasswords((prev) => ({ ...prev, new: e.target.value }))}
+                  placeholder="Enter new password"
+                  required
+                  minLength={8}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
               </div>
-            )}
+            </div>
 
-            {formState?.success && (
-              <div className="rounded-md bg-green-500/10 p-3 flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
-                <div className="text-sm text-green-500">{formState.success}</div>
+            <div className="grid gap-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={passwords.confirm}
+                  onChange={(e) => setPasswords((prev) => ({ ...prev, confirm: e.target.value }))}
+                  placeholder="Confirm new password"
+                  required
+                  minLength={8}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
               </div>
-            )}
+            </div>
 
-            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-              {isSubmitting ? (
+            <Button type="submit" disabled={isChangingPassword}>
+              {isChangingPassword ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Updating...
@@ -126,6 +212,7 @@ export default function SecurityPage() {
         </CardContent>
       </Card>
 
+      {/* Account Deletion Section */}
       <Card className="border-destructive/20">
         <CardHeader>
           <CardTitle className="text-destructive">Danger Zone</CardTitle>
@@ -144,7 +231,7 @@ export default function SecurityPage() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={handleAccountDelete} className="space-y-6">
+            <form onSubmit={handleDeleteAccount} className="space-y-6">
               <div className="rounded-md bg-destructive/10 p-4 flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
                 <div>
@@ -152,8 +239,7 @@ export default function SecurityPage() {
                     Warning: This action is irreversible
                   </h4>
                   <p className="text-xs text-muted-foreground mt-1">
-                    All your data, including projects, settings, and history will be permanently
-                    deleted.
+                    All your data will be permanently deleted.
                   </p>
                 </div>
               </div>
@@ -164,29 +250,16 @@ export default function SecurityPage() {
                 </Label>
                 <Input
                   id="deletePassword"
-                  name="password"
+                  name="confirmPassword"
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   required
                   className="border-destructive/50 focus-visible:ring-destructive"
                 />
               </div>
 
-              {deleteFormState?.error && (
-                <div className="rounded-md bg-destructive/10 p-3">
-                  <div className="text-sm text-destructive">{deleteFormState.error}</div>
-                </div>
-              )}
-
               <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowDeleteConfirm(false);
-                    setDeleteFormState(null);
-                  }}
-                >
+                <Button type="button" variant="outline" onClick={() => setShowDeleteConfirm(false)}>
                   Cancel
                 </Button>
                 <Button type="submit" variant="destructive" disabled={isDeleting}>

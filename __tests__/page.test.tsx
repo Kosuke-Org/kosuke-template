@@ -1,23 +1,17 @@
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import Home from '../app/page';
-
-// Mock the ThemeToggle component
-jest.mock('@/components/ui/theme-toggle', () => ({
-  __esModule: true,
-  ThemeToggle: () => <button aria-label="toggle theme">Toggle Theme</button>,
-}));
+import HomePage from '../app/(logged-out)/home/page';
 
 describe('Home Page', () => {
   it('renders the main heading and title', () => {
-    render(<Home />);
+    render(<HomePage />);
 
     expect(screen.getByText('Kosuke Template')).toBeInTheDocument();
     expect(screen.getByText('Welcome to Kosuke')).toBeInTheDocument();
   });
 
   it('renders the welcome message and GitHub link', () => {
-    render(<Home />);
+    render(<HomePage />);
 
     expect(screen.getByText('The open-source vibe coding platform.')).toBeInTheDocument();
     expect(screen.getByText('GitHub')).toBeInTheDocument();
@@ -30,14 +24,8 @@ describe('Home Page', () => {
     );
   });
 
-  it('renders the theme toggle', () => {
-    render(<Home />);
-
-    expect(screen.getByRole('button', { name: /toggle theme/i })).toBeInTheDocument();
-  });
-
   it('renders the feature list', () => {
-    render(<Home />);
+    render(<HomePage />);
 
     expect(screen.getByText('Here the Kosuke supported features:')).toBeInTheDocument();
     expect(screen.getByText('Easy customization')).toBeInTheDocument();

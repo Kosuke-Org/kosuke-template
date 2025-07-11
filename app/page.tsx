@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation';
-import { getUser } from '@/lib/db/queries';
+import { stackServerApp } from '../stack';
 
 export default async function Home() {
-  const user = await getUser();
+  const user = await stackServerApp.getUser();
 
   if (user) {
     redirect('/dashboard');

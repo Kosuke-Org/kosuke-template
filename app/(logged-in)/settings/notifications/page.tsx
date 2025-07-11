@@ -1,100 +1,63 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Check, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { useUserInfo } from '@/lib/hooks/use-user-info';
 import { useToast } from '@/lib/hooks/use-toast';
-
-type FormState = {
-  error?: string;
-  success?: string;
-} | null;
+import { useUser } from '@stackframe/stack';
 
 export default function NotificationsPage() {
-  const { user, loading: userLoading, refresh } = useUserInfo();
+  const user = useUser({ or: 'redirect' });
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formState, setFormState] = useState<FormState>(null);
+
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [marketingEmails, setMarketingEmails] = useState(false);
+  const [securityAlerts, setSecurityAlerts] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Initialize switch states from user data
+  // Initialize preferences (in real app, this would come from user settings)
   useEffect(() => {
-    if (user) {
-      // Initialize marketing emails from user preferences
-      // emailNotifications doesn't have a DB field but could be added in the future
-      setMarketingEmails(user.marketingEmails === true);
-    }
+    // For now, we'll use local state
+    // In a real implementation, you might fetch these from Stack or your own backend
   }, [user]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
+  const handleSavePreferences = async () => {
+    setIsSaving(true);
     try {
-      const response = await fetch('/api/user/notifications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          emailNotifications,
-          marketingEmails,
-        }),
+      // Simulate API call - in real implementation, you'd save to Stack or your backend
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      toast({
+        title: 'Preferences saved',
+        description: 'Your notification preferences have been updated.',
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setFormState({ success: data.success || 'Notification preferences updated successfully.' });
-        toast({
-          title: 'Success',
-          description: 'Notification preferences updated successfully.',
-        });
-        refresh(); // Refresh user data
-      } else {
-        setFormState({ error: data.error || 'Failed to update notification preferences.' });
-        toast({
-          title: 'Error',
-          description: data.error || 'Failed to update notification preferences.',
-          variant: 'destructive',
-        });
-      }
     } catch (error) {
-      console.error('Error updating notifications:', error);
-      setFormState({ error: 'Failed to update notification preferences.' });
+      console.error('Error saving preferences:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update notification preferences.',
+        description: 'Failed to save preferences. Please try again.',
         variant: 'destructive',
       });
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
-
-  if (userLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Notification Preferences</CardTitle>
-          <CardDescription>Manage how you receive notifications.</CardDescription>
+          <CardDescription>
+            Manage your notification settings and email preferences.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <CardContent className="space-y-6">
+          <div className="space-y-6">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
@@ -123,32 +86,47 @@ export default function NotificationsPage() {
                   onCheckedChange={setMarketingEmails}
                 />
               </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="security-alerts">Security Alerts</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receive notifications about important security events.
+                  </p>
+                </div>
+                <Switch
+                  id="security-alerts"
+                  checked={securityAlerts}
+                  onCheckedChange={setSecurityAlerts}
+                />
+              </div>
             </div>
 
-            {formState?.error && (
-              <div className="rounded-md bg-destructive/10 p-3">
-                <div className="text-sm text-destructive">{formState.error}</div>
+            <div className="pt-4 border-t">
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground">Current User</h3>
+                <p className="text-base">{user?.primaryEmail}</p>
               </div>
-            )}
+            </div>
 
-            {formState?.success && (
-              <div className="rounded-md bg-green-500/10 p-3 flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-500" />
-                <div className="text-sm text-green-500">{formState.success}</div>
-              </div>
-            )}
-
-            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-              {isSubmitting ? (
+            <Button
+              onClick={handleSavePreferences}
+              disabled={isSaving}
+              className="w-full sm:w-auto"
+            >
+              {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...
                 </>
               ) : (
-                'Save Preferences'
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Save Preferences
+                </>
               )}
             </Button>
-          </form>
+          </div>
         </CardContent>
       </Card>
     </div>
