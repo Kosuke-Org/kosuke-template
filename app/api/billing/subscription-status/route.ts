@@ -1,38 +1,57 @@
 import { NextResponse } from 'next/server';
 import { stackServerApp } from '@/stack';
 import { db } from '@/lib/db';
-import { users, subscriptions } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { userSubscriptions } from '@/lib/db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { ensureUserSynced } from '@/lib/user-sync';
 
 export async function GET() {
   try {
-    const user = await stackServerApp.getUser();
+    const stackAuthUser = await stackServerApp.getUser();
 
-    if (!user) {
+    if (!stackAuthUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's subscription info
-    const userRecord = await db.query.users.findFirst({
-      where: eq(users.id, parseInt(user.id)),
-      with: {
-        subscriptions: {
-          where: eq(subscriptions.status, 'active'),
-          orderBy: (subscriptions, { desc }) => [desc(subscriptions.createdAt)],
-          limit: 1,
-        },
-      },
+    // Ensure user is synced to local database
+    const localUser = await ensureUserSynced(stackAuthUser);
+    console.log('✅ User synced for subscription check - Local ID:', localUser.id);
+
+    // Get user's active subscription from StackAuth-compatible table
+    const activeSubscription = await db.query.userSubscriptions.findFirst({
+      where: eq(userSubscriptions.stackAuthUserId, stackAuthUser.id),
+      orderBy: [desc(userSubscriptions.createdAt)],
     });
 
-    if (!userRecord) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    // Determine current tier and status
+    let tier = 'free'; // Default to free
+    let status = null;
+    let currentPeriodEnd = null;
+
+    if (activeSubscription && activeSubscription.status === 'active') {
+      tier = activeSubscription.tier;
+      status = activeSubscription.status;
+      currentPeriodEnd = activeSubscription.currentPeriodEnd;
+    } else if (activeSubscription) {
+      // User had a subscription but it's not active anymore
+      status = activeSubscription.status;
+      currentPeriodEnd = activeSubscription.currentPeriodEnd;
+
+      // Check if subscription is still within the period (grace period)
+      if (activeSubscription.currentPeriodEnd && new Date() < activeSubscription.currentPeriodEnd) {
+        tier = activeSubscription.tier; // Still in grace period
+      }
     }
 
     const subscriptionInfo = {
-      tier: userRecord.subscriptionTier,
-      status: userRecord.subscriptionStatus,
-      currentPeriodEnd: userRecord.currentPeriodEnd,
-      activeSubscription: userRecord.subscriptions[0] || null,
+      tier,
+      status,
+      currentPeriodEnd,
+      activeSubscription,
+      user: {
+        localId: localUser.id,
+        stackAuthId: localUser.stackAuthUserId,
+      },
     };
 
     return NextResponse.json(subscriptionInfo);

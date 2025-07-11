@@ -5,36 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1744547788001,
-      "tag": "0000_plain_morph",
+      "when": 1752253342081,
+      "tag": "0000_useful_wraith",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1744551672268,
-      "tag": "0001_flimsy_shen",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1744552045800,
-      "tag": "0002_handy_korvac",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1744553139103,
-      "tag": "0003_spicy_zeigeist",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1752235250872,
-      "tag": "0004_lethal_mathemanic",
+      "when": 1752255305233,
+      "tag": "0001_hard_boomer",
       "breakpoints": true
     }
   ]

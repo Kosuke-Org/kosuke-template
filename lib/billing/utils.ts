@@ -1,12 +1,13 @@
 import { Polar } from '@polar-sh/sdk';
 import { db } from '@/lib/db';
-import { users, subscriptions } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { userSubscriptions } from '@/lib/db/schema';
+import { eq, desc, and } from 'drizzle-orm';
 import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
 
 // Initialize Polar client
 const polar = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  server: process.env.POLAR_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'production',
 });
 
 export { polar };
@@ -68,29 +69,41 @@ export async function createCheckoutSession(
 }
 
 /**
- * Get user's current subscription information
+ * Get user's current subscription information using StackAuth UUID
  */
-export async function getUserSubscription(userId: string) {
-  const userRecord = await db.query.users.findFirst({
-    where: eq(users.id, parseInt(userId)),
-    with: {
-      subscriptions: {
-        where: eq(subscriptions.status, 'active'),
-        orderBy: (subscriptions, { desc }) => [desc(subscriptions.createdAt)],
-        limit: 1,
-      },
-    },
+export async function getUserSubscription(stackAuthUserId: string) {
+  const activeSubscription = await db.query.userSubscriptions.findFirst({
+    where: eq(userSubscriptions.stackAuthUserId, stackAuthUserId),
+    orderBy: [desc(userSubscriptions.createdAt)],
   });
 
-  if (!userRecord) {
-    return null;
+  if (!activeSubscription) {
+    return {
+      tier: SubscriptionTier.FREE,
+      status: null,
+      currentPeriodEnd: null,
+      activeSubscription: null,
+    };
+  }
+
+  // Determine current tier based on subscription status and period
+  let currentTier = SubscriptionTier.FREE;
+
+  if (activeSubscription.status === 'active') {
+    currentTier = activeSubscription.tier as SubscriptionTier;
+  } else if (
+    activeSubscription.currentPeriodEnd &&
+    new Date() < activeSubscription.currentPeriodEnd
+  ) {
+    // Still in grace period
+    currentTier = activeSubscription.tier as SubscriptionTier;
   }
 
   return {
-    tier: userRecord.subscriptionTier as SubscriptionTier,
-    status: userRecord.subscriptionStatus as SubscriptionStatus,
-    currentPeriodEnd: userRecord.currentPeriodEnd,
-    activeSubscription: userRecord.subscriptions[0] || null,
+    tier: currentTier,
+    status: activeSubscription.status as SubscriptionStatus,
+    currentPeriodEnd: activeSubscription.currentPeriodEnd,
+    activeSubscription,
   };
 }
 
@@ -136,24 +149,31 @@ export function isSubscriptionActive(
 }
 
 /**
- * Update user subscription status
+ * Update user subscription status using StackAuth UUID
  */
 export async function updateUserSubscription(
-  userId: string,
+  stackAuthUserId: string,
+  subscriptionId: string,
   updates: {
-    subscriptionTier?: SubscriptionTier;
-    subscriptionStatus?: SubscriptionStatus;
-    subscriptionId?: string;
+    status?: SubscriptionStatus;
+    tier?: SubscriptionTier;
+    currentPeriodStart?: Date;
     currentPeriodEnd?: Date;
+    canceledAt?: Date | null;
   }
 ) {
   await db
-    .update(users)
+    .update(userSubscriptions)
     .set({
       ...updates,
       updatedAt: new Date(),
     })
-    .where(eq(users.id, parseInt(userId)));
+    .where(
+      and(
+        eq(userSubscriptions.stackAuthUserId, stackAuthUserId),
+        eq(userSubscriptions.subscriptionId, subscriptionId)
+      )
+    );
 }
 
 /**
