@@ -1,6 +1,5 @@
 'use client';
 
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -22,28 +21,13 @@ export default function Home() {
   };
 
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+    <div className="min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <motion.main
-        className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start max-w-3xl mx-auto w-full"
+        className="flex flex-col gap-[32px] items-center sm:items-start max-w-3xl mx-auto w-full pt-8"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <motion.div
-          className="flex justify-between w-full items-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <motion.h2
-            className="text-xl font-bold"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Kosuke Template
-          </motion.h2>
-          <ThemeToggle />
-        </motion.div>
 
         <motion.div
           className="text-center sm:text-left w-full"
