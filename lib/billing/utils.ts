@@ -177,6 +177,37 @@ export async function updateUserSubscription(
 }
 
 /**
+ * Cancel user's active subscription
+ */
+export async function cancelUserSubscription(stackAuthUserId: string, subscriptionId: string) {
+  try {
+    // Note: For now we're marking as canceled locally.
+    // The actual cancellation should be handled through Polar's customer portal
+    // or management interface, and the webhook will sync the status.
+
+    // Update local database to mark as canceled
+    await db
+      .update(userSubscriptions)
+      .set({
+        status: SubscriptionStatus.CANCELED,
+        canceledAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(userSubscriptions.stackAuthUserId, stackAuthUserId),
+          eq(userSubscriptions.subscriptionId, subscriptionId)
+        )
+      );
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error cancelling subscription:', error);
+    throw new Error('Failed to cancel subscription');
+  }
+}
+
+/**
  * Get all available tiers for upgrade/downgrade
  */
 export function getAvailableTiers(currentTier: SubscriptionTier) {
