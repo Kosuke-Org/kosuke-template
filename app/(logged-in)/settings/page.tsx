@@ -10,10 +10,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useUser } from '@stackframe/stack';
+import { useProfileImage, useProfileImageUrl } from '@/lib/hooks/use-profile-image';
 
 export default function ProfileSettings() {
   const user = useUser({ or: 'redirect' });
   const { toast } = useToast();
+  const { setCurrentImageUrl } = useProfileImage();
+  const profileImageUrl = useProfileImageUrl(user?.profileImageUrl);
 
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -65,22 +68,36 @@ export default function ProfileSettings() {
 
     setIsUploading(true);
     try {
-      // Create FormData and upload via Stack's API
+      // Create FormData and upload to our API
       const formData = new FormData();
       formData.append('file', file);
 
-      // Use Stack's update method for profile image
-      await user.update({ profileImageUrl: URL.createObjectURL(file) });
+      // Upload to our API endpoint
+      const response = await fetch('/api/upload/profile-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload image');
+      }
+
+      const data = await response.json();
 
       toast({
         title: 'Profile image updated',
-        description: 'Your profile image has been updated successfully.',
+        description: data.message || 'Your profile image has been updated successfully.',
       });
+
+      // Update local state immediately to show the new image
+      setCurrentImageUrl(data.imageUrl);
     } catch (error) {
       console.error('Error uploading image:', error);
       toast({
         title: 'Error',
-        description: 'Failed to upload image. Please try again.',
+        description:
+          error instanceof Error ? error.message : 'Failed to upload image. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -100,8 +117,8 @@ export default function ProfileSettings() {
             {/* Profile Image */}
             <div className="flex flex-col items-center gap-4">
               <div className="relative h-32 w-32 rounded-lg overflow-hidden border border-border bg-muted">
-                {user?.profileImageUrl ? (
-                  <Image src={user.profileImageUrl} alt="Profile" fill className="object-cover" />
+                {profileImageUrl ? (
+                  <Image src={profileImageUrl} alt="Profile" fill className="object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-muted">
                     <span className="text-2xl font-medium text-muted-foreground">
@@ -123,6 +140,8 @@ export default function ProfileSettings() {
                       Change Image
                     </>
                   )}
+                </Button>
+                {!isUploading && (
                   <Input
                     type="file"
                     accept="image/*"
@@ -130,7 +149,7 @@ export default function ProfileSettings() {
                     onChange={handleImageUpload}
                     disabled={isUploading}
                   />
-                </Button>
+                )}
               </div>
             </div>
 

@@ -29,11 +29,13 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { useUser } from '@stackframe/stack';
+import { useProfileImageUrl } from '@/lib/hooks/use-profile-image';
 
 export function NavUser() {
   const user = useUser({ or: 'redirect' });
   const { isMobile } = useSidebar();
   const router = useRouter();
+  const profileImageUrl = useProfileImageUrl(user.profileImageUrl);
 
   const handleSignOut = async () => {
     try {
@@ -65,7 +67,7 @@ export function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.profileImageUrl || ''} alt={user.displayName || 'User'} />
+                <AvatarImage src={profileImageUrl || ''} alt={user.displayName || 'User'} />
                 <AvatarFallback className="rounded-lg">{getInitials()}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
@@ -84,7 +86,7 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.profileImageUrl || ''} alt={user.displayName || 'User'} />
+                  <AvatarImage src={profileImageUrl || ''} alt={user.displayName || 'User'} />
                   <AvatarFallback className="rounded-lg">{getInitials()}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
