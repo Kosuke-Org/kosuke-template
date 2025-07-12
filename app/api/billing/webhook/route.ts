@@ -61,35 +61,17 @@ export async function POST(request: NextRequest) {
     }
 
     switch (event.type) {
-      case 'checkout.created':
-        await handleCheckoutCreated(event.data);
-        break;
-      case 'checkout.updated':
-        await handleCheckoutUpdated(event.data);
-        break;
-      case 'order.created':
-        await handleOrderCreated(event.data);
-        break;
-      case 'order.paid':
-        await handleOrderPaid(event.data);
-        break;
       case 'subscription.created':
         await handleSubscriptionCreated(event.data);
         break;
       case 'subscription.updated':
         await handleSubscriptionUpdated(event.data);
         break;
-      case 'subscription.active':
-        await handleSubscriptionActive(event.data);
-        break;
       case 'subscription.canceled':
         await handleSubscriptionCanceled(event.data);
         break;
       case 'subscription.uncanceled':
         await handleSubscriptionUncanceled(event.data);
-        break;
-      case 'customer.created':
-        await handleCustomerCreated(event.data);
         break;
       default:
         console.log('❓ Unhandled event type:', event.type);
