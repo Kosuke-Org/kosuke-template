@@ -16,6 +16,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
     }
 
+    // Validate that webhook secret is configured
+    if (!process.env.POLAR_WEBHOOK_SECRET) {
+      console.error('❌ CRITICAL: POLAR_WEBHOOK_SECRET environment variable is not set');
+      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+    }
+
     // Validate webhook signature with all required headers
     const headerVariants = [
       // Standard webhook headers
@@ -47,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
 
       try {
-        event = validateEvent(rawBody, cleanHeaders, process.env.POLAR_WEBHOOK_SECRET ?? '');
+        event = validateEvent(rawBody, cleanHeaders, process.env.POLAR_WEBHOOK_SECRET!);
         break;
       } catch (error) {
         lastError = error;
