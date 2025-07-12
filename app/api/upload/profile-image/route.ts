@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stackServerApp } from '@/stack';
 import { uploadProfileImage, deleteProfileImage } from '@/lib/storage';
+import { syncUserFromStackAuth } from '@/lib/user-sync';
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,6 +51,9 @@ export async function POST(request: NextRequest) {
 
     // Update user profile with new image URL
     await user.update({ profileImageUrl: imageUrl });
+
+    // Sync the updated user data to local database
+    await syncUserFromStackAuth(user);
 
     return NextResponse.json({
       success: true,
