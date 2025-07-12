@@ -11,17 +11,5 @@ services:
     volumes:
       - kosuke_template_postgres_data:/var/lib/postgresql/data
 
-  portainer:
-    container_name: portainer
-    image: portainer/portainer-ce:latest
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
-    ports:
-      - '9000:9000'
-      - '9443:9443'
-    restart: unless-stopped
-
 volumes:
   kosuke_template_postgres_data:
-  portainer_data:
