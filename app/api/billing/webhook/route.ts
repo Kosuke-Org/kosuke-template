@@ -96,29 +96,54 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Helper function to safely extract string values
+function safeExtractString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
+}
+
+// Helper function to safely extract object values
+function safeExtractObject(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+// Helper function to safely extract metadata from multiple sources
+function extractMetadataValues(eventData: Record<string, unknown>): {
+  stackAuthUserId: string | undefined;
+  tier: string | undefined;
+} {
+  const metadata = safeExtractObject(eventData.metadata);
+  const customer = safeExtractObject(eventData.customer);
+  const checkout = safeExtractObject(eventData.checkout);
+
+  const customerMetadata = customer ? safeExtractObject(customer.metadata) : undefined;
+  const checkoutMetadata = checkout ? safeExtractObject(checkout.metadata) : undefined;
+
+  // Try to find userId and tier from any metadata source
+  const stackAuthUserId =
+    safeExtractString(metadata?.userId) ||
+    safeExtractString(customerMetadata?.userId) ||
+    safeExtractString(checkoutMetadata?.userId);
+
+  const tier =
+    safeExtractString(metadata?.tier) ||
+    safeExtractString(customerMetadata?.tier) ||
+    safeExtractString(checkoutMetadata?.tier);
+
+  return { stackAuthUserId, tier };
+}
+
 async function handleSubscriptionCreated(data: unknown) {
-  const eventData = data as Record<string, unknown>;
+  const eventData = safeExtractObject(data);
+
+  if (!eventData) {
+    console.error('❌ CRITICAL: Invalid event data structure');
+    return;
+  }
 
   try {
-    // Check different possible locations for metadata
-    const metadata = eventData.metadata as Record<string, unknown> | undefined;
-    const customerMetadata = (eventData.customer as Record<string, unknown>)?.metadata as
-      | Record<string, unknown>
-      | undefined;
-    const checkoutMetadata = (eventData.checkout as Record<string, unknown>)?.metadata as
-      | Record<string, unknown>
-      | undefined;
-
-    // Try to find userId and tier from any metadata source
-    const stackAuthUserId =
-      (metadata?.userId as string) ||
-      (customerMetadata?.userId as string) ||
-      (checkoutMetadata?.userId as string);
-
-    const tier =
-      (metadata?.tier as string) ||
-      (customerMetadata?.tier as string) ||
-      (checkoutMetadata?.tier as string);
+    const { stackAuthUserId, tier } = extractMetadataValues(eventData);
 
     if (!stackAuthUserId) {
       console.error('❌ CRITICAL: No stackAuthUserId found in any metadata source');
@@ -132,21 +157,44 @@ async function handleSubscriptionCreated(data: unknown) {
       return;
     }
 
-    const subscriptionId = eventData.id as string;
-    const productId = eventData.productId as string;
+    const subscriptionId = safeExtractString(eventData.id);
+    const productId = safeExtractString(eventData.productId);
+
+    if (!subscriptionId || !productId) {
+      console.error('❌ CRITICAL: Missing required subscription or product ID');
+      return;
+    }
 
     let currentPeriodStart: Date;
     let currentPeriodEnd: Date;
 
     try {
-      currentPeriodStart = new Date(
-        (eventData.currentPeriodStart as string) || (eventData.startedAt as string)
-      );
-      currentPeriodEnd = new Date(
-        (eventData.currentPeriodEnd as string) || (eventData.endsAt as string)
-      );
+      const startDate =
+        safeExtractString(eventData.currentPeriodStart) || safeExtractString(eventData.startedAt);
+      const endDate =
+        safeExtractString(eventData.currentPeriodEnd) || safeExtractString(eventData.endsAt);
+
+      if (!startDate || !endDate) {
+        console.error('❌ CRITICAL: Missing required date fields');
+        return;
+      }
+
+      currentPeriodStart = new Date(startDate);
+      currentPeriodEnd = new Date(endDate);
+
+      // Validate dates
+      if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
+        console.error('❌ CRITICAL: Invalid date format');
+        return;
+      }
     } catch (dateError) {
       console.error('❌ Date parsing error:', dateError);
+      return;
+    }
+
+    const status = safeExtractString(eventData.status);
+    if (!status) {
+      console.error('❌ CRITICAL: Missing subscription status');
       return;
     }
 
@@ -154,7 +202,7 @@ async function handleSubscriptionCreated(data: unknown) {
       stackAuthUserId,
       subscriptionId,
       productId,
-      status: eventData.status as string,
+      status,
       tier,
       currentPeriodStart,
       currentPeriodEnd,
@@ -187,30 +235,57 @@ async function handleSubscriptionCreated(data: unknown) {
 }
 
 async function handleSubscriptionUpdated(data: unknown) {
-  const eventData = data as Record<string, unknown>;
+  const eventData = safeExtractObject(data);
+
+  if (!eventData) {
+    console.error('❌ CRITICAL: Invalid event data structure');
+    return;
+  }
 
   try {
-    const metadata = eventData.metadata as Record<string, unknown> | undefined;
-    const stackAuthUserId = metadata?.userId as string;
+    const { stackAuthUserId } = extractMetadataValues(eventData);
 
     if (!stackAuthUserId) {
       console.error('❌ Missing stackAuthUserId in subscription metadata');
       return;
     }
 
+    const subscriptionId = safeExtractString(eventData.id);
+    const status = safeExtractString(eventData.status);
+
+    if (!subscriptionId || !status) {
+      console.error('❌ CRITICAL: Missing required subscription ID or status');
+      return;
+    }
+
+    const startDate =
+      safeExtractString(eventData.currentPeriodStart) || safeExtractString(eventData.startedAt);
+    const endDate =
+      safeExtractString(eventData.currentPeriodEnd) || safeExtractString(eventData.endsAt);
+
+    if (!startDate || !endDate) {
+      console.error('❌ CRITICAL: Missing required date fields');
+      return;
+    }
+
+    const currentPeriodStart = new Date(startDate);
+    const currentPeriodEnd = new Date(endDate);
+
+    // Validate dates
+    if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
+      console.error('❌ CRITICAL: Invalid date format');
+      return;
+    }
+
     await db
       .update(userSubscriptions)
       .set({
-        status: eventData.status as string,
-        currentPeriodStart: new Date(
-          (eventData.currentPeriodStart as string) || (eventData.startedAt as string)
-        ),
-        currentPeriodEnd: new Date(
-          (eventData.currentPeriodEnd as string) || (eventData.endsAt as string)
-        ),
+        status,
+        currentPeriodStart,
+        currentPeriodEnd,
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.subscriptionId, eventData.id as string));
+      .where(eq(userSubscriptions.subscriptionId, subscriptionId));
   } catch (error) {
     console.error('💥 Error handling subscription updated:', error);
     throw error;
@@ -218,14 +293,41 @@ async function handleSubscriptionUpdated(data: unknown) {
 }
 
 async function handleSubscriptionCanceled(data: unknown) {
-  const eventData = data as Record<string, unknown>;
+  const eventData = safeExtractObject(data);
+
+  if (!eventData) {
+    console.error('❌ CRITICAL: Invalid event data structure');
+    return;
+  }
 
   try {
-    const metadata = eventData.metadata as Record<string, unknown> | undefined;
-    const stackAuthUserId = metadata?.userId as string;
+    const { stackAuthUserId } = extractMetadataValues(eventData);
 
     if (!stackAuthUserId) {
       console.error('❌ Missing stackAuthUserId in subscription metadata');
+      return;
+    }
+
+    const subscriptionId = safeExtractString(eventData.id);
+
+    if (!subscriptionId) {
+      console.error('❌ CRITICAL: Missing required subscription ID');
+      return;
+    }
+
+    const endDate =
+      safeExtractString(eventData.currentPeriodEnd) || safeExtractString(eventData.endsAt);
+
+    if (!endDate) {
+      console.error('❌ CRITICAL: Missing required end date');
+      return;
+    }
+
+    const currentPeriodEnd = new Date(endDate);
+
+    // Validate date
+    if (isNaN(currentPeriodEnd.getTime())) {
+      console.error('❌ CRITICAL: Invalid date format');
       return;
     }
 
@@ -234,12 +336,10 @@ async function handleSubscriptionCanceled(data: unknown) {
       .set({
         status: 'canceled',
         canceledAt: new Date(),
-        currentPeriodEnd: new Date(
-          (eventData.currentPeriodEnd as string) || (eventData.endsAt as string)
-        ),
+        currentPeriodEnd,
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.subscriptionId, eventData.id as string));
+      .where(eq(userSubscriptions.subscriptionId, subscriptionId));
   } catch (error) {
     console.error('💥 Error handling subscription canceled:', error);
     throw error;
@@ -247,14 +347,44 @@ async function handleSubscriptionCanceled(data: unknown) {
 }
 
 async function handleSubscriptionUncanceled(data: unknown) {
-  const eventData = data as Record<string, unknown>;
+  const eventData = safeExtractObject(data);
+
+  if (!eventData) {
+    console.error('❌ CRITICAL: Invalid event data structure');
+    return;
+  }
 
   try {
-    const metadata = eventData.metadata as Record<string, unknown> | undefined;
-    const stackAuthUserId = metadata?.userId as string;
+    const { stackAuthUserId } = extractMetadataValues(eventData);
 
     if (!stackAuthUserId) {
       console.error('❌ Missing stackAuthUserId in subscription metadata');
+      return;
+    }
+
+    const subscriptionId = safeExtractString(eventData.id);
+
+    if (!subscriptionId) {
+      console.error('❌ CRITICAL: Missing required subscription ID');
+      return;
+    }
+
+    const startDate =
+      safeExtractString(eventData.currentPeriodStart) || safeExtractString(eventData.startedAt);
+    const endDate =
+      safeExtractString(eventData.currentPeriodEnd) || safeExtractString(eventData.endsAt);
+
+    if (!startDate || !endDate) {
+      console.error('❌ CRITICAL: Missing required date fields');
+      return;
+    }
+
+    const currentPeriodStart = new Date(startDate);
+    const currentPeriodEnd = new Date(endDate);
+
+    // Validate dates
+    if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
+      console.error('❌ CRITICAL: Invalid date format');
       return;
     }
 
@@ -263,15 +393,11 @@ async function handleSubscriptionUncanceled(data: unknown) {
       .set({
         status: 'active',
         canceledAt: null,
-        currentPeriodStart: new Date(
-          (eventData.currentPeriodStart as string) || (eventData.startedAt as string)
-        ),
-        currentPeriodEnd: new Date(
-          (eventData.currentPeriodEnd as string) || (eventData.endsAt as string)
-        ),
+        currentPeriodStart,
+        currentPeriodEnd,
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.subscriptionId, eventData.id as string));
+      .where(eq(userSubscriptions.subscriptionId, subscriptionId));
   } catch (error) {
     console.error('💥 Error handling subscription uncanceled:', error);
     throw error;

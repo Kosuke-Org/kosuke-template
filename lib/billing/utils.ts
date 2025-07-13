@@ -41,6 +41,48 @@ export const PRICING = {
 } as const;
 
 /**
+ * Type guard to validate SubscriptionTier enum values
+ */
+function isValidSubscriptionTier(value: string): value is SubscriptionTier {
+  return Object.values(SubscriptionTier).includes(value as SubscriptionTier);
+}
+
+/**
+ * Type guard to validate SubscriptionStatus enum values
+ */
+function isValidSubscriptionStatus(value: string): value is SubscriptionStatus {
+  return Object.values(SubscriptionStatus).includes(value as SubscriptionStatus);
+}
+
+/**
+ * Safely cast a string to SubscriptionTier with fallback
+ */
+function safeSubscriptionTierCast(
+  value: string,
+  fallback: SubscriptionTier = SubscriptionTier.FREE
+): SubscriptionTier {
+  if (isValidSubscriptionTier(value)) {
+    return value;
+  }
+  console.warn(`Invalid subscription tier value: ${value}. Falling back to ${fallback}`);
+  return fallback;
+}
+
+/**
+ * Safely cast a string to SubscriptionStatus with fallback
+ */
+function safeSubscriptionStatusCast(
+  value: string,
+  fallback: SubscriptionStatus | null = null
+): SubscriptionStatus | null {
+  if (isValidSubscriptionStatus(value)) {
+    return value;
+  }
+  console.warn(`Invalid subscription status value: ${value}. Falling back to ${fallback}`);
+  return fallback;
+}
+
+/**
  * Create a checkout session for a specific tier
  */
 export async function createCheckoutSession(
@@ -86,22 +128,28 @@ export async function getUserSubscription(stackAuthUserId: string) {
     };
   }
 
+  // Safely cast the subscription tier with validation
+  const subscriptionTier = safeSubscriptionTierCast(activeSubscription.tier);
+
+  // Safely cast the subscription status with validation
+  const subscriptionStatus = safeSubscriptionStatusCast(activeSubscription.status);
+
   // Determine current tier based on subscription status and period
   let currentTier = SubscriptionTier.FREE;
 
-  if (activeSubscription.status === 'active') {
-    currentTier = activeSubscription.tier as SubscriptionTier;
+  if (subscriptionStatus === SubscriptionStatus.ACTIVE) {
+    currentTier = subscriptionTier;
   } else if (
     activeSubscription.currentPeriodEnd &&
     new Date() < activeSubscription.currentPeriodEnd
   ) {
     // Still in grace period
-    currentTier = activeSubscription.tier as SubscriptionTier;
+    currentTier = subscriptionTier;
   }
 
   return {
     tier: currentTier,
-    status: activeSubscription.status as SubscriptionStatus,
+    status: subscriptionStatus,
     currentPeriodEnd: activeSubscription.currentPeriodEnd,
     activeSubscription,
   };

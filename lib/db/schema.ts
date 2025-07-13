@@ -19,12 +19,12 @@ export const users = pgTable('users', {
 export const userSubscriptions = pgTable('user_subscriptions', {
   id: serial('id').primaryKey(),
   stackAuthUserId: text('stackauth_user_id').notNull(), // StackAuth UUID
-  subscriptionId: text('subscription_id').notNull().unique(), // Polar subscription ID
-  productId: text('product_id').notNull(), // Polar product ID
+  subscriptionId: text('subscription_id').unique(), // Polar subscription ID (nullable for free tier)
+  productId: text('product_id'), // Polar product ID (nullable for free tier)
   status: text('status').notNull(), // 'active', 'canceled', 'past_due', 'unpaid', 'incomplete'
-  tier: text('tier').notNull(), // 'pro', 'business'
-  currentPeriodStart: timestamp('current_period_start').notNull(),
-  currentPeriodEnd: timestamp('current_period_end').notNull(),
+  tier: text('tier').notNull(), // 'free', 'pro', 'business'
+  currentPeriodStart: timestamp('current_period_start'),
+  currentPeriodEnd: timestamp('current_period_end'),
   canceledAt: timestamp('canceled_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
