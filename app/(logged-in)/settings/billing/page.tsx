@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, Loader2, CreditCard, Calendar, AlertCircle, XCircle } from 'lucide-react';
 import { useUser } from '@stackframe/stack';
 import { useToast } from '@/lib/hooks/use-toast';
@@ -59,11 +59,10 @@ export default function BillingPage() {
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
 
-  useEffect(() => {
-    fetchSubscriptionInfo();
-  }, []);
-
-  const fetchSubscriptionInfo = async () => {
+  const fetchSubscriptionInfo = useCallback(async (showLoadingState = false) => {
+    if (showLoadingState) {
+      setIsLoading(true);
+    }
     try {
       const response = await fetch('/api/billing/subscription-status');
       if (response.ok) {
@@ -71,13 +70,29 @@ export default function BillingPage() {
         setSubscriptionInfo(data);
       } else {
         console.error('Failed to fetch subscription info');
+        toast({
+          title: 'Error',
+          description: 'Failed to load subscription information. Please refresh the page.',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       console.error('Error fetching subscription info:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load subscription information. Please check your connection.',
+        variant: 'destructive',
+      });
     } finally {
-      setIsLoading(false);
+      if (showLoadingState) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchSubscriptionInfo(true);
+  }, []);
 
   const handleUpgrade = async (tier: string) => {
     setUpgradeLoading(tier);
@@ -145,24 +160,29 @@ export default function BillingPage() {
       if (response.ok) {
         const data = await response.json();
 
+        // Show success toast
         toast({
-          title: 'Subscription Management',
+          title: 'Subscription Cancelled',
           description:
-            data.message || 'Please contact support for subscription management assistance.',
+            data.message ||
+            'Your subscription has been cancelled successfully. You will retain access until the end of your billing period.',
         });
+
+        // Refresh subscription info to update the UI
+        await fetchSubscriptionInfo();
       } else {
         const errorData = await response.json();
         toast({
-          title: 'Error',
-          description: errorData.error || 'Failed to access subscription management',
+          title: 'Cancellation Failed',
+          description: errorData.error || 'Failed to cancel subscription. Please try again.',
           variant: 'destructive',
         });
       }
     } catch (error) {
-      console.error('Error accessing subscription management:', error);
+      console.error('Error cancelling subscription:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to access subscription management',
+        title: 'Cancellation Failed',
+        description: 'Failed to cancel subscription. Please check your connection and try again.',
         variant: 'destructive',
       });
     } finally {
@@ -207,7 +227,8 @@ export default function BillingPage() {
 
   const currentTier = subscriptionInfo?.tier || 'free';
   const currentPlan = PRICING[currentTier as keyof typeof PRICING];
-  const isPaidPlan = currentTier !== 'free' && subscriptionInfo?.status === 'active';
+  const isPaidPlan = currentTier !== 'free' && subscriptionInfo?.activeSubscription;
+  const canCancelSubscription = isPaidPlan && subscriptionInfo?.status === 'active';
 
   return (
     <div className="space-y-6">
@@ -274,79 +295,96 @@ export default function BillingPage() {
         </CardContent>
       </Card>
 
-      {/* Cancel Subscription - Only show for paid active plans */}
+      {/* Cancel Subscription - Show for all paid plans, but only allow cancellation if active */}
       {isPaidPlan && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <XCircle className="h-5 w-5 text-destructive" />
-              Cancel Subscription
+              {canCancelSubscription ? 'Cancel Subscription' : 'Subscription Status'}
             </CardTitle>
             <CardDescription>
-              Downgrade to the free plan and cancel your subscription
+              {canCancelSubscription
+                ? 'Downgrade to the free plan and cancel your subscription'
+                : 'Your subscription management options'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                If you cancel your subscription, you&apos;ll be downgraded to the free plan at the
-                end of your current billing period ({formatDate(subscriptionInfo?.currentPeriodEnd)}
-                ). You&apos;ll lose access to:
-              </AlertDescription>
-            </Alert>
+            {canCancelSubscription ? (
+              <>
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    If you cancel your subscription, you&apos;ll be downgraded to the free plan at
+                    the end of your current billing period (
+                    {formatDate(subscriptionInfo?.currentPeriodEnd)}
+                    ). You&apos;ll lose access to:
+                  </AlertDescription>
+                </Alert>
 
-            <div className="ml-4">
-              <ul className="space-y-1 text-sm text-muted-foreground">
-                {currentPlan.features
-                  .filter(
-                    (feature) =>
-                      !PRICING.free.features.some((freeFeature) => freeFeature === feature)
-                  )
-                  .map((feature, index) => (
-                    <li key={index} className="flex items-center gap-2">
-                      <XCircle className="h-4 w-4 text-destructive" />
-                      {feature}
-                    </li>
-                  ))}
-              </ul>
-            </div>
+                <div className="ml-4">
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    {currentPlan.features
+                      .filter(
+                        (feature) =>
+                          !PRICING.free.features.some((freeFeature) => freeFeature === feature)
+                      )
+                      .map((feature, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <XCircle className="h-4 w-4 text-destructive" />
+                          {feature}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
 
-            <div className="pt-4">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={cancelLoading}>
-                    {cancelLoading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Cancelling...
-                      </>
-                    ) : (
-                      'Cancel Subscription'
-                    )}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will cancel your {currentPlan.name} subscription. You&apos;ll continue to
-                      have access until {formatDate(subscriptionInfo?.currentPeriodEnd)}, after
-                      which you&apos;ll be automatically downgraded to the free plan.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleCancelSubscription}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Cancel Subscription
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+                <div className="pt-4">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" disabled={cancelLoading}>
+                        {cancelLoading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Cancelling...
+                          </>
+                        ) : (
+                          'Cancel Subscription'
+                        )}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will cancel your {currentPlan.name} subscription. You&apos;ll
+                          continue to have access until{' '}
+                          {formatDate(subscriptionInfo?.currentPeriodEnd)}, after which you&apos;ll
+                          be automatically downgraded to the free plan.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleCancelSubscription}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Cancel Subscription
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </>
+            ) : (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Your subscription has been canceled and will remain active until{' '}
+                  {formatDate(subscriptionInfo?.currentPeriodEnd)}. After this date, you&apos;ll be
+                  automatically downgraded to the free plan.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
       )}
