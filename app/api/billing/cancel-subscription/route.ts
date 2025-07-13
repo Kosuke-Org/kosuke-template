@@ -22,6 +22,14 @@ export async function POST() {
       return NextResponse.json({ error: 'No active subscription to cancel' }, { status: 400 });
     }
 
+    // Validate that subscription has a valid subscription ID
+    if (!subscriptionInfo.activeSubscription.subscriptionId) {
+      return NextResponse.json(
+        { error: 'Invalid subscription: missing subscription ID' },
+        { status: 400 }
+      );
+    }
+
     // Cancel the subscription
     await cancelUserSubscription(
       stackAuthUser.id,
