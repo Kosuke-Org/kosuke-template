@@ -73,11 +73,20 @@ export async function POST(request: NextRequest) {
       case 'subscription.updated':
         await handleSubscriptionUpdated(event.data);
         break;
+      case 'subscription.active':
+        await handleSubscriptionActive(event.data);
+        break;
       case 'subscription.canceled':
         await handleSubscriptionCanceled(event.data);
         break;
       case 'subscription.uncanceled':
         await handleSubscriptionUncanceled(event.data);
+        break;
+      case 'checkout.created':
+      case 'checkout.updated':
+      case 'customer.created':
+        // These events are informational and don't require action
+        console.log(`ℹ️ Received ${event.type} event (no action required)`);
         break;
       default:
         console.log('❓ Unhandled event type:', event.type);
@@ -169,13 +178,23 @@ async function handleSubscriptionCreated(data: unknown) {
     let currentPeriodEnd: Date;
 
     try {
+      // Improved date field extraction for Polar's actual structure
       const startDate =
-        safeExtractString(eventData.currentPeriodStart) || safeExtractString(eventData.startedAt);
+        safeExtractString(eventData.currentPeriodStart) ||
+        safeExtractString(eventData.startedAt) ||
+        safeExtractString(eventData.started_at) ||
+        safeExtractString(eventData.current_period_start);
+
       const endDate =
-        safeExtractString(eventData.currentPeriodEnd) || safeExtractString(eventData.endsAt);
+        safeExtractString(eventData.currentPeriodEnd) ||
+        safeExtractString(eventData.endsAt) ||
+        safeExtractString(eventData.ends_at) ||
+        safeExtractString(eventData.current_period_end);
 
       if (!startDate || !endDate) {
         console.error('❌ CRITICAL: Missing required date fields');
+        console.error('Available eventData keys:', Object.keys(eventData));
+        console.error('EventData sample:', JSON.stringify(eventData, null, 2));
         return;
       }
 
@@ -185,10 +204,13 @@ async function handleSubscriptionCreated(data: unknown) {
       // Validate dates
       if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
         console.error('❌ CRITICAL: Invalid date format');
+        console.error('StartDate:', startDate, 'EndDate:', endDate);
         return;
       }
     } catch (dateError) {
       console.error('❌ Date parsing error:', dateError);
+      console.error('Available eventData keys:', Object.keys(eventData));
+      console.error('EventData sample:', JSON.stringify(eventData, null, 2));
       return;
     }
 
@@ -258,13 +280,23 @@ async function handleSubscriptionUpdated(data: unknown) {
       return;
     }
 
+    // Improved date field extraction for Polar's actual structure
     const startDate =
-      safeExtractString(eventData.currentPeriodStart) || safeExtractString(eventData.startedAt);
+      safeExtractString(eventData.currentPeriodStart) ||
+      safeExtractString(eventData.startedAt) ||
+      safeExtractString(eventData.started_at) ||
+      safeExtractString(eventData.current_period_start);
+
     const endDate =
-      safeExtractString(eventData.currentPeriodEnd) || safeExtractString(eventData.endsAt);
+      safeExtractString(eventData.currentPeriodEnd) ||
+      safeExtractString(eventData.endsAt) ||
+      safeExtractString(eventData.ends_at) ||
+      safeExtractString(eventData.current_period_end);
 
     if (!startDate || !endDate) {
       console.error('❌ CRITICAL: Missing required date fields');
+      console.error('Available eventData keys:', Object.keys(eventData));
+      console.error('EventData sample:', JSON.stringify(eventData, null, 2));
       return;
     }
 
@@ -288,6 +320,131 @@ async function handleSubscriptionUpdated(data: unknown) {
       .where(eq(userSubscriptions.subscriptionId, subscriptionId));
   } catch (error) {
     console.error('💥 Error handling subscription updated:', error);
+    throw error;
+  }
+}
+
+async function handleSubscriptionActive(data: unknown) {
+  console.log('🔄 Processing subscription.active event');
+  const eventData = safeExtractObject(data);
+
+  if (!eventData) {
+    console.error('❌ CRITICAL: Invalid event data structure');
+    return;
+  }
+
+  try {
+    const { stackAuthUserId, tier } = extractMetadataValues(eventData);
+
+    if (!stackAuthUserId) {
+      console.error('❌ Missing stackAuthUserId in subscription metadata');
+      console.error('Available eventData keys:', Object.keys(eventData));
+      return;
+    }
+
+    const subscriptionId = safeExtractString(eventData.id);
+    const productId =
+      safeExtractString(eventData.productId) || safeExtractString(eventData.product_id);
+
+    if (!subscriptionId) {
+      console.error('❌ CRITICAL: Missing required subscription ID');
+      return;
+    }
+
+    // Improved date field extraction for Polar's actual structure
+    const startDate =
+      safeExtractString(eventData.currentPeriodStart) ||
+      safeExtractString(eventData.startedAt) ||
+      safeExtractString(eventData.started_at) ||
+      safeExtractString(eventData.current_period_start);
+
+    const endDate =
+      safeExtractString(eventData.currentPeriodEnd) ||
+      safeExtractString(eventData.endsAt) ||
+      safeExtractString(eventData.ends_at) ||
+      safeExtractString(eventData.current_period_end);
+
+    let currentPeriodStart: Date | null = null;
+    let currentPeriodEnd: Date | null = null;
+
+    if (startDate && endDate) {
+      currentPeriodStart = new Date(startDate);
+      currentPeriodEnd = new Date(endDate);
+
+      // Validate dates
+      if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
+        console.error('❌ CRITICAL: Invalid date format');
+        console.error('StartDate:', startDate, 'EndDate:', endDate);
+        currentPeriodStart = null;
+        currentPeriodEnd = null;
+      }
+    } else {
+      console.log('⚠️ No date fields found, will update without dates');
+      console.error('Available eventData keys:', Object.keys(eventData));
+    }
+
+    const updateData: {
+      status: string;
+      canceledAt: Date | null;
+      updatedAt: Date;
+      currentPeriodStart?: Date | null;
+      currentPeriodEnd?: Date | null;
+      tier?: string;
+      productId?: string;
+    } = {
+      status: 'active',
+      canceledAt: null,
+      updatedAt: new Date(),
+    };
+
+    if (currentPeriodStart && currentPeriodEnd) {
+      updateData.currentPeriodStart = currentPeriodStart;
+      updateData.currentPeriodEnd = currentPeriodEnd;
+    }
+
+    if (tier) {
+      updateData.tier = tier;
+    }
+
+    if (productId) {
+      updateData.productId = productId;
+    }
+
+    const existing = await db.query.userSubscriptions.findFirst({
+      where: eq(userSubscriptions.subscriptionId, subscriptionId),
+    });
+
+    if (existing) {
+      await db
+        .update(userSubscriptions)
+        .set(updateData)
+        .where(eq(userSubscriptions.subscriptionId, subscriptionId));
+
+      console.log('✅ Updated existing subscription to active:', subscriptionId);
+    } else {
+      // Create new subscription if it doesn't exist
+      if (!tier || !productId) {
+        console.error('❌ Cannot create new subscription without tier and productId');
+        return;
+      }
+
+      await db.insert(userSubscriptions).values({
+        stackAuthUserId,
+        subscriptionId,
+        productId,
+        status: 'active',
+        tier,
+        currentPeriodStart,
+        currentPeriodEnd,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      console.log('✅ Created new active subscription:', subscriptionId);
+    }
+  } catch (error) {
+    console.error('💥 Error handling subscription active:', error);
+    console.error('💥 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     throw error;
   }
 }

@@ -92,14 +92,33 @@ export default function BillingPage() {
 
       if (response.ok) {
         const data = await response.json();
-        window.location.href = data.checkoutUrl;
+
+        if (data.success && data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+        } else {
+          toast({
+            title: 'Error',
+            description: 'Failed to create checkout session',
+            variant: 'destructive',
+          });
+        }
       } else {
         const error = await response.json();
-        toast({
-          title: 'Error',
-          description: error.error || 'Failed to create checkout session',
-          variant: 'destructive',
-        });
+
+        // Following best practices: Handle customer portal redirects
+        if (error.action === 'customer_portal_required') {
+          toast({
+            title: 'Subscription Management Required',
+            description:
+              error.message || 'Please contact support for subscription management assistance.',
+          });
+        } else {
+          toast({
+            title: 'Error',
+            description: error.error || 'Failed to create checkout session',
+            variant: 'destructive',
+          });
+        }
       }
     } catch (error) {
       console.error('Error creating checkout:', error);
@@ -125,25 +144,25 @@ export default function BillingPage() {
 
       if (response.ok) {
         const data = await response.json();
+
         toast({
-          title: 'Subscription Cancelled',
-          description: data.message,
+          title: 'Subscription Management',
+          description:
+            data.message || 'Please contact support for subscription management assistance.',
         });
-        // Refresh subscription info
-        await fetchSubscriptionInfo();
       } else {
-        const error = await response.json();
+        const errorData = await response.json();
         toast({
           title: 'Error',
-          description: error.error || 'Failed to cancel subscription',
+          description: errorData.error || 'Failed to access subscription management',
           variant: 'destructive',
         });
       }
     } catch (error) {
-      console.error('Error cancelling subscription:', error);
+      console.error('Error accessing subscription management:', error);
       toast({
         title: 'Error',
-        description: 'Failed to cancel subscription',
+        description: 'Failed to access subscription management',
         variant: 'destructive',
       });
     } finally {
