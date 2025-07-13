@@ -1,5 +1,7 @@
 'use client';
 
+import { toast as sonnerToast } from 'sonner';
+
 type ToastType = 'default' | 'destructive';
 
 interface ToastOptions {
@@ -12,13 +14,19 @@ interface ToastHook {
   toast: (options: ToastOptions) => void;
 }
 
-// A simple toast hook implementation
-// In a real app, this would use a proper toast library
+// Toast hook implementation using sonner
 export function useToast(): ToastHook {
   const toast = ({ title, description, variant = 'default' }: ToastOptions) => {
-    // In a real implementation, this would show a toast notification
-    // For now, we just log to console
-    console.log(`Toast: ${title} - ${description} (${variant})`);
+    if (variant === 'destructive') {
+      sonnerToast.error(title, {
+        description,
+      });
+    } else {
+      // For default/info toasts, use the regular toast without success styling
+      sonnerToast(title, {
+        description,
+      });
+    }
   };
 
   return { toast };
