@@ -1,121 +1,192 @@
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
-/**
- * Type for error details - similar to MetadataValue but specific to errors
- */
-export type ErrorDetail =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | ErrorDetailObject
-  | ErrorDetail[];
-
-export interface ErrorDetailObject {
-  [key: string]: ErrorDetail;
+// Enhanced error types for better error handling
+export enum ErrorCode {
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
+  AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR',
+  NOT_FOUND = 'NOT_FOUND',
+  CONFLICT = 'CONFLICT',
+  RATE_LIMIT = 'RATE_LIMIT',
+  INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
+  SUBSCRIPTION_ERROR = 'SUBSCRIPTION_ERROR',
+  WEBHOOK_ERROR = 'WEBHOOK_ERROR',
 }
 
-/**
- * Standard error response structure
- */
 export interface ApiError {
-  error: string;
-  details?: ErrorDetailObject;
-  code?: string;
+  code: ErrorCode;
+  message: string;
+  details?: Record<string, unknown>;
+  statusCode: number;
 }
 
-/**
- * Type for handleable errors
- */
-export type HandleableError = Error | ZodError | { message: string } | unknown;
-
-/**
- * Error handler for API routes
- */
 export class ApiErrorHandler {
   /**
-   * Handle an error in a uniform way
+   * Handle Zod validation errors
    */
-  static handle(error: unknown): NextResponse {
-    console.error('API Error:', error);
+  static handleZodError(error: ZodError): NextResponse {
+    const formattedErrors = error.errors.map((err) => ({
+      field: err.path.join('.'),
+      message: err.message,
+    }));
 
-    if (error instanceof Error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ error: 'An unknown error occurred' }, { status: 500 });
-  }
-
-  /**
-   * Return a 400 Bad Request response
-   */
-  static badRequest(message = 'Bad request'): NextResponse {
-    return NextResponse.json({ error: message }, { status: 400 });
-  }
-
-  /**
-   * Return a 401 Unauthorized response
-   */
-  static unauthorized(message = 'Unauthorized'): NextResponse {
-    return NextResponse.json({ error: message }, { status: 401 });
-  }
-
-  /**
-   * Return a 403 Forbidden response
-   */
-  static forbidden(message = 'Forbidden'): NextResponse {
-    return NextResponse.json({ error: message }, { status: 403 });
-  }
-
-  /**
-   * Return a 404 Not Found response
-   */
-  static notFound(message = 'Not found'): NextResponse {
-    return NextResponse.json({ error: message }, { status: 404 });
-  }
-
-  /**
-   * Handle validation errors (400)
-   */
-  static validationError(error: ZodError): NextResponse<ApiError> {
     return NextResponse.json(
       {
-        error: 'Validation error',
-        details: error.format(),
-        code: 'VALIDATION_ERROR',
+        error: 'Validation failed',
+        code: ErrorCode.VALIDATION_ERROR,
+        details: { errors: formattedErrors },
       },
       { status: 400 }
     );
   }
 
   /**
-   * Handle internal server errors (500)
+   * Handle generic errors with proper logging
    */
-  static serverError(error: HandleableError): NextResponse<ApiError> {
-    console.error('Server error:', error);
+  static handleError(error: unknown, context?: string): NextResponse {
+    console.error(`💥 API Error${context ? ` in ${context}` : ''}:`, error);
 
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (error instanceof ZodError) {
+      return this.handleZodError(error);
+    }
 
+    if (error instanceof Error) {
+      // Check for specific error types
+      if (error.message.includes('Unauthorized') || error.message.includes('authentication')) {
+        return this.unauthorized();
+      }
+
+      if (error.message.includes('not found')) {
+        return this.notFound();
+      }
+
+      if (error.message.includes('already exists') || error.message.includes('duplicate')) {
+        return this.conflict(error.message);
+      }
+
+      // Log the full error for debugging
+      console.error('Error stack:', error.stack);
+    }
+
+    return this.internalServerError();
+  }
+
+  /**
+   * Return a 400 Bad Request response
+   */
+  static badRequest(message = 'Bad request', details?: Record<string, unknown>): NextResponse {
     return NextResponse.json(
       {
-        error: 'Internal server error',
-        code: 'SERVER_ERROR',
-        details: process.env.NODE_ENV === 'development' ? { message: errorMessage } : undefined,
+        error: message,
+        code: ErrorCode.VALIDATION_ERROR,
+        ...(details && { details }),
+      },
+      { status: 400 }
+    );
+  }
+
+  /**
+   * Return a 401 Unauthorized response
+   */
+  static unauthorized(message = 'Unauthorized'): NextResponse {
+    return NextResponse.json(
+      {
+        error: message,
+        code: ErrorCode.AUTHENTICATION_ERROR,
+      },
+      { status: 401 }
+    );
+  }
+
+  /**
+   * Return a 403 Forbidden response
+   */
+  static forbidden(message = 'Forbidden'): NextResponse {
+    return NextResponse.json(
+      {
+        error: message,
+        code: ErrorCode.AUTHORIZATION_ERROR,
+      },
+      { status: 403 }
+    );
+  }
+
+  /**
+   * Return a 404 Not Found response
+   */
+  static notFound(message = 'Not found'): NextResponse {
+    return NextResponse.json(
+      {
+        error: message,
+        code: ErrorCode.NOT_FOUND,
+      },
+      { status: 404 }
+    );
+  }
+
+  /**
+   * Return a 409 Conflict response
+   */
+  static conflict(message = 'Conflict'): NextResponse {
+    return NextResponse.json(
+      {
+        error: message,
+        code: ErrorCode.CONFLICT,
+      },
+      { status: 409 }
+    );
+  }
+
+  /**
+   * Return a 429 Too Many Requests response
+   */
+  static tooManyRequests(message = 'Too many requests'): NextResponse {
+    return NextResponse.json(
+      {
+        error: message,
+        code: ErrorCode.RATE_LIMIT,
+      },
+      { status: 429 }
+    );
+  }
+
+  /**
+   * Return a 500 Internal Server Error response
+   */
+  static internalServerError(message = 'Internal server error'): NextResponse {
+    return NextResponse.json(
+      {
+        error: message,
+        code: ErrorCode.INTERNAL_SERVER_ERROR,
       },
       { status: 500 }
     );
   }
 
   /**
-   * Handle any error with appropriate status code
+   * Return a subscription-specific error
    */
-  static handleError(error: HandleableError): NextResponse<ApiError> {
-    if (error instanceof ZodError) {
-      return this.validationError(error);
-    }
+  static subscriptionError(message: string, statusCode = 400): NextResponse {
+    return NextResponse.json(
+      {
+        error: message,
+        code: ErrorCode.SUBSCRIPTION_ERROR,
+      },
+      { status: statusCode }
+    );
+  }
 
-    return this.serverError(error);
+  /**
+   * Return a webhook-specific error
+   */
+  static webhookError(message: string, statusCode = 400): NextResponse {
+    return NextResponse.json(
+      {
+        error: message,
+        code: ErrorCode.WEBHOOK_ERROR,
+      },
+      { status: statusCode }
+    );
   }
 }

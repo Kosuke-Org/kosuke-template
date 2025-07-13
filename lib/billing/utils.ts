@@ -57,7 +57,7 @@ function isValidSubscriptionStatus(value: string): value is SubscriptionStatus {
 /**
  * Safely cast a string to SubscriptionTier with fallback
  */
-function safeSubscriptionTierCast(
+export function safeSubscriptionTierCast(
   value: string,
   fallback: SubscriptionTier = SubscriptionTier.FREE
 ): SubscriptionTier {
@@ -71,7 +71,7 @@ function safeSubscriptionTierCast(
 /**
  * Safely cast a string to SubscriptionStatus with fallback
  */
-function safeSubscriptionStatusCast(
+export function safeSubscriptionStatusCast(
   value: string,
   fallback: SubscriptionStatus | null = null
 ): SubscriptionStatus | null {
@@ -111,6 +111,30 @@ export async function createCheckoutSession(
 }
 
 /**
+ * Create a free tier subscription for a new user
+ */
+export async function createFreeSubscription(stackAuthUserId: string) {
+  const freeSubscriptionData = {
+    stackAuthUserId,
+    subscriptionId: null,
+    productId: null,
+    status: 'active' as const,
+    tier: SubscriptionTier.FREE,
+    currentPeriodStart: null,
+    currentPeriodEnd: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const [newSubscription] = await db
+    .insert(userSubscriptions)
+    .values(freeSubscriptionData)
+    .returning();
+
+  return newSubscription;
+}
+
+/**
  * Get user's current subscription information using StackAuth UUID
  */
 export async function getUserSubscription(stackAuthUserId: string) {
@@ -120,11 +144,15 @@ export async function getUserSubscription(stackAuthUserId: string) {
   });
 
   if (!activeSubscription) {
+    // Create a free tier subscription if none exists
+    console.log('🆕 Creating free tier subscription for user:', stackAuthUserId);
+    const freeSubscription = await createFreeSubscription(stackAuthUserId);
+
     return {
       tier: SubscriptionTier.FREE,
-      status: null,
+      status: 'active' as const,
       currentPeriodEnd: null,
-      activeSubscription: null,
+      activeSubscription: freeSubscription,
     };
   }
 
