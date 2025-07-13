@@ -118,7 +118,7 @@ export async function createFreeSubscription(stackAuthUserId: string) {
     stackAuthUserId,
     subscriptionId: null,
     productId: null,
-    status: 'active' as const,
+    status: SubscriptionStatus.ACTIVE,
     tier: SubscriptionTier.FREE,
     currentPeriodStart: null,
     currentPeriodEnd: null,
@@ -150,7 +150,7 @@ export async function getUserSubscription(stackAuthUserId: string) {
 
     return {
       tier: SubscriptionTier.FREE,
-      status: 'active' as const,
+      status: SubscriptionStatus.ACTIVE,
       currentPeriodEnd: null,
       activeSubscription: freeSubscription,
     };
@@ -357,22 +357,26 @@ export function canCreateNewSubscription(
   const { activeSubscription, status } = currentSubscription;
 
   // Always allow if user has no subscription or free tier
-  if (!activeSubscription || activeSubscription.tier === 'free') {
+  if (!activeSubscription || activeSubscription.tier === SubscriptionTier.FREE) {
     return { canCreate: true };
   }
 
   // Allow if subscription is canceled (even in grace period)
-  if (status === 'canceled') {
+  if (status === SubscriptionStatus.CANCELED) {
     return { canCreate: true };
   }
 
   // Allow if subscription is in an error state
-  if (status === 'past_due' || status === 'unpaid' || status === 'incomplete') {
+  if (
+    status === SubscriptionStatus.PAST_DUE ||
+    status === SubscriptionStatus.UNPAID ||
+    status === SubscriptionStatus.INCOMPLETE
+  ) {
     return { canCreate: true };
   }
 
   // Block if subscription is truly active
-  if (status === 'active' && activeSubscription.tier !== 'free') {
+  if (status === SubscriptionStatus.ACTIVE && activeSubscription.tier !== SubscriptionTier.FREE) {
     return {
       canCreate: false,
       reason: `You already have an active ${activeSubscription.tier} subscription. Please cancel your current subscription before upgrading to a different plan.`,
@@ -387,7 +391,7 @@ export function canCreateNewSubscription(
  */
 export function isTrulyActiveSubscription(
   status: SubscriptionStatus | null,
-  tier: string
+  tier: SubscriptionTier
 ): boolean {
-  return status === SubscriptionStatus.ACTIVE && tier !== 'free';
+  return status === SubscriptionStatus.ACTIVE && tier !== SubscriptionTier.FREE;
 }
