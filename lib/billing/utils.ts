@@ -273,25 +273,15 @@ export async function cancelUserSubscription(stackAuthUserId: string, subscripti
       throw new Error('Subscription is already canceled.');
     }
 
-    // Attempt to cancel subscription via Polar API
-    // Use organization-level subscriptions API, not customer portal
+    // Cancel subscription via Polar Organization API
     let canceledSubscription;
     try {
-      // Use the main subscriptions API (not customer portal)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const polarAny = polar as any;
+      console.log('🔄 Attempting cancellation via subscriptions.revoke');
 
-      if (polarAny.subscriptions?.update) {
-        console.log('🔄 Attempting cancellation via subscriptions.update');
-        // Cancel the subscription by updating its status
-        canceledSubscription = await polarAny.subscriptions.update(subscriptionId, {
-          cancel_at_period_end: true,
-        });
-      } else {
-        throw new Error(
-          'Polar subscriptions.update API not available. Please check SDK version and documentation.'
-        );
-      }
+      // Use the subscriptions.revoke method with the correct object structure
+      canceledSubscription = await polar.subscriptions.revoke({
+        id: subscriptionId,
+      });
     } catch (polarError: unknown) {
       console.error('💥 Polar API error during cancellation:', polarError);
 
