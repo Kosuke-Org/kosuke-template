@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -14,63 +14,8 @@ export default function SecurityPage() {
   const user = useUser({ or: 'redirect' });
   const { toast } = useToast();
 
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const [passwords, setPasswords] = useState({
-    current: '',
-    new: '',
-    confirm: '',
-  });
-
-  const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (passwords.new !== passwords.confirm) {
-      toast({
-        title: 'Error',
-        description: 'New passwords do not match.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (passwords.new.length < 8) {
-      toast({
-        title: 'Error',
-        description: 'Password must be at least 8 characters long.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsChangingPassword(true);
-    try {
-      // Use Stack's password update method
-      await user.setPassword({
-        password: passwords.new,
-      });
-
-      setPasswords({ current: '', new: '', confirm: '' });
-      toast({
-        title: 'Password updated',
-        description: 'Your password has been updated successfully.',
-      });
-    } catch (error) {
-      console.error('Error updating password:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update password. Please check your current password.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsChangingPassword(false);
-    }
-  };
 
   const handleDeleteAccount = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -111,107 +56,6 @@ export default function SecurityPage() {
 
   return (
     <div className="space-y-6">
-      {/* Password Change Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Change Password</CardTitle>
-          <CardDescription>Update your password to keep your account secure.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={showCurrentPassword ? 'text' : 'password'}
-                  value={passwords.current}
-                  onChange={(e) => setPasswords((prev) => ({ ...prev, current: e.target.value }))}
-                  placeholder="Enter current password"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                >
-                  {showCurrentPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <div className="relative">
-                <Input
-                  id="newPassword"
-                  type={showNewPassword ? 'text' : 'password'}
-                  value={passwords.new}
-                  onChange={(e) => setPasswords((prev) => ({ ...prev, new: e.target.value }))}
-                  placeholder="Enter new password"
-                  required
-                  minLength={8}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                >
-                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={passwords.confirm}
-                  onChange={(e) => setPasswords((prev) => ({ ...prev, confirm: e.target.value }))}
-                  placeholder="Confirm new password"
-                  required
-                  minLength={8}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <Button type="submit" disabled={isChangingPassword}>
-              {isChangingPassword ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                'Update Password'
-              )}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
       {/* Account Deletion Section */}
       <Card className="border-destructive/20">
         <CardHeader>
