@@ -57,9 +57,11 @@ export async function POST(request: NextRequest) {
     // Update user profile with new image URL in Clerk
     const clerk = await clerkClient();
     await clerk.users.updateUser(user.id, {
+      // Store the custom profile image URL in public metadata
+      // Note: Clerk doesn't allow direct imageUrl updates via API
       publicMetadata: {
         ...user.publicMetadata,
-        profileImageUrl: imageUrl,
+        customProfileImageUrl: imageUrl,
       },
     });
 

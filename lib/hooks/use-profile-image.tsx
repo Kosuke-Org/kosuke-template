@@ -1,17 +1,25 @@
 'use client';
 
-import { useMemo, createContext, useContext, ReactNode } from 'react';
+import { useMemo, createContext, useContext, ReactNode, useState } from 'react';
+import type { UserResource } from '@clerk/types';
 
 /**
  * Hook to handle profile image URLs from Clerk
- * Clerk provides optimized image URLs that don't need additional processing
+ * Prioritizes custom uploaded images over Clerk's default images
  */
-export function useProfileImageUrl(imageUrl?: string | null) {
+export function useProfileImageUrl(user?: UserResource | null) {
+  const { currentImageUrl } = useProfileImage();
+
   return useMemo(() => {
-    // Clerk handles image optimization automatically
-    // Just return the URL as-is
-    return imageUrl || null;
-  }, [imageUrl]);
+    // Priority order:
+    // 1. Current image URL from context (newly uploaded)
+    // 2. Custom profile image from user metadata
+    // 3. Clerk's default imageUrl
+    if (currentImageUrl) return currentImageUrl;
+    if (user?.publicMetadata?.customProfileImageUrl)
+      return user.publicMetadata.customProfileImageUrl;
+    return user?.imageUrl || null;
+  }, [currentImageUrl, user?.publicMetadata?.customProfileImageUrl, user?.imageUrl]);
 }
 
 // Profile Image Context for managing profile image state
@@ -24,14 +32,10 @@ const ProfileImageContext = createContext<{
 });
 
 export function ProfileImageProvider({ children }: { children: ReactNode }) {
-  // For now, this is a simple provider
-  // In a more complex app, you might manage profile image state here
-  const setCurrentImageUrl = () => {
-    // This would update the profile image state
-  };
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
 
   return (
-    <ProfileImageContext.Provider value={{ currentImageUrl: null, setCurrentImageUrl }}>
+    <ProfileImageContext.Provider value={{ currentImageUrl, setCurrentImageUrl }}>
       {children}
     </ProfileImageContext.Provider>
   );

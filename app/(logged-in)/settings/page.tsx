@@ -16,7 +16,7 @@ export default function ProfileSettings() {
   const { user, isSignedIn } = useUser();
   const { toast } = useToast();
   const { setCurrentImageUrl } = useProfileImage();
-  const profileImageUrl = useProfileImageUrl(user?.imageUrl);
+  const profileImageUrl = useProfileImageUrl(user);
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.fullName || user?.firstName || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -124,8 +124,14 @@ export default function ProfileSettings() {
             {/* Profile Image */}
             <div className="flex flex-col items-center gap-4">
               <div className="relative h-32 w-32 rounded-lg overflow-hidden border border-border bg-muted">
-                {profileImageUrl ? (
-                  <Image src={profileImageUrl} alt="Profile" fill className="object-cover" />
+                {profileImageUrl && typeof profileImageUrl === 'string' ? (
+                  <Image
+                    src={profileImageUrl}
+                    alt="Profile"
+                    fill
+                    className="object-cover"
+                    unoptimized={profileImageUrl.includes('localhost')}
+                  />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-muted">
                     <span className="text-2xl font-medium text-muted-foreground">
