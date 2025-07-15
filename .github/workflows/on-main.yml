@@ -54,7 +54,7 @@ jobs:
       - name: Run database migrations
         run: npm run db:migrate
         env:
-          DB_POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
 
   create-tag-and-push:
     name: Create Tag and Push Docker image
