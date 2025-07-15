@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stackServerApp } from '@/stack';
+import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { uploadProfileImage, deleteProfileImage } from '@/lib/storage';
-import { syncUserFromStackAuth } from '@/lib/user-sync';
+import { syncUserFromClerk } from '@/lib/user-sync';
 
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
-    const user = await stackServerApp.getUser();
-    if (!user) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Get form data
@@ -42,32 +47,26 @@ export async function POST(request: NextRequest) {
     }
 
     // Delete old profile image if it exists
-    if (user.profileImageUrl) {
-      await deleteProfileImage(user.profileImageUrl);
+    if (user.imageUrl) {
+      await deleteProfileImage(user.imageUrl);
     }
 
     // Upload new image
     const imageUrl = await uploadProfileImage(file, user.id);
 
-    // Update user profile with new image URL
-    await user.update({ profileImageUrl: imageUrl });
+    // Update user profile with new image URL in Clerk
+    await clerkClient.users.updateUser(user.id, {
+      publicMetadata: {
+        ...user.publicMetadata,
+        profileImageUrl: imageUrl,
+      },
+    });
 
-    // Refresh user object to get the updated data from StackAuth
-    const updatedUser = await stackServerApp.getUser();
-    if (!updatedUser) {
-      throw new Error('Failed to retrieve updated user data');
-    }
-
-    // Verify the profile image was updated in StackAuth
-    if (updatedUser.profileImageUrl !== imageUrl) {
-      console.error('Profile image URL mismatch after StackAuth update', {
-        expected: imageUrl,
-        actual: updatedUser.profileImageUrl,
-      });
-    }
+    // Get the updated user data from Clerk
+    const updatedUser = await clerkClient.users.getUser(user.id);
 
     // Sync the updated user data to local database
-    await syncUserFromStackAuth(updatedUser);
+    await syncUserFromClerk(updatedUser);
 
     return NextResponse.json({
       success: true,

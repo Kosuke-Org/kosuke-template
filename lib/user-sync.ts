@@ -1,33 +1,33 @@
 import { db } from '@/lib/db';
 import { users, activityLogs, ActivityType } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import type { ServerUser } from '@stackframe/stack';
+import { User } from '@clerk/nextjs/server';
 
 /**
- * Syncs a StackAuth user to the local database
+ * Syncs a Clerk user to the local database
  * Creates a new user if doesn't exist, updates if data has changed
  */
-export async function syncUserFromStackAuth(
-  stackAuthUser: ServerUser
-): Promise<{ id: number; stackAuthUserId: string }> {
+export async function syncUserFromClerk(
+  clerkUser: User
+): Promise<{ id: number; clerkUserId: string }> {
   try {
-    console.log('🔄 Syncing user from StackAuth:', stackAuthUser.id);
+    console.log('🔄 Syncing user from Clerk:', clerkUser.id);
 
     // Check if user already exists in our database
     const existingUser = await db.query.users.findFirst({
-      where: eq(users.stackAuthUserId, stackAuthUser.id),
+      where: eq(users.clerkUserId, clerkUser.id),
     });
 
     const userData = {
-      stackAuthUserId: stackAuthUser.id,
-      email: stackAuthUser.primaryEmail || '',
-      displayName: stackAuthUser.displayName || null,
-      profileImageUrl: stackAuthUser.profileImageUrl || null,
+      clerkUserId: clerkUser.id,
+      email: clerkUser.emailAddresses[0]?.emailAddress || '',
+      displayName: clerkUser.fullName || clerkUser.firstName || null,
+      profileImageUrl: clerkUser.imageUrl || null,
       lastSyncedAt: new Date(),
       updatedAt: new Date(),
     };
 
-    let user: { id: number; stackAuthUserId: string };
+    let user: { id: number; clerkUserId: string };
 
     if (existingUser) {
       console.log('👤 User exists, checking for updates...');
@@ -42,12 +42,12 @@ export async function syncUserFromStackAuth(
         console.log('📝 User data changed, updating...');
 
         // Update existing user
-        await db.update(users).set(userData).where(eq(users.stackAuthUserId, stackAuthUser.id));
+        await db.update(users).set(userData).where(eq(users.clerkUserId, clerkUser.id));
 
-        user = { id: existingUser.id, stackAuthUserId: stackAuthUser.id };
+        user = { id: existingUser.id, clerkUserId: clerkUser.id };
 
         // Log the update activity
-        await logUserActivity(stackAuthUser.id, ActivityType.UPDATE_ACCOUNT);
+        await logUserActivity(clerkUser.id, ActivityType.UPDATE_ACCOUNT);
       } else {
         console.log('✅ User data unchanged, updating sync timestamp only');
 
@@ -55,9 +55,9 @@ export async function syncUserFromStackAuth(
         await db
           .update(users)
           .set({ lastSyncedAt: new Date() })
-          .where(eq(users.stackAuthUserId, stackAuthUser.id));
+          .where(eq(users.clerkUserId, clerkUser.id));
 
-        user = { id: existingUser.id, stackAuthUserId: stackAuthUser.id };
+        user = { id: existingUser.id, clerkUserId: clerkUser.id };
       }
     } else {
       console.log('🆕 Creating new user in database...');
@@ -69,29 +69,29 @@ export async function syncUserFromStackAuth(
           ...userData,
           createdAt: new Date(),
         })
-        .returning({ id: users.id, stackAuthUserId: users.stackAuthUserId });
+        .returning({ id: users.id, clerkUserId: users.clerkUserId });
 
       user = newUser;
 
       // Log the signup activity
-      await logUserActivity(stackAuthUser.id, ActivityType.SIGN_UP);
+      await logUserActivity(clerkUser.id, ActivityType.SIGN_UP);
 
       console.log('✅ New user created with ID:', newUser.id);
     }
 
     return user;
   } catch (error) {
-    console.error('💥 Error syncing user from StackAuth:', error);
+    console.error('💥 Error syncing user from Clerk:', error);
     throw error;
   }
 }
 
 /**
- * Gets a user from local database by StackAuth UUID
+ * Gets a user from local database by Clerk user ID
  */
-export async function getUserByStackAuthId(stackAuthUserId: string) {
+export async function getUserByClerkId(clerkUserId: string) {
   return await db.query.users.findFirst({
-    where: eq(users.stackAuthUserId, stackAuthUserId),
+    where: eq(users.clerkUserId, clerkUserId),
   });
 }
 
@@ -99,20 +99,20 @@ export async function getUserByStackAuthId(stackAuthUserId: string) {
  * Logs user activity
  */
 export async function logUserActivity(
-  stackAuthUserId: string,
+  clerkUserId: string,
   action: ActivityType,
   metadata?: Record<string, unknown>,
   ipAddress?: string
 ) {
   try {
     await db.insert(activityLogs).values({
-      stackAuthUserId,
+      clerkUserId,
       action,
       metadata: metadata ? JSON.stringify(metadata) : null,
       ipAddress,
     });
 
-    console.log(`📝 Logged activity: ${action} for user ${stackAuthUserId}`);
+    console.log(`📝 Logged activity: ${action} for user ${clerkUserId}`);
   } catch (error) {
     console.error('Error logging user activity:', error);
     // Don't throw - activity logging shouldn't break the main flow
@@ -123,20 +123,20 @@ export async function logUserActivity(
  * Ensures user exists in local database
  * Call this in API routes that need local user data
  */
-export async function ensureUserSynced(stackAuthUser: ServerUser) {
-  const localUser = await getUserByStackAuthId(stackAuthUser.id);
+export async function ensureUserSynced(clerkUser: User) {
+  const localUser = await getUserByClerkId(clerkUser.id);
 
   if (!localUser) {
-    console.log('🔄 User not found locally, syncing from StackAuth...');
-    return await syncUserFromStackAuth(stackAuthUser);
+    console.log('🔄 User not found locally, syncing from Clerk...');
+    return await syncUserFromClerk(clerkUser);
   }
 
   // Check if sync is stale (older than 24 hours)
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   if (localUser.lastSyncedAt < dayAgo) {
     console.log('🔄 User sync is stale, refreshing...');
-    return await syncUserFromStackAuth(stackAuthUser);
+    return await syncUserFromClerk(clerkUser);
   }
 
-  return { id: localUser.id, stackAuthUserId: localUser.stackAuthUserId };
+  return { id: localUser.id, clerkUserId: localUser.clerkUserId };
 }

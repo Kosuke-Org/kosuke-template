@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { stackServerApp } from '@/stack';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 import { userSubscriptions } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -7,18 +7,22 @@ import { ensureUserSynced } from '@/lib/user-sync';
 
 export async function GET() {
   try {
-    const stackAuthUser = await stackServerApp.getUser();
-
-    if (!stackAuthUser) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Ensure user is synced to local database
-    const localUser = await ensureUserSynced(stackAuthUser);
+    const clerkUser = await currentUser();
+    if (!clerkUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
 
-    // Get user's active subscription from StackAuth-compatible table
+    // Ensure user is synced to local database
+    const localUser = await ensureUserSynced(clerkUser);
+
+    // Get user's active subscription from Clerk-compatible table
     const activeSubscription = await db.query.userSubscriptions.findFirst({
-      where: eq(userSubscriptions.stackAuthUserId, stackAuthUser.id),
+      where: eq(userSubscriptions.clerkUserId, clerkUser.id),
       orderBy: [desc(userSubscriptions.createdAt)],
     });
 
@@ -49,7 +53,7 @@ export async function GET() {
       activeSubscription,
       user: {
         localId: localUser.id,
-        stackAuthId: localUser.stackAuthUserId,
+        clerkId: localUser.clerkUserId,
       },
     };
 

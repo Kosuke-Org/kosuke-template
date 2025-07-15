@@ -113,9 +113,9 @@ export async function createCheckoutSession(
 /**
  * Create a free tier subscription for a new user
  */
-export async function createFreeSubscription(stackAuthUserId: string) {
+export async function createFreeSubscription(clerkUserId: string) {
   const freeSubscriptionData = {
-    stackAuthUserId,
+    clerkUserId,
     subscriptionId: null,
     productId: null,
     status: SubscriptionStatus.ACTIVE,
@@ -135,18 +135,18 @@ export async function createFreeSubscription(stackAuthUserId: string) {
 }
 
 /**
- * Get user's current subscription information using StackAuth UUID
+ * Get user's current subscription information using Clerk user ID
  */
-export async function getUserSubscription(stackAuthUserId: string) {
+export async function getUserSubscription(clerkUserId: string) {
   const activeSubscription = await db.query.userSubscriptions.findFirst({
-    where: eq(userSubscriptions.stackAuthUserId, stackAuthUserId),
+    where: eq(userSubscriptions.clerkUserId, clerkUserId),
     orderBy: [desc(userSubscriptions.createdAt)],
   });
 
   if (!activeSubscription) {
     // Create a free tier subscription if none exists
-    console.log('🆕 Creating free tier subscription for user:', stackAuthUserId);
-    const freeSubscription = await createFreeSubscription(stackAuthUserId);
+    console.log('🆕 Creating free tier subscription for user:', clerkUserId);
+    const freeSubscription = await createFreeSubscription(clerkUserId);
 
     return {
       tier: SubscriptionTier.FREE,
@@ -225,10 +225,10 @@ export function isSubscriptionActive(
 }
 
 /**
- * Update user subscription status using StackAuth UUID
+ * Update user subscription status using Clerk user ID
  */
 export async function updateUserSubscription(
-  stackAuthUserId: string,
+  clerkUserId: string,
   subscriptionId: string,
   updates: {
     status?: SubscriptionStatus;
@@ -246,7 +246,7 @@ export async function updateUserSubscription(
     })
     .where(
       and(
-        eq(userSubscriptions.stackAuthUserId, stackAuthUserId),
+        eq(userSubscriptions.clerkUserId, clerkUserId),
         eq(userSubscriptions.subscriptionId, subscriptionId)
       )
     );
@@ -256,12 +256,12 @@ export async function updateUserSubscription(
  * Cancel user's active subscription by creating a Polar customer portal session
  * Following best practices: Polar provides dynamic customer portal sessions
  */
-export async function cancelUserSubscription(stackAuthUserId: string, subscriptionId: string) {
+export async function cancelUserSubscription(clerkUserId: string, subscriptionId: string) {
   try {
     console.log('🔄 Canceling subscription via Polar API:', subscriptionId);
 
     // First, get current subscription data from local database for validation
-    const currentSubscription = await getUserSubscription(stackAuthUserId);
+    const currentSubscription = await getUserSubscription(clerkUserId);
     if (
       !currentSubscription.activeSubscription ||
       currentSubscription.activeSubscription.subscriptionId !== subscriptionId
@@ -306,7 +306,7 @@ export async function cancelUserSubscription(stackAuthUserId: string, subscripti
     console.log('✅ Successfully canceled subscription in Polar:', canceledSubscription);
 
     // Update local database to reflect the cancellation
-    await updateUserSubscription(stackAuthUserId, subscriptionId, {
+    await updateUserSubscription(clerkUserId, subscriptionId, {
       status: SubscriptionStatus.CANCELED,
       canceledAt: new Date(),
     });

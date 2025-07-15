@@ -3,10 +3,10 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { relations } from 'drizzle-orm';
 
-// Users - Minimal sync from StackAuth for local queries and future expansion
+// Users - Minimal sync from Clerk for local queries and future expansion
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
-  stackAuthUserId: text('stackauth_user_id').notNull().unique(), // StackAuth UUID
+  clerkUserId: text('clerk_user_id').notNull().unique(), // Clerk user ID
   email: text('email').notNull(),
   displayName: text('display_name'),
   profileImageUrl: text('profile_image_url'),
@@ -15,10 +15,10 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// User Subscriptions - Links StackAuth users to Polar subscriptions
+// User Subscriptions - Links Clerk users to Polar subscriptions
 export const userSubscriptions = pgTable('user_subscriptions', {
   id: serial('id').primaryKey(),
-  stackAuthUserId: text('stackauth_user_id').notNull(), // StackAuth UUID
+  clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID
   subscriptionId: text('subscription_id').unique(), // Polar subscription ID (nullable for free tier)
   productId: text('product_id'), // Polar product ID (nullable for free tier)
   status: text('status').notNull(), // 'active', 'canceled', 'past_due', 'unpaid', 'incomplete'
@@ -30,10 +30,10 @@ export const userSubscriptions = pgTable('user_subscriptions', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Activity Logs - Optional app-specific logging (references StackAuth UUIDs)
+// Activity Logs - Optional app-specific logging (references Clerk user IDs)
 export const activityLogs = pgTable('activity_logs', {
   id: serial('id').primaryKey(),
-  stackAuthUserId: text('stackauth_user_id').notNull(), // StackAuth UUID
+  clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID
   action: text('action').notNull(),
   timestamp: timestamp('timestamp').notNull().defaultNow(),
   ipAddress: varchar('ip_address', { length: 45 }),
@@ -48,15 +48,15 @@ export const usersRelations = relations(users, ({ many }) => ({
 
 export const userSubscriptionsRelations = relations(userSubscriptions, ({ one }) => ({
   user: one(users, {
-    fields: [userSubscriptions.stackAuthUserId],
-    references: [users.stackAuthUserId],
+    fields: [userSubscriptions.clerkUserId],
+    references: [users.clerkUserId],
   }),
 }));
 
 export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
   user: one(users, {
-    fields: [activityLogs.stackAuthUserId],
-    references: [users.stackAuthUserId],
+    fields: [activityLogs.clerkUserId],
+    references: [users.clerkUserId],
   }),
 }));
 

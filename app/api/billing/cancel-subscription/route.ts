@@ -1,22 +1,26 @@
 import { NextResponse } from 'next/server';
-import { stackServerApp } from '@/stack';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { cancelUserSubscription } from '@/lib/billing/utils';
 import { getUserSubscription } from '@/lib/billing/utils';
 import { ensureUserSynced } from '@/lib/user-sync';
 
 export async function POST() {
   try {
-    const stackAuthUser = await stackServerApp.getUser();
-
-    if (!stackAuthUser) {
+    const { userId } = await auth();
+    if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const clerkUser = await currentUser();
+    if (!clerkUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
     // Ensure user is synced to local database
-    await ensureUserSynced(stackAuthUser);
+    await ensureUserSynced(clerkUser);
 
     // Get user's current subscription
-    const subscriptionInfo = await getUserSubscription(stackAuthUser.id);
+    const subscriptionInfo = await getUserSubscription(clerkUser.id);
 
     if (!subscriptionInfo.activeSubscription || subscriptionInfo.tier === 'free') {
       return NextResponse.json({ error: 'No active subscription to cancel' }, { status: 400 });
@@ -31,10 +35,7 @@ export async function POST() {
     }
 
     // Cancel the subscription
-    await cancelUserSubscription(
-      stackAuthUser.id,
-      subscriptionInfo.activeSubscription.subscriptionId
-    );
+    await cancelUserSubscription(clerkUser.id, subscriptionInfo.activeSubscription.subscriptionId);
 
     return NextResponse.json({
       success: true,
