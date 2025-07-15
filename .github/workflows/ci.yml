@@ -24,6 +24,15 @@ jobs:
       - name: Copy environment variables
         run: cp .env.example .env
 
+      - name: Set Clerk environment variables for build
+        run: |
+          echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" >> .env
+          echo "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" >> .env
+          echo "NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in" >> .env
+          echo "NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up" >> .env
+          echo "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard" >> .env
+          echo "NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard" >> .env
+
       - name: Run ESLint
         run: npm run lint
 
