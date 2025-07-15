@@ -8,14 +8,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
-import { useUser } from '@stackframe/stack';
+import { useUser } from '@clerk/nextjs';
 
 export default function SecurityPage() {
-  const user = useUser({ or: 'redirect' });
+  const { user, isLoaded } = useUser();
   const { toast } = useToast();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  if (!isLoaded || !user) {
+    return <div>Loading...</div>;
+  }
 
   const handleDeleteAccount = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,7 +37,7 @@ export default function SecurityPage() {
 
     setIsDeleting(true);
     try {
-      // Use Stack's account deletion method
+      // Use Clerk's account deletion method
       await user.delete();
 
       toast({

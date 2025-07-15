@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
-import { useUser } from '@stackframe/stack';
+import { useUser } from '@clerk/nextjs';
 
 export default function NotificationsPage() {
-  const user = useUser({ or: 'redirect' });
+  const { user, isLoaded } = useUser();
   const { toast } = useToast();
 
   const [emailNotifications, setEmailNotifications] = useState(true);
@@ -21,9 +21,15 @@ export default function NotificationsPage() {
 
   // Initialize preferences (in real app, this would come from user settings)
   useEffect(() => {
-    // For now, we'll use local state
-    // In a real implementation, you might fetch these from Stack or your own backend
-  }, [user]);
+    if (isLoaded && user) {
+      // For now, we'll use local state
+      // In a real implementation, you might fetch these from Stack or your own backend
+    }
+  }, [user, isLoaded]);
+
+  if (!isLoaded || !user) {
+    return <div>Loading...</div>;
+  }
 
   const handleSavePreferences = async () => {
     setIsSaving(true);
@@ -105,7 +111,7 @@ export default function NotificationsPage() {
             <div className="pt-4 border-t">
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-muted-foreground">Current User</h3>
-                <p className="text-base">{user?.primaryEmail}</p>
+                <p className="text-base">{user?.primaryEmailAddress?.emailAddress}</p>
               </div>
             </div>
 

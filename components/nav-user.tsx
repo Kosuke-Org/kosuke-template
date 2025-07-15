@@ -28,19 +28,25 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useUser } from '@stackframe/stack';
+import { useUser, useClerk } from '@clerk/nextjs';
 import { useProfileImageUrl } from '@/lib/hooks/use-profile-image';
 
 export function NavUser() {
-  const user = useUser({ or: 'redirect' });
+  const { user } = useUser();
+  const { signOut } = useClerk();
   const { isMobile } = useSidebar();
   const router = useRouter();
-  const profileImageUrl = useProfileImageUrl(user.profileImageUrl);
+  const profileImageUrl = useProfileImageUrl(user?.imageUrl);
+
+  if (!user) {
+    router.push('/sign-in');
+    return null;
+  }
 
   const handleSignOut = async () => {
     try {
-      await user.signOut();
-      router.push('/handler/sign-in');
+      await signOut();
+      router.push('/sign-in');
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -48,8 +54,8 @@ export function NavUser() {
 
   // Get initials for avatar fallback
   const getInitials = () => {
-    if (!user.displayName) return 'U';
-    return user.displayName
+    if (!user.fullName) return 'U';
+    return user.fullName
       .split(' ')
       .map((part: string) => part[0])
       .join('')
@@ -67,12 +73,12 @@ export function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={profileImageUrl || ''} alt={user.displayName || 'User'} />
+                <AvatarImage src={profileImageUrl || ''} alt={user.fullName || 'User'} />
                 <AvatarFallback className="rounded-lg">{getInitials()}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.displayName || 'User'}</span>
-                <span className="truncate text-xs">{user.primaryEmail}</span>
+                <span className="truncate font-semibold">{user.fullName || 'User'}</span>
+                <span className="truncate text-xs">{user.primaryEmailAddress?.emailAddress}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -86,12 +92,12 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={profileImageUrl || ''} alt={user.displayName || 'User'} />
+                  <AvatarImage src={profileImageUrl || ''} alt={user.fullName || 'User'} />
                   <AvatarFallback className="rounded-lg">{getInitials()}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.displayName || 'User'}</span>
-                  <span className="truncate text-xs">{user.primaryEmail}</span>
+                  <span className="truncate font-semibold">{user.fullName || 'User'}</span>
+                  <span className="truncate text-xs">{user.primaryEmailAddress?.emailAddress}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

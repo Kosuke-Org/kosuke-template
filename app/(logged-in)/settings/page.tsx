@@ -9,24 +9,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
-import { useUser } from '@stackframe/stack';
+import { useUser } from '@clerk/nextjs';
 import { useProfileImage, useProfileImageUrl } from '@/lib/hooks/use-profile-image';
 
 export default function ProfileSettings() {
-  const user = useUser({ or: 'redirect' });
+  const { user, isLoaded } = useUser();
   const { toast } = useToast();
   const { setCurrentImageUrl } = useProfileImage();
-  const profileImageUrl = useProfileImageUrl(user?.profileImageUrl);
+  const profileImageUrl = useProfileImageUrl(user?.imageUrl);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [displayName, setDisplayName] = useState(user?.fullName || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  if (!isLoaded || !user) {
+    return <div>Loading...</div>;
+  }
+
   // Get initials for avatar fallback
   const getInitials = () => {
-    if (!user?.displayName) return 'U';
-    return user.displayName
+    if (!user?.fullName) return 'U';
+    return user.fullName
       .split(' ')
       .map((part: string) => part[0])
       .join('')
@@ -39,11 +43,18 @@ export default function ProfileSettings() {
 
     setIsSubmitting(true);
     try {
-      await user.update({ displayName: displayName.trim() });
+      const names = displayName.trim().split(' ');
+      const firstName = names[0] || '';
+      const lastName = names.slice(1).join(' ') || '';
+
+      await user.update({
+        firstName,
+        lastName,
+      });
       setIsEditing(false);
       toast({
         title: 'Profile updated',
-        description: 'Your display name has been updated successfully.',
+        description: 'Your name has been updated successfully.',
       });
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -58,7 +69,7 @@ export default function ProfileSettings() {
   };
 
   const handleCancelEdit = () => {
-    setDisplayName(user?.displayName || '');
+    setDisplayName(user?.fullName || '');
     setIsEditing(false);
   };
 
@@ -189,10 +200,10 @@ export default function ProfileSettings() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <p className="text-base flex-1">{user?.displayName || 'Not set'}</p>
+                      <p className="text-base flex-1">{user?.fullName || 'Not set'}</p>
                       <Button
                         onClick={() => {
-                          setDisplayName(user?.displayName || '');
+                          setDisplayName(user?.fullName || '');
                           setIsEditing(true);
                         }}
                         variant="outline"
@@ -205,7 +216,7 @@ export default function ProfileSettings() {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
-                  <p className="text-base">{user?.primaryEmail}</p>
+                  <p className="text-base">{user?.primaryEmailAddress?.emailAddress}</p>
                 </div>
               </div>
             </div>

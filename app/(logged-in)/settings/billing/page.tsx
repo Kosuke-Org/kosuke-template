@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { CheckCircle, Loader2, CreditCard, Calendar, AlertCircle, XCircle } from 'lucide-react';
-import { useUser } from '@stackframe/stack';
+import { useUser } from '@clerk/nextjs';
 import { useToast } from '@/lib/hooks/use-toast';
 
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ const PRICING = {
 } as const;
 
 export default function BillingPage() {
-  useUser({ or: 'redirect' });
+  const { user, isLoaded } = useUser();
   const { toast } = useToast();
 
   const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
@@ -59,40 +59,49 @@ export default function BillingPage() {
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
 
-  const fetchSubscriptionInfo = useCallback(async (showLoadingState = false) => {
-    if (showLoadingState) {
-      setIsLoading(true);
-    }
-    try {
-      const response = await fetch('/api/billing/subscription-status');
-      if (response.ok) {
-        const data = await response.json();
-        setSubscriptionInfo(data);
-      } else {
-        console.error('Failed to fetch subscription info');
+  const fetchSubscriptionInfo = useCallback(
+    async (showLoadingState = false) => {
+      if (showLoadingState) {
+        setIsLoading(true);
+      }
+      try {
+        const response = await fetch('/api/billing/subscription-status');
+        if (response.ok) {
+          const data = await response.json();
+          setSubscriptionInfo(data);
+        } else {
+          console.error('Failed to fetch subscription info');
+          toast({
+            title: 'Error',
+            description: 'Failed to load subscription information. Please refresh the page.',
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching subscription info:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load subscription information. Please refresh the page.',
+          description: 'Failed to load subscription information. Please check your connection.',
           variant: 'destructive',
         });
+      } finally {
+        if (showLoadingState) {
+          setIsLoading(false);
+        }
       }
-    } catch (error) {
-      console.error('Error fetching subscription info:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load subscription information. Please check your connection.',
-        variant: 'destructive',
-      });
-    } finally {
-      if (showLoadingState) {
-        setIsLoading(false);
-      }
-    }
-  }, []);
+    },
+    [toast]
+  );
 
   useEffect(() => {
-    fetchSubscriptionInfo(true);
-  }, []);
+    if (isLoaded && user) {
+      fetchSubscriptionInfo(true);
+    }
+  }, [fetchSubscriptionInfo, isLoaded, user]);
+
+  if (!isLoaded || !user) {
+    return <div>Loading...</div>;
+  }
 
   const handleUpgrade = async (tier: string) => {
     setUpgradeLoading(tier);
