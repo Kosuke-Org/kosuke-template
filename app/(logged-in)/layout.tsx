@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { stackServerApp } from '../../stack';
+import { auth } from '@clerk/nextjs/server';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { ProfileImageProvider } from '@/lib/hooks/use-profile-image';
@@ -10,10 +10,10 @@ interface LayoutProps {
 }
 
 async function AuthCheck({ children }: LayoutProps) {
-  const user = await stackServerApp.getUser();
+  const { userId } = await auth();
 
-  if (!user) {
-    redirect('/handler/sign-in');
+  if (!userId) {
+    redirect('/sign-in');
   }
 
   return <>{children}</>;

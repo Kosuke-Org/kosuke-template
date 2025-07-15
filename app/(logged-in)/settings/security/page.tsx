@@ -8,14 +8,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
-import { useUser } from '@stackframe/stack';
+import { useUser } from '@clerk/nextjs';
 
 export default function SecurityPage() {
-  const user = useUser({ or: 'redirect' });
+  const { user, isSignedIn } = useUser();
   const { toast } = useToast();
-
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  if (!isSignedIn || !user) {
+    return <div>Loading...</div>;
+  }
 
   const handleDeleteAccount = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,15 +36,13 @@ export default function SecurityPage() {
 
     setIsDeleting(true);
     try {
-      // Use Stack's account deletion method
-      await user.delete();
-
+      // Note: Clerk account deletion should be handled via API route
+      // For now, we'll show a message about this limitation
       toast({
-        title: 'Account deleted',
-        description: 'Your account has been permanently deleted.',
+        title: 'Feature not available',
+        description: 'Account deletion needs to be implemented via Clerk API routes.',
+        variant: 'destructive',
       });
-
-      // The user will be automatically redirected after deletion
     } catch (error) {
       console.error('Error deleting account:', error);
       toast({

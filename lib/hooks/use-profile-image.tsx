@@ -1,19 +1,37 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { useMemo, createContext, useContext, ReactNode } from 'react';
 
-interface ProfileImageContextType {
-  currentImageUrl: string | null;
-  setCurrentImageUrl: (url: string | null) => void;
+/**
+ * Hook to handle profile image URLs from Clerk
+ * Clerk provides optimized image URLs that don't need additional processing
+ */
+export function useProfileImageUrl(imageUrl?: string | null) {
+  return useMemo(() => {
+    // Clerk handles image optimization automatically
+    // Just return the URL as-is
+    return imageUrl || null;
+  }, [imageUrl]);
 }
 
-const ProfileImageContext = createContext<ProfileImageContextType | undefined>(undefined);
+// Profile Image Context for managing profile image state
+const ProfileImageContext = createContext<{
+  currentImageUrl: string | null;
+  setCurrentImageUrl: (url: string | null) => void;
+}>({
+  currentImageUrl: null,
+  setCurrentImageUrl: () => {},
+});
 
 export function ProfileImageProvider({ children }: { children: ReactNode }) {
-  const [currentImageUrl, setCurrentImageUrl] = useState<string | null>(null);
+  // For now, this is a simple provider
+  // In a more complex app, you might manage profile image state here
+  const setCurrentImageUrl = () => {
+    // This would update the profile image state
+  };
 
   return (
-    <ProfileImageContext.Provider value={{ currentImageUrl, setCurrentImageUrl }}>
+    <ProfileImageContext.Provider value={{ currentImageUrl: null, setCurrentImageUrl }}>
       {children}
     </ProfileImageContext.Provider>
   );
@@ -21,14 +39,8 @@ export function ProfileImageProvider({ children }: { children: ReactNode }) {
 
 export function useProfileImage() {
   const context = useContext(ProfileImageContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useProfileImage must be used within a ProfileImageProvider');
   }
   return context;
-}
-
-export function useProfileImageUrl(userImageUrl?: string | null) {
-  const { currentImageUrl } = useProfileImage();
-  // Return the current uploaded image if available, otherwise fall back to user's image
-  return currentImageUrl || userImageUrl;
 }

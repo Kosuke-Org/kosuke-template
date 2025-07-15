@@ -55,7 +55,8 @@ export async function POST(request: NextRequest) {
     const imageUrl = await uploadProfileImage(file, user.id);
 
     // Update user profile with new image URL in Clerk
-    await clerkClient.users.updateUser(user.id, {
+    const clerk = await clerkClient();
+    await clerk.users.updateUser(user.id, {
       publicMetadata: {
         ...user.publicMetadata,
         profileImageUrl: imageUrl,
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Get the updated user data from Clerk
-    const updatedUser = await clerkClient.users.getUser(user.id);
+    const updatedUser = await clerk.users.getUser(user.id);
 
     // Sync the updated user data to local database
     await syncUserFromClerk(updatedUser);
@@ -81,5 +82,49 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+  }
+}
+
+export async function DELETE() {
+  try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (!user.imageUrl) {
+      return NextResponse.json({ error: 'No profile image to delete' }, { status: 400 });
+    }
+
+    // Delete image from storage
+    await deleteProfileImage(user.imageUrl);
+
+    // Update user profile in Clerk
+    const clerk = await clerkClient();
+    await clerk.users.updateUser(user.id, {
+      publicMetadata: {
+        ...user.publicMetadata,
+        profileImageUrl: null,
+      },
+    });
+
+    // Get the updated user data from Clerk
+    const updatedUser = await clerk.users.getUser(user.id);
+
+    // Sync the updated user data to local database
+    await syncUserFromClerk(updatedUser);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Profile image deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting profile image:', error);
+    return NextResponse.json({ error: 'Failed to delete profile image' }, { status: 500 });
   }
 }

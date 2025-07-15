@@ -21,6 +21,7 @@
     "db:seed": "npx tsx -r dotenv/config lib/db/seed.ts"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.25.0",
     "@hookform/resolvers": "^5.1.1",
     "@polar-sh/nextjs": "^0.4.2",
     "@polar-sh/sdk": "^0.34.3",

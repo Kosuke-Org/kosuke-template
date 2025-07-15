@@ -9,24 +9,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
-import { useUser } from '@stackframe/stack';
+import { useUser } from '@clerk/nextjs';
 import { useProfileImage, useProfileImageUrl } from '@/lib/hooks/use-profile-image';
 
 export default function ProfileSettings() {
-  const user = useUser({ or: 'redirect' });
+  const { user, isSignedIn } = useUser();
   const { toast } = useToast();
   const { setCurrentImageUrl } = useProfileImage();
-  const profileImageUrl = useProfileImageUrl(user?.profileImageUrl);
-
+  const profileImageUrl = useProfileImageUrl(user?.imageUrl);
   const [isEditing, setIsEditing] = useState(false);
-  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [displayName, setDisplayName] = useState(user?.fullName || user?.firstName || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  if (!isSignedIn || !user) {
+    return <div>Loading...</div>;
+  }
+
   // Get initials for avatar fallback
   const getInitials = () => {
-    if (!user?.displayName) return 'U';
-    return user.displayName
+    const name = user?.fullName || user?.firstName;
+    if (!name) return 'U';
+    return name
       .split(' ')
       .map((part: string) => part[0])
       .join('')
@@ -39,12 +43,15 @@ export default function ProfileSettings() {
 
     setIsSubmitting(true);
     try {
-      await user.update({ displayName: displayName.trim() });
-      setIsEditing(false);
+      // Note: Clerk handles name updates differently
+      // You might need to use clerkClient.users.updateUser() in an API route
+      // For now, we'll show a message about this limitation
       toast({
-        title: 'Profile updated',
-        description: 'Your display name has been updated successfully.',
+        title: 'Feature not available',
+        description: 'Name updates need to be implemented via Clerk API routes.',
+        variant: 'destructive',
       });
+      setIsEditing(false);
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -58,7 +65,7 @@ export default function ProfileSettings() {
   };
 
   const handleCancelEdit = () => {
-    setDisplayName(user?.displayName || '');
+    setDisplayName(user?.fullName || user?.firstName || '');
     setIsEditing(false);
   };
 
@@ -189,10 +196,12 @@ export default function ProfileSettings() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <p className="text-base flex-1">{user?.displayName || 'Not set'}</p>
+                      <p className="text-base flex-1">
+                        {user?.fullName || user?.firstName || 'Not set'}
+                      </p>
                       <Button
                         onClick={() => {
-                          setDisplayName(user?.displayName || '');
+                          setDisplayName(user?.fullName || user?.firstName || '');
                           setIsEditing(true);
                         }}
                         variant="outline"
@@ -205,7 +214,7 @@ export default function ProfileSettings() {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
-                  <p className="text-base">{user?.primaryEmail}</p>
+                  <p className="text-base">{user?.emailAddresses[0]?.emailAddress}</p>
                 </div>
               </div>
             </div>

@@ -1,10 +1,10 @@
+import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { stackServerApp } from '../stack';
 
 export default async function Home() {
-  const user = await stackServerApp.getUser();
+  const { userId } = await auth();
 
-  if (user) {
+  if (userId) {
     redirect('/dashboard');
   } else {
     // Redirect to the home page in the logged-out route group

@@ -45,10 +45,10 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
             About
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/handler/sign-in">
+            <Link href="/sign-in">
               <Button variant="ghost">Log in</Button>
             </Link>
-            <Link href="/handler/sign-up">
+            <Link href="/sign-up">
               <Button>Sign up</Button>
             </Link>
           </div>
@@ -86,12 +86,12 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                   About
                 </Link>
                 <div className="flex flex-col gap-2 pt-2">
-                  <Link href="/handler/sign-in">
+                  <Link href="/sign-in">
                     <Button variant="ghost" className="w-full justify-start">
                       Log in
                     </Button>
                   </Link>
-                  <Link href="/handler/sign-up">
+                  <Link href="/sign-up">
                     <Button className="w-full">Sign up</Button>
                   </Link>
                 </div>

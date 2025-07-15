@@ -28,20 +28,20 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useUser } from '@clerk/nextjs';
+import { useUser, useClerk } from '@clerk/nextjs';
 import { useProfileImageUrl } from '@/lib/hooks/use-profile-image';
 
 export function NavUser() {
   const { user, isSignedIn } = useUser();
+  const { signOut } = useClerk();
   const { isMobile } = useSidebar();
   const router = useRouter();
   const profileImageUrl = useProfileImageUrl(user?.imageUrl);
 
   const handleSignOut = async () => {
     try {
-      const { signOut } = await import('@clerk/nextjs');
       await signOut();
-      router.push('/sign-in');
+      router.push('/');
     } catch (error) {
       console.error('Error signing out:', error);
     }

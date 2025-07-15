@@ -1,15 +1,19 @@
 import { NextResponse } from 'next/server';
-import { stackServerApp } from '@/stack';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { ensureUserSynced } from '@/lib/user-sync';
 import { getUserSubscription, canCreateNewSubscription } from '@/lib/billing/utils';
 import { ApiErrorHandler } from '@/lib/api/errors';
 
 export async function GET() {
   try {
-    const user = await stackServerApp.getUser();
-
-    if (!user) {
+    const { userId } = await auth();
+    if (!userId) {
       return ApiErrorHandler.unauthorized();
+    }
+
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Ensure user is synced to local database

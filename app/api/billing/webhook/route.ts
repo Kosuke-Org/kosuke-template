@@ -119,7 +119,7 @@ function safeExtractObject(value: unknown): Record<string, unknown> | undefined 
 
 // Helper function to safely extract metadata from multiple sources
 function extractMetadataValues(eventData: Record<string, unknown>): {
-  stackAuthUserId: string | undefined;
+  clerkUserId: string | undefined;
   tier: string | undefined;
 } {
   const metadata = safeExtractObject(eventData.metadata);
@@ -130,7 +130,7 @@ function extractMetadataValues(eventData: Record<string, unknown>): {
   const checkoutMetadata = checkout ? safeExtractObject(checkout.metadata) : undefined;
 
   // Try to find userId and tier from any metadata source
-  const stackAuthUserId =
+  const clerkUserId =
     safeExtractString(metadata?.userId) ||
     safeExtractString(customerMetadata?.userId) ||
     safeExtractString(checkoutMetadata?.userId);
@@ -140,7 +140,7 @@ function extractMetadataValues(eventData: Record<string, unknown>): {
     safeExtractString(customerMetadata?.tier) ||
     safeExtractString(checkoutMetadata?.tier);
 
-  return { stackAuthUserId, tier };
+  return { clerkUserId, tier };
 }
 
 async function handleSubscriptionCreated(data: unknown) {
@@ -152,10 +152,10 @@ async function handleSubscriptionCreated(data: unknown) {
   }
 
   try {
-    const { stackAuthUserId, tier } = extractMetadataValues(eventData);
+    const { clerkUserId, tier } = extractMetadataValues(eventData);
 
-    if (!stackAuthUserId) {
-      console.error('❌ CRITICAL: No stackAuthUserId found in any metadata source');
+    if (!clerkUserId) {
+      console.error('❌ CRITICAL: No clerkUserId found in any metadata source');
       console.error('Available keys in eventData:', Object.keys(eventData));
       return;
     }
@@ -221,7 +221,7 @@ async function handleSubscriptionCreated(data: unknown) {
     }
 
     const subscriptionData = {
-      stackAuthUserId,
+      clerkUserId,
       subscriptionId,
       productId,
       status,
@@ -265,10 +265,10 @@ async function handleSubscriptionUpdated(data: unknown) {
   }
 
   try {
-    const { stackAuthUserId } = extractMetadataValues(eventData);
+    const { clerkUserId } = extractMetadataValues(eventData);
 
-    if (!stackAuthUserId) {
-      console.error('❌ Missing stackAuthUserId in subscription metadata');
+    if (!clerkUserId) {
+      console.error('❌ Missing clerkUserId in subscription metadata');
       return;
     }
 
@@ -334,10 +334,10 @@ async function handleSubscriptionActive(data: unknown) {
   }
 
   try {
-    const { stackAuthUserId, tier } = extractMetadataValues(eventData);
+    const { clerkUserId, tier } = extractMetadataValues(eventData);
 
-    if (!stackAuthUserId) {
-      console.error('❌ Missing stackAuthUserId in subscription metadata');
+    if (!clerkUserId) {
+      console.error('❌ Missing clerkUserId in subscription metadata');
       console.error('Available eventData keys:', Object.keys(eventData));
       return;
     }
@@ -429,7 +429,7 @@ async function handleSubscriptionActive(data: unknown) {
       }
 
       await db.insert(userSubscriptions).values({
-        stackAuthUserId,
+        clerkUserId,
         subscriptionId,
         productId,
         status: 'active',
@@ -458,10 +458,10 @@ async function handleSubscriptionCanceled(data: unknown) {
   }
 
   try {
-    const { stackAuthUserId } = extractMetadataValues(eventData);
+    const { clerkUserId } = extractMetadataValues(eventData);
 
-    if (!stackAuthUserId) {
-      console.error('❌ Missing stackAuthUserId in subscription metadata');
+    if (!clerkUserId) {
+      console.error('❌ Missing clerkUserId in subscription metadata');
       return;
     }
 
@@ -512,10 +512,10 @@ async function handleSubscriptionUncanceled(data: unknown) {
   }
 
   try {
-    const { stackAuthUserId } = extractMetadataValues(eventData);
+    const { clerkUserId } = extractMetadataValues(eventData);
 
-    if (!stackAuthUserId) {
-      console.error('❌ Missing stackAuthUserId in subscription metadata');
+    if (!clerkUserId) {
+      console.error('❌ Missing clerkUserId in subscription metadata');
       return;
     }
 

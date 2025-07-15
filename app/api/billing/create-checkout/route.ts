@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stackServerApp } from '@/stack';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { Polar } from '@polar-sh/sdk';
 import { ensureUserSynced } from '@/lib/user-sync';
 import { getUserSubscription, canCreateNewSubscription } from '@/lib/billing/utils';
@@ -13,10 +13,14 @@ const polar = new Polar({
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await stackServerApp.getUser();
-
-    if (!user) {
+    const { userId } = await auth();
+    if (!userId) {
       return ApiErrorHandler.unauthorized();
+    }
+
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Ensure user is synced to local database
@@ -56,9 +60,9 @@ export async function POST(request: NextRequest) {
     const checkoutData = {
       products: [productId],
       successUrl: process.env.POLAR_SUCCESS_URL!,
-      customerEmail: user.primaryEmail,
+      customerEmail: user.emailAddresses[0]?.emailAddress,
       metadata: {
-        userId: user.id, // StackAuth UUID
+        userId: user.id, // Clerk user ID
         localUserId: localUser.id.toString(), // Local database ID
         tier,
         // Add context about previous subscription if it exists

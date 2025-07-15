@@ -8,12 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
-import { useUser } from '@stackframe/stack';
+import { useUser } from '@clerk/nextjs';
 
 export default function NotificationsPage() {
-  const user = useUser({ or: 'redirect' });
+  const { user, isSignedIn } = useUser();
   const { toast } = useToast();
-
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [marketingEmails, setMarketingEmails] = useState(false);
   const [securityAlerts, setSecurityAlerts] = useState(true);
@@ -24,6 +23,10 @@ export default function NotificationsPage() {
     // For now, we'll use local state
     // In a real implementation, you might fetch these from Stack or your own backend
   }, [user]);
+
+  if (!isSignedIn || !user) {
+    return <div>Loading...</div>;
+  }
 
   const handleSavePreferences = async () => {
     setIsSaving(true);
@@ -105,7 +108,7 @@ export default function NotificationsPage() {
             <div className="pt-4 border-t">
               <div className="space-y-2">
                 <h3 className="text-sm font-medium text-muted-foreground">Current User</h3>
-                <p className="text-base">{user?.primaryEmail}</p>
+                <p className="text-base">{user?.emailAddresses[0]?.emailAddress}</p>
               </div>
             </div>
 
