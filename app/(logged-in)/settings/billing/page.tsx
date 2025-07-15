@@ -89,7 +89,7 @@ export default function BillingPage() {
         }
       }
     },
-    [] // Remove toast from dependencies to prevent re-renders
+    [toast]
   );
 
   useEffect(() => {

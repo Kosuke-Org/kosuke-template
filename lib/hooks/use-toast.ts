@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { toast as sonnerToast } from 'sonner';
 
 type ToastType = 'default' | 'destructive';
@@ -16,7 +17,7 @@ interface ToastHook {
 
 // Toast hook implementation using sonner
 export function useToast(): ToastHook {
-  const toast = ({ title, description, variant = 'default' }: ToastOptions) => {
+  const toast = useCallback(({ title, description, variant = 'default' }: ToastOptions) => {
     if (variant === 'destructive') {
       sonnerToast.error(title, {
         description,
@@ -27,7 +28,7 @@ export function useToast(): ToastHook {
         description,
       });
     }
-  };
+  }, []);
 
   return { toast };
 }
