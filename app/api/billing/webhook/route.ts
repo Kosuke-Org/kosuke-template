@@ -12,13 +12,11 @@ export async function POST(request: NextRequest) {
     const webhookId = request.headers.get('webhook-id');
 
     if (!signature) {
-      console.error('❌ MISSING SIGNATURE');
       return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
     }
 
     // Validate that webhook secret is configured
     if (!process.env.POLAR_WEBHOOK_SECRET) {
-      console.error('❌ CRITICAL: POLAR_WEBHOOK_SECRET environment variable is not set');
       return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
     }
 
@@ -43,7 +41,6 @@ export async function POST(request: NextRequest) {
     ];
 
     let event;
-    let lastError;
 
     for (let index = 0; index < headerVariants.length; index++) {
       const headers = headerVariants[index];
@@ -55,14 +52,12 @@ export async function POST(request: NextRequest) {
       try {
         event = validateEvent(rawBody, cleanHeaders, process.env.POLAR_WEBHOOK_SECRET!);
         break;
-      } catch (error) {
-        lastError = error;
+      } catch {
         continue;
       }
     }
 
     if (!event) {
-      console.error('💥 All header variants failed. Last error:', lastError);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
     }
 
@@ -86,21 +81,17 @@ export async function POST(request: NextRequest) {
       case 'checkout.updated':
       case 'customer.created':
         // These events are informational and don't require action
-        console.log(`ℹ️ Received ${event.type} event (no action required)`);
         break;
       default:
-        console.log('❓ Unhandled event type:', event.type);
+      // Unhandled event type
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof WebhookVerificationError) {
-      console.error('🚫 Signature verification failed:', error.message);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
     }
 
-    console.error('🔥 Internal error:', error);
-    console.error('📍 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -147,7 +138,6 @@ async function handleSubscriptionCreated(data: unknown) {
   const eventData = safeExtractObject(data);
 
   if (!eventData) {
-    console.error('❌ CRITICAL: Invalid event data structure');
     return;
   }
 
@@ -155,14 +145,10 @@ async function handleSubscriptionCreated(data: unknown) {
     const { clerkUserId, tier } = extractMetadataValues(eventData);
 
     if (!clerkUserId) {
-      console.error('❌ CRITICAL: No clerkUserId found in any metadata source');
-      console.error('Available keys in eventData:', Object.keys(eventData));
       return;
     }
 
     if (!tier) {
-      console.error('❌ CRITICAL: No tier found in any metadata source');
-      console.error('Available keys in eventData:', Object.keys(eventData));
       return;
     }
 
@@ -170,7 +156,6 @@ async function handleSubscriptionCreated(data: unknown) {
     const productId = safeExtractString(eventData.productId);
 
     if (!subscriptionId || !productId) {
-      console.error('❌ CRITICAL: Missing required subscription or product ID');
       return;
     }
 
@@ -192,9 +177,6 @@ async function handleSubscriptionCreated(data: unknown) {
         safeExtractString(eventData.current_period_end);
 
       if (!startDate || !endDate) {
-        console.error('❌ CRITICAL: Missing required date fields');
-        console.error('Available eventData keys:', Object.keys(eventData));
-        console.error('EventData sample:', JSON.stringify(eventData, null, 2));
         return;
       }
 
@@ -203,20 +185,14 @@ async function handleSubscriptionCreated(data: unknown) {
 
       // Validate dates
       if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
-        console.error('❌ CRITICAL: Invalid date format');
-        console.error('StartDate:', startDate, 'EndDate:', endDate);
         return;
       }
-    } catch (dateError) {
-      console.error('❌ Date parsing error:', dateError);
-      console.error('Available eventData keys:', Object.keys(eventData));
-      console.error('EventData sample:', JSON.stringify(eventData, null, 2));
+    } catch {
       return;
     }
 
     const status = safeExtractString(eventData.status);
     if (!status) {
-      console.error('❌ CRITICAL: Missing subscription status');
       return;
     }
 
@@ -247,11 +223,6 @@ async function handleSubscriptionCreated(data: unknown) {
       });
     }
   } catch (error) {
-    console.error('💥 ERROR in handleSubscriptionCreated:');
-    console.error('- Error type:', error?.constructor?.name);
-    console.error('- Error message:', error instanceof Error ? error.message : 'Unknown error');
-    console.error('- Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    console.error('🔍 Problematic data:', JSON.stringify(eventData, null, 2));
     throw error;
   }
 }
@@ -260,7 +231,6 @@ async function handleSubscriptionUpdated(data: unknown) {
   const eventData = safeExtractObject(data);
 
   if (!eventData) {
-    console.error('❌ CRITICAL: Invalid event data structure');
     return;
   }
 
@@ -268,7 +238,6 @@ async function handleSubscriptionUpdated(data: unknown) {
     const { clerkUserId } = extractMetadataValues(eventData);
 
     if (!clerkUserId) {
-      console.error('❌ Missing clerkUserId in subscription metadata');
       return;
     }
 
@@ -276,7 +245,6 @@ async function handleSubscriptionUpdated(data: unknown) {
     const status = safeExtractString(eventData.status);
 
     if (!subscriptionId || !status) {
-      console.error('❌ CRITICAL: Missing required subscription ID or status');
       return;
     }
 
@@ -294,9 +262,6 @@ async function handleSubscriptionUpdated(data: unknown) {
       safeExtractString(eventData.current_period_end);
 
     if (!startDate || !endDate) {
-      console.error('❌ CRITICAL: Missing required date fields');
-      console.error('Available eventData keys:', Object.keys(eventData));
-      console.error('EventData sample:', JSON.stringify(eventData, null, 2));
       return;
     }
 
@@ -305,7 +270,6 @@ async function handleSubscriptionUpdated(data: unknown) {
 
     // Validate dates
     if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
-      console.error('❌ CRITICAL: Invalid date format');
       return;
     }
 
@@ -319,17 +283,14 @@ async function handleSubscriptionUpdated(data: unknown) {
       })
       .where(eq(userSubscriptions.subscriptionId, subscriptionId));
   } catch (error) {
-    console.error('💥 Error handling subscription updated:', error);
     throw error;
   }
 }
 
 async function handleSubscriptionActive(data: unknown) {
-  console.log('🔄 Processing subscription.active event');
   const eventData = safeExtractObject(data);
 
   if (!eventData) {
-    console.error('❌ CRITICAL: Invalid event data structure');
     return;
   }
 
@@ -337,8 +298,6 @@ async function handleSubscriptionActive(data: unknown) {
     const { clerkUserId, tier } = extractMetadataValues(eventData);
 
     if (!clerkUserId) {
-      console.error('❌ Missing clerkUserId in subscription metadata');
-      console.error('Available eventData keys:', Object.keys(eventData));
       return;
     }
 
@@ -347,7 +306,6 @@ async function handleSubscriptionActive(data: unknown) {
       safeExtractString(eventData.productId) || safeExtractString(eventData.product_id);
 
     if (!subscriptionId) {
-      console.error('❌ CRITICAL: Missing required subscription ID');
       return;
     }
 
@@ -373,14 +331,9 @@ async function handleSubscriptionActive(data: unknown) {
 
       // Validate dates
       if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
-        console.error('❌ CRITICAL: Invalid date format');
-        console.error('StartDate:', startDate, 'EndDate:', endDate);
         currentPeriodStart = null;
         currentPeriodEnd = null;
       }
-    } else {
-      console.log('⚠️ No date fields found, will update without dates');
-      console.error('Available eventData keys:', Object.keys(eventData));
     }
 
     const updateData: {
@@ -419,12 +372,9 @@ async function handleSubscriptionActive(data: unknown) {
         .update(userSubscriptions)
         .set(updateData)
         .where(eq(userSubscriptions.subscriptionId, subscriptionId));
-
-      console.log('✅ Updated existing subscription to active:', subscriptionId);
     } else {
       // Create new subscription if it doesn't exist
       if (!tier || !productId) {
-        console.error('❌ Cannot create new subscription without tier and productId');
         return;
       }
 
@@ -439,12 +389,8 @@ async function handleSubscriptionActive(data: unknown) {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-
-      console.log('✅ Created new active subscription:', subscriptionId);
     }
   } catch (error) {
-    console.error('💥 Error handling subscription active:', error);
-    console.error('💥 Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     throw error;
   }
 }
@@ -453,7 +399,6 @@ async function handleSubscriptionCanceled(data: unknown) {
   const eventData = safeExtractObject(data);
 
   if (!eventData) {
-    console.error('❌ CRITICAL: Invalid event data structure');
     return;
   }
 
@@ -461,14 +406,12 @@ async function handleSubscriptionCanceled(data: unknown) {
     const { clerkUserId } = extractMetadataValues(eventData);
 
     if (!clerkUserId) {
-      console.error('❌ Missing clerkUserId in subscription metadata');
       return;
     }
 
     const subscriptionId = safeExtractString(eventData.id);
 
     if (!subscriptionId) {
-      console.error('❌ CRITICAL: Missing required subscription ID');
       return;
     }
 
@@ -476,7 +419,6 @@ async function handleSubscriptionCanceled(data: unknown) {
       safeExtractString(eventData.currentPeriodEnd) || safeExtractString(eventData.endsAt);
 
     if (!endDate) {
-      console.error('❌ CRITICAL: Missing required end date');
       return;
     }
 
@@ -484,7 +426,6 @@ async function handleSubscriptionCanceled(data: unknown) {
 
     // Validate date
     if (isNaN(currentPeriodEnd.getTime())) {
-      console.error('❌ CRITICAL: Invalid date format');
       return;
     }
 
@@ -498,7 +439,6 @@ async function handleSubscriptionCanceled(data: unknown) {
       })
       .where(eq(userSubscriptions.subscriptionId, subscriptionId));
   } catch (error) {
-    console.error('💥 Error handling subscription canceled:', error);
     throw error;
   }
 }
@@ -507,7 +447,6 @@ async function handleSubscriptionUncanceled(data: unknown) {
   const eventData = safeExtractObject(data);
 
   if (!eventData) {
-    console.error('❌ CRITICAL: Invalid event data structure');
     return;
   }
 
@@ -515,14 +454,12 @@ async function handleSubscriptionUncanceled(data: unknown) {
     const { clerkUserId } = extractMetadataValues(eventData);
 
     if (!clerkUserId) {
-      console.error('❌ Missing clerkUserId in subscription metadata');
       return;
     }
 
     const subscriptionId = safeExtractString(eventData.id);
 
     if (!subscriptionId) {
-      console.error('❌ CRITICAL: Missing required subscription ID');
       return;
     }
 
@@ -532,7 +469,6 @@ async function handleSubscriptionUncanceled(data: unknown) {
       safeExtractString(eventData.currentPeriodEnd) || safeExtractString(eventData.endsAt);
 
     if (!startDate || !endDate) {
-      console.error('❌ CRITICAL: Missing required date fields');
       return;
     }
 
@@ -541,7 +477,6 @@ async function handleSubscriptionUncanceled(data: unknown) {
 
     // Validate dates
     if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
-      console.error('❌ CRITICAL: Invalid date format');
       return;
     }
 
@@ -556,7 +491,6 @@ async function handleSubscriptionUncanceled(data: unknown) {
       })
       .where(eq(userSubscriptions.subscriptionId, subscriptionId));
   } catch (error) {
-    console.error('💥 Error handling subscription uncanceled:', error);
     throw error;
   }
 }
