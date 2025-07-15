@@ -111,7 +111,7 @@ export async function DELETE() {
     await clerk.users.updateUser(user.id, {
       publicMetadata: {
         ...user.publicMetadata,
-        profileImageUrl: null,
+        customProfileImageUrl: null,
       },
     });
 
