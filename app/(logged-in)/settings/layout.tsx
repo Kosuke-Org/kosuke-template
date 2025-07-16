@@ -70,7 +70,9 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
 
           <Suspense
             fallback={
-              <div className="h-[400px] w-full flex items-center justify-center">Loading...</div>
+              <div className="space-y-4">
+                <div className="h-32 w-full rounded bg-muted/50" />
+              </div>
             }
           >
             <div className="max-w-2xl">{children}</div>

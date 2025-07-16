@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useUser } from '@clerk/nextjs';
+import { SecuritySettingsSkeleton } from '@/components/skeletons';
 
 export default function SecurityPage() {
   const { user, isSignedIn } = useUser();
@@ -17,7 +18,7 @@ export default function SecurityPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   if (!isSignedIn || !user) {
-    return <div>Loading...</div>;
+    return <SecuritySettingsSkeleton />;
   }
 
   const handleDeleteAccount = async (e: React.FormEvent<HTMLFormElement>) => {

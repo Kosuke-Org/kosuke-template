@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { CheckCircle, Loader2, ArrowRight } from 'lucide-react';
+import { CheckCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function BillingSuccessPage() {
   const searchParams = useSearchParams();
@@ -36,11 +37,12 @@ export default function BillingSuccessPage() {
         <Card className="max-w-md mx-auto">
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-4">
-              <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-              <h1 className="text-xl font-semibold">Processing your payment...</h1>
-              <p className="text-center text-muted-foreground">
-                Please wait while we confirm your subscription. This may take a few moments.
-              </p>
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <Skeleton className="h-6 w-48" />
+              <div className="text-center space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4 mx-auto" />
+              </div>
             </div>
           </CardContent>
         </Card>

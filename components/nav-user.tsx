@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/sidebar';
 import { useUser, useClerk } from '@clerk/nextjs';
 import { useProfileImageUrl } from '@/lib/hooks/use-profile-image';
+import { UserSkeleton } from '@/components/skeletons';
 
 export function NavUser() {
   const { user, isSignedIn } = useUser();
@@ -60,7 +61,15 @@ export function NavUser() {
   };
 
   if (!isSignedIn || !user) {
-    return null;
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" disabled>
+            <UserSkeleton />
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
   }
 
   return (

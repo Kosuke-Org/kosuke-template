@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useUser } from '@clerk/nextjs';
 import { useProfileImage, useProfileImageUrl } from '@/lib/hooks/use-profile-image';
+import { ProfileSettingsSkeleton } from '@/components/skeletons';
 
 export default function ProfileSettings() {
   const { user, isSignedIn } = useUser();
@@ -23,7 +24,7 @@ export default function ProfileSettings() {
   const [isUploading, setIsUploading] = useState(false);
 
   if (!isSignedIn || !user) {
-    return <div>Loading...</div>;
+    return <ProfileSettingsSkeleton />;
   }
 
   // Get initials for avatar fallback

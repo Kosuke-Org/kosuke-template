@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { BillingSkeleton } from '@/components/skeletons';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -224,11 +225,7 @@ export default function BillingPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <BillingSkeleton />;
   }
 
   const currentTier = subscriptionInfo?.tier || 'free';

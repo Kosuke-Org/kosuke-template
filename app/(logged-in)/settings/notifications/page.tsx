@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useUser } from '@clerk/nextjs';
+import { NotificationsSettingsSkeleton } from '@/components/skeletons';
 
 export default function NotificationsPage() {
   const { user, isSignedIn } = useUser();
@@ -25,7 +26,7 @@ export default function NotificationsPage() {
   }, [user]);
 
   if (!isSignedIn || !user) {
-    return <div>Loading...</div>;
+    return <NotificationsSettingsSkeleton />;
   }
 
   const handleSavePreferences = async () => {
