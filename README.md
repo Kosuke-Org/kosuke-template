@@ -1,6 +1,6 @@
 # Kosuke Template
 
-A modern Next.js 15 template with TypeScript, Clerk authentication, Polar Billing, Vercel Blob, PostgreSQL database, Shadcn UI, and Tailwind CSS.
+A modern Next.js 15 template with TypeScript, Clerk authentication, Polar Billing, Vercel Blob, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring.
 
 ## 🚀 Features
 
@@ -11,6 +11,7 @@ A modern Next.js 15 template with TypeScript, Clerk authentication, Polar Billin
 - **Shadcn UI** components with Tailwind CSS
 - **Polar** billing integration
 - **Profile image uploads** with Vercel Blob
+- **Sentry** error monitoring and performance tracking
 - **Responsive design** with dark/light mode
 - **Comprehensive testing** setup with Jest
 
@@ -81,6 +82,9 @@ POLAR_ACCESS_TOKEN=polar_oat_...
 POLAR_ENVIRONMENT=sandbox
 POLAR_PRO_PRODUCT_ID=prod_...
 POLAR_BUSINESS_PRODUCT_ID=prod_...
+
+# Sentry Error Monitoring
+NEXT_PUBLIC_SENTRY_DSN=https://your-sentry-dsn-here.ingest.sentry.io/project-id
 
 # Vercel Blob
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...

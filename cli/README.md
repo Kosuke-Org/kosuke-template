@@ -11,7 +11,8 @@ This interactive Python script guides you through setting up the kosuke template
 3. **🔗 Neon Database (Manual)** - Guided database creation through Vercel dashboard
 4. **💳 Polar Billing (Manual)** - Guided organization + product creation in dashboard
 5. **🔐 Clerk Authentication (Manual)** - Guided app creation + configuration
-6. **⚙️ Vercel Environment Variables (Critical)** - Add all env vars to ensure deployment success
+6. **🚨 Sentry Error Monitoring (Manual)** - Guided project creation for error tracking
+7. **⚙️ Vercel Environment Variables (Critical)** - Add all env vars to ensure deployment success
 
 **Key Features:**
 
@@ -50,6 +51,7 @@ The script will guide you to create these accounts/tokens **when needed**:
 - **Vercel Account** (project + storage creation via UI)
 - **Polar Account** (organization + product creation via UI)
 - **Clerk Account** + New Application
+- **Sentry Account** + New Project
 
 ## 📁 Generated Files
 

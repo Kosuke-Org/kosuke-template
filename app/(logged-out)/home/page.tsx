@@ -81,15 +81,15 @@ export default function HomePage() {
     },
     {
       icon: Code2,
-      title: 'TypeScript',
-      description: 'Full type safety across the entire stack',
+      title: 'TypeScript + Sentry',
+      description: 'Full type safety and error monitoring',
     },
   ];
 
   const techStackRows = [
     ['Next.js 15', 'React 19', 'TypeScript', 'Tailwind CSS', 'Shadcn UI'],
     ['Clerk', 'PostgreSQL', 'Drizzle ORM', 'Polar', 'Vercel Blob'],
-    ['Framer Motion', 'Jest'],
+    ['Sentry', 'Framer Motion', 'Jest'],
   ];
 
   const useCases = [

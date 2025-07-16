@@ -150,7 +150,7 @@ class InteractiveSetup:
     
     def __init__(self):
         self.progress = ProgressManager.load_progress() or SetupProgress()
-        self.total_steps = 6
+        self.total_steps = 7
     
     def start(self):
         """Start or resume the interactive setup"""
@@ -186,7 +186,9 @@ class InteractiveSetup:
             elif self.progress.current_step == 5:
                 self.step_5_clerk_manual()
             elif self.progress.current_step == 6:
-                self.step_6_vercel_env_vars()
+                self.step_6_sentry_manual()
+            elif self.progress.current_step == 7:
+                self.step_7_vercel_env_vars()
             
             self.progress.current_step += 1
             ProgressManager.save_progress(self.progress)
@@ -209,7 +211,8 @@ class InteractiveSetup:
 ║  3. Neon Database (Manual guided setup)                     ║
 ║  4. Polar Billing (Manual product creation)                 ║
 ║  5. Clerk Authentication (Manual app creation)              ║
-║  6. Vercel Environment Variables (Critical for deployment)  ║
+║  6. Sentry Error Monitoring (Manual project creation)       ║
+║  7. Vercel Environment Variables (Critical for deployment)  ║
 ╚══════════════════════════════════════════════════════════════╝
 {Colors.ENDC}
         """
@@ -592,9 +595,54 @@ class InteractiveSetup:
         print(f"2. Enable {Colors.BOLD}'Google'{Colors.ENDC} OAuth provider if desired")
         print(f"3. Configure other authentication methods as needed")
     
-    def step_6_vercel_env_vars(self):
-        """Step 6: Add environment variables to Vercel project"""
-        print_step(6, self.total_steps, "Vercel Environment Variables (Critical)")
+    def step_6_sentry_manual(self):
+        """Step 6: Manual Sentry error monitoring setup"""
+        print_step(6, self.total_steps, "Sentry Error Monitoring (Manual)")
+        
+        print_info("We'll guide you through creating your Sentry project for error monitoring.")
+        print()
+        
+        print(f"{Colors.BOLD}📋 Create Sentry Project:{Colors.ENDC}")
+        print(f"1. Go to: {Colors.OKBLUE}https://sentry.io{Colors.ENDC}")
+        print(f"2. Sign up for a free account or log in")
+        print(f"3. Click {Colors.BOLD}'Create Project'{Colors.ENDC}")
+        print(f"4. Select {Colors.BOLD}'Next.js'{Colors.ENDC} as your platform")
+        print(f"5. Enter project name: {Colors.OKCYAN}{self.progress.project_name}{Colors.ENDC}")
+        print(f"6. Select your team (or use default)")
+        print(f"7. Click {Colors.BOLD}'Create Project'{Colors.ENDC}")
+        print(f"8. Copy the DSN from the setup instructions")
+        
+        input(f"\n{Colors.OKCYAN}Press Enter when you've created the Sentry project...{Colors.ENDC}")
+        
+        # Get Sentry DSN
+        print(f"\n{Colors.BOLD}📋 Get Sentry DSN:{Colors.ENDC}")
+        print(f"1. In your Sentry project dashboard, go to {Colors.BOLD}'Settings > Projects'{Colors.ENDC}")
+        print(f"2. Click on your project: {Colors.OKCYAN}{self.progress.project_name}{Colors.ENDC}")
+        print(f"3. Go to {Colors.BOLD}'Client Keys (DSN)'{Colors.ENDC}")
+        print(f"4. Copy the DSN URL (should start with 'https://' and end with '.ingest.sentry.io')")
+        
+        while True:
+            sentry_dsn = input(f"\n{Colors.OKCYAN}Enter your Sentry DSN: {Colors.ENDC}").strip()
+            if sentry_dsn.startswith('https://') and '.ingest.sentry.io' in sentry_dsn:
+                self.progress.api_keys['sentry_dsn'] = sentry_dsn
+                break
+            print_error("Invalid DSN format. DSN should start with 'https://' and contain '.ingest.sentry.io'")
+        
+        self.progress.completed_services.append('sentry')
+        
+        print_success("Sentry error monitoring configured!")
+        print_success("Your app will now track errors and performance metrics!")
+        print()
+        
+        print(f"{Colors.BOLD}📋 Additional Sentry Features (Optional):{Colors.ENDC}")
+        print(f"1. Performance Monitoring: Already enabled by default")
+        print(f"2. Session Replay: Already enabled for debugging")
+        print(f"3. Alerts: Configure in Sentry dashboard for critical errors")
+        print(f"4. Releases: Track deployments in your Sentry project")
+    
+    def step_7_vercel_env_vars(self):
+        """Step 7: Add environment variables to Vercel project"""
+        print_step(7, self.total_steps, "Vercel Environment Variables (Critical)")
         
         print_info("We'll generate a .env.prod file with all your environment variables.")
         print_info("You can then copy and paste them into your Vercel project settings.")
@@ -664,6 +712,11 @@ POLAR_BUSINESS_PRODUCT_ID={polar_config.get('business_product_id', '')}
 POLAR_WEBHOOK_SECRET={self.progress.api_keys.get('polar_webhook_secret', 'polar_webhook_secret_here')}
 
 # ===================================
+# SENTRY ERROR MONITORING
+# ===================================
+NEXT_PUBLIC_SENTRY_DSN={self.progress.api_keys.get('sentry_dsn', 'https://your-sentry-dsn-here.ingest.sentry.io/project-id')}
+
+# ===================================
 # APPLICATION CONFIGURATION
 # ===================================
 NEXT_PUBLIC_APP_URL={vercel_config.get('project_url', 'http://localhost:3000')}
@@ -718,6 +771,10 @@ POLAR_WEBHOOK_SECRET={self.progress.api_keys.get('polar_webhook_secret', 'polar_
 
 POLAR_PRO_PRODUCT_ID={polar_config.get('pro_product_id', '')}
 POLAR_BUSINESS_PRODUCT_ID={polar_config.get('business_product_id', '')}
+
+# Sentry
+# ------------------------------------------------------------------------------------
+NEXT_PUBLIC_SENTRY_DSN={self.progress.api_keys.get('sentry_dsn', 'https://your-sentry-dsn-here.ingest.sentry.io/project-id')}
 """
         
         # Save .env file
@@ -750,6 +807,8 @@ POLAR_BUSINESS_PRODUCT_ID={polar_config.get('business_product_id', '')}
             print(f"   • Polar Billing: {Colors.OKBLUE}{polar_url}{Colors.ENDC}")
         if 'clerk' in self.progress.completed_services:
             print(f"   • Clerk Authentication: {Colors.OKGREEN}Application created{Colors.ENDC}")
+        if 'sentry' in self.progress.completed_services:
+            print(f"   • Sentry Error Monitoring: {Colors.OKGREEN}Project created{Colors.ENDC}")
         if 'vercel-env' in self.progress.completed_services:
             print(f"   • Vercel Environment Variables: {Colors.OKGREEN}All variables configured{Colors.ENDC}")
         
