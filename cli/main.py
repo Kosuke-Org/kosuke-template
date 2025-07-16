@@ -279,7 +279,7 @@ class InteractiveSetup:
                 self.progress.completed_services.append('github')
                 print_success(f"GitHub repository configured: {repo_url}")
                 break
-        else:
+            else:
                 print_error("Invalid repository URL or name doesn't match project name")
     
     def validate_github_url(self, url: str, expected_name: str) -> bool:
@@ -331,7 +331,7 @@ class InteractiveSetup:
                     break
                 else:
                     print_error(f"URL should contain '{self.progress.project_name}'")
-        else:
+            else:
                 print_error("Please enter a valid Vercel dashboard URL (https://vercel.com/...)")
         
         print()
