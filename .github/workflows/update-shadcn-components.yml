@@ -40,8 +40,12 @@ jobs:
 
       - name: Update shadcn/ui components
         run: |
-          echo "Updating shadcn/ui components..."
+          echo "🤖 Updating all shadcn/ui components..."
           npx shadcn@latest add -a -y -o
+          echo "✅ All components updated successfully!"
+          echo ""
+          echo "📋 To see what changed:"
+          echo "  git diff"
 
       - name: Check for file changes
         id: check-changes
