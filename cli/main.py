@@ -502,9 +502,29 @@ class InteractiveSetup:
                 break
             print_error("Invalid token format. Token should start with 'polar_oat_'")
         
+        # Set up Polar webhook
+        print(f"\n{Colors.BOLD}📋 Set up Polar Webhook (Required for billing events):{Colors.ENDC}")
+        print(f"1. In your Polar dashboard, go to {Colors.BOLD}'Webhooks'{Colors.ENDC}")
+        print(f"2. Click {Colors.BOLD}'Add Endpoint'{Colors.ENDC}")
+        print(f"3. Endpoint URL: {Colors.OKCYAN}https://{self.progress.project_name}.vercel.app/api/billing/webhook{Colors.ENDC}")
+        print(f"4. Select events:")
+        print(f"   • ☑️ subscription.created")
+        print(f"   • ☑️ subscription.updated") 
+        print(f"   • ☑️ subscription.canceled")
+        print(f"5. Click {Colors.BOLD}'Create'{Colors.ENDC}")
+        print(f"6. Copy the {Colors.BOLD}'Signing Secret'{Colors.ENDC}")
+        
+        while True:
+            webhook_secret = input(f"\n{Colors.OKCYAN}Enter Polar Webhook Signing Secret: {Colors.ENDC}").strip()
+            if webhook_secret:
+                self.progress.api_keys['polar_webhook_secret'] = webhook_secret
+                break
+            print_error("Please enter the webhook signing secret")
+        
         print_success(f"Polar billing configured: {dashboard_url}/{org_slug}")
         print_success("Pro Plan ($20/month) and Business Plan ($200/month) products created")
         print_success("API token configured for billing operations")
+        print_success("Webhook configured for billing events!")
         
         return service_config
     
@@ -643,6 +663,7 @@ POLAR_ENVIRONMENT={polar_config.get('environment', 'sandbox')}
 POLAR_ORGANIZATION_ID={polar_config.get('organization_slug', '')}
 POLAR_PRO_PRODUCT_ID={polar_config.get('pro_product_id', '')}
 POLAR_BUSINESS_PRODUCT_ID={polar_config.get('business_product_id', '')}
+POLAR_WEBHOOK_SECRET={self.progress.api_keys.get('polar_webhook_secret', 'polar_webhook_secret_here')}
 
 # ===================================
 # APPLICATION CONFIGURATION
@@ -666,7 +687,7 @@ NODE_ENV=production
     
     def generate_env_file(self):
         """Generate .env file for local development"""
-    print()
+        print()
         print_info("Generating .env file for local development...")
         
         polar_config = self.progress.service_configs.get('polar', {}).get('credentials', {})
@@ -695,7 +716,7 @@ POLAR_ENVIRONMENT={polar_config.get('environment', 'sandbox')}
 POLAR_ACCESS_TOKEN={self.progress.api_keys.get('polar_access_token', 'polar_oat_your_polar_token_here')}
 POLAR_SUCCESS_URL=http://localhost:3000/billing/success?checkout_id={{CHECKOUT_ID}}
 POLAR_CANCEL_URL=http://localhost:3000/billing/cancel
-POLAR_WEBHOOK_SECRET=b10bf0ac2e2a45d2bbb54925ecc6bbc6
+POLAR_WEBHOOK_SECRET={self.progress.api_keys.get('polar_webhook_secret', 'polar_webhook_secret_here')}
 
 POLAR_PRO_PRODUCT_ID={polar_config.get('pro_product_id', '')}
 POLAR_BUSINESS_PRODUCT_ID={polar_config.get('business_product_id', '')}
