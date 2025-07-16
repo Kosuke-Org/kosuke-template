@@ -29,21 +29,6 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
 
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link
-            href="/features"
-            className="text-sm font-medium hover:text-primary transition-colors"
-          >
-            Features
-          </Link>
-          <Link
-            href="/pricing"
-            className="text-sm font-medium hover:text-primary transition-colors"
-          >
-            Pricing
-          </Link>
-          <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors">
-            About
-          </Link>
           <div className="flex items-center gap-3">
             <Link href="/sign-in">
               <Button variant="ghost">Log in</Button>
@@ -67,24 +52,6 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
             </SheetTrigger>
             <SheetContent side="right">
               <nav className="flex flex-col gap-4 mt-8">
-                <Link
-                  href="/features"
-                  className="text-base font-medium py-2 hover:text-primary transition-colors"
-                >
-                  Features
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="text-base font-medium py-2 hover:text-primary transition-colors"
-                >
-                  Pricing
-                </Link>
-                <Link
-                  href="/about"
-                  className="text-base font-medium py-2 hover:text-primary transition-colors"
-                >
-                  About
-                </Link>
                 <div className="flex flex-col gap-2 pt-2">
                   <Link href="/sign-in">
                     <Button variant="ghost" className="w-full justify-start">

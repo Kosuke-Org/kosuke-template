@@ -19,32 +19,16 @@ import { motion, type Variants } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function HomePage() {
   const [copiedCommand, setCopiedCommand] = useState(false);
-  const [starCount, setStarCount] = useState<number | null>(null);
 
   const handleCopyCommand = () => {
     navigator.clipboard.writeText('git clone https://github.com/filopedraz/kosuke-template.git');
     setCopiedCommand(true);
     setTimeout(() => setCopiedCommand(false), 2000);
   };
-
-  // Fetch GitHub stars
-  useEffect(() => {
-    const fetchStars = async () => {
-      try {
-        const response = await fetch('https://api.github.com/repos/filopedraz/kosuke-template');
-        const data = await response.json();
-        setStarCount(data.stargazers_count);
-      } catch (error) {
-        console.error('Failed to fetch GitHub stars:', error);
-      }
-    };
-
-    fetchStars();
-  }, []);
 
   const container: Variants = {
     hidden: { opacity: 0 },
@@ -102,19 +86,10 @@ export default function HomePage() {
     },
   ];
 
-  const techStack = [
-    'Next.js 15',
-    'React 19',
-    'TypeScript',
-    'Tailwind CSS',
-    'Shadcn UI',
-    'Clerk',
-    'PostgreSQL',
-    'Drizzle ORM',
-    'Polar',
-    'Vercel Blob',
-    'Framer Motion',
-    'Jest',
+  const techStackRows = [
+    ['Next.js 15', 'React 19', 'TypeScript', 'Tailwind CSS', 'Shadcn UI'],
+    ['Clerk', 'PostgreSQL', 'Drizzle ORM', 'Polar', 'Vercel Blob'],
+    ['Framer Motion', 'Jest'],
   ];
 
   const useCases = [
@@ -129,25 +104,14 @@ export default function HomePage() {
   return (
     <div className="w-full min-h-screen font-[family-name:var(--font-geist-sans)]">
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="container mx-auto px-6 py-20 lg:py-32">
+      <section className="relative overflow-hidden min-h-screen flex items-center">
+        <div className="container mx-auto px-6">
           <motion.div
             className="text-center max-w-4xl mx-auto"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <motion.div
-              className="mb-6"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-            >
-              <Badge variant="secondary" className="mb-4 text-sm px-4 py-2">
-                🚀 Open Source Template
-              </Badge>
-            </motion.div>
-
             <motion.h1
               className="text-5xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent"
               initial={{ opacity: 0, y: 20 }}
@@ -168,7 +132,7 @@ export default function HomePage() {
             </motion.p>
 
             <motion.div
-              className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7, duration: 0.6 }}
@@ -179,13 +143,8 @@ export default function HomePage() {
                   window.open('https://github.com/filopedraz/kosuke-template', '_blank')
                 }
               >
-                <Github className="mr-2 h-4 w-4" />
+                <Star className="mr-2 h-4 w-4" />
                 Star on GitHub
-                {starCount && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    {starCount}
-                  </Badge>
-                )}
               </Button>
               <Button
                 variant="outline"
@@ -194,7 +153,7 @@ export default function HomePage() {
                   window.open('https://github.com/filopedraz/kosuke-template', '_blank')
                 }
               >
-                <Star className="mr-2 h-4 w-4" />
+                <Github className="mr-2 h-4 w-4" />
                 View Repository
               </Button>
             </motion.div>
@@ -333,20 +292,28 @@ export default function HomePage() {
           </motion.div>
 
           <motion.div
-            className="flex flex-wrap justify-center gap-4"
+            className="space-y-4"
             variants={container}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
           >
-            {techStack.map((tech, index) => (
-              <motion.div key={index} variants={item}>
-                <Badge
-                  variant="secondary"
-                  className="text-sm px-4 py-2 hover:bg-primary hover:text-primary-foreground transition-colors cursor-default"
-                >
-                  {tech}
-                </Badge>
+            {techStackRows.map((row, rowIndex) => (
+              <motion.div
+                key={rowIndex}
+                className="flex flex-wrap justify-center gap-4"
+                variants={item}
+              >
+                {row.map((tech, techIndex) => (
+                  <motion.div key={`${rowIndex}-${techIndex}`} variants={item}>
+                    <Badge
+                      variant="secondary"
+                      className="text-sm px-4 py-2 hover:bg-primary hover:text-primary-foreground transition-colors cursor-default"
+                    >
+                      {tech}
+                    </Badge>
+                  </motion.div>
+                ))}
               </motion.div>
             ))}
           </motion.div>
@@ -402,7 +369,10 @@ export default function HomePage() {
                     <Button
                       className="mt-6"
                       onClick={() =>
-                        window.open('https://github.com/filopedraz/kosuke-template', '_blank')
+                        window.open(
+                          'https://github.com/filopedraz/kosuke-template/blob/main/cli/README.md',
+                          '_blank'
+                        )
                       }
                     >
                       View Setup Guide
@@ -478,19 +448,17 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button
-                size="lg"
-                className="text-lg px-8 py-6"
+                className="px-6 py-3"
                 onClick={() =>
                   window.open('https://github.com/filopedraz/kosuke-template', '_blank')
                 }
               >
-                <Star className="mr-2 h-5 w-5" />
+                <Star className="mr-2 h-4 w-4" />
                 Star on GitHub
               </Button>
               <Button
-                size="lg"
                 variant="outline"
-                className="text-lg px-8 py-6"
+                className="px-6 py-3"
                 onClick={() =>
                   window.open(
                     'https://twitter.com/intent/tweet?text=Check%20out%20Kosuke%20Template%20-%20modern%20Next.js%20template%20with%20everything%20you%20need!&url=https://github.com/filopedraz/kosuke-template',
@@ -498,27 +466,9 @@ export default function HomePage() {
                   )
                 }
               >
-                <Twitter className="mr-2 h-5 w-5" />
+                <Twitter className="mr-2 h-4 w-4" />
                 Share on X
               </Button>
-            </div>
-            <div className="flex justify-center gap-6 text-muted-foreground">
-              <a
-                href="https://github.com/filopedraz/kosuke-template"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-foreground transition-colors"
-              >
-                <Github className="h-6 w-6" />
-              </a>
-              <a
-                href="https://twitter.com/intent/tweet?text=Check%20out%20Kosuke%20Template&url=https://github.com/filopedraz/kosuke-template"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-foreground transition-colors"
-              >
-                <Twitter className="h-6 w-6" />
-              </a>
             </div>
           </motion.div>
         </div>
