@@ -18,11 +18,9 @@ Progress is saved automatically, so you can resume if interrupted.
 import os
 import sys
 import json
-import time
 import logging
 from dataclasses import dataclass, asdict
-from typing import Dict, List, Optional, Any
-from urllib.parse import urlparse
+from typing import Dict, List, Optional
 import re
 
 import requests
