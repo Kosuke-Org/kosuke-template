@@ -666,7 +666,7 @@ NODE_ENV=production
     
     def generate_env_file(self):
         """Generate .env file for local development"""
-        print()
+    print()
         print_info("Generating .env file for local development...")
         
         polar_config = self.progress.service_configs.get('polar', {}).get('credentials', {})

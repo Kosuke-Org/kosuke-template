@@ -430,6 +430,147 @@ After the interactive setup completes:
    - **`.env`** - Local development (localhost, docker-compose database)
    - **`.env.prod`** - Production reference (Vercel has these variables)
 
+## 🚀 Going for Production
+
+When you're ready to launch your application to production, you'll need to configure each service for production use. Here's how to transition from development/sandbox to production environments.
+
+### 🏦 Polar
+
+Moving from Polar sandbox to production environment:
+
+#### 1. Create Production Organization
+
+1. Go to **https://polar.sh/dashboard** (production, not sandbox)
+2. Create a new organization or use an existing production organization
+3. Note your production organization slug
+
+#### 2. Create Production Products
+
+1. In your production Polar dashboard, go to **Products**
+2. Click **Create Product**
+3. Create **Pro Plan**:
+   - Name: `Pro Plan`
+   - Description: `Professional subscription with advanced features`
+   - Type: `Subscription`
+   - Price: `$20.00 USD per month`
+4. Create **Business Plan**:
+   - Name: `Business Plan`
+   - Description: `Business subscription with premium features and priority support`
+   - Type: `Subscription`
+   - Price: `$200.00 USD per month`
+5. Copy both Product IDs
+
+#### 3. Create Production API Token
+
+1. In production Polar dashboard, go to **Settings > API Tokens**
+2. Click **Create Token**
+3. Name: `your-app-production`
+4. Select all required scopes:
+   - ☑️ `products:read`
+   - ☑️ `products:write`
+   - ☑️ `checkouts:write`
+   - ☑️ `subscriptions:read`
+   - ☑️ `subscriptions:write`
+5. Copy the production token (starts with `polar_oat_`)
+
+#### 4. Update Vercel Environment Variables
+
+1. Go to **Vercel Dashboard > Your Project > Settings > Environment Variables**
+2. Update these variables to production values:
+   - `POLAR_ENVIRONMENT` = `production`
+   - `POLAR_ACCESS_TOKEN` = `[your-production-token]`
+   - `POLAR_ORGANIZATION_ID` = `[your-production-org-slug]`
+   - `POLAR_PRO_PRODUCT_ID` = `[production-pro-product-id]`
+   - `POLAR_BUSINESS_PRODUCT_ID` = `[production-business-product-id]`
+
+#### 5. Set Up Production Webhooks
+
+1. In production Polar dashboard, go to **Webhooks**
+2. Add endpoint: `https://your-domain.com/api/billing/webhook`
+3. Select events: `subscription.created`, `subscription.updated`, `subscription.canceled`
+4. Copy webhook secret and update `POLAR_WEBHOOK_SECRET` in Vercel
+
+### ☁️ Vercel
+
+Configuring custom domains and production settings:
+
+#### 1. Add Custom Domain
+
+1. Go to **Vercel Dashboard > Your Project > Settings > Domains**
+2. Click **Add Domain**
+3. Enter your custom domain (e.g., `yourdomain.com`)
+4. Follow DNS configuration instructions:
+   - **CNAME**: Point `www.yourdomain.com` to `cname.vercel-dns.com`
+   - **A Record**: Point `yourdomain.com` to Vercel's IP addresses
+5. Wait for DNS propagation (can take up to 48 hours)
+
+#### 2. Update Environment Variables
+
+Update your Vercel environment variables for production:
+
+1. `NEXT_PUBLIC_APP_URL` = `https://yourdomain.com`
+2. `POLAR_SUCCESS_URL` = `https://yourdomain.com/billing/success?checkout_id={CHECKOUT_ID}`
+3. `POLAR_CANCEL_URL` = `https://yourdomain.com/billing/cancel`
+
+#### 3. SSL/HTTPS Configuration
+
+- Vercel automatically provides SSL certificates for custom domains
+- Ensure all external integrations use HTTPS URLs
+- Update webhook URLs to use your custom domain
+
+#### 4. Production Deployment Settings
+
+1. Go to **Settings > Functions**
+2. Verify function timeout settings for production workloads
+3. Review **Security** settings for production use
+
+### 🔐 Clerk
+
+Moving Clerk from development to production:
+
+#### 1. Upgrade to Production Instance
+
+1. Go to **https://dashboard.clerk.com**
+2. Navigate to your application
+3. Go to **Settings > Plan & Billing**
+4. Upgrade to a production plan (required for custom domains)
+
+#### 2. Configure Production Domains
+
+1. In Clerk dashboard, go to **Settings > Domain**
+2. Click **Add Domain**
+3. Add your production domain: `yourdomain.com`
+4. Add any subdomains if needed
+5. Remove development domains if no longer needed
+
+#### 3. Update Production Keys
+
+1. In Clerk dashboard, note that your keys automatically work for production
+2. Verify in **API Keys** section:
+   - Production publishable key (starts with `pk_live_`)
+   - Production secret key (starts with `sk_live_`)
+3. Update Vercel environment variables if keys changed:
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+   - `CLERK_SECRET_KEY`
+
+#### 4. Configure Production Authentication
+
+1. **Social Connections**: Configure OAuth providers for production
+   - Update redirect URLs to use your custom domain
+   - Use production OAuth app credentials
+2. **Email/SMS**: Configure production email provider
+3. **Session Configuration**: Review session timeout settings
+
+#### 5. Update Webhook URLs
+
+1. In Clerk dashboard, go to **Webhooks**
+2. Update webhook endpoint to: `https://yourdomain.com/api/clerk/webhook`
+3. Ensure events are still selected:
+   - ☑️ `user.created`
+   - ☑️ `user.updated`
+   - ☑️ `user.deleted`
+4. Test webhook delivery in production
+
 ## 📄 License
 
 This interactive setup guide is provided as-is under the MIT License. See the main project LICENSE for details.
