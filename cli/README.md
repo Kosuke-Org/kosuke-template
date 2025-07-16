@@ -71,22 +71,22 @@ The script will guide you to create these accounts/tokens **when needed**:
 
 Enter your project name (kebab-case): open-idealista
 
-📍 Step 1/5: GitHub Repository (Manual)
+📍 Step 1/6: GitHub Repository (Manual)
 ============================================================
 ℹ️  We'll guide you through forking the Kosuke template repository.
 
 📋 Instructions:
 1. Open this URL in your browser: https://github.com/filopedraz/kosuke-template
 2. Click the 'Fork' button in the top-right corner
-3. ⚠️  Important: Change the repository name to: my-awesome-app
+3. ⚠️  Important: Change the repository name to: open-idealista
 4. Click 'Create fork'
 5. Wait for the fork to complete
 
 Press Enter when you've completed the fork...
-Enter your forked repository URL: https://github.com/yourusername/my-awesome-app
-✅ GitHub repository configured: https://github.com/yourusername/my-awesome-app
+Enter your forked repository URL: https://github.com/yourusername/open-idealista
+✅ GitHub repository configured: https://github.com/yourusername/open-idealista
 
-📍 Step 2/5: Vercel Project (Manual)
+📍 Step 2/6: Vercel Project (Manual)
 ============================================================
 ℹ️  We'll guide you through creating your Vercel project manually.
 ℹ️  This ensures everything works correctly and you learn the platform.
@@ -130,7 +130,7 @@ Press Enter when you've created the Blob storage...
 ✅ Vercel project configured: https://open-idealista.vercel.app
 ✅ Blob storage configured - environment variables added automatically
 
-📍 Step 3/5: Neon Database (Manual)
+📍 Step 3/6: Neon Database (Manual)
 ============================================================
 ℹ️  We'll set up your Neon database through Vercel's project dashboard.
 
@@ -146,7 +146,7 @@ Press Enter when you've created the Blob storage...
 Press Enter when you've created the Neon database...
 ✅ Neon database configured - environment variables added automatically
 
-📍 Step 4/5: Polar Billing (Manual)
+📍 Step 4/6: Polar Billing (Manual)
 ============================================================
 ℹ️  We'll guide you through setting up Polar billing products manually.
 ℹ️  This ensures everything works correctly and you learn the platform.
@@ -216,23 +216,6 @@ Enter your Polar API token: polar_oat_...
 ✅ Polar billing configured: https://sandbox.polar.sh/dashboard/open-idealista-org
 ✅ Pro Plan ($20/month) and Business Plan ($200/month) products created
 ✅ API token configured for billing operations
-
-📍 Step 5/5: Clerk Authentication (Manual)
-============================================================
-ℹ️  We'll guide you through creating your Clerk authentication app.
-
-📋 Create Clerk Application:
-1. Go to: https://dashboard.clerk.com
-2. Click 'Add application'
-3. Enter application name: my-awesome-app
-4. Choose 'Next.js' as your framework
-5. Click 'Create application'
-6. Copy both API keys from the dashboard
-
-Press Enter when you've created the Clerk application...
-Enter Clerk Publishable Key (pk_test_...): pk_test_...
-Enter Clerk Secret Key (sk_test_...): sk_test_...
-✅ Clerk authentication configured!
 
 📍 Step 5/6: Clerk Authentication (Manual)
 ============================================================
@@ -306,7 +289,8 @@ Press Enter when you've added all environment variables to Vercel...
 
 After completion, you'll have:
 
-- **`.env`** - Complete environment configuration
+- **`.env`** - Local development environment configuration
+- **`.env.prod`** - Production environment variables for Vercel
 - **`.kosuke-setup-progress.json`** - Progress file (automatically deleted on completion)
 
 ## 🔄 Resume Feature
@@ -331,17 +315,6 @@ Resume previous setup? (y/n): y
 
 After the script completes, you'll need to configure a few additional settings:
 
-### 1. Clerk OAuth Providers (Required)
-
-**Complete these steps after your app is deployed:**
-
-1. In your Clerk application, go to **User & Authentication > Social Connections**
-2. Enable **Google** OAuth provider (add your Google OAuth credentials)
-3. Enable **Email & SMS** authentication
-4. Go to **Webhooks** and add endpoint: `https://your-app.vercel.app/api/clerk/webhook`
-5. Select events: `user.created`, `user.updated`, `user.deleted`
-6. Copy the webhook secret and update your `.env` file
-
 ### 2. Polar Webhook Configuration (Optional)
 
 For production webhook handling:
@@ -350,37 +323,6 @@ For production webhook handling:
 2. Add endpoint: `https://your-app.vercel.app/api/billing/webhook`
 3. Select events: `subscription.created`, `subscription.updated`, `subscription.canceled`
 4. Copy the webhook secret and update `POLAR_WEBHOOK_SECRET` in your `.env` file
-
-## 🔍 Troubleshooting
-
-### Common Issues
-
-**❌ "First Vercel deployment failed with POSTGRES_URL error"**
-
-- This is **completely normal and expected**
-- The app needs database and storage environment variables to build
-- Continue with the setup - we'll fix this with Neon and Blob storage
-- You'll redeploy at the end once everything is configured
-
-**❌ "URL should contain 'project-name'"**
-
-- Make sure you copied the correct dashboard URL from Vercel
-- URL format should be: `https://vercel.com/username/your-project-name`
-- You can find this in your Vercel dashboard even if deployment failed
-
-**❌ "Product ID not found" or other Polar issues**
-
-- Ensure you're copying the Product ID correctly from the Polar dashboard
-- Product IDs are UUIDs in format: `01234567-89ab-cdef-0123-456789abcdef`
-- Make sure you're in the correct organization
-- Verify you've created both Pro Plan and Business Plan products
-- Check you're using the correct environment (sandbox vs production)
-
-### Getting Help
-
-1. **Check the detailed error messages** - The script provides specific guidance
-2. **Verify each step was completed** - Don't skip any instructions
-3. **Use sandbox environments** - Test with Polar sandbox before production
 
 ## 🚀 Next Steps
 
