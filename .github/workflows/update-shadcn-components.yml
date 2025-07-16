@@ -43,9 +43,16 @@ jobs:
           echo "🤖 Updating all shadcn/ui components..."
           npx shadcn@latest add -a -y -o
           echo "✅ All components updated successfully!"
-          echo ""
-          echo "📋 To see what changed:"
-          echo "  git diff"
+
+      - name: Format code with Prettier
+        run: |
+          echo "🎨 Formatting code with Prettier..."
+          npm run format
+
+      - name: Lint code with ESLint
+        run: |
+          echo "🔍 Linting code with ESLint..."
+          npm run lint -- --fix
 
       - name: Check for file changes
         id: check-changes
