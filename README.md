@@ -10,6 +10,7 @@ A modern Next.js 15 template with TypeScript, Clerk authentication, Polar Billin
 - **PostgreSQL** database with Drizzle ORM
 - **Shadcn UI** components with Tailwind CSS
 - **Polar** billing integration
+- **Resend** email service with welcome emails
 - **Profile image uploads** with Vercel Blob
 - **Sentry** error monitoring and performance tracking
 - **Responsive design** with dark/light mode
@@ -85,6 +86,12 @@ POLAR_BUSINESS_PRODUCT_ID=prod_...
 
 # Sentry Error Monitoring
 NEXT_PUBLIC_SENTRY_DSN=https://your-sentry-dsn-here.ingest.sentry.io/project-id
+
+# Resend Email Service
+RESEND_API_KEY=re_your_resend_api_key_here
+RESEND_FROM_EMAIL=onboarding@yourdomain.com
+RESEND_FROM_NAME=Your App Name
+RESEND_REPLY_TO=support@yourdomain.com
 
 # Vercel Blob
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...

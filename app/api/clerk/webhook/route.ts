@@ -5,6 +5,8 @@ import { db } from '@/lib/db';
 import { users, activityLogs, ActivityType } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { headers } from 'next/headers';
+import { sendEmail, isValidEmail } from '@/lib/email';
+import { createWelcomeEmail } from '@/lib/email/templates/welcome';
 
 // Define types for webhook events
 interface ClerkWebhookEvent {
@@ -216,9 +218,51 @@ async function handleUserCreated(userData: ClerkWebhookUser) {
     await syncUserFromWebhook(userData);
 
     console.log(`✅ New user created: ${userData.id}`);
+
+    // Send welcome email (don't let email failures break user creation)
+    await sendWelcomeEmail(userData);
   } catch (error) {
     console.error('💥 Error in handleUserCreated:', error);
     throw error;
+  }
+}
+
+/**
+ * Send welcome email to newly created user
+ */
+async function sendWelcomeEmail(userData: ClerkWebhookUser) {
+  try {
+    const email = userData.email_addresses?.[0]?.email_address;
+    const firstName = userData.first_name || 'there';
+
+    if (!email || !isValidEmail(email)) {
+      console.log('⚠️ No valid email address found for user, skipping welcome email');
+      return;
+    }
+
+    console.log('📧 Sending welcome email to:', email);
+
+    // Create email template
+    const emailTemplate = createWelcomeEmail({
+      firstName,
+      email,
+      dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+      settingsUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings`,
+    });
+
+    // Send the email
+    await sendEmail({
+      to: email,
+      subject: emailTemplate.subject,
+      html: emailTemplate.html,
+      text: emailTemplate.text,
+    });
+
+    console.log('✅ Welcome email sent successfully to:', email);
+  } catch (error) {
+    // Log the error but don't throw it - we don't want email failures to break user creation
+    console.error('💥 Error sending welcome email:', error);
+    console.log('ℹ️ User creation will continue despite email failure');
   }
 }
 

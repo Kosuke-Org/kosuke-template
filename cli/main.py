@@ -150,7 +150,7 @@ class InteractiveSetup:
     
     def __init__(self):
         self.progress = ProgressManager.load_progress() or SetupProgress()
-        self.total_steps = 7
+        self.total_steps = 8
     
     def start(self):
         """Start or resume the interactive setup"""
@@ -186,9 +186,11 @@ class InteractiveSetup:
             elif self.progress.current_step == 5:
                 self.step_5_clerk_manual()
             elif self.progress.current_step == 6:
-                self.step_6_sentry_manual()
+                self.step_6_resend_manual()
             elif self.progress.current_step == 7:
-                self.step_7_vercel_env_vars()
+                self.step_7_sentry_manual()
+            elif self.progress.current_step == 8:
+                self.step_8_vercel_env_vars()
             
             self.progress.current_step += 1
             ProgressManager.save_progress(self.progress)
@@ -211,8 +213,9 @@ class InteractiveSetup:
 ║  3. Neon Database (Manual guided setup)                     ║
 ║  4. Polar Billing (Manual product creation)                 ║
 ║  5. Clerk Authentication (Manual app creation)              ║
-║  6. Sentry Error Monitoring (Manual project creation)       ║
-║  7. Vercel Environment Variables (Critical for deployment)  ║
+║  6. Resend Email Service (Manual API key setup)             ║
+║  7. Sentry Error Monitoring (Manual project creation)       ║
+║  8. Vercel Environment Variables (Critical for deployment)  ║
 ╚══════════════════════════════════════════════════════════════╝
 {Colors.ENDC}
         """
@@ -595,9 +598,81 @@ class InteractiveSetup:
         print(f"2. Enable {Colors.BOLD}'Google'{Colors.ENDC} OAuth provider if desired")
         print(f"3. Configure other authentication methods as needed")
     
-    def step_6_sentry_manual(self):
-        """Step 6: Manual Sentry error monitoring setup"""
-        print_step(6, self.total_steps, "Sentry Error Monitoring (Manual)")
+    def step_6_resend_manual(self):
+        """Step 6: Manual Resend email service setup"""
+        print_step(6, self.total_steps, "Resend Email Service (Manual)")
+        
+        print_info("We'll guide you through setting up Resend for email functionality.")
+        print_info("Resend enables welcome emails, notifications, and other email features.")
+        print()
+        
+        print(f"{Colors.BOLD}📋 Create Resend Account:{Colors.ENDC}")
+        print(f"1. Go to: {Colors.OKBLUE}https://resend.com{Colors.ENDC}")
+        print(f"2. Click {Colors.BOLD}'Sign up'{Colors.ENDC} and create a free account")
+        print(f"3. Verify your email address")
+        print(f"4. Complete the onboarding process")
+        
+        input(f"\n{Colors.OKCYAN}Press Enter when you've created your Resend account...{Colors.ENDC}")
+        
+        print(f"\n{Colors.BOLD}📋 Get Your API Key:{Colors.ENDC}")
+        print(f"1. In your Resend dashboard, go to: {Colors.OKBLUE}https://resend.com/api-keys{Colors.ENDC}")
+        print(f"2. Click {Colors.BOLD}'Create API Key'{Colors.ENDC}")
+        print(f"3. Give it a name: {Colors.OKCYAN}{self.progress.project_name}-api{Colors.ENDC}")
+        print(f"4. Select {Colors.BOLD}'Full access'{Colors.ENDC} for development")
+        print(f"5. Click {Colors.BOLD}'Create'{Colors.ENDC}")
+        print(f"6. Copy the API key (starts with 're_')")
+        
+        while True:
+            resend_api_key = input(f"\n{Colors.OKCYAN}Enter your Resend API key: {Colors.ENDC}").strip()
+            if resend_api_key.startswith('re_'):
+                self.progress.api_keys['resend_api_key'] = resend_api_key
+                break
+            print_error("Invalid API key format. Key should start with 're_'")
+        
+        print(f"\n{Colors.BOLD}📋 Configure Email Settings:{Colors.ENDC}")
+        print(f"For development, you can use the default Resend domain.")
+        print(f"For production, you'll want to verify your own domain.")
+        print()
+        
+        # Get sender email (optional, with default)
+        print(f"Sender email configuration:")
+        from_email = input(f"{Colors.OKCYAN}From email (press Enter for 'onboarding@resend.dev'): {Colors.ENDC}").strip()
+        if not from_email:
+            from_email = "onboarding@resend.dev"
+        self.progress.api_keys['resend_from_email'] = from_email
+        
+        # Get sender name
+        from_name = input(f"{Colors.OKCYAN}From name (press Enter for '{self.progress.project_name}'): {Colors.ENDC}").strip()
+        if not from_name:
+            from_name = self.progress.project_name.replace('-', ' ').title()
+        self.progress.api_keys['resend_from_name'] = from_name
+        
+        # Get reply-to email (optional)
+        reply_to = input(f"{Colors.OKCYAN}Reply-to email (optional, press Enter to skip): {Colors.ENDC}").strip()
+        if reply_to:
+            self.progress.api_keys['resend_reply_to'] = reply_to
+        
+        self.progress.completed_services.append('resend')
+        
+        print_success("Resend email service configured!")
+        print_success("Welcome emails will be sent when users sign up!")
+        print()
+        
+        print(f"{Colors.BOLD}📋 What's Already Implemented:{Colors.ENDC}")
+        print(f"   • ✅ Welcome emails on user signup")
+        print(f"   • ✅ HTML and text email templates")
+        print(f"   • ✅ Error handling that doesn't break user creation")
+        print(f"   • ✅ Email validation and logging")
+        print()
+        
+        print(f"{Colors.BOLD}📋 Next Steps (After Setup):{Colors.ENDC}")
+        print(f"   • For production: Verify your custom domain in Resend dashboard")
+        print(f"   • Add more email templates for different use cases")
+        print(f"   • Configure notification emails based on user preferences")
+    
+    def step_7_sentry_manual(self):
+        """Step 7: Manual Sentry error monitoring setup"""
+        print_step(7, self.total_steps, "Sentry Error Monitoring (Manual)")
         
         print_info("We'll guide you through creating your Sentry project for error monitoring.")
         print()
@@ -640,9 +715,9 @@ class InteractiveSetup:
         print(f"3. Alerts: Configure in Sentry dashboard for critical errors")
         print(f"4. Releases: Track deployments in your Sentry project")
     
-    def step_7_vercel_env_vars(self):
-        """Step 7: Add environment variables to Vercel project"""
-        print_step(7, self.total_steps, "Vercel Environment Variables (Critical)")
+    def step_8_vercel_env_vars(self):
+        """Step 8: Add environment variables to Vercel project"""
+        print_step(8, self.total_steps, "Vercel Environment Variables (Critical)")
         
         print_info("We'll generate a .env.prod file with all your environment variables.")
         print_info("You can then copy and paste them into your Vercel project settings.")
@@ -717,6 +792,14 @@ POLAR_WEBHOOK_SECRET={self.progress.api_keys.get('polar_webhook_secret', 'polar_
 NEXT_PUBLIC_SENTRY_DSN={self.progress.api_keys.get('sentry_dsn', 'https://your-sentry-dsn-here.ingest.sentry.io/project-id')}
 
 # ===================================
+# RESEND EMAIL SERVICE
+# ===================================
+RESEND_API_KEY={self.progress.api_keys.get('resend_api_key', 're_your_resend_api_key_here')}
+RESEND_FROM_EMAIL={self.progress.api_keys.get('resend_from_email', 'onboarding@resend.dev')}
+RESEND_FROM_NAME={self.progress.api_keys.get('resend_from_name', 'Your App Name')}
+{f"RESEND_REPLY_TO={self.progress.api_keys.get('resend_reply_to')}" if self.progress.api_keys.get('resend_reply_to') else '# RESEND_REPLY_TO=support@yourdomain.com'}
+
+# ===================================
 # APPLICATION CONFIGURATION
 # ===================================
 NEXT_PUBLIC_APP_URL={vercel_config.get('project_url', 'http://localhost:3000')}
@@ -775,6 +858,17 @@ POLAR_BUSINESS_PRODUCT_ID={polar_config.get('business_product_id', '')}
 # Sentry
 # ------------------------------------------------------------------------------------
 NEXT_PUBLIC_SENTRY_DSN={self.progress.api_keys.get('sentry_dsn', 'https://your-sentry-dsn-here.ingest.sentry.io/project-id')}
+
+# Resend (Email Service)
+# ------------------------------------------------------------------------------------
+RESEND_API_KEY={self.progress.api_keys.get('resend_api_key', 're_your_resend_api_key_here')}
+RESEND_FROM_EMAIL={self.progress.api_keys.get('resend_from_email', 'onboarding@resend.dev')}
+RESEND_FROM_NAME={self.progress.api_keys.get('resend_from_name', 'Kosuke Template')}
+{f"RESEND_REPLY_TO={self.progress.api_keys.get('resend_reply_to')}" if self.progress.api_keys.get('resend_reply_to') else '# RESEND_REPLY_TO=support@yourdomain.com'}
+
+# App URLs
+# ------------------------------------------------------------------------------------
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 """
         
         # Save .env file
@@ -807,6 +901,8 @@ NEXT_PUBLIC_SENTRY_DSN={self.progress.api_keys.get('sentry_dsn', 'https://your-s
             print(f"   • Polar Billing: {Colors.OKBLUE}{polar_url}{Colors.ENDC}")
         if 'clerk' in self.progress.completed_services:
             print(f"   • Clerk Authentication: {Colors.OKGREEN}Application created{Colors.ENDC}")
+        if 'resend' in self.progress.completed_services:
+            print(f"   • Resend Email Service: {Colors.OKGREEN}API key configured{Colors.ENDC}")
         if 'sentry' in self.progress.completed_services:
             print(f"   • Sentry Error Monitoring: {Colors.OKGREEN}Project created{Colors.ENDC}")
         if 'vercel-env' in self.progress.completed_services:

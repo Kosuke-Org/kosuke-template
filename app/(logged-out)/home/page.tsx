@@ -14,6 +14,7 @@ import {
   ArrowRight,
   Copy,
   Check,
+  Mail,
 } from 'lucide-react';
 import { motion, type Variants } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -80,6 +81,11 @@ export default function HomePage() {
       description: 'Subscription management made simple',
     },
     {
+      icon: Mail,
+      title: 'Resend Email Service',
+      description: 'Beautiful emails with welcome messages and notifications',
+    },
+    {
       icon: Code2,
       title: 'TypeScript + Sentry',
       description: 'Full type safety and error monitoring',
@@ -88,8 +94,8 @@ export default function HomePage() {
 
   const techStackRows = [
     ['Next.js 15', 'React 19', 'TypeScript', 'Tailwind CSS', 'Shadcn UI'],
-    ['Clerk', 'PostgreSQL', 'Drizzle ORM', 'Polar', 'Vercel Blob'],
-    ['Sentry', 'Framer Motion', 'Jest'],
+    ['Clerk', 'PostgreSQL', 'Drizzle ORM', 'Polar', 'Resend'],
+    ['Vercel Blob', 'Sentry', 'Framer Motion', 'Jest'],
   ];
 
   const useCases = [
