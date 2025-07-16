@@ -145,14 +145,14 @@ class ServiceManager:
         self.session = requests.Session()
         
 
-
+        
 
 class InteractiveSetup:
     """Main interactive setup coordinator"""
     
     def __init__(self):
         self.progress = ProgressManager.load_progress() or SetupProgress()
-        self.total_steps = 5
+        self.total_steps = 6
     
     def start(self):
         """Start or resume the interactive setup"""
@@ -162,9 +162,13 @@ class InteractiveSetup:
         if self.progress.current_step > 1:
             if self.ask_resume():
                 print_info(f"Resuming from Step {self.progress.current_step}")
-        else:
+            else:
+                print_info("Starting fresh setup...")
                 self.progress = SetupProgress()
                 ProgressManager.clear_progress()
+        else:
+            self.progress = SetupProgress()
+            ProgressManager.clear_progress()
         
         # Get project name if not set
         if not self.progress.project_name:
@@ -183,6 +187,8 @@ class InteractiveSetup:
                 self.step_polar_billing()
             elif self.progress.current_step == 5:
                 self.step_5_clerk_manual()
+            elif self.progress.current_step == 6:
+                self.step_6_vercel_env_vars()
             
             self.progress.current_step += 1
             ProgressManager.save_progress(self.progress)
@@ -203,8 +209,9 @@ class InteractiveSetup:
 ║  1. GitHub Repository (Manual guided fork)                  ║
 ║  2. Vercel Project (Manual guided setup)                    ║
 ║  3. Neon Database (Manual guided setup)                     ║
-║  4. Polar Billing (Automated with token)                    ║
+║  4. Polar Billing (Manual product creation)                 ║
 ║  5. Clerk Authentication (Manual app creation)              ║
+║  6. Vercel Environment Variables (Critical for deployment)  ║
 ╚══════════════════════════════════════════════════════════════╝
 {Colors.ENDC}
         """
@@ -274,7 +281,7 @@ class InteractiveSetup:
                 self.progress.completed_services.append('github')
                 print_success(f"GitHub repository configured: {repo_url}")
                 break
-            else:
+        else:
                 print_error("Invalid repository URL or name doesn't match project name")
     
     def validate_github_url(self, url: str, expected_name: str) -> bool:
@@ -326,7 +333,7 @@ class InteractiveSetup:
                     break
                 else:
                     print_error(f"URL should contain '{self.progress.project_name}'")
-            else:
+        else:
                 print_error("Please enter a valid Vercel dashboard URL (https://vercel.com/...)")
         
         print()
@@ -471,12 +478,33 @@ class InteractiveSetup:
         
         self.progress.service_configs['polar'] = service_config.to_dict()
         self.progress.completed_services.append('polar')
-        self.progress.current_step = 5
         ProgressManager.save_progress(self.progress)
+        
+        # Get Polar API Token
+        print(f"\n{Colors.BOLD}📋 Create Polar API Token (Required for billing operations):{Colors.ENDC}")
+        print(f"1. In your Polar dashboard, go to 'Settings'")
+        print(f"2. Scroll down to 'API Tokens' section")
+        print(f"3. Click 'Create Token'")
+        print(f"4. Give it a name like: {Colors.OKCYAN}{self.progress.project_name}-api{Colors.ENDC}")
+        print(f"5. Select scopes:")
+        print(f"   • ☑️ products:read")
+        print(f"   • ☑️ products:write")
+        print(f"   • ☑️ checkouts:write")
+        print(f"   • ☑️ subscriptions:read")
+        print(f"   • ☑️ subscriptions:write")
+        print(f"6. Click 'Create'")
+        print(f"7. Copy the token (starts with 'polar_oat_')")
+        
+        while True:
+            polar_token = input(f"\n{Colors.OKCYAN}Enter your Polar API token: {Colors.ENDC}").strip()
+            if polar_token.startswith('polar_oat_'):
+                self.progress.api_keys['polar_access_token'] = polar_token
+                break
+            print_error("Invalid token format. Token should start with 'polar_oat_'")
         
         print_success(f"Polar billing configured: {dashboard_url}/{org_slug}")
         print_success("Pro Plan ($20/month) and Business Plan ($200/month) products created")
-        print_info("💡 Note: Add your Polar API token to the .env file later if you need programmatic access")
+        print_success("API token configured for billing operations")
         
         return service_config
     
@@ -512,81 +540,173 @@ class InteractiveSetup:
         
         self.progress.api_keys['clerk_publishable_key'] = publishable_key
         self.progress.api_keys['clerk_secret_key'] = secret_key
-        self.progress.completed_services.append('clerk')
         
-        print_success("Clerk authentication configured!")
-        print()
-        
-        # Instructions for additional setup
+        # Set up Clerk webhook
         vercel_config = self.progress.service_configs.get('vercel', {})
         app_url = vercel_config.get('credentials', {}).get('project_url', 'your-app.vercel.app')
         
-        print(f"{Colors.BOLD}📋 Additional Clerk Setup (do this after deployment):{Colors.ENDC}")
-        print(f"1. In your Clerk app, go to {Colors.BOLD}'User & Authentication > Social Connections'{Colors.ENDC}")
-        print(f"2. Enable {Colors.BOLD}'Google'{Colors.ENDC} OAuth provider")
-        print(f"3. Enable {Colors.BOLD}'Email & SMS'{Colors.ENDC} authentication")
-        print(f"4. Go to {Colors.BOLD}'Webhooks'{Colors.ENDC} and add endpoint: {Colors.OKCYAN}{app_url}/api/clerk/webhook{Colors.ENDC}")
-        print(f"5. Select events: {Colors.BOLD}user.created, user.updated, user.deleted{Colors.ENDC}")
-    
-    def generate_env_file(self):
-        """Generate .env file from collected configurations"""
+        print(f"\n{Colors.BOLD}📋 Set up Clerk Webhook (Required for user sync):{Colors.ENDC}")
+        print(f"1. In your Clerk dashboard, go to {Colors.BOLD}'Webhooks'{Colors.ENDC}")
+        print(f"2. Click {Colors.BOLD}'Add Endpoint'{Colors.ENDC}")
+        print(f"3. Endpoint URL: {Colors.OKCYAN}{app_url}/api/clerk/webhook{Colors.ENDC}")
+        print(f"4. Select events:")
+        print(f"   • ☑️ user.created")
+        print(f"   • ☑️ user.updated") 
+        print(f"   • ☑️ user.deleted")
+        print(f"5. Click {Colors.BOLD}'Create'{Colors.ENDC}")
+        print(f"6. Copy the {Colors.BOLD}'Signing Secret'{Colors.ENDC} (starts with 'whsec_')")
+        
+        while True:
+            webhook_secret = input(f"\n{Colors.OKCYAN}Enter Clerk Webhook Signing Secret: {Colors.ENDC}").strip()
+            if webhook_secret.startswith('whsec_'):
+                self.progress.api_keys['clerk_webhook_secret'] = webhook_secret
+                break
+            print_error("Invalid webhook secret format. Secret should start with 'whsec_'")
+        
+        self.progress.completed_services.append('clerk')
+        
+        print_success("Clerk authentication configured!")
+        print_success("Webhook configured for user synchronization!")
         print()
-        print_info("Generating .env configuration file...")
+        
+        print(f"{Colors.BOLD}📋 Additional Clerk Setup (Optional - do this after deployment):{Colors.ENDC}")
+        print(f"1. In your Clerk app, go to {Colors.BOLD}'User & Authentication > Social Connections'{Colors.ENDC}")
+        print(f"2. Enable {Colors.BOLD}'Google'{Colors.ENDC} OAuth provider if desired")
+        print(f"3. Configure other authentication methods as needed")
+    
+    def step_6_vercel_env_vars(self):
+        """Step 6: Add environment variables to Vercel project"""
+        print_step(6, self.total_steps, "Vercel Environment Variables (Critical)")
+        
+        print_info("We'll generate a .env.prod file with all your environment variables.")
+        print_info("You can then copy and paste them into your Vercel project settings.")
+        print()
+        
+        # Generate .env.prod file
+        self.generate_env_prod_file()
+        
+        vercel_config = self.progress.service_configs.get('vercel', {})
+        project_url = vercel_config.get('credentials', {}).get('project_url', 'your-app.vercel.app')
+        
+        print(f"{Colors.BOLD}📋 Add Environment Variables to Vercel:{Colors.ENDC}")
+        print(f"1. Go to your Vercel dashboard: {Colors.OKBLUE}https://vercel.com{Colors.ENDC}")
+        print(f"2. Find your project: {Colors.OKCYAN}{self.progress.project_name}{Colors.ENDC}")
+        print(f"3. Click on your project name")
+        print(f"4. Go to {Colors.BOLD}'Settings'{Colors.ENDC} tab")
+        print(f"5. Click {Colors.BOLD}'Environment Variables'{Colors.ENDC} in the sidebar")
+        print(f"6. Open {Colors.BOLD}.env.prod{Colors.ENDC} file and copy each variable:")
+        print(f"   • For each line in .env.prod:")
+        print(f"   • Copy the variable name (before =)")
+        print(f"   • Copy the variable value (after =)")
+        print(f"   • Add to Vercel with Environment: {Colors.BOLD}Production, Preview, Development{Colors.ENDC}")
+        
+        print(f"\n{Colors.BOLD}💡 Important Notes:{Colors.ENDC}")
+        print(f"   • {Colors.OKGREEN}POSTGRES_URL and BLOB_READ_WRITE_TOKEN are already set by Vercel{Colors.ENDC}")
+        print(f"   • Skip these if they already exist in your Vercel environment variables")
+        print(f"   • Click {Colors.BOLD}'Save'{Colors.ENDC} after adding each variable")
+        
+        input(f"\n{Colors.OKCYAN}Press Enter when you've added all environment variables to Vercel...{Colors.ENDC}")
+        
+        self.progress.completed_services.append('vercel-env')
+        print_success("Vercel environment variables configured!")
+        print_success("Your deployment should now work correctly!")
+    
+    def generate_env_prod_file(self):
+        """Generate .env.prod file for Vercel environment variables"""
+        print_info("Generating .env.prod file for Vercel...")
         
         vercel_config = self.progress.service_configs.get('vercel', {}).get('credentials', {})
         polar_config = self.progress.service_configs.get('polar', {}).get('credentials', {})
         
-        env_content = f"""# ===================================
-# {self.progress.project_name.upper()} PROJECT CONFIGURATION
+        env_prod_content = f"""# ===================================
+# VERCEL PRODUCTION ENVIRONMENT VARIABLES
 # ===================================
-# Generated by kosuke-template interactive setup
-# Date: {time.strftime('%Y-%m-%d %H:%M:%S')}
-
-# ===================================
-# DATABASE CONFIGURATION
-# ===================================
-# POSTGRES_URL is automatically added by Vercel when you create Neon database
-# Check your Vercel project environment variables for the actual connection string
+# Copy these variables to your Vercel project settings
+# Go to: Vercel Dashboard > Project > Settings > Environment Variables
 
 # ===================================
 # CLERK AUTHENTICATION
 # ===================================
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY={self.progress.api_keys.get('clerk_publishable_key', 'pk_test_your_clerk_publishable_key_here')}
 CLERK_SECRET_KEY={self.progress.api_keys.get('clerk_secret_key', 'sk_test_your_clerk_secret_key_here')}
+CLERK_WEBHOOK_SECRET={self.progress.api_keys.get('clerk_webhook_secret', 'whsec_your_clerk_webhook_secret_here')}
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
-CLERK_WEBHOOK_SECRET=whsec_your_clerk_webhook_secret_here
 
 # ===================================
 # POLAR BILLING
 # ===================================
-POLAR_ACCESS_TOKEN=your_polar_api_token_here
+POLAR_ACCESS_TOKEN={self.progress.api_keys.get('polar_access_token', 'polar_oat_your_polar_token_here')}
 POLAR_ENVIRONMENT={polar_config.get('environment', 'sandbox')}
 POLAR_ORGANIZATION_ID={polar_config.get('organization_slug', '')}
 POLAR_PRO_PRODUCT_ID={polar_config.get('pro_product_id', '')}
 POLAR_BUSINESS_PRODUCT_ID={polar_config.get('business_product_id', '')}
-POLAR_WEBHOOK_SECRET=whsec_your_polar_webhook_secret_here
-
-# ===================================
-# VERCEL BLOB STORAGE
-# ===================================
-# BLOB_READ_WRITE_TOKEN is automatically added by Vercel when you create Blob storage
-# Check your Vercel project environment variables for the actual token
 
 # ===================================
 # APPLICATION CONFIGURATION
 # ===================================
 NEXT_PUBLIC_APP_URL={vercel_config.get('project_url', 'http://localhost:3000')}
-NODE_ENV=development
+NODE_ENV=production
+
+# ===================================
+# NOTE: These are already set by Vercel
+# ===================================
+# POSTGRES_URL=postgresql://... (set automatically by Neon integration)
+# BLOB_READ_WRITE_TOKEN=vercel_blob_... (set automatically by Blob storage)
+"""
+        
+        # Save .env.prod file
+        with open('.env.prod', 'w') as f:
+            f.write(env_prod_content)
+        
+        print_success(".env.prod file generated successfully!")
+        print_info("Use this file to copy environment variables to Vercel")
+    
+    def generate_env_file(self):
+        """Generate .env file for local development"""
+        print()
+        print_info("Generating .env file for local development...")
+        
+        polar_config = self.progress.service_configs.get('polar', {}).get('credentials', {})
+        
+        env_content = f"""# Database
+# ------------------------------------------------------------------------------------
+POSTGRES_URL=postgres://postgres:postgres@localhost:54321/postgres
+
+POSTGRES_DB=postgres
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+
+# Clerk
+# ------------------------------------------------------------------------------------
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY={self.progress.api_keys.get('clerk_publishable_key', 'pk_test_your_clerk_publishable_key_here')}
+CLERK_SECRET_KEY={self.progress.api_keys.get('clerk_secret_key', 'sk_test_your_clerk_secret_key_here')}
+CLERK_WEBHOOK_SECRET={self.progress.api_keys.get('clerk_webhook_secret', 'whsec_your_clerk_webhook_secret_here')}
+
+# Polar
+# ------------------------------------------------------------------------------------
+POLAR_ENVIRONMENT={polar_config.get('environment', 'sandbox')}
+POLAR_ACCESS_TOKEN={self.progress.api_keys.get('polar_access_token', 'polar_oat_your_polar_token_here')}
+POLAR_SUCCESS_URL=http://localhost:3000/billing/success?checkout_id={{CHECKOUT_ID}}
+POLAR_CANCEL_URL=http://localhost:3000/billing/cancel
+POLAR_WEBHOOK_SECRET=b10bf0ac2e2a45d2bbb54925ecc6bbc6
+
+POLAR_PRO_PRODUCT_ID={polar_config.get('pro_product_id', '')}
+POLAR_BUSINESS_PRODUCT_ID={polar_config.get('business_product_id', '')}
 """
         
         # Save .env file
         with open('.env', 'w') as f:
             f.write(env_content)
         
-        print_success(".env file generated successfully!")
+        print_success(".env file generated for local development!")
+        print_info("💡 Note: .env.prod file contains production variables for Vercel")
     
     def print_completion_summary(self):
         """Print setup completion summary"""
@@ -611,18 +731,23 @@ NODE_ENV=development
             print(f"   • Polar Billing: {Colors.OKBLUE}{polar_url}{Colors.ENDC}")
         if 'clerk' in self.progress.completed_services:
             print(f"   • Clerk Authentication: {Colors.OKGREEN}Application created{Colors.ENDC}")
+        if 'vercel-env' in self.progress.completed_services:
+            print(f"   • Vercel Environment Variables: {Colors.OKGREEN}All variables configured{Colors.ENDC}")
         
         print(f"\n{Colors.BOLD}📁 Next Steps:{Colors.ENDC}")
         repo_url = self.progress.api_keys.get('github_repo_url', '')
-        print(f"   1. {Colors.WARNING}Redeploy your Vercel project:{Colors.ENDC}")
-        print(f"      • Go to your Vercel dashboard")
-        print(f"      • Click {Colors.BOLD}'Redeploy'{Colors.ENDC} or push a new commit to trigger deployment")
-        print(f"      • This time it will work with all environment variables set!")
+        print(f"   1. {Colors.OKGREEN}Your Vercel project is ready!{Colors.ENDC}")
+        print(f"      • Environment variables are configured in Vercel")
+        print(f"      • Deployment should work automatically")
+        print(f"      • If needed, trigger a redeploy from your dashboard")
         print(f"   2. Clone your repository: {Colors.OKCYAN}git clone {repo_url}.git{Colors.ENDC}")
-        print(f"   3. Copy the generated .env file to your project root")
-        print(f"   4. Install dependencies: {Colors.OKCYAN}npm install{Colors.ENDC}")
-        print(f"   5. Start development: {Colors.OKCYAN}npm run dev{Colors.ENDC}")
-        print(f"   6. Complete the remaining manual configurations mentioned above")
+        print(f"   3. Copy environment files: {Colors.OKCYAN}cp ../cli/.env . && cp ../cli/.env.prod .{Colors.ENDC}")
+        print(f"   4. Set up local database: {Colors.OKCYAN}docker-compose up -d postgres{Colors.ENDC}")
+        print(f"   5. Install dependencies: {Colors.OKCYAN}npm install{Colors.ENDC}")
+        print(f"   6. Start development: {Colors.OKCYAN}npm run dev{Colors.ENDC}")
+        print(f"   7. Environment files:")
+        print(f"      • {Colors.OKCYAN}.env{Colors.ENDC} - Local development (localhost, docker-compose)")
+        print(f"      • {Colors.OKCYAN}.env.prod{Colors.ENDC} - Production reference (already in Vercel)")
         
         print(f"\n{Colors.BOLD}🚀 Your kosuke template is ready to use!{Colors.ENDC}")
         print("="*80)

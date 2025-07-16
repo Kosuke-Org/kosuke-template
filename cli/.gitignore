@@ -272,6 +272,7 @@ alfred/media/
 .pytest_cache/
 .ipython/
 .env
+.env.prod
 .envs/*
 !.envs/.local/
 dev/

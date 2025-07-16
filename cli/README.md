@@ -11,6 +11,7 @@ This interactive Python script guides you through setting up the kosuke template
 3. **🔗 Neon Database (Manual)** - Guided database creation through Vercel dashboard
 4. **💳 Polar Billing (Manual)** - Guided organization + product creation in dashboard
 5. **🔐 Clerk Authentication (Manual)** - Guided app creation + configuration
+6. **⚙️ Vercel Environment Variables (Critical)** - Add all env vars to ensure deployment success
 
 **Key Features:**
 
@@ -196,9 +197,25 @@ Enter Pro Plan Product ID: 01234567-89ab-cdef-0123-456789abcdef
 
 Enter Business Plan Product ID: 01234567-89ab-cdef-0123-456789abcdef
 Enter your organization slug (from the URL, e.g., 'open-idealista-org'): open-idealista-org
+
+📋 Create Polar API Token (Required for billing operations):
+1. In your Polar dashboard, go to 'Settings'
+2. Scroll down to 'API Tokens' section
+3. Click 'Create Token'
+4. Give it a name like: open-idealista-api
+5. Select scopes:
+   • ☑️ products:read
+   • ☑️ products:write
+   • ☑️ checkouts:write
+   • ☑️ subscriptions:read
+   • ☑️ subscriptions:write
+6. Click 'Create'
+7. Copy the token (starts with 'polar_oat_')
+
+Enter your Polar API token: polar_oat_...
 ✅ Polar billing configured: https://sandbox.polar.sh/dashboard/open-idealista-org
 ✅ Pro Plan ($20/month) and Business Plan ($200/month) products created
-💡 Note: Add your Polar API token to the .env file later if you need programmatic access
+✅ API token configured for billing operations
 
 📍 Step 5/5: Clerk Authentication (Manual)
 ============================================================
@@ -217,8 +234,70 @@ Enter Clerk Publishable Key (pk_test_...): pk_test_...
 Enter Clerk Secret Key (sk_test_...): sk_test_...
 ✅ Clerk authentication configured!
 
-ℹ️  Generating .env configuration file...
-✅ .env file generated successfully!
+📍 Step 5/6: Clerk Authentication (Manual)
+============================================================
+ℹ️  We'll guide you through creating your Clerk authentication app.
+
+📋 Create Clerk Application:
+1. Go to: https://dashboard.clerk.com
+2. Click 'Add application'
+3. Enter application name: open-idealista
+4. Choose 'Next.js' as your framework
+5. Click 'Create application'
+6. Copy both API keys from the dashboard
+
+Press Enter when you've created the Clerk application...
+Enter Clerk Publishable Key (pk_test_...): pk_test_...
+Enter Clerk Secret Key (sk_test_...): sk_test_...
+
+📋 Set up Clerk Webhook (Required for user sync):
+1. In your Clerk dashboard, go to 'Webhooks'
+2. Click 'Add Endpoint'
+3. Endpoint URL: https://open-idealista.vercel.app/api/clerk/webhook
+4. Select events:
+   • ☑️ user.created
+   • ☑️ user.updated
+   • ☑️ user.deleted
+5. Click 'Create'
+6. Copy the 'Signing Secret' (starts with 'whsec_')
+
+Enter Clerk Webhook Signing Secret: whsec_...
+✅ Clerk authentication configured!
+✅ Webhook configured for user synchronization!
+
+📍 Step 6/6: Vercel Environment Variables (Critical)
+============================================================
+ℹ️  We'll generate a .env.prod file with all your environment variables.
+ℹ️  You can then copy and paste them into your Vercel project settings.
+
+ℹ️  Generating .env.prod file for Vercel...
+✅ .env.prod file generated successfully!
+ℹ️  Use this file to copy environment variables to Vercel
+
+📋 Add Environment Variables to Vercel:
+1. Go to your Vercel dashboard: https://vercel.com
+2. Find your project: open-idealista
+3. Click on your project name
+4. Go to 'Settings' tab
+5. Click 'Environment Variables' in the sidebar
+6. Open .env.prod file and copy each variable:
+   • For each line in .env.prod:
+   • Copy the variable name (before =)
+   • Copy the variable value (after =)
+   • Add to Vercel with Environment: Production, Preview, Development
+
+💡 Important Notes:
+   • POSTGRES_URL and BLOB_READ_WRITE_TOKEN are already set by Vercel
+   • Skip these if they already exist in your Vercel environment variables
+   • Click 'Save' after adding each variable
+
+Press Enter when you've added all environment variables to Vercel...
+✅ Vercel environment variables configured!
+✅ Your deployment should now work correctly!
+
+ℹ️  Generating .env file for local development...
+✅ .env file generated for local development!
+ℹ️  💡 Note: .env.prod file contains production variables for Vercel
 
 🎉 INTERACTIVE SETUP COMPLETE! 🎉
 ```
@@ -263,15 +342,9 @@ After the script completes, you'll need to configure a few additional settings:
 5. Select events: `user.created`, `user.updated`, `user.deleted`
 6. Copy the webhook secret and update your `.env` file
 
-### 2. Polar API Token & Webhook Configuration (Optional)
+### 2. Polar Webhook Configuration (Optional)
 
-If you need programmatic access to Polar (for automated billing operations):
-
-1. Go to your **Polar Dashboard > Settings > API Tokens**
-2. Create a token with scopes: `products:read`, `products:write`, `checkouts:write`
-3. Update `POLAR_ACCESS_TOKEN` in your `.env` file
-
-For webhooks:
+For production webhook handling:
 
 1. Go to **Webhooks** in your Polar Dashboard
 2. Add endpoint: `https://your-app.vercel.app/api/billing/webhook`
@@ -313,11 +386,11 @@ For webhooks:
 
 After the interactive setup completes:
 
-1. **⚠️ Redeploy your Vercel project (Important!):**
+1. **🚀 Your Vercel project is ready!**
 
-   - Go to your Vercel dashboard
-   - Click **'Redeploy'** or push a new commit to trigger deployment
-   - This time it will work with all environment variables set!
+   - Environment variables are already configured in Vercel
+   - Deployment should work automatically
+   - If needed, trigger a redeploy from your Vercel dashboard
 
 2. **Clone your repository:**
 
@@ -326,25 +399,36 @@ After the interactive setup completes:
    cd your-project-name
    ```
 
-3. **Copy the .env file:**
+3. **Copy the environment files:**
 
    ```bash
-   cp ../cli/.env .
+   cp ../cli/.env .              # Local development with localhost
+   cp ../cli/.env.prod .         # Production reference (already in Vercel)
    ```
 
-4. **Install dependencies:**
+4. **Set up local database:**
+
+   ```bash
+   # Make sure you have docker-compose.yml in your project root
+   docker-compose up -d postgres  # Start PostgreSQL locally
+   npm run db:migrate             # Run database migrations
+   ```
+
+5. **Install dependencies:**
 
    ```bash
    npm install
    ```
 
-5. **Start development:**
+6. **Start development:**
 
    ```bash
-   npm run dev
+   npm run dev                   # Local development at http://localhost:3000
    ```
 
-6. **Complete the post-setup manual tasks** mentioned above
+7. **Environment files explained:**
+   - **`.env`** - Local development (localhost, docker-compose database)
+   - **`.env.prod`** - Production reference (Vercel has these variables)
 
 ## 📄 License
 
