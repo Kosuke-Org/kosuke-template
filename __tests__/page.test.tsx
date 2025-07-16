@@ -16,8 +16,8 @@ describe('Home Page', () => {
       )
     ).toBeInTheDocument();
 
-    // CTA buttons
-    expect(screen.getByText('Star on GitHub')).toBeInTheDocument();
+    // CTA buttons (there are multiple instances, so we check for at least one)
+    expect(screen.getAllByText('Star on GitHub')).toHaveLength(2);
     expect(screen.getByText('View Repository')).toBeInTheDocument();
 
     // Git clone command
