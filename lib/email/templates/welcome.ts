@@ -23,11 +23,11 @@ export function createWelcomeEmail(data: WelcomeEmailData): EmailTemplate {
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       line-height: 1.6;
-      color: #333;
+      color: #0a0a0a;
       max-width: 600px;
       margin: 0 auto;
       padding: 20px;
-      background-color: #f8fafc;
+      background-color: #fafafa;
     }
     .container {
       background-color: #ffffff;
@@ -42,11 +42,11 @@ export function createWelcomeEmail(data: WelcomeEmailData): EmailTemplate {
     .logo {
       font-size: 32px;
       font-weight: 800;
-      color: #1e40af;
+      color: #171717;
       margin-bottom: 8px;
     }
     .tagline {
-      color: #64748b;
+      color: #737373;
       font-size: 16px;
     }
     .welcome-message {
@@ -55,16 +55,16 @@ export function createWelcomeEmail(data: WelcomeEmailData): EmailTemplate {
     .welcome-title {
       font-size: 28px;
       font-weight: 700;
-      color: #1e293b;
+      color: #0a0a0a;
       margin-bottom: 16px;
     }
     .welcome-text {
       font-size: 16px;
-      color: #475569;
+      color: #737373;
       margin-bottom: 16px;
     }
     .cta-section {
-      background-color: #f1f5f9;
+      background-color: #f5f5f5;
       border-radius: 8px;
       padding: 24px;
       margin: 32px 0;
@@ -72,8 +72,8 @@ export function createWelcomeEmail(data: WelcomeEmailData): EmailTemplate {
     }
     .cta-button {
       display: inline-block;
-      background-color: #3b82f6;
-      color: #ffffff;
+      background-color: #171717;
+      color: #fafafa;
       text-decoration: none;
       padding: 12px 24px;
       border-radius: 8px;
@@ -82,13 +82,13 @@ export function createWelcomeEmail(data: WelcomeEmailData): EmailTemplate {
       transition: background-color 0.2s;
     }
     .cta-button:hover {
-      background-color: #2563eb;
+      background-color: #0a0a0a;
     }
     .cta-button.secondary {
-      background-color: #64748b;
+      background-color: #737373;
     }
     .cta-button.secondary:hover {
-      background-color: #475569;
+      background-color: #525252;
     }
     .features {
       margin: 32px 0;
@@ -102,10 +102,10 @@ export function createWelcomeEmail(data: WelcomeEmailData): EmailTemplate {
       align-items: center;
       margin-bottom: 12px;
       font-size: 14px;
-      color: #475569;
+      color: #737373;
     }
     .feature-icon {
-      color: #10b981;
+      color: #171717;
       margin-right: 12px;
       font-weight: bold;
     }
@@ -113,15 +113,15 @@ export function createWelcomeEmail(data: WelcomeEmailData): EmailTemplate {
       text-align: center;
       margin-top: 40px;
       padding-top: 24px;
-      border-top: 1px solid #e2e8f0;
-      color: #64748b;
+      border-top: 1px solid #e5e5e5;
+      color: #737373;
       font-size: 14px;
     }
     .footer-links {
       margin: 16px 0;
     }
     .footer-link {
-      color: #3b82f6;
+      color: #171717;
       text-decoration: none;
       margin: 0 12px;
     }
@@ -147,13 +147,13 @@ export function createWelcomeEmail(data: WelcomeEmailData): EmailTemplate {
     </div>
 
     <div class="cta-section">
-      <h3 style="margin-top: 0; color: #1e293b;">Get Started</h3>
+      <h3 style="margin-top: 0; color: #0a0a0a;">Get Started</h3>
       ${dashboardUrl ? `<a href="${dashboardUrl}" class="cta-button">Go to Dashboard</a>` : ''}
       ${settingsUrl ? `<a href="${settingsUrl}" class="cta-button secondary">Account Settings</a>` : ''}
     </div>
 
     <div class="features">
-      <h3 style="color: #1e293b; margin-bottom: 16px;">What's included:</h3>
+      <h3 style="color: #0a0a0a; margin-bottom: 16px;">What's included:</h3>
       <ul class="feature-list">
         <li class="feature-item">
           <span class="feature-icon">✓</span>
