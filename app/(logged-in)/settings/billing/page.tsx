@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import {
   CheckCircle,
   Loader2,
@@ -11,7 +10,6 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useUser } from '@clerk/nextjs';
-import { useToast } from '@/lib/hooks/use-toast';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,23 +28,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-
-interface SubscriptionInfo {
-  tier: string;
-  status: string;
-  currentPeriodEnd: string | null;
-  activeSubscription: Record<string, unknown> | null;
-}
-
-interface SubscriptionEligibility {
-  canReactivate: boolean;
-  canCreateNew: boolean;
-  canUpgrade: boolean;
-  canCancel: boolean;
-  state: string;
-  gracePeriodEnds?: string;
-  reason?: string;
-}
+import { useSubscriptionData } from '@/hooks/use-subscription-data';
+import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
 
 const PRICING = {
   free: {
@@ -71,237 +54,17 @@ const PRICING = {
 
 export default function BillingPage() {
   const { user, isSignedIn } = useUser();
-  const { toast } = useToast();
-  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
-  const [eligibility, setEligibility] = useState<SubscriptionEligibility | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
-  const [cancelLoading, setCancelLoading] = useState(false);
-  const [reactivateLoading, setReactivateLoading] = useState(false);
+  const { subscriptionInfo, eligibility, isLoading } = useSubscriptionData();
+  const {
+    handleUpgrade,
+    handleCancel,
+    handleReactivate,
+    isCanceling,
+    isReactivating,
+    upgradeLoading,
+  } = useSubscriptionActions();
 
-  const fetchSubscriptionInfo = useCallback(
-    async (showLoadingState = false) => {
-      if (showLoadingState) {
-        setIsLoading(true);
-      }
-      try {
-        // Fetch both subscription status and eligibility
-        const [subscriptionResponse, eligibilityResponse] = await Promise.all([
-          fetch('/api/billing/subscription-status'),
-          fetch('/api/billing/can-subscribe'),
-        ]);
-
-        if (subscriptionResponse.ok) {
-          const subscriptionData = await subscriptionResponse.json();
-          setSubscriptionInfo(subscriptionData);
-        } else {
-          console.error('Failed to fetch subscription info');
-          toast({
-            title: 'Error',
-            description: 'Failed to load subscription information. Please refresh the page.',
-            variant: 'destructive',
-          });
-        }
-
-        if (eligibilityResponse.ok) {
-          const eligibilityData = await eligibilityResponse.json();
-          setEligibility({
-            canReactivate:
-              eligibilityData.currentSubscription?.isInGracePeriod &&
-              eligibilityData.currentSubscription?.status === 'canceled',
-            canCreateNew: eligibilityData.canSubscribe,
-            canUpgrade: eligibilityData.canSubscribe,
-            canCancel: eligibilityData.currentSubscription?.status === 'active',
-            state: eligibilityData.currentSubscription?.status || 'free',
-            gracePeriodEnds: eligibilityData.currentSubscription?.currentPeriodEnd,
-            reason: eligibilityData.reason,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching subscription info:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load subscription information. Please check your connection.',
-          variant: 'destructive',
-        });
-      } finally {
-        if (showLoadingState) {
-          setIsLoading(false);
-        }
-      }
-    },
-    [toast]
-  );
-
-  useEffect(() => {
-    fetchSubscriptionInfo(true);
-  }, [fetchSubscriptionInfo]);
-
-  const handleUpgrade = async (tier: string) => {
-    setUpgradeLoading(tier);
-    try {
-      // Determine if this is an upgrade (user has active subscription) or new subscription
-      const isUpgrade = currentTier !== 'free' && subscriptionInfo?.status === 'active';
-      const endpoint = isUpgrade
-        ? '/api/billing/upgrade-subscription'
-        : '/api/billing/create-checkout';
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tier }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        if (data.success && data.checkoutUrl) {
-          // Show success message for upgrades
-          if (isUpgrade) {
-            toast({
-              title: 'Upgrade Initiated',
-              description: `Your ${currentTier} subscription has been canceled and you'll be redirected to complete your ${tier} upgrade.`,
-              variant: 'default',
-            });
-          }
-
-          window.location.href = data.checkoutUrl;
-        } else {
-          toast({
-            title: 'Error',
-            description: data.error || 'Failed to process request',
-            variant: 'destructive',
-          });
-        }
-      } else {
-        const error = await response.json();
-
-        // Handle upgrade-specific errors
-        if (error.requiresNewSubscription) {
-          toast({
-            title: 'Upgrade Issue',
-            description: error.error,
-            variant: 'destructive',
-          });
-          // Refresh the page to show current state
-          setTimeout(() => window.location.reload(), 2000);
-          return;
-        }
-
-        // Following best practices: Handle customer portal redirects
-        if (error.action === 'customer_portal_required') {
-          toast({
-            title: 'Subscription Management Required',
-            description:
-              error.message || 'Please contact support for subscription management assistance.',
-          });
-        } else {
-          toast({
-            title: 'Error',
-            description: error.error || 'Failed to process request',
-            variant: 'destructive',
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error creating checkout:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create checkout session',
-        variant: 'destructive',
-      });
-    } finally {
-      setUpgradeLoading(null);
-    }
-  };
-
-  const handleCancelSubscription = async () => {
-    setCancelLoading(true);
-    try {
-      const response = await fetch('/api/billing/cancel-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        // Show success toast
-        toast({
-          title: 'Subscription Cancelled',
-          description:
-            data.message ||
-            'Your subscription has been cancelled successfully. You will retain access until the end of your billing period.',
-        });
-
-        // Refresh subscription info to update the UI
-        await fetchSubscriptionInfo();
-      } else {
-        const errorData = await response.json();
-        toast({
-          title: 'Cancellation Failed',
-          description: errorData.error || 'Failed to cancel subscription. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Error cancelling subscription:', error);
-      toast({
-        title: 'Cancellation Failed',
-        description: 'Failed to cancel subscription. Please check your connection and try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setCancelLoading(false);
-    }
-  };
-
-  const handleReactivateSubscription = async () => {
-    setReactivateLoading(true);
-    try {
-      const response = await fetch('/api/billing/reactivate-subscription', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        toast({
-          title: 'Subscription Reactivated!',
-          description: data.message || 'Your subscription has been successfully reactivated.',
-        });
-
-        // Refresh subscription info to update the UI
-        await fetchSubscriptionInfo();
-      } else {
-        const errorData = await response.json();
-        toast({
-          title: 'Reactivation Failed',
-          description: errorData.error || 'Failed to reactivate subscription. Please try again.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('Error reactivating subscription:', error);
-      toast({
-        title: 'Reactivation Failed',
-        description:
-          'Failed to reactivate subscription. Please check your connection and try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setReactivateLoading(false);
-    }
-  };
-
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -310,7 +73,7 @@ export default function BillingPage() {
     });
   };
 
-  const formatDateWithTime = (dateString: string | null) => {
+  const formatDateWithTime = (dateString: string | null | undefined) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -348,7 +111,7 @@ export default function BillingPage() {
   }
 
   const currentTier = subscriptionInfo?.tier || 'free';
-  const currentPlan = PRICING[currentTier as keyof typeof PRICING];
+  const currentPlan = PRICING[currentTier as keyof typeof PRICING] || PRICING.free;
   const isPaidPlan = currentTier !== 'free' && subscriptionInfo?.activeSubscription;
   const canCancelSubscription = eligibility?.canCancel;
   const canReactivateSubscription = eligibility?.canReactivate;
@@ -356,6 +119,10 @@ export default function BillingPage() {
     subscriptionInfo?.status === 'canceled' &&
     subscriptionInfo?.currentPeriodEnd &&
     new Date() < new Date(subscriptionInfo.currentPeriodEnd);
+
+  const onUpgrade = (tier: string) => {
+    handleUpgrade(tier, currentTier, subscriptionInfo?.status);
+  };
 
   return (
     <div className="space-y-6">
@@ -378,8 +145,8 @@ export default function BillingPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-lg">{currentPlan.name}</h3>
-              <p className="text-sm text-muted-foreground">{currentPlan.description}</p>
+              <h3 className="font-semibold text-lg">{String(currentPlan.name)}</h3>
+              <p className="text-sm text-muted-foreground">{String(currentPlan.description)}</p>
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold">${currentPlan.price}</div>
@@ -431,7 +198,7 @@ export default function BillingPage() {
               Reactivate Your Subscription
             </CardTitle>
             <CardDescription>
-              You can reactivate your {currentPlan.name} subscription at no additional cost
+              You can reactivate your {String(currentPlan.name)} subscription at no additional cost
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -446,11 +213,11 @@ export default function BillingPage() {
 
             <div className="pt-2">
               <Button
-                onClick={handleReactivateSubscription}
-                disabled={reactivateLoading}
+                onClick={handleReactivate}
+                disabled={isReactivating}
                 className="bg-green-600 hover:bg-green-700"
               >
-                {reactivateLoading ? (
+                {isReactivating ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Reactivating...
@@ -508,8 +275,8 @@ export default function BillingPage() {
             <div className="pt-4">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" disabled={cancelLoading}>
-                    {cancelLoading ? (
+                  <Button variant="destructive" disabled={isCanceling}>
+                    {isCanceling ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Cancelling...
@@ -531,7 +298,7 @@ export default function BillingPage() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={handleCancelSubscription}
+                      onClick={handleCancel}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >
                       Cancel Subscription
@@ -616,7 +383,7 @@ export default function BillingPage() {
 
                       {!isSameTier && (
                         <Button
-                          onClick={() => handleUpgrade(tier)}
+                          onClick={() => onUpgrade(tier)}
                           disabled={upgradeLoading === tier}
                           className="w-full"
                         >

@@ -1,55 +1,23 @@
 'use client';
 
 import { Check, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/lib/hooks/use-toast';
 import { useUser } from '@clerk/nextjs';
+import { useNotificationSettings } from '@/hooks/use-notification-settings';
 import { NotificationsSettingsSkeleton } from '@/components/skeletons';
 
 export default function NotificationsPage() {
   const { user, isSignedIn } = useUser();
-  const { toast } = useToast();
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [marketingEmails, setMarketingEmails] = useState(false);
-  const [securityAlerts, setSecurityAlerts] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Initialize preferences (in real app, this would come from user settings)
-  useEffect(() => {
-    // For now, we'll use local state
-    // In a real implementation, you might fetch these from Stack or your own backend
-  }, [user]);
+  const { settings, updateSetting, saveSettings, isSubmitting, hasUnsavedChanges } =
+    useNotificationSettings();
 
   if (!isSignedIn || !user) {
     return <NotificationsSettingsSkeleton />;
   }
-
-  const handleSavePreferences = async () => {
-    setIsSaving(true);
-    try {
-      // Simulate API call - in real implementation, you'd save to Stack or your backend
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      toast({
-        title: 'Preferences saved',
-        description: 'Your notification preferences have been updated.',
-      });
-    } catch (error) {
-      console.error('Error saving preferences:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save preferences. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -57,80 +25,81 @@ export default function NotificationsPage() {
         <CardHeader>
           <CardTitle>Notification Preferences</CardTitle>
           <CardDescription>
-            Manage your notification settings and email preferences.
+            Manage how you receive notifications and updates from our platform.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="email-notifications">Email Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive email notifications about account activity.
-                  </p>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="email-notifications" className="text-base">
+                  Email Notifications
+                </Label>
+                <div className="text-sm text-muted-foreground">
+                  Receive notifications about your account activity via email
                 </div>
-                <Switch
-                  id="email-notifications"
-                  checked={emailNotifications}
-                  onCheckedChange={setEmailNotifications}
-                />
               </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="marketing-emails">Marketing Emails</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive emails about new features and promotions.
-                  </p>
-                </div>
-                <Switch
-                  id="marketing-emails"
-                  checked={marketingEmails}
-                  onCheckedChange={setMarketingEmails}
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="security-alerts">Security Alerts</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive notifications about important security events.
-                  </p>
-                </div>
-                <Switch
-                  id="security-alerts"
-                  checked={securityAlerts}
-                  onCheckedChange={setSecurityAlerts}
-                />
-              </div>
+              <Switch
+                id="email-notifications"
+                checked={settings.emailNotifications}
+                onCheckedChange={(checked) => updateSetting('emailNotifications', checked)}
+              />
             </div>
 
-            <div className="pt-4 border-t">
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium text-muted-foreground">Current User</h3>
-                <p className="text-base">{user?.emailAddresses[0]?.emailAddress}</p>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="marketing-emails" className="text-base">
+                  Marketing Emails
+                </Label>
+                <div className="text-sm text-muted-foreground">
+                  Receive emails about new features, tips, and promotional content
+                </div>
               </div>
+              <Switch
+                id="marketing-emails"
+                checked={settings.marketingEmails}
+                onCheckedChange={(checked) => updateSetting('marketingEmails', checked)}
+              />
             </div>
 
-            <Button
-              onClick={handleSavePreferences}
-              disabled={isSaving}
-              className="w-full sm:w-auto"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Check className="mr-2 h-4 w-4" />
-                  Save Preferences
-                </>
-              )}
-            </Button>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="security-alerts" className="text-base">
+                  Security Alerts
+                </Label>
+                <div className="text-sm text-muted-foreground">
+                  Receive important security notifications and account alerts
+                </div>
+              </div>
+              <Switch
+                id="security-alerts"
+                checked={settings.securityAlerts}
+                onCheckedChange={(checked) => updateSetting('securityAlerts', checked)}
+              />
+            </div>
           </div>
+
+          {hasUnsavedChanges && (
+            <div className="flex justify-end pt-4 border-t">
+              <Button
+                onClick={saveSettings}
+                disabled={isSubmitting}
+                className="flex items-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Save Preferences
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
