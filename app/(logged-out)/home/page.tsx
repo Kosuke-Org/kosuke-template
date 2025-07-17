@@ -20,6 +20,7 @@ import { motion, type Variants } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
 import { useState } from 'react';
 
 export default function HomePage() {
@@ -92,10 +93,105 @@ export default function HomePage() {
     },
   ];
 
-  const techStackRows = [
-    ['Next.js 15', 'React 19', 'TypeScript', 'Tailwind CSS', 'Shadcn UI'],
-    ['Clerk', 'PostgreSQL', 'Drizzle ORM', 'Polar', 'Resend'],
-    ['Vercel Blob', 'Sentry', 'Framer Motion', 'Jest'],
+  const projects = [
+    {
+      name: 'Next.js',
+      description: 'The React Framework for Production',
+      logo: '/logos/nextjs.svg',
+      url: 'https://nextjs.org',
+      category: 'Framework',
+    },
+    {
+      name: 'React',
+      description: 'A JavaScript library for building user interfaces',
+      logo: '/logos/react.svg',
+      url: 'https://react.dev',
+      category: 'Library',
+    },
+    {
+      name: 'TypeScript',
+      description: 'JavaScript with syntax for types',
+      logo: '/logos/typescript.svg',
+      url: 'https://www.typescriptlang.org',
+      category: 'Language',
+    },
+    {
+      name: 'Tailwind CSS',
+      description: 'A utility-first CSS framework',
+      logo: '/logos/tailwind.svg',
+      url: 'https://tailwindcss.com',
+      category: 'Styling',
+    },
+    {
+      name: 'shadcn/ui',
+      description: 'Beautifully designed components',
+      logo: '/logos/shadcn.svg',
+      url: 'https://ui.shadcn.com',
+      category: 'Components',
+    },
+    {
+      name: 'Clerk',
+      description: 'Complete user management platform',
+      logo: '/logos/clerk.svg',
+      url: 'https://clerk.com',
+      category: 'Authentication',
+    },
+    {
+      name: 'PostgreSQL',
+      description: "The world's most advanced open source database",
+      logo: '/logos/postgresql.svg',
+      url: 'https://www.postgresql.org',
+      category: 'Database',
+    },
+    {
+      name: 'Drizzle ORM',
+      description: 'TypeScript ORM for SQL databases',
+      logo: '/logos/drizzle.svg',
+      url: 'https://orm.drizzle.team',
+      category: 'ORM',
+    },
+    {
+      name: 'Polar',
+      description: 'Subscription billing made simple',
+      logo: '/logos/polar.svg',
+      url: 'https://polar.sh',
+      category: 'Billing',
+    },
+    {
+      name: 'Resend',
+      description: 'Email for developers',
+      logo: '/logos/resend.svg',
+      url: 'https://resend.com',
+      category: 'Email',
+    },
+    {
+      name: 'Vercel',
+      description: 'The frontend cloud',
+      logo: '/logos/vercel.svg',
+      url: 'https://vercel.com',
+      category: 'Hosting',
+    },
+    {
+      name: 'Sentry',
+      description: 'Application monitoring and error tracking',
+      logo: '/logos/sentry.svg',
+      url: 'https://sentry.io',
+      category: 'Monitoring',
+    },
+    {
+      name: 'Framer Motion',
+      description: 'A production-ready motion library for React',
+      logo: '/logos/framer.svg',
+      url: 'https://www.framer.com/motion',
+      category: 'Animation',
+    },
+    {
+      name: 'Jest',
+      description: 'Delightful JavaScript testing',
+      logo: '/logos/jest.svg',
+      url: 'https://jestjs.io',
+      category: 'Testing',
+    },
   ];
 
   const useCases = [
@@ -281,7 +377,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Tech Stack Section */}
+      {/* Featured Projects Section */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-6">
           <motion.div
@@ -291,35 +387,44 @@ export default function HomePage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Modern Tech Stack</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Built With Modern Technologies</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Built with the most popular and reliable technologies in the ecosystem.
+              Powered by the most popular and reliable technologies in the ecosystem.
             </p>
           </motion.div>
 
           <motion.div
-            className="space-y-4"
+            className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
             variants={container}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
           >
-            {techStackRows.map((row, rowIndex) => (
-              <motion.div
-                key={rowIndex}
-                className="flex flex-wrap justify-center gap-4"
-                variants={item}
-              >
-                {row.map((tech, techIndex) => (
-                  <motion.div key={`${rowIndex}-${techIndex}`} variants={item}>
-                    <Badge
-                      variant="secondary"
-                      className="text-sm px-4 py-2 hover:bg-primary hover:text-primary-foreground transition-colors cursor-default"
-                    >
-                      {tech}
+            {projects.map((project, index) => (
+              <motion.div key={index} variants={item}>
+                <Card
+                  className="h-full border-0 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-300 cursor-pointer group"
+                  onClick={() => window.open(project.url, '_blank')}
+                >
+                  <CardContent className="p-6 text-center">
+                    <div className="mb-4 flex justify-center">
+                      <Image
+                        src={project.logo}
+                        alt={`${project.name} logo`}
+                        width={48}
+                        height={48}
+                        className="h-12 w-12 object-contain group-hover:scale-110 transition-transform duration-300"
+                      />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">
+                      {project.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-2">{project.description}</p>
+                    <Badge variant="outline" className="text-xs">
+                      {project.category}
                     </Badge>
-                  </motion.div>
-                ))}
+                  </CardContent>
+                </Card>
               </motion.div>
             ))}
           </motion.div>
