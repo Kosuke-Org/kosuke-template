@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser, clerkClient } from '@clerk/nextjs/server';
 import { uploadProfileImage, deleteProfileImage } from '@/lib/storage';
-import { syncUserFromClerk } from '@/lib/user-sync';
+import { syncUserFromClerk } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { ensureUserSynced } from '@/lib/user-sync';
+import { ensureUserSynced } from '@/lib/auth';
 import { getUserSubscription, getSubscriptionEligibility } from '@/lib/billing';
 import { ApiErrorHandler } from '@/lib/api/errors';
 

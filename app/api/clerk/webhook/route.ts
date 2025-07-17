@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Webhook } from 'svix';
-import { getUserByClerkId } from '@/lib/user-sync';
+import { getUserByClerkId, ActivityType, isValidEmail } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { users, activityLogs, ActivityType } from '@/lib/db/schema';
+import { users, activityLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { headers } from 'next/headers';
-import { sendEmail, isValidEmail } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 import { createWelcomeEmail } from '@/lib/email/templates/welcome';
 
 // Define types for webhook events

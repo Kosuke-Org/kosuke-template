@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { reactivateUserSubscription, getSubscriptionEligibility } from '@/lib/billing';
 import { getUserSubscriptionWithSync } from '@/lib/billing/polar-sync';
-import { ensureUserSynced } from '@/lib/user-sync';
+import { ensureUserSynced } from '@/lib/auth';
 import { ApiErrorHandler } from '@/lib/api/errors';
 
 export async function POST() {
