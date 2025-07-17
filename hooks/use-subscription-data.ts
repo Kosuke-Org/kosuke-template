@@ -2,12 +2,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { UserSubscription } from '@/lib/db/schema';
 
 interface SubscriptionInfo {
   tier: string;
   status: string;
   currentPeriodEnd?: string;
-  activeSubscription?: unknown;
+  activeSubscription?: UserSubscription | null;
   user?: {
     localId: string;
     clerkUserId: string;
