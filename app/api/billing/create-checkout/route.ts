@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { Polar } from '@polar-sh/sdk';
 import { ensureUserSynced } from '@/lib/user-sync';
-import { getUserSubscription, canCreateNewSubscription } from '@/lib/billing/utils';
+import { getUserSubscription, getSubscriptionEligibility } from '@/lib/billing/utils';
 import { ApiErrorHandler } from '@/lib/api/errors';
 
 // Initialize Polar API
@@ -36,14 +36,14 @@ export async function POST(request: NextRequest) {
     const currentSubscription = await getUserSubscription(user.id);
 
     // Check if user can create a new subscription
-    const eligibility = canCreateNewSubscription(currentSubscription);
+    const eligibility = getSubscriptionEligibility(currentSubscription);
 
-    if (!eligibility.canCreate) {
+    if (!eligibility.canCreateNew) {
       // Following best practices: Direct to customer portal instead of auto-syncing
       return NextResponse.json(
         {
           success: false,
-          error: eligibility.reason,
+          error: eligibility.reason || 'Cannot create new subscription at this time.',
           action: 'customer_portal_required',
           message:
             'Please manage your existing subscription first. Contact support or check your Polar emails for subscription management links.',
