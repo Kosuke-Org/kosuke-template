@@ -4,6 +4,7 @@ import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ClerkThemeProvider } from '@/components/clerk-theme-provider';
 import { Toaster } from '@/components/ui/sonner';
+import { ChatWrapper } from '@/components/chat/chat-wrapper';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -30,8 +31,10 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ClerkThemeProvider>
-            {children}
-            <Toaster />
+            <ChatWrapper>
+              {children}
+              <Toaster />
+            </ChatWrapper>
           </ClerkThemeProvider>
         </ThemeProvider>
       </body>

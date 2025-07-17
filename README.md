@@ -14,6 +14,7 @@ A modern Next.js 15 template with TypeScript, Clerk authentication, Polar Billin
 - **Resend** email service with welcome emails
 - **Profile image uploads** with Vercel Blob
 - **Sentry** error monitoring and performance tracking
+- **🤖 DevOps Assistant** AI-powered chat for deployment guidance
 - **Responsive design** with dark/light mode
 - **Comprehensive testing** setup with Jest
 
@@ -38,6 +39,15 @@ The interactive setup guide will:
 - ✅ Set up production deployment on Vercel
 
 📖 **For detailed setup instructions, deployment guides, and DevOps assistance**, see the [CLI Setup Guide](./cli/README.md).
+
+## 🤖 DevOps Assistant
+
+The template includes an AI-powered DevOps assistant to help with deployment and configuration:
+
+- **Access**: Press `CMD+K` (Mac) or `Ctrl+K` (Windows/Linux) or click the floating button
+- **Features**: Step-by-step deployment guidance, troubleshooting, environment setup help
+- **Requirements**: OpenAI API key and user authentication (Clerk)
+- **Documentation**: See [DEVOPS_CHAT.md](./DEVOPS_CHAT.md) for detailed setup instructions
 
 ## 🛠 Manual Setup (Alternative)
 
