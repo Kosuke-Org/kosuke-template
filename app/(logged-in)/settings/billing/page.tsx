@@ -1,246 +1,427 @@
 'use client';
 
+import {
+  CheckCircle,
+  Loader2,
+  CreditCard,
+  Calendar,
+  AlertCircle,
+  XCircle,
+  RotateCcw,
+} from 'lucide-react';
+import { useUser } from '@clerk/nextjs';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CreditCard, Check, X, Clock, AlertTriangle } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { BillingSkeleton } from '@/components/skeletons';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useSubscriptionData } from '@/hooks/use-subscription-data';
 import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
-import { BillingSkeleton } from '@/components/skeletons';
 
-const plans = [
-  {
-    name: 'Basic',
-    tier: 'basic',
-    price: '$9.99',
-    period: 'month',
-    description: 'Perfect for individuals getting started',
-    features: ['Up to 10 projects', 'Basic analytics', 'Email support', '5GB storage'],
-    popular: false,
+const PRICING = {
+  free: {
+    price: 0,
+    name: 'Free',
+    description: 'Perfect for getting started',
+    features: ['Basic features', 'Community support', 'Limited usage'],
   },
-  {
+  pro: {
+    price: 20,
     name: 'Pro',
-    tier: 'pro',
-    price: '$19.99',
-    period: 'month',
-    description: 'Best for growing teams and businesses',
-    features: [
-      'Up to 50 projects',
-      'Advanced analytics',
-      'Priority support',
-      '50GB storage',
-      'Team collaboration',
-      'Custom integrations',
-    ],
-    popular: true,
+    description: 'For growing teams',
+    features: ['All free features', 'Priority support', 'Advanced features', 'Higher usage limits'],
   },
-  {
-    name: 'Enterprise',
-    tier: 'enterprise',
-    price: '$49.99',
-    period: 'month',
-    description: 'For large organizations with custom needs',
-    features: [
-      'Unlimited projects',
-      'Enterprise analytics',
-      '24/7 phone support',
-      '500GB storage',
-      'Advanced security',
-      'Custom contracts',
-      'Dedicated account manager',
-    ],
-    popular: false,
+  business: {
+    price: 200,
+    name: 'Business',
+    description: 'For large organizations',
+    features: ['All pro features', 'Enterprise support', 'Custom integrations', 'Unlimited usage'],
   },
-];
+} as const;
 
 export default function BillingPage() {
-  const { subscriptionInfo, eligibility, isLoading, refetchSubscriptionInfo } =
-    useSubscriptionData();
+  const { user, isSignedIn } = useUser();
+  const { subscriptionInfo, eligibility, isLoading } = useSubscriptionData();
   const {
     handleUpgrade,
     handleCancel,
     handleReactivate,
-    isUpgrading,
     isCanceling,
     isReactivating,
     upgradeLoading,
   } = useSubscriptionActions();
+
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const formatDateWithTime = (dateString: string | null | undefined) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      active: { variant: 'default' as const, color: 'bg-green-500' },
+      canceled: { variant: 'destructive' as const, color: 'bg-red-500' },
+      past_due: { variant: 'destructive' as const, color: 'bg-yellow-500' },
+      unpaid: { variant: 'destructive' as const, color: 'bg-red-500' },
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || {
+      variant: 'outline' as const,
+    };
+    return (
+      <Badge variant={config.variant} className="capitalize">
+        {status.replace('_', ' ')}
+      </Badge>
+    );
+  };
+
+  if (!isSignedIn || !user) {
+    return null;
+  }
 
   if (isLoading) {
     return <BillingSkeleton />;
   }
 
   const currentTier = subscriptionInfo?.tier || 'free';
-  const subscriptionStatus = subscriptionInfo?.status;
-
-  const getStatusBadge = () => {
-    if (!subscriptionInfo || currentTier === 'free') {
-      return <Badge variant="secondary">Free Plan</Badge>;
-    }
-
-    switch (subscriptionStatus) {
-      case 'active':
-        return <Badge className="bg-green-500">Active</Badge>;
-      case 'canceled':
-        return eligibility?.canReactivate ? (
-          <Badge variant="destructive">Canceled (Grace Period)</Badge>
-        ) : (
-          <Badge variant="destructive">Canceled</Badge>
-        );
-      case 'past_due':
-        return <Badge className="bg-yellow-500">Payment Required</Badge>;
-      case 'incomplete':
-        return <Badge variant="outline">Incomplete</Badge>;
-      default:
-        return <Badge variant="secondary">Unknown</Badge>;
-    }
-  };
-
-  const getStatusIcon = () => {
-    if (subscriptionStatus === 'active') return <Check className="h-4 w-4 text-green-500" />;
-    if (subscriptionStatus === 'canceled') return <X className="h-4 w-4 text-red-500" />;
-    if (subscriptionStatus === 'past_due')
-      return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
-    return <Clock className="h-4 w-4 text-gray-500" />;
-  };
+  const currentPlan = PRICING[currentTier as keyof typeof PRICING] || PRICING.free;
+  const isPaidPlan = currentTier !== 'free' && subscriptionInfo?.activeSubscription;
+  const canCancelSubscription = eligibility?.canCancel;
+  const canReactivateSubscription = eligibility?.canReactivate;
+  const isInGracePeriod =
+    subscriptionInfo?.status === 'canceled' &&
+    subscriptionInfo?.currentPeriodEnd &&
+    new Date() < new Date(subscriptionInfo.currentPeriodEnd);
 
   const onUpgrade = (tier: string) => {
-    handleUpgrade(tier, currentTier, subscriptionStatus);
+    handleUpgrade(tier, currentTier, subscriptionInfo?.status);
   };
 
   return (
     <div className="space-y-6">
-      {/* Current Subscription Status */}
+      <div>
+        <h2 className="text-xl font-semibold tracking-tight">Billing & Subscription</h2>
+        <p className="text-sm text-muted-foreground">
+          Manage your subscription and billing information.
+        </p>
+      </div>
+
+      {/* Current Plan */}
       <Card>
         <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="h-5 w-5" />
+            Current Plan
+          </CardTitle>
+          <CardDescription>Your current subscription details</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Current Subscription
-              </CardTitle>
-              <CardDescription>Manage your billing and subscription settings</CardDescription>
+              <h3 className="font-semibold text-lg">{String(currentPlan.name)}</h3>
+              <p className="text-sm text-muted-foreground">{String(currentPlan.description)}</p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetchSubscriptionInfo()}
-              disabled={isLoading}
-            >
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
-            </Button>
+            <div className="text-right">
+              <div className="text-2xl font-bold">${currentPlan.price}</div>
+              <div className="text-sm text-muted-foreground">per month</div>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
+
+          {subscriptionInfo?.status && (
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                {getStatusIcon()}
-                <h3 className="text-lg font-semibold capitalize">{currentTier} Plan</h3>
-                {getStatusBadge()}
+                <span className="text-sm font-medium">Status:</span>
+                {getStatusBadge(subscriptionInfo.status)}
               </div>
-              {subscriptionInfo?.currentPeriodEnd && (
-                <p className="text-sm text-muted-foreground">
-                  {subscriptionStatus === 'canceled' && eligibility?.canReactivate
-                    ? `Access until: ${new Date(subscriptionInfo.currentPeriodEnd).toLocaleDateString()}`
-                    : `Next billing: ${new Date(subscriptionInfo.currentPeriodEnd).toLocaleDateString()}`}
-                </p>
+              {subscriptionInfo.currentPeriodEnd && (
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span className="text-sm">
+                    {subscriptionInfo.status === 'canceled'
+                      ? `Access until ${formatDate(subscriptionInfo.currentPeriodEnd)}`
+                      : `Renews on ${formatDate(subscriptionInfo.currentPeriodEnd)}`}
+                  </span>
+                </div>
               )}
             </div>
+          )}
 
-            <div className="flex gap-2">
-              {eligibility?.canReactivate && (
-                <Button
-                  onClick={handleReactivate}
-                  disabled={isReactivating}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {isReactivating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Reactivate'}
-                </Button>
-              )}
+          <Separator />
 
-              {eligibility?.canCancel && (
-                <Button onClick={handleCancel} disabled={isCanceling} variant="destructive">
-                  {isCanceling ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    'Cancel Subscription'
-                  )}
-                </Button>
-              )}
-            </div>
+          <div>
+            <h4 className="font-medium mb-2">Features included:</h4>
+            <ul className="space-y-1">
+              {currentPlan.features.map((feature, index) => (
+                <li key={index} className="flex items-center gap-2 text-sm">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
           </div>
         </CardContent>
       </Card>
 
-      {/* Available Plans */}
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-bold">Available Plans</h2>
-          <p className="text-muted-foreground">Choose the plan that best fits your needs</p>
-        </div>
+      {/* Reactivation Option - Show for canceled subscriptions in grace period */}
+      {canReactivateSubscription && isInGracePeriod && (
+        <Card className="border-green-200 bg-green-50/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-green-700">
+              <RotateCcw className="h-5 w-5" />
+              Reactivate Your Subscription
+            </CardTitle>
+            <CardDescription>
+              You can reactivate your {String(currentPlan.name)} subscription at no additional cost
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Your subscription was canceled but you still have access until{' '}
+                <strong>{formatDateWithTime(subscriptionInfo?.currentPeriodEnd)}</strong>. You can
+                reactivate it for free anytime before this date expires.
+              </AlertDescription>
+            </Alert>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {plans.map((plan) => {
-            const isCurrentPlan = plan.tier === currentTier;
-            const canUpgradeToThis = eligibility?.canUpgrade || eligibility?.canCreateNew;
-            const isUpgradingToThis = upgradeLoading === plan.tier;
-
-            return (
-              <Card key={plan.tier} className={`relative ${plan.popular ? 'border-primary' : ''}`}>
-                {plan.popular && (
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2">
-                    <Badge className="bg-primary text-primary-foreground">Most Popular</Badge>
-                  </div>
+            <div className="pt-2">
+              <Button
+                onClick={handleReactivate}
+                disabled={isReactivating}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isReactivating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Reactivating...
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Reactivate Subscription
+                  </>
                 )}
-                <CardHeader>
-                  <div className="space-y-2">
-                    <CardTitle className="flex items-center justify-between">
-                      {plan.name}
-                      {isCurrentPlan && <Badge variant="outline">Current</Badge>}
-                    </CardTitle>
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-bold">{plan.price}</span>
-                      <span className="text-muted-foreground">/{plan.period}</span>
-                    </div>
-                    <CardDescription>{plan.description}</CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-                  <Button
-                    className="w-full"
-                    variant={plan.popular ? 'default' : 'outline'}
-                    disabled={
-                      isCurrentPlan || !canUpgradeToThis || isUpgrading || isUpgradingToThis
-                    }
-                    onClick={() => onUpgrade(plan.tier)}
-                  >
-                    {isUpgradingToThis ? (
+      {/* Cancel Subscription - Show for active paid plans */}
+      {isPaidPlan && canCancelSubscription && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-destructive" />
+              Cancel Subscription
+            </CardTitle>
+            <CardDescription>
+              Downgrade to the free plan and cancel your subscription
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                If you cancel your subscription, you&apos;ll be downgraded to the free plan at the
+                end of your current billing period ({formatDate(subscriptionInfo?.currentPeriodEnd)}
+                ). You&apos;ll lose access to:
+              </AlertDescription>
+            </Alert>
+
+            <div className="ml-4">
+              <ul className="space-y-1 text-sm text-muted-foreground">
+                {currentPlan.features
+                  .filter(
+                    (feature) =>
+                      !PRICING.free.features.some((freeFeature) => freeFeature === feature)
+                  )
+                  .map((feature, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <XCircle className="h-4 w-4 text-destructive" />
+                      {feature}
+                    </li>
+                  ))}
+              </ul>
+            </div>
+
+            <div className="pt-4">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" disabled={isCanceling}>
+                    {isCanceling ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Processing...
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Cancelling...
                       </>
-                    ) : isCurrentPlan ? (
-                      'Current Plan'
                     ) : (
-                      `Upgrade to ${plan.name}`
+                      'Cancel Subscription'
                     )}
                   </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will cancel your {currentPlan.name} subscription. You&apos;ll continue to
+                      have access until {formatDate(subscriptionInfo?.currentPeriodEnd)}, after
+                      which you&apos;ll be automatically downgraded to the free plan.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleCancel}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Cancel Subscription
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Canceled Subscription Status - Show for canceled subscriptions not in grace period */}
+      {isPaidPlan && subscriptionInfo?.status === 'canceled' && !isInGracePeriod && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-destructive" />
+              Subscription Expired
+            </CardTitle>
+            <CardDescription>
+              Your subscription has ended and you&apos;ve been downgraded to the free plan
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Your {currentPlan.name} subscription ended on{' '}
+                {formatDate(subscriptionInfo?.currentPeriodEnd)}. You can upgrade to a new plan
+                anytime below.
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Upgrade Options - Show based on eligibility */}
+      {(eligibility?.canCreateNew || eligibility?.canUpgrade) && currentTier !== 'business' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {currentTier === 'free' ? 'Choose Your Plan' : 'Upgrade Your Plan'}
+            </CardTitle>
+            <CardDescription>
+              {currentTier === 'free'
+                ? 'Select a plan to unlock more features and capabilities'
+                : 'Get access to more features and higher limits'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              {Object.entries(PRICING).map(([tier, plan]) => {
+                if (tier === currentTier && currentTier !== 'free') return null;
+                if (tier === 'free') return null;
+
+                const isUpgrade = plan.price > currentPlan.price;
+                const isSameTier = tier === currentTier;
+
+                return (
+                  <Card key={tier} className={`relative ${isSameTier ? 'border-primary' : ''}`}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        {plan.name}
+                        {tier === 'pro' && <Badge variant="secondary">Most Popular</Badge>}
+                        {isSameTier && <Badge variant="outline">Current</Badge>}
+                      </CardTitle>
+                      <CardDescription>{plan.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="text-3xl font-bold">${plan.price}</div>
+                      <div className="text-sm text-muted-foreground">per month</div>
+
+                      <ul className="space-y-2">
+                        {plan.features.map((feature, index) => (
+                          <li key={index} className="flex items-center gap-2 text-sm">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {!isSameTier && (
+                        <Button
+                          onClick={() => onUpgrade(tier)}
+                          disabled={upgradeLoading === tier}
+                          className="w-full"
+                        >
+                          {upgradeLoading === tier ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            `${isUpgrade ? 'Upgrade' : 'Subscribe'} to ${plan.name}`
+                          )}
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Billing Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Billing Information</CardTitle>
+          <CardDescription>Your billing details and payment history</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Billing is managed through Polar. You can update your payment methods and view
+              detailed billing history in your Polar dashboard.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
     </div>
   );
 }
