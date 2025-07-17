@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { ensureUserSynced } from '@/lib/user-sync';
-import { getUserSubscription, canCreateNewSubscription } from '@/lib/billing/utils';
+import { getUserSubscription, getSubscriptionEligibility } from '@/lib/billing/utils';
 import { ApiErrorHandler } from '@/lib/api/errors';
 
 export async function GET() {
@@ -22,11 +22,14 @@ export async function GET() {
     // Check user's current subscription status
     const currentSubscription = await getUserSubscription(user.id);
 
-    // Check if user can create a new subscription
-    const eligibility = canCreateNewSubscription(currentSubscription);
+    // Check user subscription eligibility
+    const eligibility = getSubscriptionEligibility(currentSubscription);
 
     return NextResponse.json({
-      canSubscribe: eligibility.canCreate,
+      canSubscribe: eligibility.canCreateNew || eligibility.canUpgrade,
+      canCreateNew: eligibility.canCreateNew,
+      canUpgrade: eligibility.canUpgrade,
+      canReactivate: eligibility.canReactivate,
       reason: eligibility.reason || null,
       currentSubscription: {
         tier: currentSubscription.tier,

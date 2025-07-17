@@ -35,15 +35,15 @@ export async function POST(request: NextRequest) {
     // Check user's current subscription status
     const currentSubscription = await getUserSubscription(user.id);
 
-    // Check if user can create a new subscription
+    // Check if user can create a new subscription or upgrade existing one
     const eligibility = getSubscriptionEligibility(currentSubscription);
 
-    if (!eligibility.canCreateNew) {
-      // Following best practices: Direct to customer portal instead of auto-syncing
+    // Allow if user can create new subscription OR upgrade existing one
+    if (!eligibility.canCreateNew && !eligibility.canUpgrade) {
       return NextResponse.json(
         {
           success: false,
-          error: eligibility.reason || 'Cannot create new subscription at this time.',
+          error: eligibility.reason || 'Cannot create new subscription or upgrade at this time.',
           action: 'customer_portal_required',
           message:
             'Please manage your existing subscription first. Contact support or check your Polar emails for subscription management links.',

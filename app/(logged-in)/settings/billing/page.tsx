@@ -140,7 +140,13 @@ export default function BillingPage() {
   const handleUpgrade = async (tier: string) => {
     setUpgradeLoading(tier);
     try {
-      const response = await fetch('/api/billing/create-checkout', {
+      // Determine if this is an upgrade (user has active subscription) or new subscription
+      const isUpgrade = currentTier !== 'free' && subscriptionInfo?.status === 'active';
+      const endpoint = isUpgrade
+        ? '/api/billing/upgrade-subscription'
+        : '/api/billing/create-checkout';
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,16 +158,37 @@ export default function BillingPage() {
         const data = await response.json();
 
         if (data.success && data.checkoutUrl) {
+          // Show success message for upgrades
+          if (isUpgrade) {
+            toast({
+              title: 'Upgrade Initiated',
+              description: `Your ${currentTier} subscription has been canceled and you'll be redirected to complete your ${tier} upgrade.`,
+              variant: 'default',
+            });
+          }
+
           window.location.href = data.checkoutUrl;
         } else {
           toast({
             title: 'Error',
-            description: 'Failed to create checkout session',
+            description: data.error || 'Failed to process request',
             variant: 'destructive',
           });
         }
       } else {
         const error = await response.json();
+
+        // Handle upgrade-specific errors
+        if (error.requiresNewSubscription) {
+          toast({
+            title: 'Upgrade Issue',
+            description: error.error,
+            variant: 'destructive',
+          });
+          // Refresh the page to show current state
+          setTimeout(() => window.location.reload(), 2000);
+          return;
+        }
 
         // Following best practices: Handle customer portal redirects
         if (error.action === 'customer_portal_required') {
@@ -173,7 +200,7 @@ export default function BillingPage() {
         } else {
           toast({
             title: 'Error',
-            description: error.error || 'Failed to create checkout session',
+            description: error.error || 'Failed to process request',
             variant: 'destructive',
           });
         }
@@ -543,7 +570,7 @@ export default function BillingPage() {
       )}
 
       {/* Upgrade Options - Show based on eligibility */}
-      {eligibility?.canCreateNew && currentTier !== 'business' && (
+      {(eligibility?.canCreateNew || eligibility?.canUpgrade) && currentTier !== 'business' && (
         <Card>
           <CardHeader>
             <CardTitle>
