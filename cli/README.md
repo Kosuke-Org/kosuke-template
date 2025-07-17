@@ -129,6 +129,31 @@ After the interactive setup completes:
    - **`.env`** - Local development (localhost, docker-compose database)
    - **`.env.prod`** - Production reference (Vercel has these variables)
 
+## ⚡ Automated Subscription Sync
+
+Your template includes automated subscription syncing via Vercel Cron Jobs:
+
+### 🕐 How It Works
+
+- **Automatic Sync**: Runs every 6 hours to sync subscription data from Polar
+- **Webhook Backup**: Ensures data consistency even if webhooks fail
+- **Security**: Protected by `CRON_SECRET` token authentication
+- **Monitoring**: Logs all sync activities in Vercel Functions
+
+### 🔐 Security Setup
+
+The interactive setup automatically:
+
+1. **Generates** a secure `CRON_SECRET` token
+2. **Configures** Vercel Cron to send this token
+3. **Protects** the sync endpoint from unauthorized access
+
+### 📊 Monitoring
+
+- **Vercel Dashboard**: View cron execution logs in Functions tab
+- **Manual Testing**: Test sync endpoint with proper authentication
+- **Health Checks**: Built-in endpoint health monitoring
+
 ## 🚀 Going for Production
 
 When you're ready to launch your application to production, you'll need to configure each service for production use. Here's how to transition from development/sandbox to production environments.
@@ -181,6 +206,8 @@ Moving from Polar sandbox to production environment:
    - `POLAR_ORGANIZATION_ID` = `[your-production-org-slug]`
    - `POLAR_PRO_PRODUCT_ID` = `[production-pro-product-id]`
    - `POLAR_BUSINESS_PRODUCT_ID` = `[production-business-product-id]`
+3. Ensure security variables are set:
+   - `CRON_SECRET` = `[auto-generated secure token for subscription sync]`
 
 #### 5. Set Up Production Webhooks
 

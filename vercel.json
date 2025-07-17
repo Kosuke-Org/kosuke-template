@@ -1,4 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "ignoreCommand": "[ \"$VERCEL_ENV\" != production ]"
+  "ignoreCommand": "[ \"$VERCEL_ENV\" != production ]",
+  "crons": [
+    {
+      "path": "/api/cron/sync-subscriptions",
+      "schedule": "0 */6 * * *",
+      "headers": {
+        "authorization": "Bearer $CRON_SECRET"
+      }
+    }
+  ]
 }

@@ -1,15 +1,14 @@
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { userSubscriptions } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
 import { ensureUserSynced } from '@/lib/user-sync';
+import { getUserSubscription } from '@/lib/billing/utils';
+import { ApiErrorHandler } from '@/lib/api/errors';
 
 export async function GET() {
   try {
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return ApiErrorHandler.unauthorized();
     }
 
     const clerkUser = await currentUser();
@@ -20,46 +19,21 @@ export async function GET() {
     // Ensure user is synced to local database
     const localUser = await ensureUserSynced(clerkUser);
 
-    // Get user's active subscription from Clerk-compatible table
-    const activeSubscription = await db.query.userSubscriptions.findFirst({
-      where: eq(userSubscriptions.clerkUserId, clerkUser.id),
-      orderBy: [desc(userSubscriptions.createdAt)],
-    });
+    // Use the centralized getUserSubscription utility
+    const subscriptionInfo = await getUserSubscription(clerkUser.id);
 
-    // Determine current tier and status
-    let tier = 'free'; // Default to free
-    let status = null;
-    let currentPeriodEnd = null;
-
-    if (activeSubscription && activeSubscription.status === 'active') {
-      tier = activeSubscription.tier;
-      status = activeSubscription.status;
-      currentPeriodEnd = activeSubscription.currentPeriodEnd;
-    } else if (activeSubscription) {
-      // User had a subscription but it's not active anymore
-      status = activeSubscription.status;
-      currentPeriodEnd = activeSubscription.currentPeriodEnd;
-
-      // Check if subscription is still within the period (grace period)
-      if (activeSubscription.currentPeriodEnd && new Date() < activeSubscription.currentPeriodEnd) {
-        tier = activeSubscription.tier; // Still in grace period
-      }
-    }
-
-    const subscriptionInfo = {
-      tier,
-      status,
-      currentPeriodEnd,
-      activeSubscription,
+    return NextResponse.json({
+      tier: subscriptionInfo.tier,
+      status: subscriptionInfo.status,
+      currentPeriodEnd: subscriptionInfo.currentPeriodEnd,
+      activeSubscription: subscriptionInfo.activeSubscription,
       user: {
         localId: localUser.id,
         clerkId: localUser.clerkUserId,
       },
-    };
-
-    return NextResponse.json(subscriptionInfo);
+    });
   } catch (error) {
     console.error('Error fetching subscription status:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return ApiErrorHandler.internalServerError('Failed to fetch subscription status');
   }
 }

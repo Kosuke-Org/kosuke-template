@@ -744,6 +744,7 @@ class InteractiveSetup:
         print(f"\n{Colors.BOLD}💡 Important Notes:{Colors.ENDC}")
         print(f"   • {Colors.OKGREEN}POSTGRES_URL and BLOB_READ_WRITE_TOKEN are already set by Vercel{Colors.ENDC}")
         print(f"   • Skip these if they already exist in your Vercel environment variables")
+        print(f"   • {Colors.WARNING}CRON_SECRET is required for secure subscription syncing{Colors.ENDC}")
         print(f"   • Click {Colors.BOLD}'Save'{Colors.ENDC} after adding each variable")
         
         input(f"\n{Colors.OKCYAN}Press Enter when you've added all environment variables to Vercel...{Colors.ENDC}")
@@ -755,6 +756,13 @@ class InteractiveSetup:
     def generate_env_prod_file(self):
         """Generate .env.prod file for Vercel environment variables"""
         print_info("Generating .env.prod file for Vercel...")
+        
+        # Generate CRON_SECRET for secure cron endpoint
+        import secrets
+        import base64
+        cron_secret = base64.b64encode(secrets.token_bytes(32)).decode('utf-8')
+        self.progress.api_keys['cron_secret'] = cron_secret
+        print_success(f"Generated secure CRON_SECRET for subscription syncing")
         
         vercel_config = self.progress.service_configs.get('vercel', {}).get('credentials', {})
         polar_config = self.progress.service_configs.get('polar', {}).get('credentials', {})
@@ -804,6 +812,11 @@ RESEND_FROM_NAME={self.progress.api_keys.get('resend_from_name', 'Your App Name'
 # ===================================
 NEXT_PUBLIC_APP_URL={vercel_config.get('project_url', 'http://localhost:3000')}
 NODE_ENV=production
+
+# ===================================
+# SUBSCRIPTION SYNC CRON
+# ===================================
+CRON_SECRET={self.progress.api_keys.get('cron_secret', 'generated_cron_secret_here')}
 
 # ===================================
 # NOTE: These are already set by Vercel
@@ -868,6 +881,10 @@ RESEND_FROM_NAME={self.progress.api_keys.get('resend_from_name', 'Kosuke Templat
 # App URLs
 # ------------------------------------------------------------------------------------
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Subscription Sync Cron
+# ------------------------------------------------------------------------------------
+CRON_SECRET={self.progress.api_keys.get('cron_secret', 'generated_cron_secret_here')}
 """
         
         # Save .env file
@@ -906,12 +923,14 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
             print(f"   • Sentry Error Monitoring: {Colors.OKGREEN}Project created{Colors.ENDC}")
         if 'vercel-env' in self.progress.completed_services:
             print(f"   • Vercel Environment Variables: {Colors.OKGREEN}All variables configured{Colors.ENDC}")
+            print(f"   • Subscription Sync Cron: {Colors.OKGREEN}Secure token generated{Colors.ENDC}")
         
         print(f"\n{Colors.BOLD}📁 Next Steps:{Colors.ENDC}")
         repo_url = self.progress.api_keys.get('github_repo_url', '')
         print(f"   1. {Colors.OKGREEN}Your Vercel project is ready!{Colors.ENDC}")
         print(f"      • Environment variables are configured in Vercel")
         print(f"      • Deployment should work automatically")
+        print(f"      • Subscription sync runs automatically every 6 hours")
         print(f"      • If needed, trigger a redeploy from your dashboard")
         print(f"   2. Clone your repository: {Colors.OKCYAN}git clone {repo_url}.git{Colors.ENDC}")
         print(f"   3. Copy environment files: {Colors.OKCYAN}cp ../cli/.env . && cp ../cli/.env.prod .{Colors.ENDC}")

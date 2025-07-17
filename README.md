@@ -9,7 +9,8 @@ A modern Next.js 15 template with TypeScript, Clerk authentication, Polar Billin
 - **Clerk Authentication** for user management
 - **PostgreSQL** database with Drizzle ORM
 - **Shadcn UI** components with Tailwind CSS
-- **Polar** billing integration
+- **Polar** billing integration with automated sync
+- **Vercel Cron Jobs** for subscription data synchronization
 - **Resend** email service with welcome emails
 - **Profile image uploads** with Vercel Blob
 - **Sentry** error monitoring and performance tracking
@@ -95,6 +96,9 @@ RESEND_REPLY_TO=support@yourdomain.com
 
 # Vercel Blob
 BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
+
+# Subscription Sync Security
+CRON_SECRET=your_secure_cron_secret_here
 ```
 
 For detailed instructions on obtaining these keys and setting up each service, see the [CLI Setup Guide](./cli/README.md).
@@ -123,6 +127,17 @@ npm run shadcn:check    # Check for available updates
 npm run shadcn:update   # Update components manually
 npm run shadcn:force    # Force update all components
 ```
+
+## ⚡ Automated Subscription Sync
+
+This template includes a robust subscription synchronization system powered by Vercel Cron Jobs:
+
+- **🕐 Scheduled Sync**: Automatically syncs subscription data from Polar every 6 hours
+- **🔒 Secure Endpoint**: Protected by `CRON_SECRET` token authentication
+- **🛡️ Webhook Backup**: Ensures data consistency even if webhooks are missed
+- **📊 Monitoring**: Built-in health checks and comprehensive logging
+
+The sync system runs automatically after deployment, requiring no manual intervention. Monitor sync activities through your Vercel Dashboard under the Functions tab.
 
 ## 📦 Available Scripts
 
