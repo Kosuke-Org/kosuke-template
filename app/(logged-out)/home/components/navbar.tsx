@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { Menu, LogOut, Settings, User, CreditCard } from 'lucide-react';
-import { useUser, useClerk } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -19,7 +18,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useProfileImageUrl } from '@/lib/hooks/use-profile-image';
+import { useUserAvatar } from '@/hooks/use-user-avatar';
+import { useAuthActions } from '@/hooks/use-auth-actions';
 
 interface NavbarProps {
   variant?: 'standard' | 'transparent';
@@ -28,30 +28,8 @@ interface NavbarProps {
 
 export default function Navbar({ variant = 'standard', className }: NavbarProps) {
   const { user, isSignedIn } = useUser();
-  const { signOut } = useClerk();
-  const router = useRouter();
-  const profileImageUrl = useProfileImageUrl(user);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.push('/');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  // Get initials for avatar fallback
-  const getInitials = () => {
-    if (!user?.fullName && !user?.firstName) return 'U';
-    const name = user?.fullName || user?.firstName || '';
-    return name
-      .split(' ')
-      .map((part: string) => part[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
+  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
+  const { handleSignOut } = useAuthActions();
 
   return (
     <header
@@ -75,23 +53,16 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full hover:bg-transparent">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={typeof profileImageUrl === 'string' ? profileImageUrl : ''}
-                        alt={user.fullName || user.firstName || 'User'}
-                      />
-                      <AvatarFallback>{getInitials()}</AvatarFallback>
+                      <AvatarImage src={profileImageUrl} alt={displayName} />
+                      <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {user.fullName || user.firstName || 'User'}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user.emailAddresses[0]?.emailAddress}
-                      </p>
+                      <p className="text-sm font-medium leading-none">{displayName}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{primaryEmail}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -154,19 +125,12 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-3 p-2 border rounded-lg">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage
-                          src={typeof profileImageUrl === 'string' ? profileImageUrl : ''}
-                          alt={user.fullName || user.firstName || 'User'}
-                        />
-                        <AvatarFallback>{getInitials()}</AvatarFallback>
+                        <AvatarImage src={profileImageUrl} alt={displayName} />
+                        <AvatarFallback>{initials}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="text-sm font-medium">
-                          {user.fullName || user.firstName || 'User'}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {user.emailAddresses[0]?.emailAddress}
-                        </div>
+                        <div className="text-sm font-medium">{displayName}</div>
+                        <div className="text-xs text-muted-foreground">{primaryEmail}</div>
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">

@@ -10,7 +10,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -28,25 +27,16 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useUser, useClerk } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
+import { useAuthActions } from '@/hooks/use-auth-actions';
 import { UserSkeleton } from '@/components/skeletons';
 
 export function NavUser() {
   const { user, isSignedIn } = useUser();
-  const { signOut } = useClerk();
   const { isMobile } = useSidebar();
-  const router = useRouter();
   const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      router.push('/');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
+  const { handleSignOut } = useAuthActions();
 
   if (!isSignedIn || !user) {
     return (
