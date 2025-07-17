@@ -849,7 +849,6 @@ CLERK_WEBHOOK_SECRET={self.progress.api_keys.get('clerk_webhook_secret', 'whsec_
 POLAR_ENVIRONMENT={polar_config.get('environment', 'sandbox')}
 POLAR_ACCESS_TOKEN={self.progress.api_keys.get('polar_access_token', 'polar_oat_your_polar_token_here')}
 POLAR_SUCCESS_URL=http://localhost:3000/billing/success?checkout_id={{CHECKOUT_ID}}
-POLAR_CANCEL_URL=http://localhost:3000/billing/cancel
 POLAR_WEBHOOK_SECRET={self.progress.api_keys.get('polar_webhook_secret', 'polar_webhook_secret_here')}
 
 POLAR_PRO_PRODUCT_ID={polar_config.get('pro_product_id', '')}

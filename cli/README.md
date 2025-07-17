@@ -209,7 +209,6 @@ Update your Vercel environment variables for production:
 
 1. `NEXT_PUBLIC_APP_URL` = `https://yourdomain.com`
 2. `POLAR_SUCCESS_URL` = `https://yourdomain.com/billing/success?checkout_id={CHECKOUT_ID}`
-3. `POLAR_CANCEL_URL` = `https://yourdomain.com/billing/cancel`
 
 #### 3. SSL/HTTPS Configuration
 
