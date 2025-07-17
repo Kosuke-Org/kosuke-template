@@ -50,19 +50,19 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid grid-cols-4 w-full max-w-lg">
               <TabsTrigger value="account" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
+                <User className="h-4 w-4 flex-shrink-0" />
                 <span>Account</span>
               </TabsTrigger>
               <TabsTrigger value="billing" className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
+                <CreditCard className="h-4 w-4 flex-shrink-0" />
                 <span>Billing</span>
               </TabsTrigger>
               <TabsTrigger value="notifications" className="flex items-center gap-2">
-                <Bell className="h-4 w-4" />
-                <span>Notifications</span>
+                <Bell className="h-4 w-4 flex-shrink-0" />
+                <span>Alerts</span>
               </TabsTrigger>
               <TabsTrigger value="security" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
+                <Shield className="h-4 w-4 flex-shrink-0" />
                 <span>Security</span>
               </TabsTrigger>
             </TabsList>

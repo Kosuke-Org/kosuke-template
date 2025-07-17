@@ -147,7 +147,7 @@ export function NavUser() {
                   className="cursor-pointer flex w-full items-center"
                 >
                   <Bell className="mr-2 h-4 w-4" />
-                  Notifications
+                  Alerts
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
