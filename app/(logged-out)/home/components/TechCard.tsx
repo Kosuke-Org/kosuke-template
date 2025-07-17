@@ -22,12 +22,8 @@ export function TechCard({ name, description, logoPath, url, className = '' }: T
   };
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      className={className}
-    >
-      <Card 
+    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className={className}>
+      <Card
         className="h-full border-0 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-300 cursor-pointer group"
         onClick={handleClick}
       >
@@ -50,16 +46,14 @@ export function TechCard({ name, description, logoPath, url, className = '' }: T
               </div>
             )}
           </div>
-          
+
           <div className="space-y-2">
             <h3 className="text-lg font-semibold group-hover:text-primary transition-colors">
               {name}
             </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {description}
-            </p>
+            <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
           </div>
-          
+
           <div className="flex items-center text-xs text-muted-foreground group-hover:text-primary transition-colors">
             <ExternalLink className="w-3 h-3 mr-1" />
             <span>Learn more</span>
@@ -80,11 +74,11 @@ interface TechLogoProps {
 
 export function TechLogo({ name, logoPath, url, size = 'md', className = '' }: TechLogoProps) {
   const [imageError, setImageError] = useState(false);
-  
+
   const sizeClasses = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
-    lg: 'w-16 h-16'
+    lg: 'w-16 h-16',
   };
 
   const handleClick = () => {
@@ -109,7 +103,9 @@ export function TechLogo({ name, logoPath, url, size = 'md', className = '' }: T
           onError={() => setImageError(true)}
         />
       ) : (
-        <div className={`${sizeClasses[size]} bg-muted rounded-lg flex items-center justify-center hover:bg-muted/80 transition-colors`}>
+        <div
+          className={`${sizeClasses[size]} bg-muted rounded-lg flex items-center justify-center hover:bg-muted/80 transition-colors`}
+        >
           <span className="text-sm font-bold text-muted-foreground">
             {name.charAt(0).toUpperCase()}
           </span>
