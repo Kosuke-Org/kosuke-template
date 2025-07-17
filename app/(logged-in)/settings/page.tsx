@@ -8,109 +8,44 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from '@/lib/hooks/use-toast';
 import { useUser } from '@clerk/nextjs';
-import { useProfileImage, useProfileImageUrl } from '@/lib/hooks/use-profile-image';
+import { useUserAvatar } from '@/hooks/use-user-avatar';
+import { useProfileUpload } from '@/hooks/use-profile-upload';
+import { useFormSubmission } from '@/hooks/use-form-submission';
 import { ProfileSettingsSkeleton } from '@/components/skeletons';
 
 export default function ProfileSettings() {
   const { user, isSignedIn } = useUser();
-  const { toast } = useToast();
-  const { setCurrentImageUrl } = useProfileImage();
-  const profileImageUrl = useProfileImageUrl(user);
+  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
+  const { handleImageUpload, isUploading } = useProfileUpload();
   const [isEditing, setIsEditing] = useState(false);
-  const [displayName, setDisplayName] = useState(user?.fullName || user?.firstName || '');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [editDisplayName, setEditDisplayName] = useState(displayName);
+
+  const { handleSubmit: submitProfileUpdate, isSubmitting } = useFormSubmission({
+    onSubmit: async () => {
+      // Note: Clerk handles name updates differently
+      // You might need to use clerkClient.users.updateUser() in an API route
+      // For now, we'll show a message about this limitation
+      throw new Error('Name updates need to be implemented via Clerk API routes.');
+    },
+    onSuccess: () => {
+      setIsEditing(false);
+    },
+    errorMessage: 'Failed to update profile. Please try again.',
+  });
 
   if (!isSignedIn || !user) {
     return <ProfileSettingsSkeleton />;
   }
 
-  // Get initials for avatar fallback
-  const getInitials = () => {
-    const name = user?.fullName || user?.firstName;
-    if (!name) return 'U';
-    return name
-      .split(' ')
-      .map((part: string) => part[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
-  const handleSaveProfile = async () => {
-    if (!user || !displayName.trim()) return;
-
-    setIsSubmitting(true);
-    try {
-      // Note: Clerk handles name updates differently
-      // You might need to use clerkClient.users.updateUser() in an API route
-      // For now, we'll show a message about this limitation
-      toast({
-        title: 'Feature not available',
-        description: 'Name updates need to be implemented via Clerk API routes.',
-        variant: 'destructive',
-      });
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update profile. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleSaveProfile = () => {
+    if (!editDisplayName.trim()) return;
+    submitProfileUpdate({ displayName: editDisplayName });
   };
 
   const handleCancelEdit = () => {
-    setDisplayName(user?.fullName || user?.firstName || '');
+    setEditDisplayName(displayName);
     setIsEditing(false);
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    setIsUploading(true);
-    try {
-      // Create FormData and upload to our API
-      const formData = new FormData();
-      formData.append('file', file);
-
-      // Upload to our API endpoint
-      const response = await fetch('/api/upload/profile-image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload image');
-      }
-
-      const data = await response.json();
-
-      toast({
-        title: 'Profile image updated',
-        description: data.message || 'Your profile image has been updated successfully.',
-      });
-
-      // Update local state immediately to show the new image
-      setCurrentImageUrl(data.imageUrl);
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      toast({
-        title: 'Error',
-        description:
-          error instanceof Error ? error.message : 'Failed to upload image. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsUploading(false);
-    }
   };
 
   return (
@@ -125,7 +60,7 @@ export default function ProfileSettings() {
             {/* Profile Image */}
             <div className="flex flex-col items-center gap-4">
               <div className="relative h-32 w-32 rounded-lg overflow-hidden border border-border bg-muted">
-                {profileImageUrl && typeof profileImageUrl === 'string' ? (
+                {profileImageUrl ? (
                   <Image
                     src={profileImageUrl}
                     alt="Profile"
@@ -135,9 +70,7 @@ export default function ProfileSettings() {
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-muted">
-                    <span className="text-2xl font-medium text-muted-foreground">
-                      {getInitials()}
-                    </span>
+                    <span className="text-2xl font-medium text-muted-foreground">{initials}</span>
                   </div>
                 )}
               </div>
@@ -181,14 +114,14 @@ export default function ProfileSettings() {
                     <div className="flex gap-2">
                       <Input
                         id="displayName"
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
+                        value={editDisplayName}
+                        onChange={(e) => setEditDisplayName(e.target.value)}
                         placeholder="Enter your display name"
                         className="flex-1"
                       />
                       <Button
                         onClick={handleSaveProfile}
-                        disabled={isSubmitting || !displayName.trim()}
+                        disabled={isSubmitting || !editDisplayName.trim()}
                         size="sm"
                       >
                         {isSubmitting ? (
@@ -203,12 +136,10 @@ export default function ProfileSettings() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <p className="text-base flex-1">
-                        {user?.fullName || user?.firstName || 'Not set'}
-                      </p>
+                      <p className="text-base flex-1">{displayName}</p>
                       <Button
                         onClick={() => {
-                          setDisplayName(user?.fullName || user?.firstName || '');
+                          setEditDisplayName(displayName);
                           setIsEditing(true);
                         }}
                         variant="outline"
@@ -221,7 +152,7 @@ export default function ProfileSettings() {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
-                  <p className="text-base">{user?.emailAddresses[0]?.emailAddress}</p>
+                  <p className="text-base">{primaryEmail}</p>
                 </div>
               </div>
             </div>

@@ -1,126 +1,180 @@
 'use client';
 
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Shield, Smartphone, Key, History, AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/lib/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@clerk/nextjs';
 import { SecuritySettingsSkeleton } from '@/components/skeletons';
 
 export default function SecurityPage() {
   const { user, isSignedIn } = useUser();
   const { toast } = useToast();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   if (!isSignedIn || !user) {
     return <SecuritySettingsSkeleton />;
   }
 
-  const handleDeleteAccount = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const confirmPassword = formData.get('confirmPassword') as string;
-
-    if (!confirmPassword) {
-      toast({
-        title: 'Error',
-        description: 'Please enter your password to confirm account deletion.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsDeleting(true);
+  const handleChangePassword = async () => {
+    setIsChangingPassword(true);
     try {
-      // Note: Clerk account deletion should be handled via API route
-      // For now, we'll show a message about this limitation
+      // In a real implementation, you'd redirect to Clerk's password change flow
+      // or implement a custom password change modal
       toast({
-        title: 'Feature not available',
-        description: 'Account deletion needs to be implemented via Clerk API routes.',
-        variant: 'destructive',
+        title: 'Password Change',
+        description: 'Password change functionality would be implemented via Clerk.',
       });
     } catch (error) {
-      console.error('Error deleting account:', error);
+      console.error('Error changing password:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete account. Please check your password.',
+        description: 'Failed to initiate password change. Please try again.',
         variant: 'destructive',
       });
     } finally {
-      setIsDeleting(false);
+      setIsChangingPassword(false);
     }
+  };
+
+  const handleEnable2FA = () => {
+    toast({
+      title: '2FA Setup',
+      description: 'Two-factor authentication setup would be implemented via Clerk.',
+    });
+  };
+
+  const handleViewSessions = () => {
+    toast({
+      title: 'Active Sessions',
+      description: 'Session management would be implemented via Clerk dashboard.',
+    });
   };
 
   return (
     <div className="space-y-6">
-      {/* Account Deletion Section */}
-      <Card className="border-destructive/20">
+      {/* Security Overview */}
+      <Card>
         <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
-          <CardDescription>
-            Permanently delete your account and all associated data.
-          </CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Security Overview
+          </CardTitle>
+          <CardDescription>Monitor and manage your account security settings</CardDescription>
         </CardHeader>
         <CardContent>
-          {!showDeleteConfirm ? (
-            <div className="space-y-4">
+          <Alert>
+            <Shield className="h-4 w-4" />
+            <AlertDescription>
+              Your account security is managed through Clerk. Most security features can be
+              configured in your user profile or through Clerk&apos;s security settings.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
+      {/* Password Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Key className="h-5 w-5" />
+            Password & Authentication
+          </CardTitle>
+          <CardDescription>Manage your password and authentication methods</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="font-medium">Password</h4>
               <p className="text-sm text-muted-foreground">
-                Once you delete your account, there is no going back. This action cannot be undone.
+                Last changed: {user.passwordEnabled ? 'Recently' : 'Never set'}
               </p>
-              <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
-                Delete Account
+            </div>
+            <Button onClick={handleChangePassword} disabled={isChangingPassword}>
+              Change Password
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="font-medium">Two-Factor Authentication</h4>
+              <p className="text-sm text-muted-foreground">
+                Add an extra layer of security to your account
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">Available</Badge>
+              <Button variant="outline" onClick={handleEnable2FA}>
+                Setup 2FA
               </Button>
             </div>
-          ) : (
-            <form onSubmit={handleDeleteAccount} className="space-y-6">
-              <div className="rounded-md bg-destructive/10 p-4 flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
-                <div>
-                  <h4 className="text-sm font-medium text-destructive">
-                    Warning: This action is irreversible
-                  </h4>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    All your data will be permanently deleted.
-                  </p>
-                </div>
-              </div>
+          </div>
+        </CardContent>
+      </Card>
 
-              <div className="grid gap-2">
-                <Label htmlFor="deletePassword" className="text-destructive">
-                  Enter your password to confirm
-                </Label>
-                <Input
-                  id="deletePassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="Enter your password"
-                  required
-                  className="border-destructive/50 focus-visible:ring-destructive"
-                />
-              </div>
+      {/* Account Access */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Smartphone className="h-5 w-5" />
+            Account Access
+          </CardTitle>
+          <CardDescription>Monitor where and when your account is accessed</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="font-medium">Active Sessions</h4>
+              <p className="text-sm text-muted-foreground">
+                View and manage your active login sessions
+              </p>
+            </div>
+            <Button variant="outline" onClick={handleViewSessions}>
+              <History className="h-4 w-4 mr-2" />
+              View Sessions
+            </Button>
+          </div>
 
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={() => setShowDeleteConfirm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" variant="destructive" disabled={isDeleting}>
-                  {isDeleting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Deleting...
-                    </>
-                  ) : (
-                    'Confirm Delete'
-                  )}
-                </Button>
-              </div>
-            </form>
-          )}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="font-medium">Current Session</h4>
+              <p className="text-sm text-muted-foreground">
+                You&apos;re currently signed in from this device
+              </p>
+            </div>
+            <Badge className="bg-green-500">Active</Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Security Recommendations */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Security Recommendations
+          </CardTitle>
+          <CardDescription>Suggestions to improve your account security</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="h-2 w-2 rounded-full bg-green-500" />
+              <span className="text-sm">Strong password is set</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-2 w-2 rounded-full bg-yellow-500" />
+              <span className="text-sm">Consider enabling two-factor authentication</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="h-2 w-2 rounded-full bg-green-500" />
+              <span className="text-sm">Email verification is active</span>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

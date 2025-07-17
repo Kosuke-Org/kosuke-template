@@ -1,13 +1,8 @@
-import { ReactNode } from 'react';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { ProfileImageProvider } from '@/lib/hooks/use-profile-image';
+import { ProfileImageProvider } from '@/hooks/use-profile-image';
 
-interface LayoutProps {
-  children: ReactNode;
-}
-
-export default function LoggedInLayout({ children }: LayoutProps) {
+export default function LoggedInLayout({ children }: { children: React.ReactNode }) {
   return (
     <ProfileImageProvider>
       <SidebarProvider>
