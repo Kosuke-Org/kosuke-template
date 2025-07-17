@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { cancelUserSubscription } from '@/lib/billing/utils';
-import { getUserSubscription } from '@/lib/billing/utils';
+import { cancelUserSubscription, getUserSubscription } from '@/lib/billing';
 import { ensureUserSynced } from '@/lib/user-sync';
 
 export async function POST() {

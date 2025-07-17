@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { Polar } from '@polar-sh/sdk';
 import { ensureUserSynced } from '@/lib/user-sync';
-import { getUserSubscription, getSubscriptionEligibility } from '@/lib/billing/utils';
+import { getUserSubscription, getSubscriptionEligibility, polar } from '@/lib/billing';
 import { ApiErrorHandler } from '@/lib/api/errors';
-
-// Initialize Polar API
-const polar = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  server: process.env.POLAR_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'production',
-});
 
 export async function POST(request: NextRequest) {
   try {

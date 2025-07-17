@@ -1,14 +1,8 @@
-import { Polar } from '@polar-sh/sdk';
 import { db } from '@/lib/db';
 import { userSubscriptions } from '@/lib/db/schema';
 import { eq, desc, lt } from 'drizzle-orm';
 import { SubscriptionStatus } from '@/lib/db/schema';
-
-// Initialize Polar client
-const polar = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  server: process.env.POLAR_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'production',
-});
+import { polar } from './client';
 
 /**
  * Enhanced syncing utilities for Polar data
@@ -153,7 +147,7 @@ export async function syncStaleSubscriptions(staleHours: number = 24): Promise<{
  */
 export async function getUserSubscriptionWithSync(clerkUserId: string, forceSync: boolean = false) {
   // First try the normal getter
-  const { getUserSubscription } = await import('./utils');
+  const { getUserSubscription } = await import('./subscription');
   const subscription = await getUserSubscription(clerkUserId);
 
   // If no active subscription or forceSync is requested, try syncing from Polar
