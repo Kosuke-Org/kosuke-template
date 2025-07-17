@@ -16,6 +16,8 @@ import {
   Check,
   Mail,
 } from 'lucide-react';
+import { TechCard, TechLogo } from './components/TechCard';
+import { technologies, getFeaturedTechnologies } from './data/technologies';
 import { motion, type Variants } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -59,44 +61,65 @@ export default function HomePage() {
       icon: Rocket,
       title: 'Next.js 15 + React 19',
       description: 'Latest framework with App Router and Server Components',
+      logos: [
+        { name: 'Next.js 15', logoPath: '/logos/nextjs.svg', url: 'https://nextjs.org' },
+        { name: 'React 19', logoPath: '/logos/react.svg', url: 'https://react.dev' }
+      ]
     },
     {
       icon: Shield,
       title: 'Clerk Authentication',
       description: 'Complete user management with social logins',
+      logos: [
+        { name: 'Clerk', logoPath: '/logos/clerk.svg', url: 'https://clerk.com' }
+      ]
     },
     {
       icon: Database,
       title: 'PostgreSQL + Drizzle',
       description: 'Type-safe database with modern ORM',
+      logos: [
+        { name: 'PostgreSQL', logoPath: '/logos/postgresql.svg', url: 'https://www.postgresql.org' },
+        { name: 'Drizzle ORM', logoPath: '/logos/drizzle.svg', url: 'https://orm.drizzle.team' }
+      ]
     },
     {
       icon: Palette,
       title: 'Shadcn UI + Tailwind',
       description: 'Beautiful components with utility-first CSS',
+      logos: [
+        { name: 'Shadcn/ui', logoPath: '/logos/shadcn.svg', url: 'https://ui.shadcn.com' },
+        { name: 'Tailwind CSS', logoPath: '/logos/tailwindcss.svg', url: 'https://tailwindcss.com' }
+      ]
     },
     {
       icon: Zap,
       title: 'Polar Billing',
       description: 'Subscription management made simple',
+      logos: [
+        { name: 'Polar', logoPath: '/logos/polar.svg', url: 'https://polar.sh' }
+      ]
     },
     {
       icon: Mail,
       title: 'Resend Email Service',
       description: 'Beautiful emails with welcome messages and notifications',
+      logos: [
+        { name: 'Resend', logoPath: '/logos/resend.svg', url: 'https://resend.com' }
+      ]
     },
     {
       icon: Code2,
       title: 'TypeScript + Sentry',
       description: 'Full type safety and error monitoring',
+      logos: [
+        { name: 'TypeScript', logoPath: '/logos/typescript.svg', url: 'https://www.typescriptlang.org' },
+        { name: 'Sentry', logoPath: '/logos/sentry.svg', url: 'https://sentry.io' }
+      ]
     },
   ];
 
-  const techStackRows = [
-    ['Next.js 15', 'React 19', 'TypeScript', 'Tailwind CSS', 'Shadcn UI'],
-    ['Clerk', 'PostgreSQL', 'Drizzle ORM', 'Polar', 'Resend'],
-    ['Vercel Blob', 'Sentry', 'Framer Motion', 'Jest'],
-  ];
+
 
   const useCases = [
     'SaaS Applications',
@@ -185,6 +208,43 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Ecosystem Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-6">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Built on Modern Foundations</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Powered by the most trusted technologies in the React ecosystem.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto"
+            variants={container}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+          >
+            {getFeaturedTechnologies().map((tech, index) => (
+              <motion.div key={index} variants={item}>
+                <TechCard
+                  name={tech.name}
+                  description={tech.description}
+                  logoPath={tech.logoPath}
+                  url={tech.url}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-6">
@@ -212,8 +272,19 @@ export default function HomePage() {
               <motion.div key={index} variants={item}>
                 <Card className="h-full border-0 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-300">
                   <CardContent className="p-6">
-                    <div className="mb-4">
+                    <div className="mb-4 flex items-center justify-between">
                       <feature.icon className="h-12 w-12 text-primary" />
+                      <div className="flex gap-2">
+                        {feature.logos.map((logo, logoIndex) => (
+                          <TechLogo
+                            key={logoIndex}
+                            name={logo.name}
+                            logoPath={logo.logoPath}
+                            url={logo.url}
+                            size="sm"
+                          />
+                        ))}
+                      </div>
                     </div>
                     <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                     <p className="text-muted-foreground">{feature.description}</p>
@@ -291,35 +362,32 @@ export default function HomePage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Modern Tech Stack</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Complete Tech Stack</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Built with the most popular and reliable technologies in the ecosystem.
+              Built with the most popular and reliable technologies. Click any logo to visit their documentation.
             </p>
           </motion.div>
 
           <motion.div
-            className="space-y-4"
+            className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-8 max-w-6xl mx-auto"
             variants={container}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
           >
-            {techStackRows.map((row, rowIndex) => (
+            {technologies.map((tech, index) => (
               <motion.div
-                key={rowIndex}
-                className="flex flex-wrap justify-center gap-4"
+                key={index}
                 variants={item}
+                className="flex flex-col items-center space-y-3"
               >
-                {row.map((tech, techIndex) => (
-                  <motion.div key={`${rowIndex}-${techIndex}`} variants={item}>
-                    <Badge
-                      variant="secondary"
-                      className="text-sm px-4 py-2 hover:bg-primary hover:text-primary-foreground transition-colors cursor-default"
-                    >
-                      {tech}
-                    </Badge>
-                  </motion.div>
-                ))}
+                <TechLogo
+                  name={tech.name}
+                  logoPath={tech.logoPath}
+                  url={tech.url}
+                  size="lg"
+                />
+                <span className="text-sm font-medium text-center">{tech.name}</span>
               </motion.div>
             ))}
           </motion.div>
