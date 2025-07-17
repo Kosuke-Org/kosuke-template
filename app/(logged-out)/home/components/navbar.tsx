@@ -73,7 +73,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
             <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 h-auto p-2">
+                  <Button variant="ghost" size="icon" className="rounded-full hover:bg-transparent">
                     <Avatar className="h-8 w-8">
                       <AvatarImage
                         src={typeof profileImageUrl === 'string' ? profileImageUrl : ''}
@@ -81,14 +81,6 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                       />
                       <AvatarFallback>{getInitials()}</AvatarFallback>
                     </Avatar>
-                    <div className="text-left">
-                      <div className="text-sm font-medium">
-                        {user.fullName || user.firstName || 'User'}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {user.emailAddresses[0]?.emailAddress}
-                      </div>
-                    </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
