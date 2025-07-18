@@ -15,6 +15,7 @@ const config: Config = {
     // Handle module aliases (this is the fixed line)
     '^@/(.*)$': '<rootDir>/$1',
   },
+  testPathIgnorePatterns: ['<rootDir>/__tests__/setup/'],
   coverageThreshold: {
     global: {
       branches: 60,

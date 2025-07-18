@@ -86,7 +86,6 @@ Resume previous setup? (y/n): y
 After the interactive setup completes:
 
 1. **🚀 Your Vercel project is ready!**
-
    - Environment variables are already configured in Vercel
    - Deployment should work automatically
    - If needed, trigger a redeploy from your Vercel dashboard
