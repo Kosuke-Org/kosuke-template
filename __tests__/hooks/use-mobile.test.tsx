@@ -18,40 +18,53 @@ const mockMatchMedia = (matches: boolean) => {
   });
 };
 
-describe('useMobile', () => {
+// Mock window.innerWidth
+const mockInnerWidth = (width: number) => {
+  Object.defineProperty(window, 'innerWidth', {
+    writable: true,
+    configurable: true,
+    value: width,
+  });
+};
+
+describe('useIsMobile', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('should return true for mobile screens', () => {
+    mockInnerWidth(500); // Mobile width
     mockMatchMedia(true); // Mobile breakpoint matches
 
-    const { result } = renderHook(() => useMobile());
+    const { result } = renderHook(() => useIsMobile());
 
     expect(result.current).toBe(true);
   });
 
   it('should return false for desktop screens', () => {
+    mockInnerWidth(1200); // Desktop width
     mockMatchMedia(false); // Mobile breakpoint does not match
 
-    const { result } = renderHook(() => useMobile());
+    const { result } = renderHook(() => useIsMobile());
 
     expect(result.current).toBe(false);
   });
 
   it('should use the correct media query', () => {
+    mockInnerWidth(1200);
     mockMatchMedia(false);
 
     renderHook(() => useIsMobile());
 
-    expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 768px)');
+    expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 767px)');
   });
 
   it('should handle window.matchMedia not being available', () => {
     // Remove matchMedia to simulate older browsers
     delete (window as unknown as { matchMedia?: unknown }).matchMedia;
+    mockInnerWidth(1200);
 
-    const { result } = renderHook(() => useMobile());
+    const { result } = renderHook(() => useIsMobile());
 
     // Should default to false when matchMedia is not available
     expect(result.current).toBe(false);

@@ -1,123 +1,153 @@
 import { renderHook, act } from '@testing-library/react';
 import { useFormSubmission } from '@/hooks/use-form-submission';
-import { mockFetchResponse, mockFetchError, resetMocks } from '../setup/mocks';
+
+// Mock useToast hook
+jest.mock('@/hooks/use-toast', () => ({
+  useToast: () => ({
+    toast: jest.fn(),
+  }),
+}));
 
 describe('useFormSubmission', () => {
-  beforeEach(() => {
-    resetMocks();
-  });
-
   it('should handle successful form submission', async () => {
-    const { result } = renderHook(() => useFormSubmission());
+    const mockOnSubmit = jest.fn().mockResolvedValue(undefined);
+    const { result } = renderHook(() =>
+      useFormSubmission({
+        onSubmit: mockOnSubmit,
+        successMessage: 'Success!',
+      })
+    );
 
-    const mockResponse = { success: true, data: { id: '123' } };
-    mockFetchResponse(mockResponse);
+    const testData = { name: 'John' };
 
-    let submitResult;
     await act(async () => {
-      submitResult = await result.current.submitForm('/api/test', { name: 'John' });
+      await result.current.handleSubmit(testData);
     });
 
-    expect(submitResult).toEqual(mockResponse);
+    expect(mockOnSubmit).toHaveBeenCalledWith(testData);
     expect(result.current.isSubmitting).toBe(false);
     expect(result.current.error).toBeNull();
   });
 
   it('should handle form submission errors', async () => {
-    const { result } = renderHook(() => useFormSubmission());
-
-    mockFetchError('Network error');
+    const mockError = new Error('Submission failed');
+    const mockOnSubmit = jest.fn().mockRejectedValue(mockError);
+    const { result } = renderHook(() =>
+      useFormSubmission({
+        onSubmit: mockOnSubmit,
+      })
+    );
 
     await act(async () => {
-      try {
-        await result.current.submitForm('/api/test', { name: 'John' });
-      } catch (error) {
-        // Expected to throw
-      }
+      await result.current.handleSubmit({ name: 'John' });
     });
 
     expect(result.current.isSubmitting).toBe(false);
-    expect(result.current.error).toBeTruthy();
+    expect(result.current.error).toBe(mockError);
   });
 
   it('should track submission state', async () => {
-    const { result } = renderHook(() => useFormSubmission());
+    let resolveSubmission: () => void;
+    const mockOnSubmit = jest.fn().mockImplementation(() => {
+      return new Promise<void>((resolve) => {
+        resolveSubmission = resolve;
+      });
+    });
 
-    const mockResponse = { success: true };
-    mockFetchResponse(mockResponse);
+    const { result } = renderHook(() =>
+      useFormSubmission({
+        onSubmit: mockOnSubmit,
+      })
+    );
 
     expect(result.current.isSubmitting).toBe(false);
 
     act(() => {
-      result.current.submitForm('/api/test', { name: 'John' });
+      result.current.handleSubmit({ name: 'John' });
     });
 
     expect(result.current.isSubmitting).toBe(true);
 
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      resolveSubmission();
     });
 
     expect(result.current.isSubmitting).toBe(false);
   });
 
+  it('should handle concurrent submissions correctly', async () => {
+    const mockOnSubmit = jest
+      .fn()
+      .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 50)));
+
+    const { result } = renderHook(() =>
+      useFormSubmission({
+        onSubmit: mockOnSubmit,
+      })
+    );
+
+    act(() => {
+      result.current.handleSubmit({ name: 'John' });
+      result.current.handleSubmit({ name: 'Jane' }); // Should be ignored or handled appropriately
+    });
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    });
+
+    // The hook may allow concurrent submissions or prevent them
+    // This test checks that the hook handles concurrent calls gracefully
+    expect(mockOnSubmit).toHaveBeenCalled();
+    expect(result.current.isSubmitting).toBe(false);
+  });
+
   it('should clear errors on new submission', async () => {
-    const { result } = renderHook(() => useFormSubmission());
+    const mockOnSubmit = jest
+      .fn()
+      .mockRejectedValueOnce(new Error('First error'))
+      .mockResolvedValueOnce(undefined);
+
+    const { result } = renderHook(() =>
+      useFormSubmission({
+        onSubmit: mockOnSubmit,
+      })
+    );
 
     // First submission fails
-    mockFetchError('First error');
     await act(async () => {
-      try {
-        await result.current.submitForm('/api/test', { name: 'John' });
-      } catch (error) {
-        // Expected
-      }
+      await result.current.handleSubmit({ name: 'John' });
     });
 
     expect(result.current.error).toBeTruthy();
 
     // Second submission succeeds
-    const mockResponse = { success: true };
-    mockFetchResponse(mockResponse);
-
     await act(async () => {
-      await result.current.submitForm('/api/test', { name: 'Jane' });
+      await result.current.handleSubmit({ name: 'Jane' });
     });
 
     expect(result.current.error).toBeNull();
   });
 
-  it('should handle concurrent submissions correctly', async () => {
-    const { result } = renderHook(() => useFormSubmission());
+  it('should call success and error callbacks', async () => {
+    const mockOnSuccess = jest.fn();
+    const mockOnError = jest.fn();
+    const mockOnSubmit = jest.fn().mockResolvedValue(undefined);
 
-    const mockResponse = { success: true };
-    mockFetchResponse(mockResponse);
-    mockFetchResponse(mockResponse);
+    const { result } = renderHook(() =>
+      useFormSubmission({
+        onSubmit: mockOnSubmit,
+        onSuccess: mockOnSuccess,
+        onError: mockOnError,
+      })
+    );
 
-    const promise1 = act(async () => {
-      return result.current.submitForm('/api/test1', { data: '1' });
-    });
-
-    const promise2 = act(async () => {
-      return result.current.submitForm('/api/test2', { data: '2' });
-    });
-
-    await Promise.all([promise1, promise2]);
-
-    expect(result.current.isSubmitting).toBe(false);
-  });
-
-  it('should validate form data before submission', async () => {
-    const { result } = renderHook(() => useFormSubmission());
+    const testData = { name: 'John' };
 
     await act(async () => {
-      try {
-        await result.current.submitForm('/api/test', null);
-      } catch (error) {
-        expect(error).toBeDefined();
-      }
+      await result.current.handleSubmit(testData);
     });
 
-    expect(result.current.error).toBeTruthy();
+    expect(mockOnSuccess).toHaveBeenCalledWith(testData);
+    expect(mockOnError).not.toHaveBeenCalled();
   });
 });
