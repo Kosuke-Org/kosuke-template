@@ -53,6 +53,21 @@ describe('Home Page', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders the quick start terminal section', () => {
+    render(<HomePage />);
+
+    expect(screen.getByText('Get Started in 30 Seconds')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Clone the repository and run our interactive setup wizard. It's that simple."
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('git clone https://github.com/filopedraz/kosuke-template.git')
+    ).toBeInTheDocument();
+    expect(screen.getByText('python main.py')).toBeInTheDocument();
+  });
+
   it('renders the final CTA section', () => {
     render(<HomePage />);
 

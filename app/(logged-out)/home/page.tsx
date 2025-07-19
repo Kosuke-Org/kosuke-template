@@ -12,6 +12,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { TechLogo } from './components/TechCard';
+import { TerminalComponent } from './components/TerminalComponent';
 import { technologies } from './data/technologies';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -59,6 +60,9 @@ export default function HomePage() {
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0.3]);
 
   useEffect(() => {
+    // Scroll to top on component mount
+    window.scrollTo(0, 0);
+
     setIsVisible(true);
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
@@ -92,7 +96,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="w-full min-h-screen font-[family-name:var(--font-geist-sans)] overflow-hidden">
+    <div className="w-full min-h-screen font-[family-name:var(--font-geist-sans)]">
       {/* Animated Background */}
       <div className="fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted/20" />
@@ -203,6 +207,34 @@ export default function HomePage() {
             )}
           </AnimatePresence>
         </motion.div>
+      </section>
+
+      {/* Quick Start Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-6">
+          <motion.div
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">Get Started in 30 Seconds</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Clone the repository and run our interactive setup wizard. It&apos;s that simple.
+            </p>
+          </motion.div>
+
+          <motion.div
+            className="max-w-3xl mx-auto"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <TerminalComponent />
+          </motion.div>
+        </div>
       </section>
 
       {/* Bento Features Section */}
