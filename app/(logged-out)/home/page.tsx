@@ -1,16 +1,6 @@
 'use client';
 
-import {
-  Github,
-  Star,
-  Zap,
-  Rocket,
-  Shield,
-  Palette,
-  ArrowRight,
-  Play,
-  Sparkles,
-} from 'lucide-react';
+import { Github, Star, Zap, Rocket, Shield, Palette, ArrowRight, Sparkles } from 'lucide-react';
 import { TechLogo } from './components/TechCard';
 import { TerminalComponent } from './components/TerminalComponent';
 import { technologies } from './data/technologies';
@@ -183,13 +173,26 @@ export default function HomePage() {
                 >
                   <Button
                     size="lg"
-                    className="px-8 py-4 text-lg bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 border-0 shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="px-8 py-4 text-lg bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 border-0 shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
                     onClick={() =>
                       window.open('https://github.com/filopedraz/kosuke-template', '_blank')
                     }
                   >
-                    <Play className="mr-2 h-5 w-5" />
-                    Get Started
+                    <motion.div
+                      className="flex items-center"
+                      whileHover={{ x: 3 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                    >
+                      <Rocket className="mr-2 h-5 w-5 group-hover:animate-bounce" />
+                      Ship in Minutes
+                    </motion.div>
+                    {/* Rocket trail effect */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                      initial={{ x: '-100%', skewX: -15 }}
+                      whileHover={{ x: '200%' }}
+                      transition={{ duration: 0.6, ease: 'easeInOut' }}
+                    />
                   </Button>
                   <Button
                     size="lg"
