@@ -2,20 +2,33 @@
 
 import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
-import { ExternalLink } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 
 interface TechCardProps {
   name: string;
   description: string;
-  logoPath: string;
+  logoPath: {
+    light: string;
+    dark: string;
+  };
   url: string;
   className?: string;
 }
 
 export function TechCard({ name, description, logoPath, url, className = '' }: TechCardProps) {
   const [imageError, setImageError] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme, systemTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Determine the current theme, considering system preference
+  const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
+  const logoSrc = currentTheme === 'dark' ? logoPath.dark : logoPath.light;
 
   const handleClick = () => {
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -31,12 +44,13 @@ export function TechCard({ name, description, logoPath, url, className = '' }: T
           <div className="relative w-16 h-16 flex items-center justify-center">
             {!imageError ? (
               <Image
-                src={logoPath}
+                src={logoSrc}
                 alt={`${name} logo`}
                 width={64}
                 height={64}
                 className="object-contain transition-transform duration-300 group-hover:scale-110"
                 onError={() => setImageError(true)}
+                priority
               />
             ) : (
               <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
@@ -53,11 +67,6 @@ export function TechCard({ name, description, logoPath, url, className = '' }: T
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
           </div>
-
-          <div className="flex items-center text-xs text-muted-foreground group-hover:text-primary transition-colors">
-            <ExternalLink className="w-3 h-3 mr-1" />
-            <span>Learn more</span>
-          </div>
         </CardContent>
       </Card>
     </motion.div>
@@ -66,7 +75,10 @@ export function TechCard({ name, description, logoPath, url, className = '' }: T
 
 interface TechLogoProps {
   name: string;
-  logoPath: string;
+  logoPath: {
+    light: string;
+    dark: string;
+  };
   url: string;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
@@ -74,6 +86,16 @@ interface TechLogoProps {
 
 export function TechLogo({ name, logoPath, url, size = 'md', className = '' }: TechLogoProps) {
   const [imageError, setImageError] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { theme, systemTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Determine the current theme, considering system preference
+  const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
+  const logoSrc = currentTheme === 'dark' ? logoPath.dark : logoPath.light;
 
   const sizeClasses = {
     sm: 'w-8 h-8',
@@ -95,12 +117,13 @@ export function TechLogo({ name, logoPath, url, size = 'md', className = '' }: T
     >
       {!imageError ? (
         <Image
-          src={logoPath}
+          src={logoSrc}
           alt={`${name} logo`}
           width={size === 'sm' ? 32 : size === 'md' ? 48 : 64}
           height={size === 'sm' ? 32 : size === 'md' ? 48 : 64}
           className="object-contain w-full h-full hover:drop-shadow-lg transition-all duration-300"
           onError={() => setImageError(true)}
+          priority
         />
       ) : (
         <div

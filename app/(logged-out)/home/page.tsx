@@ -3,7 +3,6 @@
 import {
   CheckCircle2,
   Github,
-  Twitter,
   Star,
   Code2,
   Zap,
@@ -62,15 +61,38 @@ export default function HomePage() {
       title: 'Next.js 15 + React 19',
       description: 'Latest framework with App Router and Server Components',
       logos: [
-        { name: 'Next.js 15', logoPath: '/logos/nextjs.svg', url: 'https://nextjs.org' },
-        { name: 'React 19', logoPath: '/logos/react.svg', url: 'https://react.dev' },
+        {
+          name: 'Next.js 15',
+          logoPath: {
+            light: '/logos/nextjs.svg',
+            dark: '/logos/nextjs.svg',
+          },
+          url: 'https://nextjs.org',
+        },
+        {
+          name: 'React 19',
+          logoPath: {
+            light: '/logos/react_light.svg',
+            dark: '/logos/react_dark.svg',
+          },
+          url: 'https://react.dev',
+        },
       ],
     },
     {
       icon: Shield,
       title: 'Clerk Authentication',
       description: 'Complete user management with social logins',
-      logos: [{ name: 'Clerk', logoPath: '/logos/clerk.svg', url: 'https://clerk.com' }],
+      logos: [
+        {
+          name: 'Clerk',
+          logoPath: {
+            light: '/logos/clerk_light.svg',
+            dark: '/logos/clerk_dark.svg',
+          },
+          url: 'https://clerk.com',
+        },
+      ],
     },
     {
       icon: Database,
@@ -79,10 +101,20 @@ export default function HomePage() {
       logos: [
         {
           name: 'PostgreSQL',
-          logoPath: '/logos/postgresql.svg',
+          logoPath: {
+            light: '/logos/postgresql.svg',
+            dark: '/logos/postgresql.svg',
+          },
           url: 'https://www.postgresql.org',
         },
-        { name: 'Drizzle ORM', logoPath: '/logos/drizzle.svg', url: 'https://orm.drizzle.team' },
+        {
+          name: 'Drizzle ORM',
+          logoPath: {
+            light: '/logos/drizzle_orm_light.svg',
+            dark: '/logos/drizzle_orm_dark.svg',
+          },
+          url: 'https://orm.drizzle.team',
+        },
       ],
     },
     {
@@ -90,10 +122,20 @@ export default function HomePage() {
       title: 'Shadcn UI + Tailwind',
       description: 'Beautiful components with utility-first CSS',
       logos: [
-        { name: 'Shadcn/ui', logoPath: '/logos/shadcn.svg', url: 'https://ui.shadcn.com' },
+        {
+          name: 'Shadcn/ui',
+          logoPath: {
+            light: '/logos/shadcn_light.svg',
+            dark: '/logos/shadcn_dark.svg',
+          },
+          url: 'https://ui.shadcn.com',
+        },
         {
           name: 'Tailwind CSS',
-          logoPath: '/logos/tailwindcss.svg',
+          logoPath: {
+            light: '/logos/tailwindcss.svg',
+            dark: '/logos/tailwindcss.svg',
+          },
           url: 'https://tailwindcss.com',
         },
       ],
@@ -102,13 +144,31 @@ export default function HomePage() {
       icon: Zap,
       title: 'Polar Billing',
       description: 'Subscription management made simple',
-      logos: [{ name: 'Polar', logoPath: '/logos/polar.svg', url: 'https://polar.sh' }],
+      logos: [
+        {
+          name: 'Polar',
+          logoPath: {
+            light: '/logos/polar_light.svg',
+            dark: '/logos/polar_dark.svg',
+          },
+          url: 'https://polar.sh',
+        },
+      ],
     },
     {
       icon: Mail,
       title: 'Resend Email Service',
       description: 'Beautiful emails with welcome messages and notifications',
-      logos: [{ name: 'Resend', logoPath: '/logos/resend.svg', url: 'https://resend.com' }],
+      logos: [
+        {
+          name: 'Resend',
+          logoPath: {
+            light: '/logos/resend_light.svg',
+            dark: '/logos/resend_dark.svg',
+          },
+          url: 'https://resend.com',
+        },
+      ],
     },
     {
       icon: Code2,
@@ -117,10 +177,20 @@ export default function HomePage() {
       logos: [
         {
           name: 'TypeScript',
-          logoPath: '/logos/typescript.svg',
+          logoPath: {
+            light: '/logos/typescript.svg',
+            dark: '/logos/typescript.svg',
+          },
           url: 'https://www.typescriptlang.org',
         },
-        { name: 'Sentry', logoPath: '/logos/sentry.svg', url: 'https://sentry.io' },
+        {
+          name: 'Sentry',
+          logoPath: {
+            light: '/logos/sentry.svg',
+            dark: '/logos/sentry.svg',
+          },
+          url: 'https://sentry.io',
+        },
       ],
     },
   ];
@@ -522,26 +592,14 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button
+                variant="outline"
                 className="px-6 py-3"
                 onClick={() =>
                   window.open('https://github.com/filopedraz/kosuke-template', '_blank')
                 }
               >
-                <Star className="mr-2 h-4 w-4" />
-                Star on GitHub
-              </Button>
-              <Button
-                variant="outline"
-                className="px-6 py-3"
-                onClick={() =>
-                  window.open(
-                    'https://twitter.com/intent/tweet?text=Check%20out%20Kosuke%20Template%20-%20modern%20Next.js%20template%20with%20everything%20you%20need!&url=https://github.com/filopedraz/kosuke-template',
-                    '_blank'
-                  )
-                }
-              >
-                <Twitter className="mr-2 h-4 w-4" />
-                Share on X
+                <Github className="mr-2 h-4 w-4" />
+                View Repository
               </Button>
             </div>
           </motion.div>
