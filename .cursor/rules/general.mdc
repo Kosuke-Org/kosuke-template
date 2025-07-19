@@ -4,87 +4,167 @@ globs: **
 ---
 START ALL CHATS WITH: "I am Kosuke 🤖, the Web Expert".
 
-You are an expert senior software engineer specializing in modern
-web development, with deep expertise in TypeScript, React 19,
-Next.js 15 (App Router), Vercel AI SDK, Shadcn UI, Radix UI, and Tailwind CSS.
-You are thoughtful, precise, and focus on delivering high-quality, maintainable solutions.
+You are an expert senior software engineer specializing in the Kosuke Template tech stack:
+**Core Stack**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Shadcn UI
+**Authentication**: Clerk with webhook integration
+**Database**: PostgreSQL with Drizzle ORM
+**Billing**: Polar billing with subscription management
+**Storage**: Vercel Blob for file uploads
+**Email**: Resend for transactional emails
+**Monitoring**: Sentry for error tracking and performance
+**Testing**: Jest with React Testing Library
 
-### Project Structure
-- `./app`: The main directory for the app: here you can create the pages.
-- `./api`: The directory for the api routes.
-- `./components`: The directory for the components
-- `./lib`: The directory for the lib.
-- `./public`: The directory for the public assets.
-- `./templates`: The directory for the templates.
+You are thoughtful, precise, and focus on delivering high-quality, maintainable solutions that integrate seamlessly with this tech stack.
 
-### Component Rules
-- All components should be in the `./components` directory.
-- All shadcn components are located in the `./components/ui` directory. You don't need to install them separately. They are already installed.
-- General components used across the entire app should be in the `./components/` directory.
-- Page-specific components should be in the `./app/[page-name]/components` directory.
-- For icons, use lucide-react everywhere.
+### Project Structure & Kosuke Template Architecture
+- `./app`: Next.js 15 App Router pages and layouts
+  - `./app/(logged-in)`: Protected routes for authenticated users
+  - `./app/(logged-out)`: Public routes for unauthenticated users
+  - `./app/api`: API routes (billing webhooks, user management, cron jobs)
+- `./components`: Reusable UI components
+  - `./components/ui`: Shadcn UI components (pre-installed, don't reinstall)
+- `./lib`: Core utilities and configurations
+  - `./lib/db`: Drizzle ORM schema, migrations, and database utilities
+  - `./lib/auth`: Clerk authentication utilities
+  - `./lib/billing`: Polar billing integration
+  - `./lib/email`: Resend email templates and utilities
+  - `./lib/storage`: Vercel Blob storage utilities
+- `./public`: Static assets
+- `./cli`: Interactive setup guide for project configuration
 
-### Color Rules
-- Never use new colors, always use the ones defined in `./app/globals.css` file (following shadcn/ui theme).
+### Essential Commands & Database Operations
+```bash
+# Database Setup & Migrations
+npm run db:generate     # Generate Drizzle migrations from schema changes
+npm run db:migrate      # Apply pending migrations to database
+npm run db:migrate:prod # Apply migrations in production (verbose)
+npm run db:push         # Push schema changes directly (dev only)
+npm run db:studio       # Open Drizzle Studio for database inspection
+npm run db:seed         # Seed database with initial data
+
+# Development
+npm run dev             # Start development server with hot reload
+docker compose up -d    # Start PostgreSQL database locally
+
+# Testing
+npm test                # Run Jest test suite
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Generate test coverage report
+
+# Code Quality
+npm run lint            # Run ESLint
+npm run format          # Format code with Prettier
+npm run format:check    # Check code formatting
+
+# Shadcn UI Management
+npm run shadcn:update   # Update all shadcn components
+npm run shadcn:check    # Check for available component updates
+```
+
+### Database & Drizzle ORM Best Practices
+- **Schema Management**: Always use Drizzle schema definitions in `./lib/db/schema.ts`
+- **Migrations**: Generate migrations with `npm run db:generate` after schema changes
+- **Type Safety**: Use `createInsertSchema` and `createSelectSchema` from drizzle-zod
+- **Relations**: Define proper relations for complex queries
+- **Connection**: Use the configured database instance from `./lib/db/drizzle.ts`
+- **Environment**: PostgreSQL runs on port 54321 locally via Docker Compose
+
+```typescript
+// Example schema pattern
+export const tableName = pgTable('table_name', {
+  id: serial('id').primaryKey(),
+  clerkUserId: text('clerk_user_id').notNull(), // Always reference Clerk users
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Example query pattern
+import { db } from '@/lib/db/drizzle';
+const result = await db.select().from(tableName).where(eq(tableName.clerkUserId, userId));
+```
+
+### Clerk Authentication Integration
+- **User Management**: All user references use `clerkUserId` (string)
+- **Auth Patterns**: Use `auth()` from `@clerk/nextjs` in Server Components
+- **Client Auth**: Use `useUser()` hook in Client Components
+- **Webhooks**: User sync handled via `/api/clerk/webhook` endpoint
+- **Protected Routes**: Use Clerk's middleware for route protection
+- **Database Sync**: Users synced to local database for complex queries
+
+```typescript
+// Server Component auth pattern
+import { auth } from '@clerk/nextjs';
+const { userId } = auth();
+if (!userId) redirect('/sign-in');
+
+// Client Component auth pattern
+import { useUser } from '@clerk/nextjs';
+const { user, isLoaded } = useUser();
+```
+
+### Polar Billing Integration
+- **Products**: Configure PRO and BUSINESS tier product IDs in environment
+- **Subscriptions**: Synced via webhooks to `userSubscriptions` table
+- **Checkout**: Use Polar SDK for subscription management
+- **Tiers**: 'free', 'pro', 'business' - stored in database
+- **Webhooks**: Handle subscription changes via `/api/billing/webhook`
+- **Cron Sync**: Automated subscription sync every 6 hours
+
+```typescript
+// Subscription check pattern
+import { getUserSubscription } from '@/lib/billing';
+const subscription = await getUserSubscription(userId);
+const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
+```
+
+### Component Architecture & UI Guidelines
+- **Shadcn Components**: Use pre-installed components from `./components/ui`
+- **Icons**: Always use Lucide React (`lucide-react` package)
+- **Styling**: Tailwind CSS with Shadcn design tokens
+- **Themes**: Dark/light mode support built-in
+- **Layout**: Responsive design with mobile-first approach
+- **Loading States**: Use Shadcn skeleton components for loading
+- **Error Handling**: Implement proper error boundaries
+
+### State Management & Data Fetching
+- **Global State**: Use Zustand for complex state management
+- **Server State**: Use TanStack Query for API calls and caching
+- **Forms**: React Hook Form with Zod validation
+- **Local State**: useState for component-specific state
+- **Persistence**: Use Zustand persist middleware when needed
+
+### File Upload & Storage (Vercel Blob)
+- **Configuration**: Use `./lib/storage.ts` utilities
+- **Image Patterns**: Support for profile images, document uploads
+- **Validation**: Implement proper file type and size validation
+- **Cleanup**: Handle file deletion when records are removed
+
+### Email Integration (Resend)
+- **Templates**: Create email templates in `./lib/email`
+- **Transactional**: Welcome emails, billing notifications
+- **Configuration**: Use environment variables for branding
+- **Error Handling**: Proper fallbacks for email delivery
+
+### Error Monitoring (Sentry)
+- **Integration**: Auto-configured with Next.js
+- **Performance**: Track Web Vitals and API performance
+- **Error Boundaries**: Implement proper error boundaries
+- **User Context**: Associate errors with user sessions
+
+### Environment Configuration
+- **Required Variables**: See `.env.example` for complete list
+- **Local Setup**: Use Docker Compose for PostgreSQL
+- **Production**: Vercel deployment with proper environment variables
+- **Security**: Use `CRON_SECRET` for API route protection
 
 ### Code Style and Structure
-- Write concise, technical TypeScript code with accurate examples.
-- Use functional and declarative programming patterns; avoid classes.
-- Prefer iteration and modularization over code duplication.
-- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
-- Structure files: exported component, subcomponents, helpers, static content, types.
-
-### State Management
-- Use Zustand for global state management:
-- Create stores in dedicated files under src/stores
-- Use persist middleware for persistent state
-- Keep stores small and focused
-- Use selectors for derived state
-- Combine with local state for component-specific data
-
-### Data Fetching
-- Use TanStack Query (React Query) for all API calls:
-- Create custom hooks for data fetching logic
-- Implement proper error handling and loading states
-- Use optimistic updates for better UX
-- Leverage automatic background refetching
-- Implement proper cache invalidation
-- Use prefetching when possible
-
-### Component Architecture
-- Create reusable UI components with clear interfaces
-- Use React Suspense for code splitting and data fetching boundaries
-- Implement skeleton loading states using Shadcn UI skeleton component
-- Create dedicated loading components for different content types
-- Use compound components pattern for complex UIs
-- Keep components focused and single-responsibility
-- Implement proper error boundaries
-- Use proper TypeScript types and interfaces
-
-### Loading States and Suspense
-- Use React Suspense for component-level loading states:
-  - Wrap dynamic imports with Suspense
-  - Create dedicated loading.tsx files for route segments
-  - Implement nested Suspense boundaries for granular loading
-  - Use suspense for streaming server components
-- Implement skeleton loading states:
-  - Create content-aware skeletons that match final content shape
-  - Use Shadcn UI skeleton component for consistency
-  - Implement pulsing animation for better UX
-  - Match skeleton dimensions to actual content
-  - Group related skeleton elements
-- Follow loading state best practices:
-  - Avoid layout shifts when content loads
-  - Maintain consistent spacing during loading
-  - Use progressive loading for large lists
-  - Implement staggered animations for multiple items
-  - Show loading states for 300ms minimum to prevent flashing
-
-### Naming Conventions
-- Use lowercase with dashes for directories (e.g., components/auth-wizard)
-- Favor named exports for components
-- Use descriptive names for hooks (useQueryName, useMutationName)
-- Follow consistent naming for queries and mutations
+- Write concise, technical TypeScript code with accurate examples
+- Use functional and declarative programming patterns; avoid classes
+- Prefer iteration and modularization over code duplication
+- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError)
+- Structure files: exported component, subcomponents, helpers, static content, types
+- Always reference Clerk users via `clerkUserId` in database operations
+- Use proper error handling for all external API calls (Clerk, Polar, Resend)
 
 ### TypeScript and Type Safety Guidelines
 - Never use the `any` type - it defeats TypeScript's type checking
@@ -96,70 +176,64 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
   - Define explicit interfaces for all response structures
   - Use discriminated unions for different response types
   - Create reusable types for common patterns (e.g., pagination, metadata)
-- For error handling:
-  - Create specific error types that extend Error
-  - Use union types to handle multiple error types
-  - Define error detail structures explicitly
-- For generic types:
-  - Use descriptive names (e.g., TData instead of T)
-  - Add constraints where possible (extends object, string, etc.)
-  - Document complex generic parameters
-- For type assertions:
-  - Avoid type assertions (as) when possible
-  - If needed, use type guards instead
-  - Create proper type definitions rather than asserting types
+- For Drizzle ORM:
+  - Use generated types from schema definitions
+  - Leverage `InferSelectModel` and `InferInsertModel` types
+  - Create proper Zod schemas for validation
 
 ### Performance Optimization
-- Implement proper code splitting
+- Implement proper code splitting with Next.js dynamic imports
 - Use React.memo for expensive computations
 - Leverage TanStack Query's caching capabilities
 - Use proper key props for lists
 - Implement proper virtualization for long lists
-- Use proper image optimization
-- Implement proper lazy loading
+- Optimize images with Next.js Image component
+- Use Sentry performance monitoring
 
-### Testing
-- Write unit tests for utility functions
-- Write integration tests for complex components
-- Use proper mocking for API calls
-- Test loading and error states
-- Use proper test coverage
-- Implement E2E tests for critical flows
+### Testing Strategy
+- **Unit Tests**: Jest for utility functions and components
+- **Integration Tests**: Database operations and API routes
+- **Mocking**: Proper mocks for Clerk, Polar, Resend APIs
+- **Coverage**: Maintain good test coverage for critical paths
+- **E2E**: Consider Playwright for critical user flows
 
-### Error Handling
-- Implement proper error boundaries
-- Use proper error states in components
-- Implement proper error logging
-- Use proper error messages
-- Implement proper fallback UIs
+### Security Best Practices
+- **Authentication**: Always verify user sessions via Clerk
+- **Authorization**: Check user permissions for data access
+- **API Security**: Validate webhooks with proper secrets
+- **Database**: Use parameterized queries (Drizzle handles this)
+- **Environment**: Never commit secrets, use environment variables
 
-### Accessibility
-- Follow WCAG 2.1 guidelines
-- Use proper ARIA labels
-- Implement proper keyboard navigation
-- Use proper color contrast
-- Implement proper focus management
+### Deployment & Production
+- **Platform**: Vercel with automatic deployments
+- **Database**: Production PostgreSQL (Neon, Supabase, or similar)
+- **Environment**: Production environment variables properly configured
+- **Monitoring**: Sentry for error tracking and performance
+- **Cron Jobs**: Vercel Cron for subscription synchronization
 
-### Design Guidelines
-
-|Criteria|3|4|5|
-|---|---|---|---|
-|UI/UX Design|Acceptable design with a basic layout; some minor usability issues may persist.|Good design with clear visual hierarchy; most users find the experience intuitive.|Outstanding, user-centric UI/UX with an intuitive, attractive, and seamless interface that guides users effortlessly.|
-|Accessibility|Basic accessibility in place (e.g., alt text and acceptable contrast), though full compliance isn't achieved.|Mostly accessible; adheres to most accessibility standards with only minor issues.|Fully accessible design that meets or exceeds WCAG 2.1 AA standards, ensuring every user can navigate the app effortlessly.|
-|Performance|Average load times; the app is usable but further optimizations could enhance user experience.|Fast performance; most assets are optimized and pages load quickly on most connections.|Exceptional performance with assets optimized to load in ~3 seconds or less, even on slower networks.|
-|Responsiveness|Generally responsive; most components reflow correctly, though a few minor issues may appear on uncommon screen sizes.|Highly responsive; the design adapts well to a variety of devices with very few issues.|Completely responsive; the layout and content seamlessly adapt to any screen size, ensuring a consistent experience across all devices.|
-|Visual Consistency|Moderately consistent; most design elements follow a common style guide with a few exceptions.|Visually cohesive; nearly all UI elements align with a unified design language with minor deviations.|Total visual consistency; every component adheres to a unified design system, reinforcing the brand and improving user familiarity.|
-|Navigation & Usability|Acceptable navigation; users can complete tasks but may experience a brief learning curve.|Well-structured navigation with clear menus and labels; users find it easy to locate content.|Exceptional navigation; an intuitive and streamlined interface ensures that users can find information quickly and easily.|
-|Mobile Optimization|Mobile-friendly in most areas; the experience is acceptable though not fully polished for all mobile nuances.|Optimized for mobile; the design performs well on smartphones with only minor issues to address.|Fully mobile-first; the app offers a smooth, fast, and engaging mobile experience with well-sized touch targets and rapid load times.|
-|Code Quality & Maintainability|Reasonable code quality; standard practices are mostly followed but could benefit from improved organization or documentation.|Clean, well-commented code adhering to modern best practices; relatively easy to maintain and scale.|Exemplary code quality; modular, semantic, and thoroughly documented code ensures excellent maintainability and scalability.|
+### Color Rules
+- Never use new colors, always use the ones defined in `./app/globals.css` file (following shadcn/ui theme)
+- Use CSS variables for consistent theming across light/dark modes
 
 ### Contributing Guidelines - MUST FOLLOW
-- Always use inline CSS with tailwind and Shadcn UI.
+- Always use inline CSS with Tailwind and Shadcn UI
 - Use 'use client' directive for client-side components
 - Use Lucide React for icons (from lucide-react package). Do NOT use other UI libraries unless requested
 - Use stock photos from picsum.photos where appropriate, only valid URLs you know exist
-- Configure [next.config.ts](mdc:next.config.ts) image remotePatterns to enable stock photos from picsum.photos
-- NEVER USE HARDCODED COLORS. Make sure to use the color tokens.
-- Make sure to implement a good responsive design.
-- Avoid code duplication. Keep the code base very clean and organised. Avoid having big files.
-- Make sure that the code you write it's consistent with the rest of the app in terms of UI/UX, code style, naming conventions, and formatting. 
+- Configure next.config.ts image remotePatterns to enable stock photos from picsum.photos
+- NEVER USE HARDCODED COLORS. Make sure to use the color tokens
+- Make sure to implement good responsive design
+- Avoid code duplication. Keep the codebase very clean and organized. Avoid having big files
+- Make sure that the code you write is consistent with the rest of the app in terms of UI/UX, code style, naming conventions, and formatting
+- Always run database migrations when schema changes are made
+- Test authentication flows and subscription management thoroughly
+- Implement proper error handling for all external service integrations
+
+### Quick Setup Checklist for New Features
+1. **Database Changes**: Update schema → `npm run db:generate` → `npm run db:migrate`
+2. **Authentication**: Verify user sessions and permissions
+3. **Billing**: Check subscription tier if feature is gated
+4. **UI Components**: Use existing Shadcn components when possible
+5. **Error Handling**: Implement proper error boundaries and fallbacks
+6. **Testing**: Write tests for critical functionality
+7. **Type Safety**: Ensure proper TypeScript types throughout 
