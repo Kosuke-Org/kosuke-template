@@ -72,11 +72,11 @@ export default function HomePage() {
       </div>
 
       {/* Hero Section - Terminal First */}
-      <section className="pt-20 pb-32 px-6">
+      <section className="pt-12 sm:pt-20 pb-16 sm:pb-32 px-4 sm:px-6">
         <div className="container mx-auto max-w-6xl">
           {/* Main headline */}
           <motion.div
-            className="text-center mb-16"
+            className="text-center mb-8 sm:mb-16"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -88,7 +88,7 @@ export default function HomePage() {
             >
               <Badge
                 variant="outline"
-                className="mb-6 px-3 py-1 text-xs font-mono bg-emerald-500/10 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 cursor-default relative overflow-hidden"
+                className="mb-4 sm:mb-6 px-2 sm:px-3 py-1 text-xs font-mono bg-emerald-500/10 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 cursor-default relative overflow-hidden"
               >
                 {/* Shine effect */}
                 <motion.div
@@ -107,22 +107,22 @@ export default function HomePage() {
               </Badge>
             </motion.div>
 
-            <h1 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight tracking-tight">
+            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold mb-4 sm:mb-6 leading-tight tracking-tight px-2">
               Skip the <span className="text-muted-foreground/30 font-light">boilerplate</span>
               <br />
-              <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent block mt-4">
+              <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent block mt-2 sm:mt-4">
                 Ship features
               </span>
             </h1>
 
-            <p className="text-lg lg:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto font-sans">
+            <p className="text-base sm:text-lg lg:text-xl text-muted-foreground mb-6 sm:mb-8 max-w-2xl mx-auto font-sans px-2">
               Production-ready Next.js template with auth, billing, database, and deployment.
             </p>
           </motion.div>
 
           {/* Terminal Hero */}
           <motion.div
-            className="mb-20"
+            className="mb-12 sm:mb-20"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -132,14 +132,14 @@ export default function HomePage() {
 
           {/* CTA Buttons */}
           <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-2"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
             <Button
               size="lg"
-              className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-black font-mono font-semibold"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-black font-mono font-semibold"
               onClick={() => window.open('https://github.com/filopedraz/kosuke-template', '_blank')}
             >
               <Rocket className="mr-2 h-4 w-4" />
@@ -148,7 +148,7 @@ export default function HomePage() {
             <Button
               size="lg"
               variant="outline"
-              className="px-8 py-3 font-mono"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 font-mono"
               onClick={() =>
                 window.open('https://github.com/filopedraz/kosuke-template#readme', '_blank')
               }
@@ -161,22 +161,22 @@ export default function HomePage() {
       </section>
 
       {/* Core Features */}
-      <section className="py-20 bg-muted/20">
-        <div className="container mx-auto px-6">
+      <section className="py-12 sm:py-20 bg-muted/20">
+        <div className="container mx-auto px-4 sm:px-6">
           <motion.div
-            className="text-center mb-16"
+            className="text-center mb-12 sm:mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4 font-mono"># Everything you need</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 font-mono"># Everything you need</h2>
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto font-sans px-2">
               Carefully chosen technologies that work together seamlessly
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
             {coreFeatures.map((feature, index) => (
               <motion.div
                 key={feature.title}
@@ -186,19 +186,19 @@ export default function HomePage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
                 <Card className="h-full border border-border/50 bg-card/50 hover:bg-card/80 transition-all duration-300 group">
-                  <CardContent className="p-8">
-                    <div className="flex items-start justify-between mb-6">
+                  <CardContent className="p-6 sm:p-8">
+                    <div className="flex items-start justify-between mb-4 sm:mb-6">
                       <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
-                        <feature.icon className="h-5 w-5" />
+                        <feature.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                       </div>
                       <Badge variant="outline" className="text-xs font-mono">
                         {feature.metrics}
                       </Badge>
                     </div>
 
-                    <h3 className="text-xl font-semibold mb-3 font-mono">{feature.title}</h3>
+                    <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 font-mono">{feature.title}</h3>
 
-                    <p className="text-muted-foreground font-sans leading-relaxed">
+                    <p className="text-sm sm:text-base text-muted-foreground font-sans leading-relaxed">
                       {feature.description}
                     </p>
                   </CardContent>
@@ -210,20 +210,20 @@ export default function HomePage() {
       </section>
 
       {/* Tech Stack - Minimal Grid */}
-      <section className="py-48">
-        <div className="container mx-auto px-6">
+      <section className="py-24 sm:py-48">
+        <div className="container mx-auto px-4 sm:px-6">
           <motion.div
-            className="text-center mb-16"
+            className="text-center mb-12 sm:mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4 font-mono"># built with</h2>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 font-mono"># built with</h2>
           </motion.div>
 
           <motion.div
-            className="grid grid-cols-4 md:grid-cols-7 gap-8 max-w-4xl mx-auto"
+            className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4 sm:gap-8 max-w-4xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -236,10 +236,10 @@ export default function HomePage() {
                 whileHover={{ y: -2 }}
                 transition={{ type: 'spring', stiffness: 300 }}
               >
-                <div className="p-3 rounded-lg bg-card/30 border border-border/30 group-hover:border-emerald-500/30 transition-all duration-300">
+                <div className="p-2 sm:p-3 rounded-lg bg-card/30 border border-border/30 group-hover:border-emerald-500/30 transition-all duration-300">
                   <TechLogo name={tech.name} logoPath={tech.logoPath} url={tech.url} size="md" />
                 </div>
-                <span className="text-xs mt-2 text-muted-foreground group-hover:text-foreground transition-colors font-mono">
+                <span className="text-xs mt-2 text-muted-foreground group-hover:text-foreground transition-colors font-mono text-center">
                   {tech.name.toLowerCase()}
                 </span>
               </motion.div>
@@ -249,25 +249,25 @@ export default function HomePage() {
       </section>
 
       {/* Bento Grid Features */}
-      <section className="py-20 bg-muted/10">
-        <div className="container mx-auto px-6">
+      <section className="py-12 sm:py-20 bg-muted/10">
+        <div className="container mx-auto px-4 sm:px-6">
           <motion.div
-            className="text-center mb-16"
+            className="text-center mb-12 sm:mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4 font-mono">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 font-mono">
               # Why developers choose this
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto font-sans">
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto font-sans px-2">
               Every component designed for speed, security, and scale
             </p>
           </motion.div>
 
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {/* Large feature card */}
               <motion.div
                 className="lg:col-span-2 lg:row-span-2"
@@ -276,16 +276,16 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
               >
-                <Card className="h-full p-8 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20 hover:border-emerald-500/30 transition-all duration-300">
+                <Card className="h-full p-6 sm:p-8 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20 hover:border-emerald-500/30 transition-all duration-300">
                   <CardContent className="p-0 h-full flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center gap-3 mb-6">
+                      <div className="flex items-center gap-3 mb-4 sm:mb-6">
                         <div className="p-2 rounded-lg bg-emerald-500/20">
-                          <Rocket className="h-6 w-6 text-emerald-500" />
+                          <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500" />
                         </div>
-                        <h3 className="text-xl font-semibold font-mono">Ship in Minutes</h3>
+                        <h3 className="text-lg sm:text-xl font-semibold font-mono">Ship in Minutes</h3>
                       </div>
-                      <p className="text-muted-foreground font-sans mb-6 leading-relaxed">
+                      <p className="text-sm sm:text-base text-muted-foreground font-sans mb-4 sm:mb-6 leading-relaxed">
                         Complete full-stack application with authentication, database, billing, and
                         deployment. Everything integrated and configured - just clone and ship.
                       </p>
@@ -315,11 +315,11 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.1 }}
               >
-                <Card className="h-full p-6 bg-card/50 border-border/50 hover:bg-card/80 transition-all duration-300">
+                <Card className="h-full p-4 sm:p-6 bg-card/50 border-border/50 hover:bg-card/80 transition-all duration-300">
                   <CardContent className="p-0">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Lock className="h-5 w-5 text-blue-500" />
-                      <h3 className="font-semibold font-mono">Secure Auth</h3>
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                      <h3 className="text-base sm:text-lg font-semibold font-mono">Secure Auth</h3>
                     </div>
                     <p className="text-sm text-muted-foreground font-sans">
                       Clerk integration with social logins, MFA, and enterprise SSO ready.
@@ -335,11 +335,11 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <Card className="h-full p-6 bg-card/50 border-border/50 hover:bg-card/80 transition-all duration-300">
+                <Card className="h-full p-4 sm:p-6 bg-card/50 border-border/50 hover:bg-card/80 transition-all duration-300">
                   <CardContent className="p-0">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Database className="h-5 w-5 text-purple-500" />
-                      <h3 className="font-semibold font-mono">Type-Safe DB</h3>
+                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                      <Database className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+                      <h3 className="text-base sm:text-lg font-semibold font-mono">Type-Safe DB</h3>
                     </div>
                     <p className="text-sm text-muted-foreground font-sans">
                       Drizzle ORM with PostgreSQL. Migrations, relations, and full TypeScript
@@ -357,12 +357,12 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
-                <Card className="h-full p-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-300">
+                <Card className="h-full p-4 sm:p-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-300">
                   <CardContent className="p-0">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div className="flex items-center gap-2">
-                        <Rocket className="h-5 w-5 text-yellow-500" />
-                        <h3 className="font-semibold font-mono">Revenue Ready</h3>
+                        <Rocket className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
+                        <h3 className="text-base sm:text-lg font-semibold font-mono">Revenue Ready</h3>
                       </div>
                       <Badge variant="outline" className="font-mono text-xs">
                         Polar + Stripe
@@ -381,7 +381,7 @@ export default function HomePage() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-32 px-6">
+      <section className="py-16 sm:py-32 px-4 sm:px-6">
         <div className="container mx-auto text-center max-w-3xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -389,23 +389,23 @@ export default function HomePage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <div className="mb-8">
-              <div className="inline-flex items-center space-x-2 bg-muted/50 rounded-full px-4 py-2 text-sm font-mono text-muted-foreground border border-border/30">
+            <div className="mb-6 sm:mb-8">
+              <div className="inline-flex items-center space-x-2 bg-muted/50 rounded-full px-3 sm:px-4 py-2 text-xs sm:text-sm font-mono text-muted-foreground border border-border/30">
                 <Clock className="h-3 w-3" />
                 <span>Last updated: {new Date().toLocaleDateString()}</span>
               </div>
             </div>
 
-            <h2 className="text-4xl lg:text-5xl font-bold mb-6 font-mono">Ready to ship?</h2>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 font-mono">Ready to ship?</h2>
 
-            <p className="text-lg text-muted-foreground mb-12 font-sans">
+            <p className="text-base sm:text-lg text-muted-foreground mb-8 sm:mb-12 font-sans px-2">
               Join developers building the next generation of web applications
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <Button
                 size="lg"
-                className="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-black font-mono font-semibold"
+                className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-black font-mono font-semibold"
                 onClick={() =>
                   window.open('https://github.com/filopedraz/kosuke-template', '_blank')
                 }
@@ -416,7 +416,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="px-8 py-3 font-mono"
+                className="w-full sm:w-auto px-6 sm:px-8 py-3 font-mono"
                 onClick={() =>
                   window.open(
                     'https://github.com/filopedraz/kosuke-template/blob/main/cli/README.md',
