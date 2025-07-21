@@ -6,7 +6,7 @@ import { users, activityLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { sendEmail } from '@/lib/email';
-import { WelcomeEmail } from '@/emails/welcome';
+import { WelcomeEmail } from '@/lib/email/templates';
 import React from 'react';
 
 // Define types for webhook events

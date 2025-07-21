@@ -1,2 +1,2 @@
-export { WelcomeEmail, type WelcomeEmailProps } from '../../emails/welcome';
-export { BaseLayout } from '../../emails/base-layout';
+export { WelcomeEmail, type WelcomeEmailProps } from '@/emails/welcome';
+export { BaseLayout } from '@/emails/base-layout';
