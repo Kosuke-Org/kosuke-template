@@ -1,5 +1,7 @@
 # LLM-Assisted Update System Tickets
 
+> Use kosuke-core as a service for the agentic pipeline.
+
 ## Epic 1: LLM-Assisted Update System
 
 ### Ticket 1.1: Research and Select LLM Integration
