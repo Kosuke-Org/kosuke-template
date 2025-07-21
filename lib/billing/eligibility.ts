@@ -1,6 +1,5 @@
+import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
 import {
-  SubscriptionTier,
-  SubscriptionStatus,
   SubscriptionState,
   type SubscriptionEligibility,
   type UserSubscriptionInfo,

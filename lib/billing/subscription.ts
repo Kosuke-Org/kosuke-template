@@ -2,12 +2,8 @@ import { db } from '@/lib/db';
 import { userSubscriptions } from '@/lib/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { UserSubscription } from '@/lib/db/schema';
-import {
-  SubscriptionTier,
-  SubscriptionStatus,
-  type UserSubscriptionInfo,
-  type SubscriptionUpdateParams,
-} from '@/lib/types';
+import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
+import { type UserSubscriptionInfo, type SubscriptionUpdateParams } from '@/lib/types';
 
 /**
  * Core subscription CRUD operations
