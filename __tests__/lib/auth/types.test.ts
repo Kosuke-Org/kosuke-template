@@ -1,4 +1,4 @@
-import type { LocalUser, ClerkWebhookUser, ClerkWebhookEvent } from '@/lib/auth/types';
+import type { LocalUser, ClerkWebhookUser, ClerkWebhookEvent } from '@/lib/types';
 
 describe('Auth Types', () => {
   describe('LocalUser', () => {

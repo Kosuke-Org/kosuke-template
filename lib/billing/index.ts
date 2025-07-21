@@ -41,7 +41,8 @@ export type {
   SubscriptionUpdateParams,
   CheckoutSessionParams,
   OperationResult,
-} from './types';
-export { SubscriptionState, SubscriptionTier, SubscriptionStatus } from './types';
+} from '@/lib/types';
+export { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
+export { SubscriptionState } from '@/lib/types';
 
 // All functions are exported above with their original names for backward compatibility

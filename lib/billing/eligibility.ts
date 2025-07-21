@@ -4,7 +4,7 @@ import {
   SubscriptionState,
   type SubscriptionEligibility,
   type UserSubscriptionInfo,
-} from './types';
+} from '@/lib/types';
 import { PRICING } from './config';
 
 /**

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 
 // Enhanced error types for better error handling
-export enum ErrorCode {
+export enum ApiErrorCode {
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
   AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR',
@@ -15,7 +15,7 @@ export enum ErrorCode {
 }
 
 export interface ApiError {
-  code: ErrorCode;
+  code: ApiErrorCode;
   message: string;
   details?: Record<string, unknown>;
   statusCode: number;
@@ -34,7 +34,7 @@ export class ApiErrorHandler {
     return NextResponse.json(
       {
         error: 'Validation failed',
-        code: ErrorCode.VALIDATION_ERROR,
+        code: ApiErrorCode.VALIDATION_ERROR,
         details: { errors: formattedErrors },
       },
       { status: 400 }
@@ -79,7 +79,7 @@ export class ApiErrorHandler {
     return NextResponse.json(
       {
         error: message,
-        code: ErrorCode.VALIDATION_ERROR,
+        code: ApiErrorCode.VALIDATION_ERROR,
         ...(details && { details }),
       },
       { status: 400 }
@@ -93,7 +93,7 @@ export class ApiErrorHandler {
     return NextResponse.json(
       {
         error: message,
-        code: ErrorCode.AUTHENTICATION_ERROR,
+        code: ApiErrorCode.AUTHENTICATION_ERROR,
       },
       { status: 401 }
     );
@@ -106,7 +106,7 @@ export class ApiErrorHandler {
     return NextResponse.json(
       {
         error: message,
-        code: ErrorCode.AUTHORIZATION_ERROR,
+        code: ApiErrorCode.AUTHORIZATION_ERROR,
       },
       { status: 403 }
     );
@@ -119,7 +119,7 @@ export class ApiErrorHandler {
     return NextResponse.json(
       {
         error: message,
-        code: ErrorCode.NOT_FOUND,
+        code: ApiErrorCode.NOT_FOUND,
       },
       { status: 404 }
     );
@@ -132,7 +132,7 @@ export class ApiErrorHandler {
     return NextResponse.json(
       {
         error: message,
-        code: ErrorCode.CONFLICT,
+        code: ApiErrorCode.CONFLICT,
       },
       { status: 409 }
     );
@@ -145,7 +145,7 @@ export class ApiErrorHandler {
     return NextResponse.json(
       {
         error: message,
-        code: ErrorCode.RATE_LIMIT,
+        code: ApiErrorCode.RATE_LIMIT,
       },
       { status: 429 }
     );
@@ -158,7 +158,7 @@ export class ApiErrorHandler {
     return NextResponse.json(
       {
         error: message,
-        code: ErrorCode.INTERNAL_SERVER_ERROR,
+        code: ApiErrorCode.INTERNAL_SERVER_ERROR,
       },
       { status: 500 }
     );
@@ -171,7 +171,7 @@ export class ApiErrorHandler {
     return NextResponse.json(
       {
         error: message,
-        code: ErrorCode.SUBSCRIPTION_ERROR,
+        code: ApiErrorCode.SUBSCRIPTION_ERROR,
       },
       { status: statusCode }
     );
@@ -184,7 +184,7 @@ export class ApiErrorHandler {
     return NextResponse.json(
       {
         error: message,
-        code: ErrorCode.WEBHOOK_ERROR,
+        code: ApiErrorCode.WEBHOOK_ERROR,
       },
       { status: statusCode }
     );

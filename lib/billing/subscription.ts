@@ -7,7 +7,7 @@ import {
   SubscriptionStatus,
   type UserSubscriptionInfo,
   type SubscriptionUpdateParams,
-} from './types';
+} from '@/lib/types';
 
 /**
  * Core subscription CRUD operations

@@ -181,6 +181,32 @@ const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
   - Leverage `InferSelectModel` and `InferInsertModel` types
   - Create proper Zod schemas for validation
 
+### Type Management and Organization
+- **Centralized Types**: All shared types are organized by domain and functionality
+  - `lib/types/user.ts` - User-related types extending schema types
+  - `lib/types/billing.ts` - Billing and subscription types extending schema types
+  - `lib/types/index.ts` - Re-exports all domain types for easy importing
+  - `lib/api/` - API infrastructure types and utilities (errors, responses, etc.)
+- **Type Hierarchy**: Always extend existing schema types rather than creating duplicate interfaces
+  - Use `import type { User } from '@/lib/db/schema'` as base types
+  - Create variants for different use cases (e.g., `UserWithSubscription`, `UserProfile`)
+  - Prefer `Pick<>`, `Omit<>`, and intersection types over full redefinition
+- **Import Patterns**: 
+  - Use `import type { TypeName } from '@/lib/types'` for domain types (user, billing)
+  - Use `import type { TypeName } from '@/lib/api'` for API infrastructure types
+  - Import directly from schema only when using base types without extensions
+  - Never duplicate type definitions across files
+- **Type Naming**: Follow consistent naming conventions
+  - Base types: `User`, `UserSubscription`, `Notification` (match schema exports)
+  - Extended types: `UserWithSubscription`, `UserProfile`, `NotificationWithUser`
+  - List types: `UserListItem`, `SubscriptionSummary`
+  - Operation types: `CreateUserData`, `UpdateSubscriptionData`
+  - Statistics: `UserStats`, `BillingStats`, `SubscriptionMetrics`
+- **Component Props**: Define component-specific prop interfaces inline
+  - Shadcn UI components already provide comprehensive typed interfaces
+  - Create component-specific interfaces only when needed (e.g., `TechCardProps`)
+  - Avoid over-abstracting UI component types unless there's clear reuse
+
 ### Performance Optimization
 - Implement proper code splitting with Next.js dynamic imports
 - Use React.memo for expensive computations

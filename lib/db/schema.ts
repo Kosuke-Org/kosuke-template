@@ -88,17 +88,18 @@ export enum SubscriptionStatus {
 }
 
 export enum ActivityType {
-  SIGN_UP = 'SIGN_UP',
-  SIGN_IN = 'SIGN_IN',
-  SIGN_OUT = 'SIGN_OUT',
-  UPDATE_PASSWORD = 'UPDATE_PASSWORD',
-  DELETE_ACCOUNT = 'DELETE_ACCOUNT',
-  UPDATE_ACCOUNT = 'UPDATE_ACCOUNT',
-  UPDATE_PREFERENCES = 'UPDATE_PREFERENCES',
-  UPDATE_PROFILE = 'UPDATE_PROFILE',
-  SUBSCRIPTION_CREATED = 'SUBSCRIPTION_CREATED',
-  SUBSCRIPTION_UPDATED = 'SUBSCRIPTION_UPDATED',
-  SUBSCRIPTION_CANCELED = 'SUBSCRIPTION_CANCELED',
+  SIGN_UP = 'sign_up',
+  SIGN_IN = 'sign_in',
+  SIGN_OUT = 'sign_out',
+  UPDATE_PASSWORD = 'update_password',
+  DELETE_ACCOUNT = 'delete_account',
+  UPDATE_ACCOUNT = 'update_account',
+  UPDATE_PREFERENCES = 'update_preferences',
+  UPDATE_PROFILE = 'update_profile',
+  PROFILE_IMAGE_UPDATED = 'profile_image_updated',
+  SUBSCRIPTION_CREATED = 'subscription_created',
+  SUBSCRIPTION_UPDATED = 'subscription_updated',
+  SUBSCRIPTION_CANCELED = 'subscription_canceled',
 }
 
 // Types

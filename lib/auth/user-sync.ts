@@ -2,14 +2,14 @@ import { db } from '@/lib/db';
 import { users, activityLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import {
-  ClerkUser,
+  ClerkUserType,
   ClerkWebhookUser,
   UserSyncResult,
-  SyncResult,
-  SyncOptions,
-  ActivityType,
+  UserSyncResponse,
+  UserSyncOptions,
   LocalUser,
-} from './types';
+} from '@/lib/types';
+import { ActivityType } from '@/lib/db/schema';
 import {
   extractUserData,
   extractUserDataFromWebhook,
@@ -23,8 +23,8 @@ import {
  * Creates a new user if doesn't exist, updates if data has changed
  */
 export async function syncUserFromClerk(
-  clerkUser: ClerkUser,
-  options: SyncOptions = {}
+  clerkUser: ClerkUserType,
+  options: UserSyncOptions = {}
 ): Promise<UserSyncResult> {
   try {
     console.log('🔄 Syncing user from Clerk:', clerkUser.id);
@@ -100,7 +100,7 @@ export async function syncUserFromClerk(
  */
 export async function syncUserFromWebhook(
   webhookUser: ClerkWebhookUser,
-  options: SyncOptions = {}
+  options: UserSyncOptions = {}
 ): Promise<UserSyncResult> {
   try {
     console.log('🔄 Syncing user from webhook:', webhookUser.id);
@@ -203,8 +203,8 @@ export async function logUserActivity(
  * Call this in API routes that need local user data
  */
 export async function ensureUserSynced(
-  clerkUser: ClerkUser,
-  options: SyncOptions = {}
+  clerkUser: ClerkUserType,
+  options: UserSyncOptions = {}
 ): Promise<UserSyncResult> {
   const localUser = await getUserByClerkId(clerkUser.id);
 
@@ -226,10 +226,10 @@ export async function ensureUserSynced(
  * Bulk sync users (useful for migrations or batch operations)
  */
 export async function bulkSyncUsers(
-  users: ClerkUser[],
-  options: SyncOptions = {}
-): Promise<SyncResult[]> {
-  const results: SyncResult[] = [];
+  users: ClerkUserType[],
+  options: UserSyncOptions = {}
+): Promise<UserSyncResponse[]> {
+  const results: UserSyncResponse[] = [];
 
   for (const user of users) {
     try {

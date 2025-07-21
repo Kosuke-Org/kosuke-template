@@ -26,20 +26,20 @@ export {
   createSafeRedirectUrl,
 } from './utils';
 
-// Types
+// Types - Re-export from centralized types
 export type {
-  ClerkUser,
+  ClerkUserType,
   ClerkWebhookUser,
   ClerkWebhookEvent,
   LocalUser,
   UserSyncResult,
   AuthState,
   ActivityLogEntry,
-  SyncOptions,
-  SyncResult,
-} from './types';
+  UserSyncOptions,
+  UserSyncResponse,
+} from '@/lib/types';
 
-export { ActivityType } from './types';
+export { ActivityType } from '@/lib/db/schema';
 
 // Constants
 export {

@@ -25,7 +25,7 @@ export interface TestSubscription {
   updatedAt?: Date;
 }
 
-export interface TestClerkUser {
+export interface TestClerkUserType {
   id: string;
   emailAddresses: Array<{ emailAddress: string }>;
   firstName: string | null;
@@ -87,7 +87,9 @@ export function createTestSubscription(
 }
 
 // Clerk user factory
-export function createTestClerkUser(overrides: Partial<TestClerkUser> = {}): TestClerkUser {
+export function createTestClerkUserType(
+  overrides: Partial<TestClerkUserType> = {}
+): TestClerkUserType {
   const firstName = faker.person.firstName();
   const lastName = faker.person.lastName();
 

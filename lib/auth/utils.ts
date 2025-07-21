@@ -1,6 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
-import { ClerkUser, ClerkWebhookUser, ActivityType, AuthState } from './types';
+import { ClerkUserType, ClerkWebhookUser, AuthState } from '@/lib/types';
+import { ActivityType } from '@/lib/db/schema';
 import { AUTH_ROUTES, SYNC_INTERVALS } from './constants';
 
 /**
@@ -14,7 +15,7 @@ export function isSyncStale(lastSyncedAt: Date): boolean {
 /**
  * Get user initials for avatar fallback
  */
-export function getUserInitials(user: ClerkUser | null): string {
+export function getUserInitials(user: ClerkUserType | null): string {
   if (!user?.fullName && !user?.firstName) return 'U';
   const name = user?.fullName || user?.firstName || '';
   return name
@@ -28,7 +29,7 @@ export function getUserInitials(user: ClerkUser | null): string {
 /**
  * Extract user data from Clerk API user object
  */
-export function extractUserData(clerkUser: ClerkUser) {
+export function extractUserData(clerkUser: ClerkUserType) {
   return {
     clerkUserId: clerkUser.id,
     email: clerkUser.emailAddresses[0]?.emailAddress || '',
@@ -102,7 +103,7 @@ export function isValidEmail(email: string): boolean {
 /**
  * Get display name from user object
  */
-export function getDisplayName(user: ClerkUser | ClerkWebhookUser): string {
+export function getDisplayName(user: ClerkUserType | ClerkWebhookUser): string {
   if ('fullName' in user) {
     return (user.fullName || user.firstName || 'User') as string;
   }
@@ -119,7 +120,7 @@ export function getDisplayName(user: ClerkUser | ClerkWebhookUser): string {
 /**
  * Get email from user object
  */
-export function getUserEmail(user: ClerkUser | ClerkWebhookUser): string {
+export function getUserEmail(user: ClerkUserType | ClerkWebhookUser): string {
   if ('emailAddresses' in user && user.emailAddresses) {
     return (user.emailAddresses as Array<{ emailAddress: string }>)[0]?.emailAddress || '';
   }
@@ -152,7 +153,7 @@ export function createActivityLogData(
  */
 export function isAuthenticated(authState: AuthState): authState is AuthState & {
   isAuthenticated: true;
-  user: ClerkUser;
+  user: ClerkUserType;
   localUser: NonNullable<AuthState['localUser']>;
 } {
   return authState.isAuthenticated && authState.user !== null && authState.localUser !== null;

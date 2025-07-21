@@ -13,7 +13,8 @@ import {
   isAuthenticated,
   createSafeRedirectUrl,
 } from '@/lib/auth/utils';
-import { ClerkUser, ClerkWebhookUser, ActivityType, AuthState } from '@/lib/auth/types';
+import { ClerkUserType, ClerkWebhookUser, AuthState } from '@/lib/types';
+import { ActivityType } from '@/lib/db/schema';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 
@@ -61,7 +62,7 @@ describe('Auth Utils', () => {
       const user = {
         fullName: 'John Doe',
         firstName: 'John',
-      } as ClerkUser;
+      } as ClerkUserType;
       expect(getUserInitials(user)).toBe('JD');
     });
 
@@ -69,7 +70,7 @@ describe('Auth Utils', () => {
       const user = {
         fullName: null,
         firstName: 'Alice',
-      } as ClerkUser;
+      } as ClerkUserType;
       expect(getUserInitials(user)).toBe('A');
     });
 
@@ -77,7 +78,7 @@ describe('Auth Utils', () => {
       const user = {
         fullName: 'SingleName',
         firstName: 'SingleName',
-      } as ClerkUser;
+      } as ClerkUserType;
       expect(getUserInitials(user)).toBe('S');
     });
 
@@ -89,7 +90,7 @@ describe('Auth Utils', () => {
       const user = {
         fullName: null,
         firstName: null,
-      } as ClerkUser;
+      } as ClerkUserType;
       expect(getUserInitials(user)).toBe('U');
     });
 
@@ -97,7 +98,7 @@ describe('Auth Utils', () => {
       const user = {
         fullName: 'John Michael Doe Smith',
         firstName: 'John',
-      } as ClerkUser;
+      } as ClerkUserType;
       expect(getUserInitials(user)).toBe('JM');
     });
 
@@ -105,7 +106,7 @@ describe('Auth Utils', () => {
       const user = {
         fullName: '',
         firstName: '',
-      } as ClerkUser;
+      } as ClerkUserType;
       expect(getUserInitials(user)).toBe('U');
     });
   });
@@ -118,7 +119,7 @@ describe('Auth Utils', () => {
         fullName: 'John Doe',
         firstName: 'John',
         imageUrl: 'https://example.com/avatar.jpg',
-      } as unknown as ClerkUser;
+      } as unknown as ClerkUserType;
 
       const result = extractUserData(clerkUser);
 
@@ -139,7 +140,7 @@ describe('Auth Utils', () => {
         fullName: null,
         firstName: 'John',
         imageUrl: null,
-      } as unknown as ClerkUser;
+      } as unknown as ClerkUserType;
 
       const result = extractUserData(clerkUser);
 
@@ -154,7 +155,7 @@ describe('Auth Utils', () => {
         fullName: 'John Doe',
         firstName: 'John',
         imageUrl: null,
-      } as unknown as ClerkUser;
+      } as unknown as ClerkUserType;
 
       const result = extractUserData(clerkUser);
 
@@ -168,7 +169,7 @@ describe('Auth Utils', () => {
         fullName: null,
         firstName: null,
         imageUrl: null,
-      } as unknown as ClerkUser;
+      } as unknown as ClerkUserType;
 
       const result = extractUserData(clerkUser);
 
@@ -373,7 +374,7 @@ describe('Auth Utils', () => {
       const user = {
         fullName: 'John Doe',
         firstName: 'John',
-      } as ClerkUser;
+      } as ClerkUserType;
 
       expect(getDisplayName(user)).toBe('John Doe');
     });
@@ -382,7 +383,7 @@ describe('Auth Utils', () => {
       const user = {
         fullName: null,
         firstName: 'John',
-      } as ClerkUser;
+      } as ClerkUserType;
 
       expect(getDisplayName(user)).toBe('John');
     });
@@ -391,7 +392,7 @@ describe('Auth Utils', () => {
       const user = {
         fullName: null,
         firstName: null,
-      } as ClerkUser;
+      } as ClerkUserType;
 
       expect(getDisplayName(user)).toBe('User');
     });
@@ -431,7 +432,7 @@ describe('Auth Utils', () => {
     it('should return email from Clerk user', () => {
       const user = {
         emailAddresses: [{ emailAddress: 'test@example.com' }],
-      } as ClerkUser;
+      } as ClerkUserType;
 
       expect(getUserEmail(user)).toBe('test@example.com');
     });
@@ -439,7 +440,7 @@ describe('Auth Utils', () => {
     it('should return empty string when no email addresses for Clerk user', () => {
       const user = {
         emailAddresses: [],
-      } as ClerkUser;
+      } as ClerkUserType;
 
       expect(getUserEmail(user)).toBe('');
     });
@@ -499,7 +500,7 @@ describe('Auth Utils', () => {
     it('should return true for authenticated state', () => {
       const authState: AuthState = {
         isAuthenticated: true,
-        user: { id: 'user_123' } as ClerkUser,
+        user: { id: 'user_123' } as ClerkUserType,
         localUser: {
           id: 1,
           clerkUserId: 'user_123',
@@ -547,7 +548,7 @@ describe('Auth Utils', () => {
     it('should return false when localUser is null', () => {
       const authState: AuthState = {
         isAuthenticated: true,
-        user: { id: 'user_123' } as ClerkUser,
+        user: { id: 'user_123' } as ClerkUserType,
         localUser: null,
       };
 

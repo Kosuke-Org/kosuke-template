@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 
 // Mock Clerk auth
-export const mockClerkUser = {
+export const mockClerkUserType = {
   id: 'user_123',
   emailAddresses: [{ emailAddress: 'test@example.com' }],
   firstName: 'John',
@@ -15,7 +15,7 @@ export const mockClerkUser = {
 export const mockClerkAuth = {
   userId: 'user_123',
   sessionId: 'session_123',
-  user: mockClerkUser,
+  user: mockClerkUserType,
 };
 
 // Mock Clerk webhook user
@@ -61,7 +61,7 @@ export function setupMocks() {
     auth: jest.fn(() => Promise.resolve(mockClerkAuth)),
     clerkClient: {
       users: {
-        getUser: jest.fn(() => Promise.resolve(mockClerkUser)),
+        getUser: jest.fn(() => Promise.resolve(mockClerkUserType)),
       },
     },
   }));

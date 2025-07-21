@@ -1,6 +1,7 @@
 import { polar } from './client';
 import { PRODUCT_IDS, BILLING_URLS } from './config';
-import { SubscriptionStatus, type CheckoutSessionParams, type OperationResult } from './types';
+import { type CheckoutSessionParams, type OperationResult } from '@/lib/types';
+import { SubscriptionStatus } from '@/lib/db/schema';
 import { getUserSubscription, updateUserSubscription } from './subscription';
 import { getSubscriptionEligibility } from './eligibility';
 
