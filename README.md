@@ -11,7 +11,7 @@ A modern Next.js 15 template with TypeScript, Clerk authentication, Polar Billin
 - **Shadcn UI** components with Tailwind CSS
 - **Polar** billing integration with automated sync
 - **Vercel Cron Jobs** for subscription data synchronization
-- **Resend** email service with welcome emails
+- **Resend** email service with **React Email** templates
 - **Profile image uploads** with Vercel Blob
 - **Sentry** error monitoring and performance tracking
 - **Responsive design** with dark/light mode
@@ -61,9 +61,16 @@ If you prefer to set up services manually or already have accounts configured:
    ```
 
 3. **Install and run:**
+
    ```bash
    npm install
    npm run dev
+   ```
+
+4. **Email development (optional):**
+   ```bash
+   npm run dev:email  # Runs Next.js + React Email preview
+   npm run email:dev  # React Email preview only
    ```
 
 ### Environment Variables
@@ -139,14 +146,70 @@ This template includes a robust subscription synchronization system powered by V
 
 The sync system runs automatically after deployment, requiring no manual intervention. Monitor sync activities through your Vercel Dashboard under the Functions tab.
 
+## 📧 Email Templates with React Email
+
+This template uses **React Email** for building beautiful, responsive email templates with React components and TypeScript.
+
+### Email Development Workflow
+
+```bash
+npm run email:dev     # Start React Email preview server (port 3001)
+npm run dev:email     # Run both Next.js and React Email preview
+npm run email:export  # Export email templates to static HTML
+```
+
+### Creating Email Templates
+
+1. **Create your template** in the `emails/` directory:
+
+```tsx
+// emails/my-template.tsx
+import { BaseLayout } from './base-layout';
+import { Section, Text, Button } from '@react-email/components';
+
+export function MyEmailTemplate({ name }: { name: string }) {
+  return (
+    <BaseLayout preview="Welcome to our service!">
+      <Section>
+        <Text>Hello {name}!</Text>
+        <Button href="https://example.com">Get Started</Button>
+      </Section>
+    </BaseLayout>
+  );
+}
+```
+
+2. **Send the email** using the updated email service:
+
+```tsx
+import { sendEmail } from '@/lib/email';
+import { MyEmailTemplate } from '@/emails/my-template';
+
+await sendEmail({
+  to: 'user@example.com',
+  subject: 'Welcome!',
+  react: <MyEmailTemplate name="John" />,
+});
+```
+
+### Email Preview & Testing
+
+- **Preview**: Visit [http://localhost:3001](http://localhost:3001) when running `npm run email:dev`
+- **Live Reload**: Template changes are reflected instantly in the preview
+- **Responsive**: Test email rendering across different screen sizes
+- **Plain Text**: Automatically generates plain text versions
+
 ## 📦 Available Scripts
 
 ```bash
 npm run dev           # Start development server
+npm run dev:email     # Start Next.js + React Email preview
 npm run build         # Build for production
 npm run start         # Start production server
 npm run lint          # Run ESLint
 npm run format        # Format code with Prettier
+npm run email:dev     # Start React Email preview server
+npm run email:export  # Export email templates to HTML
 npm run db:generate   # Generate database migrations
 npm run db:migrate    # Run database migrations
 npm run db:push       # Push schema changes

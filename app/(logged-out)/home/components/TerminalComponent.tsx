@@ -249,9 +249,7 @@ export function TerminalComponent() {
                 >
                   {line.type === 'command' && (
                     <div className="flex items-start flex-wrap sm:flex-nowrap">
-                      <div className="flex-shrink-0">
-                        {renderPrompt(line.user!, line.path!)}
-                      </div>
+                      <div className="flex-shrink-0">{renderPrompt(line.user!, line.path!)}</div>
                       <span className="ml-1 sm:ml-2 text-white break-all sm:break-normal whitespace-pre-wrap">
                         {line.typing && index === currentLine ? (
                           <TypingText
@@ -267,17 +265,27 @@ export function TerminalComponent() {
                   )}
 
                   {line.type === 'output' && (
-                    <div className="text-gray-300 pl-1 sm:pl-2 break-all sm:break-normal">{line.content}</div>
+                    <div className="text-gray-300 pl-1 sm:pl-2 break-all sm:break-normal">
+                      {line.content}
+                    </div>
                   )}
 
                   {line.type === 'tree' && (
-                    <div className="text-gray-300 overflow-x-auto">{renderTreeLine(line.content)}</div>
+                    <div className="text-gray-300 overflow-x-auto">
+                      {renderTreeLine(line.content)}
+                    </div>
                   )}
 
-                  {line.type === 'info' && <div className="text-blue-400 pl-1 sm:pl-2 break-all sm:break-normal">{line.content}</div>}
+                  {line.type === 'info' && (
+                    <div className="text-blue-400 pl-1 sm:pl-2 break-all sm:break-normal">
+                      {line.content}
+                    </div>
+                  )}
 
                   {line.type === 'success' && (
-                    <div className="text-emerald-400 pl-1 sm:pl-2 font-semibold break-all sm:break-normal">{line.content}</div>
+                    <div className="text-emerald-400 pl-1 sm:pl-2 font-semibold break-all sm:break-normal">
+                      {line.content}
+                    </div>
                   )}
                 </motion.div>
               ))}

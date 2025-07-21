@@ -170,7 +170,9 @@ export default function HomePage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 font-mono"># Everything you need</h2>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 font-mono">
+              # Everything you need
+            </h2>
             <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto font-sans px-2">
               Carefully chosen technologies that work together seamlessly
             </p>
@@ -196,7 +198,9 @@ export default function HomePage() {
                       </Badge>
                     </div>
 
-                    <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 font-mono">{feature.title}</h3>
+                    <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 font-mono">
+                      {feature.title}
+                    </h3>
 
                     <p className="text-sm sm:text-base text-muted-foreground font-sans leading-relaxed">
                       {feature.description}
@@ -219,7 +223,9 @@ export default function HomePage() {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 font-mono"># built with</h2>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 font-mono">
+              # built with
+            </h2>
           </motion.div>
 
           <motion.div
@@ -283,7 +289,9 @@ export default function HomePage() {
                         <div className="p-2 rounded-lg bg-emerald-500/20">
                           <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500" />
                         </div>
-                        <h3 className="text-lg sm:text-xl font-semibold font-mono">Ship in Minutes</h3>
+                        <h3 className="text-lg sm:text-xl font-semibold font-mono">
+                          Ship in Minutes
+                        </h3>
                       </div>
                       <p className="text-sm sm:text-base text-muted-foreground font-sans mb-4 sm:mb-6 leading-relaxed">
                         Complete full-stack application with authentication, database, billing, and
@@ -362,7 +370,9 @@ export default function HomePage() {
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div className="flex items-center gap-2">
                         <Rocket className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
-                        <h3 className="text-base sm:text-lg font-semibold font-mono">Revenue Ready</h3>
+                        <h3 className="text-base sm:text-lg font-semibold font-mono">
+                          Revenue Ready
+                        </h3>
                       </div>
                       <Badge variant="outline" className="font-mono text-xs">
                         Polar + Stripe
@@ -396,7 +406,9 @@ export default function HomePage() {
               </div>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 font-mono">Ready to ship?</h2>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 font-mono">
+              Ready to ship?
+            </h2>
 
             <p className="text-base sm:text-lg text-muted-foreground mb-8 sm:mb-12 font-sans px-2">
               Join developers building the next generation of web applications

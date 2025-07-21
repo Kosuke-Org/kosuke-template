@@ -6,7 +6,8 @@ import { users, activityLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { sendEmail } from '@/lib/email';
-import { createWelcomeEmail } from '@/lib/email/templates/welcome';
+import { WelcomeEmail } from '@/emails/welcome';
+import React from 'react';
 
 // Define types for webhook events
 interface ClerkWebhookEvent {
@@ -242,20 +243,16 @@ async function sendWelcomeEmail(userData: ClerkWebhookUser) {
 
     console.log('📧 Sending welcome email to:', email);
 
-    // Create email template
-    const emailTemplate = createWelcomeEmail({
-      firstName,
-      email,
-      dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
-      settingsUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings`,
-    });
-
-    // Send the email
+    // Send the email using React Email
     await sendEmail({
       to: email,
-      subject: emailTemplate.subject,
-      html: emailTemplate.html,
-      text: emailTemplate.text,
+      subject: `Welcome to Kosuke Template, ${firstName}! 🎉`,
+      react: React.createElement(WelcomeEmail, {
+        firstName,
+        email,
+        dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+        settingsUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings`,
+      }),
     });
 
     console.log('✅ Welcome email sent successfully to:', email);

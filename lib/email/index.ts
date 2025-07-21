@@ -1,4 +1,6 @@
 import { Resend } from 'resend';
+import { render } from '@react-email/components';
+import React from 'react';
 
 // Initialize Resend client
 export const resend = new Resend(process.env.RESEND_API_KEY);
@@ -10,31 +12,26 @@ export const EMAIL_CONFIG = {
   REPLY_TO: process.env.RESEND_REPLY_TO,
 } as const;
 
-// Email template types
-export interface EmailTemplate {
-  subject: string;
-  html: string;
-  text: string;
-}
-
-// Email sending function with error handling
+// Email sending function with React Email support
 export async function sendEmail({
   to,
   subject,
-  html,
-  text,
+  react,
   from = `${EMAIL_CONFIG.FROM_NAME} <${EMAIL_CONFIG.FROM_EMAIL}>`,
   replyTo = EMAIL_CONFIG.REPLY_TO,
 }: {
   to: string | string[];
   subject: string;
-  html: string;
-  text: string;
+  react: React.ReactElement;
   from?: string;
   replyTo?: string;
 }) {
   try {
     console.log('📧 Sending email to:', typeof to === 'string' ? to : to.join(', '));
+
+    // Render React component to HTML and text
+    const html = await render(react);
+    const text = await render(react, { plainText: true });
 
     const result = await resend.emails.send({
       from,
@@ -62,4 +59,14 @@ export async function sendEmail({
 export function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+}
+
+// Utility function to render React Email component to HTML for preview
+export async function renderEmailToHtml(component: React.ReactElement): Promise<string> {
+  return await render(component);
+}
+
+// Utility function to render React Email component to plain text
+export async function renderEmailToText(component: React.ReactElement): Promise<string> {
+  return await render(component, { plainText: true });
 }
