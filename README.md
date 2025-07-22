@@ -14,6 +14,7 @@ A modern Next.js 15 template with TypeScript, Clerk authentication, Polar Billin
 - **Resend** email service with **React Email** templates
 - **Profile image uploads** with Vercel Blob
 - **Sentry** error monitoring and performance tracking
+- **Plausible Analytics** integration with configurable domains
 - **Responsive design** with dark/light mode
 - **Comprehensive testing** setup with Jest
 
@@ -106,6 +107,10 @@ BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
 
 # Subscription Sync Security
 CRON_SECRET=your_secure_cron_secret_here
+
+# Plausible Analytics (Optional)
+NEXT_PUBLIC_PLAUSIBLE_DOMAIN=your-domain.com
+NEXT_PUBLIC_PLAUSIBLE_HOST=https://plausible.io
 ```
 
 For detailed instructions on obtaining these keys and setting up each service, see the [CLI Setup Guide](./cli/README.md).
