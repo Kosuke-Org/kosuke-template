@@ -1,4 +1,6 @@
 import { jest } from '@jest/globals';
+import React, { ReactNode } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock Clerk auth
 export const mockClerkUserType = {
@@ -131,4 +133,22 @@ export function mockFetchResponse(data: unknown, status = 200) {
 // Helper to mock fetch error
 export function mockFetchError(error: string) {
   (global.fetch as jest.MockedFunction<typeof fetch>).mockRejectedValueOnce(new Error(error));
+}
+
+// TanStack Query test wrapper
+export function createQueryWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+      mutations: {
+        retry: false,
+      },
+    },
+  });
+
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return React.createElement(QueryClientProvider, { client: queryClient }, children);
+  };
 }
