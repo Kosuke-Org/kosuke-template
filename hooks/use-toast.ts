@@ -2,18 +2,7 @@
 
 import { useCallback } from 'react';
 import { toast as sonnerToast } from 'sonner';
-
-type ToastType = 'default' | 'destructive';
-
-interface ToastOptions {
-  title: string;
-  description: string;
-  variant?: ToastType;
-}
-
-interface ToastHook {
-  toast: (options: ToastOptions) => void;
-}
+import type { ToastOptions, ToastHook } from '@/lib/api';
 
 // Toast hook implementation using sonner
 export function useToast(): ToastHook {

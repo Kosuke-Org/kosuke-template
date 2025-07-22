@@ -138,6 +138,13 @@ export interface UserActivitySummary {
 export interface AuthState {
   isAuthenticated: boolean;
   user: ClerkUserType | null;
-  localUser: User | null;
+  localUser: LocalUser | null;
   isLoading: boolean;
+}
+
+// Notification settings types
+export interface NotificationSettings {
+  emailNotifications: boolean;
+  marketingEmails: boolean;
+  securityAlerts: boolean;
 }

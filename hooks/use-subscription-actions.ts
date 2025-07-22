@@ -3,12 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
-
-interface UpgradeResponse {
-  success: boolean;
-  checkoutUrl?: string;
-  error?: string;
-}
+import type { UpgradeResponse } from '@/lib/types';
 
 export function useSubscriptionActions() {
   const { toast } = useToast();

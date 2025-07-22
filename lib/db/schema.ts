@@ -10,6 +10,7 @@ export const users = pgTable('users', {
   email: text('email').notNull(),
   displayName: text('display_name'),
   profileImageUrl: text('profile_image_url'),
+  notificationSettings: text('notification_settings'), // JSON string for notification preferences
   lastSyncedAt: timestamp('last_synced_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

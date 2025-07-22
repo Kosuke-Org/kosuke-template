@@ -2,14 +2,7 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-
-interface FormSubmissionOptions<T> {
-  onSubmit: (data: T) => Promise<void>;
-  onSuccess?: (data: T) => void;
-  onError?: (error: Error, data: T) => void;
-  successMessage?: string;
-  errorMessage?: string;
-}
+import type { FormSubmissionOptions } from '@/lib/api';
 
 export function useFormSubmission<T = unknown>(options: FormSubmissionOptions<T>) {
   const { toast } = useToast();

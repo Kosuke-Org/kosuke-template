@@ -40,6 +40,9 @@ export type {
 
   // Auth state
   AuthState,
+
+  // Notification settings
+  NotificationSettings,
 } from './user';
 
 // Billing and subscription types
@@ -75,6 +78,10 @@ export type {
   // Polar integration
   PolarSubscriptionData,
   PolarWebhookEvent,
+
+  // Subscription actions
+  UpgradeResponse,
+  SubscriptionInfo,
 } from './billing';
 
 // Billing enums

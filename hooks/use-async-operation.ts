@@ -2,13 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-
-interface AsyncOperationOptions {
-  successMessage?: string;
-  errorMessage?: string;
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
-}
+import type { AsyncOperationOptions } from '@/lib/api';
 
 export function useAsyncOperation<T extends unknown[] = [], R = void>(
   operation: (...args: T) => Promise<R>,

@@ -1,74 +1,90 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useFormSubmission } from '@/hooks/use-form-submission';
-
-interface NotificationSettings {
-  emailNotifications: boolean;
-  marketingEmails: boolean;
-  securityAlerts: boolean;
-}
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import type { NotificationSettings } from '@/lib/types';
 
 export function useNotificationSettings() {
-  const [settings, setSettings] = useState<NotificationSettings>({
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Default settings
+  const defaultSettings: NotificationSettings = {
     emailNotifications: true,
     marketingEmails: false,
     securityAlerts: true,
+  };
+
+  // Query to fetch current settings
+  const settingsQuery = useQuery({
+    queryKey: ['notification-settings'],
+    queryFn: async (): Promise<NotificationSettings> => {
+      const response = await fetch('/api/user/notification-settings');
+      if (!response.ok) {
+        throw new Error('Failed to fetch notification settings');
+      }
+      const data = await response.json();
+      return data.data || defaultSettings;
+    },
+    retry: 1,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Load settings from localStorage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('notification-settings');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setSettings(parsed);
+  // Mutation to update settings
+  const updateMutation = useMutation({
+    mutationFn: async (newSettings: NotificationSettings): Promise<NotificationSettings> => {
+      const response = await fetch('/api/user/notification-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update settings');
       }
-    } catch (error) {
-      console.error('Failed to load notification settings:', error);
-    }
-  }, []);
 
-  const { handleSubmit: submitSettings, isSubmitting } = useFormSubmission<NotificationSettings>({
-    onSubmit: async (data) => {
-      // Simulate API call - in real implementation, you'd save to your backend
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Save to localStorage for persistence
-      localStorage.setItem('notification-settings', JSON.stringify(data));
+      const data = await response.json();
+      return data.data;
     },
-    successMessage: 'Your notification preferences have been updated.',
-    errorMessage: 'Failed to save preferences. Please try again.',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-settings'] });
+      toast({
+        title: 'Settings updated',
+        description: 'Your notification preferences have been updated successfully.',
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating notification settings:', error);
+      toast({
+        title: 'Error',
+        description:
+          error instanceof Error ? error.message : 'Failed to save preferences. Please try again.',
+        variant: 'destructive',
+      });
+    },
   });
 
   const updateSetting = (key: keyof NotificationSettings, value: boolean) => {
-    setSettings((prev) => ({
-      ...prev,
+    const currentSettings = settingsQuery.data || defaultSettings;
+    const newSettings = {
+      ...currentSettings,
       [key]: value,
-    }));
+    };
+    updateMutation.mutate(newSettings);
   };
 
-  const saveSettings = () => {
-    submitSettings(settings);
-  };
-
-  // Check if settings have changed (for showing save button)
-  const hasUnsavedChanges = () => {
-    try {
-      const saved = localStorage.getItem('notification-settings');
-      if (!saved) return true;
-      const parsed = JSON.parse(saved);
-      return JSON.stringify(settings) !== JSON.stringify(parsed);
-    } catch {
-      return true;
-    }
+  const updateSettings = (newSettings: NotificationSettings) => {
+    updateMutation.mutate(newSettings);
   };
 
   return {
-    settings,
+    settings: settingsQuery.data || defaultSettings,
+    isLoading: settingsQuery.isLoading,
+    isUpdating: updateMutation.isPending,
+    error: settingsQuery.error || updateMutation.error,
     updateSetting,
-    saveSettings,
-    isSubmitting,
-    hasUnsavedChanges: hasUnsavedChanges(),
+    updateSettings,
+    refetch: settingsQuery.refetch,
   };
 }

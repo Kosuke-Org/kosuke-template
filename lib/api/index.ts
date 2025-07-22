@@ -129,6 +129,36 @@ export interface BatchResponse<T> {
   };
 }
 
+// Async operation configuration for hooks
+export interface AsyncOperationOptions {
+  successMessage?: string;
+  errorMessage?: string;
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}
+
+// Form submission configuration for hooks
+export interface FormSubmissionOptions<T> {
+  onSubmit: (data: T) => Promise<void>;
+  onSuccess?: (data: T) => void;
+  onError?: (error: Error, data: T) => void;
+  successMessage?: string;
+  errorMessage?: string;
+}
+
+// Toast system types
+export type ToastType = 'default' | 'destructive';
+
+export interface ToastOptions {
+  title: string;
+  description: string;
+  variant?: ToastType;
+}
+
+export interface ToastHook {
+  toast: (options: ToastOptions) => void;
+}
+
 // Next.js specific types
 export type NextApiResponse<T = unknown> = import('next/server').NextResponse<
   import('./responses').ApiResponse<T>

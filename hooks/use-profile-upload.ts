@@ -5,20 +5,15 @@ import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useProfileImage } from '@/hooks/use-profile-image';
 
-interface UploadResponse {
-  success: boolean;
-  imageUrl: string;
-  message?: string;
-  error?: string;
-}
-
 export function useProfileUpload() {
   const { toast } = useToast();
   const { setCurrentImageUrl } = useProfileImage();
   const [isUploading, setIsUploading] = useState(false);
 
   const uploadMutation = useMutation({
-    mutationFn: async (file: File): Promise<UploadResponse> => {
+    mutationFn: async (
+      file: File
+    ): Promise<{ success: boolean; imageUrl: string; message?: string; error?: string }> => {
       const formData = new FormData();
       formData.append('file', file);
 

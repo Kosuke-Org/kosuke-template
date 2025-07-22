@@ -207,6 +207,81 @@ const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
   - Create component-specific interfaces only when needed (e.g., `TechCardProps`)
   - Avoid over-abstracting UI component types unless there's clear reuse
 
+### Centralized Type Organization Rules - MANDATORY
+**NEVER define types inside hooks, components, or utility functions. ALL types must be centralized.**
+
+- **Domain Types**: Business logic types go in `lib/types/`
+  - User-related: authentication, profiles, preferences
+  - Billing-related: subscriptions, payments, tiers
+  - Application-specific: features, settings, analytics
+
+- **Infrastructure Types**: Technical types go in `lib/api/`
+  - API responses, errors, pagination
+  - Async operation configurations
+  - Form handling configurations
+  - Generic utility types
+
+**✅ CORRECT - Centralized types:**
+```typescript
+// lib/types/user.ts
+export interface NotificationSettings {
+  emailNotifications: boolean;
+  marketingEmails: boolean;
+  securityAlerts: boolean;
+}
+
+// lib/api/index.ts
+export interface AsyncOperationOptions {
+  successMessage?: string;
+  errorMessage?: string;
+  onSuccess?: () => void;
+  onError?: (error: Error) => void;
+}
+
+// hooks/use-notification-settings.ts
+import { useQuery, useMutation } from '@tanstack/react-query';
+import type { NotificationSettings } from '@/lib/types';
+```
+
+**❌ WRONG - Inline types:**
+```typescript
+// hooks/use-notification-settings.ts
+interface NotificationSettings {  // ❌ NO! Move to lib/types/
+  emailNotifications: boolean;
+  marketingEmails: boolean;
+  securityAlerts: boolean;
+}
+
+interface AsyncOperationOptions {  // ❌ NO! Move to lib/api/
+  successMessage?: string;
+  errorMessage?: string;
+}
+```
+
+**✅ Import Patterns:**
+```typescript
+// For domain types
+import type { UserProfile, NotificationSettings } from '@/lib/types';
+
+// For infrastructure types  
+import type { ApiResponse, AsyncOperationOptions } from '@/lib/api';
+
+// For database types
+import type { User } from '@/lib/db/schema';
+```
+
+**✅ Type Location Decision Tree:**
+- **Is it domain-specific business logic?** → `lib/types/{domain}.ts`
+- **Is it API/infrastructure related?** → `lib/api/index.ts`
+- **Is it database entity?** → Already in `lib/db/schema.ts`
+- **Is it component-specific props?** → Define inline ONLY if truly unique to that component
+
+**Enforcement:**
+- All hooks MUST import types from centralized locations
+- NO type definitions allowed in hooks, utilities, or components (except component props)
+- Use TanStack Query for data fetching where beneficial
+- Always export new types through `lib/types/index.ts` or `lib/api/index.ts`
+
 ### Performance Optimization
 - Implement proper code splitting with Next.js dynamic imports
 - Use React.memo for expensive computations

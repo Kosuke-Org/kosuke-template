@@ -2,28 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { UserSubscription } from '@/lib/db/schema';
-
-interface SubscriptionInfo {
-  tier: string;
-  status: string;
-  currentPeriodEnd?: string;
-  activeSubscription?: UserSubscription | null;
-  user?: {
-    localId: string;
-    clerkUserId: string;
-  };
-}
-
-interface SubscriptionEligibility {
-  canReactivate: boolean;
-  canCreateNew: boolean;
-  canUpgrade: boolean;
-  canCancel: boolean;
-  state: string;
-  gracePeriodEnds?: string;
-  reason?: string;
-}
+import type { SubscriptionInfo, SubscriptionEligibility } from '@/lib/types';
 
 export function useSubscriptionData() {
   const { toast } = useToast();
