@@ -50,12 +50,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Toggle } from '@/components/ui/toggle';
 import {
   AreaChartDemo,
-  LineChartDemo,
   StackedAreaChart,
   LinearAreaChart,
   GradientAreaChart,
-  MultipleLineChart,
-  HorizontalBarChart,
   StackedBarChart,
   MixedBarChart,
 } from '@/components/charts/shadcn-charts';
@@ -745,17 +742,10 @@ export default function Page() {
             <LinearAreaChart />
           </div>
 
-          {/* Second Row - Bar Chart Variants */}
+          {/* Second Row - Bar Charts and Gradient */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <HorizontalBarChart />
             <StackedBarChart />
             <MixedBarChart />
-          </div>
-
-          {/* Third Row - Line Charts and Gradient */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <LineChartDemo />
-            <MultipleLineChart />
             <GradientAreaChart />
           </div>
         </section>

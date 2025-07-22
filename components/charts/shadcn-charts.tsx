@@ -1,9 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
 import { Area, AreaChart } from 'recharts';
-import { Line, LineChart } from 'recharts';
 
 import {
   Card,
@@ -136,15 +135,6 @@ const stackedAreaConfig = {
   },
 } satisfies ChartConfig;
 
-// Horizontal Bar Chart Data
-const horizontalBarData = [
-  { category: 'Chrome', visitors: 275 },
-  { category: 'Safari', visitors: 200 },
-  { category: 'Firefox', visitors: 187 },
-  { category: 'Edge', visitors: 173 },
-  { category: 'Other', visitors: 90 },
-];
-
 // Stacked Bar Chart Data
 const stackedBarData = [
   { month: 'January', desktop: 186, mobile: 80, tablet: 45 },
@@ -166,13 +156,6 @@ const mixedBarData = [
 ];
 
 // Bar Chart Configurations
-const horizontalBarConfig = {
-  visitors: {
-    label: 'Visitors',
-    color: 'hsl(var(--chart-1))',
-  },
-} satisfies ChartConfig;
-
 const stackedBarConfig = {
   desktop: {
     label: 'Desktop',
@@ -398,129 +381,6 @@ export function AreaChartDemo() {
             </div>
             <div className="flex items-center gap-2 leading-none text-muted-foreground">
               January - June 2024
-            </div>
-          </div>
-        </div>
-      </CardFooter>
-    </Card>
-  );
-}
-
-// Line Chart exactly as in docs
-export function LineChartDemo() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Line Chart</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="h-[300px]">
-          <LineChart
-            accessibilityLayer
-            data={chartData}
-            margin={{
-              left: 12,
-              right: 12,
-            }}
-          >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
-            />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <Line
-              dataKey="desktop"
-              type="monotone"
-              stroke="var(--color-desktop)"
-              strokeWidth={2}
-              dot={{
-                fill: 'var(--color-desktop)',
-                strokeWidth: 2,
-                r: 4,
-              }}
-              activeDot={{
-                r: 6,
-              }}
-            />
-            <Line
-              dataKey="mobile"
-              type="monotone"
-              stroke="var(--color-mobile)"
-              strokeWidth={2}
-              dot={{
-                fill: 'var(--color-mobile)',
-                strokeWidth: 2,
-                r: 4,
-              }}
-              activeDot={{
-                r: 6,
-              }}
-            />
-          </LineChart>
-        </ChartContainer>
-      </CardContent>
-      <CardFooter>
-        <div className="flex w-full items-start gap-2 text-sm">
-          <div className="grid gap-2">
-            <div className="flex items-center gap-2 font-medium leading-none">
-              Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
-            </div>
-            <div className="flex items-center gap-2 leading-none text-muted-foreground">
-              Showing total visitors for the last 6 months
-            </div>
-          </div>
-        </div>
-      </CardFooter>
-    </Card>
-  );
-}
-
-// Horizontal Bar Chart
-export function HorizontalBarChart() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Bar Chart - Horizontal</CardTitle>
-        <CardDescription>Browser usage statistics</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ChartContainer config={horizontalBarConfig} className="h-[300px]">
-          <BarChart
-            accessibilityLayer
-            data={horizontalBarData}
-            layout="horizontal"
-            margin={{
-              left: 40,
-              right: 12,
-            }}
-          >
-            <CartesianGrid vertical={true} horizontal={false} />
-            <XAxis type="number" dataKey="visitors" tickLine={false} axisLine={false} />
-            <YAxis
-              dataKey="category"
-              type="category"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={10}
-            />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <Bar dataKey="visitors" fill="var(--color-visitors)" radius={4} />
-          </BarChart>
-        </ChartContainer>
-      </CardContent>
-      <CardFooter>
-        <div className="flex w-full items-start gap-2 text-sm">
-          <div className="grid gap-2">
-            <div className="flex items-center gap-2 font-medium leading-none">
-              Chrome leads with 275 visitors <TrendingUp className="h-4 w-4" />
-            </div>
-            <div className="flex items-center gap-2 leading-none text-muted-foreground">
-              Browser usage comparison
             </div>
           </div>
         </div>
@@ -804,78 +664,6 @@ export function MixedBarChart() {
             </div>
             <div className="flex items-center gap-2 leading-none text-muted-foreground">
               Financial comparison for the last 6 months
-            </div>
-          </div>
-        </div>
-      </CardFooter>
-    </Card>
-  );
-}
-
-// Multiple Line Chart
-export function MultipleLineChart() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Line Chart - Multiple</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig} className="h-[300px]">
-          <LineChart
-            accessibilityLayer
-            data={chartData}
-            margin={{
-              left: 12,
-              right: 12,
-            }}
-          >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              tickFormatter={(value) => value.slice(0, 3)}
-            />
-            <YAxis tickLine={false} axisLine={false} tickMargin={8} />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <ChartLegend content={<ChartLegendContent />} />
-            <Line
-              dataKey="desktop"
-              type="monotone"
-              stroke="var(--color-desktop)"
-              strokeWidth={2}
-              dot={{
-                fill: 'var(--color-desktop)',
-              }}
-              activeDot={{
-                r: 6,
-              }}
-            />
-            <Line
-              dataKey="mobile"
-              type="monotone"
-              stroke="var(--color-mobile)"
-              strokeWidth={2}
-              dot={{
-                fill: 'var(--color-mobile)',
-              }}
-              activeDot={{
-                r: 6,
-              }}
-            />
-          </LineChart>
-        </ChartContainer>
-      </CardContent>
-      <CardFooter>
-        <div className="flex w-full items-start gap-2 text-sm">
-          <div className="grid gap-2">
-            <div className="flex items-center gap-2 font-medium leading-none">
-              Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
-            </div>
-            <div className="flex items-center gap-2 leading-none text-muted-foreground">
-              Showing total visitors for the last 6 months
             </div>
           </div>
         </div>
