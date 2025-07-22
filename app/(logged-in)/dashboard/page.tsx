@@ -49,11 +49,15 @@ import { Calendar } from '@/components/ui/calendar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Toggle } from '@/components/ui/toggle';
 import {
-  BasicBarChart,
-  InteractiveBarChart,
   AreaChartDemo,
   LineChartDemo,
-  PieChartDemo,
+  StackedAreaChart,
+  LinearAreaChart,
+  GradientAreaChart,
+  MultipleLineChart,
+  HorizontalBarChart,
+  StackedBarChart,
+  MixedBarChart,
 } from '@/components/charts/shadcn-charts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -84,7 +88,6 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 import {
   Calendar as CalendarIcon,
@@ -107,22 +110,6 @@ import {
   AlignRight,
 } from 'lucide-react';
 import { useState } from 'react';
-import { AreaChart, Area, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-
-const analyticsData = [
-  { name: 'Jan', value: 400, users: 240, revenue: 2400 },
-  { name: 'Feb', value: 300, users: 139, revenue: 2210 },
-  { name: 'Mar', value: 200, users: 980, revenue: 2290 },
-  { name: 'Apr', value: 278, users: 390, revenue: 2000 },
-  { name: 'May', value: 189, users: 480, revenue: 2181 },
-  { name: 'Jun', value: 239, users: 380, revenue: 2500 },
-];
-
-const pieData = [
-  { name: 'Desktop', value: 65, color: 'hsl(var(--chart-1))' },
-  { name: 'Mobile', value: 30, color: 'hsl(var(--chart-2))' },
-  { name: 'Tablet', value: 5, color: 'hsl(var(--chart-3))' },
-];
 
 const users = [
   {
@@ -332,81 +319,6 @@ export default function Page() {
               <CardContent>
                 <div className="text-2xl font-bold">24</div>
                 <p className="text-xs text-muted-foreground">+3 new this week</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Analytics Chart</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    value: {
-                      label: 'Value',
-                      color: 'hsl(var(--chart-1))',
-                    },
-                  }}
-                  className="h-[200px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={analyticsData}>
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="hsl(var(--chart-1))"
-                        fill="hsl(var(--chart-1))"
-                        fillOpacity={0.2}
-                      />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>User Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer
-                  config={{
-                    desktop: {
-                      label: 'Desktop',
-                      color: 'hsl(var(--chart-1))',
-                    },
-                    mobile: {
-                      label: 'Mobile',
-                      color: 'hsl(var(--chart-2))',
-                    },
-                    tablet: {
-                      label: 'Tablet',
-                      color: 'hsl(var(--chart-3))',
-                    },
-                  }}
-                  className="h-[200px]"
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={80}
-                        dataKey="value"
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </ChartContainer>
               </CardContent>
             </Card>
           </div>
@@ -825,14 +737,26 @@ export default function Page() {
           <p className="text-muted-foreground">
             Beautiful charts built with shadcn/ui and Recharts. Copy and paste into your apps.
           </p>
-          <div className="grid gap-6 md:grid-cols-2">
-            <BasicBarChart />
-            <InteractiveBarChart />
-          </div>
+
+          {/* First Row - Area Charts */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <AreaChartDemo />
+            <StackedAreaChart />
+            <LinearAreaChart />
+          </div>
+
+          {/* Second Row - Bar Chart Variants */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <HorizontalBarChart />
+            <StackedBarChart />
+            <MixedBarChart />
+          </div>
+
+          {/* Third Row - Line Charts and Gradient */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <LineChartDemo />
-            <PieChartDemo />
+            <MultipleLineChart />
+            <GradientAreaChart />
           </div>
         </section>
 
