@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Bell, Shield, CreditCard } from 'lucide-react';
+import { User, Bell, Shield, CreditCard, Monitor } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -46,22 +46,26 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           </div>
 
           <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid grid-cols-4 w-full max-w-lg">
-              <TabsTrigger value="account" className="flex items-center gap-2">
-                <User className="h-4 w-4 shrink-0" />
-                <span>Account</span>
+            <TabsList className="!grid !w-full !grid-cols-5">
+              <TabsTrigger value="account" className="flex items-center gap-1.5">
+                <User className="h-4 w-4" />
+                <span className="hidden sm:inline">Account</span>
               </TabsTrigger>
-              <TabsTrigger value="billing" className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 shrink-0" />
-                <span>Billing</span>
+              <TabsTrigger value="appearance" className="flex items-center gap-1.5">
+                <Monitor className="h-4 w-4" />
+                <span className="hidden sm:inline">Appearance</span>
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2">
-                <Bell className="h-4 w-4 shrink-0" />
-                <span>Alerts</span>
+              <TabsTrigger value="billing" className="flex items-center gap-1.5">
+                <CreditCard className="h-4 w-4" />
+                <span className="hidden sm:inline">Billing</span>
               </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center gap-2">
-                <Shield className="h-4 w-4 shrink-0" />
-                <span>Security</span>
+              <TabsTrigger value="notifications" className="flex items-center gap-1.5">
+                <Bell className="h-4 w-4" />
+                <span className="hidden sm:inline">Alerts</span>
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center gap-1.5">
+                <Shield className="h-4 w-4" />
+                <span className="hidden sm:inline">Security</span>
               </TabsTrigger>
             </TabsList>
           </Tabs>
