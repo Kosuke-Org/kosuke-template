@@ -87,7 +87,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
+                  <DropdownMenuItem onClick={() => handleSignOut()}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Log out
                   </DropdownMenuItem>
@@ -155,7 +155,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                       <Button
                         variant="ghost"
                         className="w-full justify-start text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
-                        onClick={handleSignOut}
+                        onClick={() => handleSignOut()}
                       >
                         <LogOut className="mr-2 h-4 w-4" />
                         Log out

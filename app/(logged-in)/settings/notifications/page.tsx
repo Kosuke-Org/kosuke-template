@@ -1,9 +1,8 @@
 'use client';
 
-import { Check, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useUser } from '@clerk/nextjs';
@@ -12,10 +11,13 @@ import { NotificationsSettingsSkeleton } from '@/components/skeletons';
 
 export default function NotificationsPage() {
   const { user, isSignedIn } = useUser();
-  const { settings, updateSetting, saveSettings, isSubmitting, hasUnsavedChanges } =
-    useNotificationSettings();
+  const { settings, updateSetting, isUpdating, isLoading } = useNotificationSettings();
 
   if (!isSignedIn || !user) {
+    return <NotificationsSettingsSkeleton />;
+  }
+
+  if (isLoading) {
     return <NotificationsSettingsSkeleton />;
   }
 
@@ -43,6 +45,7 @@ export default function NotificationsPage() {
                 id="email-notifications"
                 checked={settings.emailNotifications}
                 onCheckedChange={(checked) => updateSetting('emailNotifications', checked)}
+                disabled={isUpdating}
               />
             </div>
 
@@ -59,6 +62,7 @@ export default function NotificationsPage() {
                 id="marketing-emails"
                 checked={settings.marketingEmails}
                 onCheckedChange={(checked) => updateSetting('marketingEmails', checked)}
+                disabled={isUpdating}
               />
             </div>
 
@@ -75,29 +79,17 @@ export default function NotificationsPage() {
                 id="security-alerts"
                 checked={settings.securityAlerts}
                 onCheckedChange={(checked) => updateSetting('securityAlerts', checked)}
+                disabled={isUpdating}
               />
             </div>
           </div>
 
-          {hasUnsavedChanges && (
-            <div className="flex justify-end pt-4 border-t">
-              <Button
-                onClick={saveSettings}
-                disabled={isSubmitting}
-                className="flex items-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Check className="h-4 w-4" />
-                    Save Preferences
-                  </>
-                )}
-              </Button>
+          {isUpdating && (
+            <div className="flex justify-center pt-4 border-t">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Saving preferences...
+              </div>
             </div>
           )}
         </CardContent>
