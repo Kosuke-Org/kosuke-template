@@ -178,7 +178,7 @@ export function DashboardSkeleton() {
       {/* Main dashboard content */}
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         <StatsSkeleton />
-        <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min p-6">
+        <div className="min-h-screen flex-1 rounded-xl bg-muted/50 md:min-h-min p-6">
           <div className="space-y-4">
             <Skeleton className="h-6 w-48" />
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

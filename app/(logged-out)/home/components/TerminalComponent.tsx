@@ -198,18 +198,18 @@ export function TerminalComponent() {
   };
 
   return (
-    <Card className="bg-gray-900/95 border-gray-700/50 backdrop-blur-sm overflow-hidden shadow-2xl mx-auto max-w-full">
+    <Card className="bg-gray-900/95 border-gray-700/50 backdrop-blur-xs overflow-hidden shadow-2xl mx-auto max-w-full">
       <CardContent className="p-0">
         {/* Terminal Header */}
         <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-gray-800/80 border-b border-gray-700/50">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <div className="flex gap-1 sm:gap-1.5 flex-shrink-0">
+            <div className="flex gap-1 sm:gap-1.5 shrink-0">
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500 hover:bg-red-400 transition-colors cursor-pointer"></div>
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500 hover:bg-yellow-400 transition-colors cursor-pointer"></div>
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500 hover:bg-green-400 transition-colors cursor-pointer"></div>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 text-gray-400 min-w-0">
-              <Terminal className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+              <Terminal className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
               <span className="text-xs sm:text-sm font-mono truncate">terminal — zsh</span>
               <span className="hidden sm:inline text-xs sm:text-sm font-mono">— 80×24</span>
             </div>
@@ -217,7 +217,7 @@ export function TerminalComponent() {
           <Button
             size="sm"
             variant="ghost"
-            className="text-gray-400 hover:text-white hover:bg-gray-700/50 h-6 sm:h-8 px-2 sm:px-3 text-xs font-mono flex-shrink-0 ml-2"
+            className="text-gray-400 hover:text-white hover:bg-gray-700/50 h-6 sm:h-8 px-2 sm:px-3 text-xs font-mono shrink-0 ml-2"
             onClick={copyToClipboard}
           >
             {copied ? (
@@ -249,7 +249,7 @@ export function TerminalComponent() {
                 >
                   {line.type === 'command' && (
                     <div className="flex items-start flex-wrap sm:flex-nowrap">
-                      <div className="flex-shrink-0">{renderPrompt(line.user!, line.path!)}</div>
+                      <div className="shrink-0">{renderPrompt(line.user!, line.path!)}</div>
                       <span className="ml-1 sm:ml-2 text-white break-all sm:break-normal whitespace-pre-wrap">
                         {line.typing && index === currentLine ? (
                           <TypingText
@@ -299,9 +299,7 @@ export function TerminalComponent() {
                 transition={{ delay: 1 }}
                 className="flex items-center flex-wrap sm:flex-nowrap"
               >
-                <div className="flex-shrink-0">
-                  {renderPrompt('dev', '~/projects/kosuke-template')}
-                </div>
+                <div className="shrink-0">{renderPrompt('dev', '~/projects/kosuke-template')}</div>
                 <motion.span
                   animate={{ opacity: [1, 0] }}
                   transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}

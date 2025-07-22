@@ -37,7 +37,7 @@ export function TechCard({ name, description, logoPath, url, className = '' }: T
   return (
     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className={className}>
       <Card
-        className="h-full border-0 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-300 cursor-pointer group"
+        className="h-full border-0 bg-card/50 backdrop-blur-xs hover:bg-card/80 transition-all duration-300 cursor-pointer group"
         onClick={handleClick}
       >
         <CardContent className="p-6 flex flex-col items-center text-center space-y-4">

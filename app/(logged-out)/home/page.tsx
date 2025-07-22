@@ -92,7 +92,7 @@ export default function HomePage() {
               >
                 {/* Shine effect */}
                 <motion.div
-                  className="absolute inset-0 -top-1 -bottom-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  className="absolute inset-0 -top-1 -bottom-1 bg-linear-to-r from-transparent via-white/20 to-transparent"
                   initial={{ x: '-100%' }}
                   animate={{ x: '200%' }}
                   transition={{
@@ -110,7 +110,7 @@ export default function HomePage() {
             <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold mb-4 sm:mb-6 leading-tight tracking-tight px-2">
               Skip the <span className="text-muted-foreground/30 font-light">boilerplate</span>
               <br />
-              <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent block mt-2 sm:mt-4">
+              <span className="bg-linear-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent block mt-2 sm:mt-4">
                 Ship features
               </span>
             </h1>
@@ -282,7 +282,7 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
               >
-                <Card className="h-full p-6 sm:p-8 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20 hover:border-emerald-500/30 transition-all duration-300">
+                <Card className="h-full p-6 sm:p-8 bg-linear-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20 hover:border-emerald-500/30 transition-all duration-300">
                   <CardContent className="p-0 h-full flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-3 mb-4 sm:mb-6">
@@ -365,7 +365,7 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
-                <Card className="h-full p-4 sm:p-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-300">
+                <Card className="h-full p-4 sm:p-6 bg-linear-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-300">
                   <CardContent className="p-0">
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div className="flex items-center gap-2">
