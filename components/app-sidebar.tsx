@@ -12,6 +12,7 @@ import {
   Send,
   Settings2,
   SquareTerminal,
+  BarChart3,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -32,10 +33,42 @@ import {
 const data = {
   navMain: [
     {
+      title: 'Dashboard',
+      url: '/dashboard',
+      icon: SquareTerminal,
+      isActive: true,
+    },
+    {
+      title: 'Charts',
+      url: '/charts',
+      icon: BarChart3,
+      items: [
+        {
+          title: 'All Charts',
+          url: '/charts',
+        },
+        {
+          title: 'Bar Charts',
+          url: '/charts#bar-charts',
+        },
+        {
+          title: 'Line Charts',
+          url: '/charts#line-charts',
+        },
+        {
+          title: 'Pie Charts',
+          url: '/charts#pie-charts',
+        },
+        {
+          title: 'Advanced',
+          url: '/charts#advanced-charts',
+        },
+      ],
+    },
+    {
       title: 'Playground',
       url: '#',
       icon: SquareTerminal,
-      isActive: true,
       items: [
         {
           title: 'History',
