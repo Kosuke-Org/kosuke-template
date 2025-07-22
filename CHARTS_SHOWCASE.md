@@ -1,19 +1,16 @@
-# shadcn/ui Charts Showcase
+# shadcn/ui Charts Integration
 
-A comprehensive demonstration of chart components available in shadcn/ui, built with Recharts and designed for modern web applications.
+Official shadcn/ui chart components integrated directly into the dashboard, exactly as shown in the shadcn/ui documentation.
 
 ## 🎯 Overview
 
-This showcase demonstrates the full range of chart types available in the shadcn/ui ecosystem, including:
+This integration demonstrates the exact chart examples from the official shadcn/ui documentation:
 
-- **Bar Charts** - Basic and interactive bar charts
-- **Line Charts** - Smooth line charts with multiple data series  
-- **Area Charts** - Filled area charts with gradient effects
-- **Pie Charts** - Donut and custom pie charts
-- **Radial Charts** - Progress indicators and radial bar charts
-- **Radar Charts** - Multi-dimensional data visualization
-- **Mixed Charts** - Combined bar and line charts
-- **Custom Charts** - Advanced customizations and styling
+- **Bar Chart** - Basic bar chart with desktop and mobile data
+- **Bar Chart - Interactive** - Interactive chart with toggleable data series
+- **Area Chart** - Stacked area chart with natural curves
+- **Line Chart** - Multi-series line chart with smooth interpolation
+- **Pie Chart - Donut** - Browser usage statistics as donut chart
 
 ## 🚀 Features
 

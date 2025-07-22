@@ -48,6 +48,13 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Toggle } from '@/components/ui/toggle';
+import {
+  BasicBarChart,
+  InteractiveBarChart,
+  AreaChartDemo,
+  LineChartDemo,
+  PieChartDemo,
+} from '@/components/charts/shadcn-charts';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -810,6 +817,23 @@ export default function Page() {
               <Skeleton className="h-[200px] w-full" />
             </CardContent>
           </Card>
+        </section>
+
+        {/* Charts */}
+        <section className="space-y-4">
+          <h3 className="text-2xl font-semibold">Charts</h3>
+          <p className="text-muted-foreground">
+            Beautiful charts built with shadcn/ui and Recharts. Copy and paste into your apps.
+          </p>
+          <div className="grid gap-6 md:grid-cols-2">
+            <BasicBarChart />
+            <InteractiveBarChart />
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <AreaChartDemo />
+            <LineChartDemo />
+            <PieChartDemo />
+          </div>
         </section>
 
         {/* Scroll Area */}
