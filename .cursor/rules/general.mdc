@@ -133,6 +133,137 @@ const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
 - **Local State**: useState for component-specific state
 - **Persistence**: Use Zustand persist middleware when needed
 
+### TanStack Query Usage Guidelines - MANDATORY
+**Use TanStack Query for ALL server-side data operations when appropriate.**
+
+#### **✅ WHEN TO USE TanStack Query**
+- **API data fetching** - GET requests to your backend
+- **Server mutations** - POST/PUT/DELETE operations
+- **Form submissions** that call APIs
+- **Background data synchronization**
+- **Real-time data that needs caching**
+
+#### **❌ WHEN NOT TO USE TanStack Query**
+- **Browser APIs** - window resize, localStorage, geolocation
+- **React Context** - state management, theme providers
+- **Computed values** - derived from props or local state
+- **Client-side only operations** - navigation, local calculations
+- **Third-party SDK calls** - Clerk auth actions (unless they involve your API)
+
+#### **🔧 Implementation Patterns**
+
+**✅ CORRECT - Data Fetching with useQuery:**
+```typescript
+// hooks/use-user-settings.ts
+import { useQuery } from '@tanstack/react-query';
+import type { UserSettings } from '@/lib/types';
+
+export function useUserSettings() {
+  return useQuery({
+    queryKey: ['user-settings'],
+    queryFn: async (): Promise<UserSettings> => {
+      const response = await fetch('/api/user/settings');
+      if (!response.ok) throw new Error('Failed to fetch settings');
+      const data = await response.json();
+      return data.data;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1,
+  });
+}
+```
+
+**✅ CORRECT - Mutations with useMutation:**
+```typescript
+// hooks/use-update-profile.ts
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import type { UserProfile } from '@/lib/types';
+
+export function useUpdateProfile() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (profile: UserProfile) => {
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profile),
+      });
+      if (!response.ok) throw new Error('Failed to update profile');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      toast({ title: 'Success', description: 'Profile updated successfully' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+}
+```
+
+**❌ WRONG - Don't use for client-side operations:**
+```typescript
+// ❌ NO! Use regular React hooks
+const windowSize = useQuery({
+  queryKey: ['window-size'],
+  queryFn: () => ({ width: window.innerWidth, height: window.innerHeight }),
+});
+
+// ✅ YES! Use regular React state
+const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+useEffect(() => {
+  const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
+```
+
+#### **🏗️ Best Practices**
+
+**Query Keys:**
+- Use descriptive, hierarchical keys: `['user', userId, 'settings']`
+- Include relevant parameters: `['posts', { page, limit, search }]`
+- Keep consistent patterns across the app
+
+**Error Handling:**
+- Always handle errors in `onError` callbacks
+- Use toast notifications for user feedback
+- Log errors to console for debugging
+- Provide meaningful error messages
+
+**Loading States:**
+- Use `isLoading`, `isPending`, `isFetching` appropriately
+- Show skeletons for initial loads
+- Show spinners for mutations
+- Handle empty states gracefully
+
+**Cache Management:**
+- Set appropriate `staleTime` for data freshness
+- Use `invalidateQueries` after mutations
+- Implement optimistic updates when beneficial
+- Consider background refetching for critical data
+
+**Integration with Centralized Types:**
+```typescript
+// Always import types from centralized locations
+import type { UserProfile, NotificationSettings } from '@/lib/types';
+import type { ApiResponse } from '@/lib/api';
+
+// Use proper TypeScript generics with TanStack Query
+const query = useQuery<UserProfile, Error>({
+  queryKey: ['user-profile'],
+  queryFn: fetchUserProfile,
+});
+```
+
 ### File Upload & Storage (Vercel Blob)
 - **Configuration**: Use `./lib/storage.ts` utilities
 - **Image Patterns**: Support for profile images, document uploads

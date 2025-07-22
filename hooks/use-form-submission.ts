@@ -1,35 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import type { FormSubmissionOptions } from '@/lib/api';
 
 export function useFormSubmission<T = unknown>(options: FormSubmissionOptions<T>) {
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
 
-  const handleSubmit = async (data: T) => {
-    if (isSubmitting) return;
-
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      await options.onSubmit(data);
-
+  const mutation = useMutation({
+    mutationFn: options.onSubmit,
+    onSuccess: (result, data) => {
       if (options.successMessage) {
         toast({
           title: 'Success',
           description: options.successMessage,
         });
       }
-
       options.onSuccess?.(data);
-    } catch (err) {
+    },
+    onError: (err, data) => {
       const error = err instanceof Error ? err : new Error('An error occurred');
-      setError(error);
-
       console.error('Form submission error:', error);
 
       const errorMessage =
@@ -41,20 +31,15 @@ export function useFormSubmission<T = unknown>(options: FormSubmissionOptions<T>
       });
 
       options.onError?.(error, data);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const reset = () => {
-    setError(null);
-    setIsSubmitting(false);
-  };
+    },
+  });
 
   return {
-    handleSubmit,
-    isSubmitting,
-    error,
-    reset,
+    handleSubmit: mutation.mutate,
+    isSubmitting: mutation.isPending,
+    error: mutation.error,
+    reset: mutation.reset,
+    // Additional TanStack Query utilities
+    mutateAsync: mutation.mutateAsync,
   };
 }
