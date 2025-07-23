@@ -126,6 +126,125 @@ const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
 - **Loading States**: Use Shadcn skeleton components for loading
 - **Error Handling**: Implement proper error boundaries
 
+### Loading States & Skeleton Components - MANDATORY
+**ALWAYS use Skeleton components for page-level loading states. NEVER use simple "Loading..." text for page content.**
+
+#### **✅ WHEN TO USE Skeleton Components**
+- **Page-level loading** - When entire page or major sections are loading
+- **Data fetching states** - While waiting for API responses
+- **Initial page renders** - Before content hydrates
+- **Component mount states** - When components are being prepared
+- **List/grid loading** - When loading multiple items
+
+#### **✅ WHEN TO USE Loading Text (with spinners)**
+- **Button states** - "Uploading...", "Processing...", "Saving..."
+- **Form submissions** - Short-lived action feedback
+- **File operations** - Upload/download progress indicators
+- **Modal actions** - Quick operations within modals
+
+#### **🔧 Implementation Patterns**
+
+**✅ CORRECT - Page-level skeleton:**
+```typescript
+// Create dedicated skeleton component for each page
+function PageSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <Skeleton className="h-6 w-48 mb-2" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+      <div className="rounded-lg border p-6 space-y-4">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="h-4 w-full" />
+        <div className="flex gap-2">
+          <Skeleton className="h-10 flex-1" />
+          <Skeleton className="h-10 w-20" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Use in component
+export default function MyPage() {
+  const { data, isLoading } = useQuery({ /* ... */ });
+
+  if (isLoading) {
+    return <PageSkeleton />;
+  }
+
+  return <div>{/* actual content */}</div>;
+}
+```
+
+**✅ CORRECT - Button loading states:**
+```typescript
+<Button disabled={isSubmitting}>
+  {isSubmitting ? (
+    <>
+      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+      Processing...
+    </>
+  ) : (
+    'Submit Form'
+  )}
+</Button>
+```
+
+**❌ WRONG - Simple loading text for pages:**
+```typescript
+// ❌ NO! Don't use simple loading text for page content
+if (isLoading) {
+  return <div>Loading...</div>;
+}
+
+// ❌ NO! Don't use basic loading indicators for page sections
+if (isLoading) {
+  return <div className="text-center">Please wait...</div>;
+}
+```
+
+#### **🏗️ Skeleton Best Practices**
+
+**Component Structure:**
+- Create dedicated `{PageName}Skeleton` components for each page
+- Use realistic proportions that match actual content layout
+- Include proper spacing and hierarchy with skeleton elements
+- Use `@/components/skeletons` for reusable skeleton patterns
+
+**Design Guidelines:**
+- Match skeleton structure to actual content layout
+- Use appropriate skeleton sizes (`h-4`, `h-6`, `h-8` for text)
+- Include rounded corners for profile images (`rounded-full`)
+- Use proper grid layouts for card-based content
+- Animate skeletons with Shadcn's built-in pulse animation
+
+**Loading Hierarchy:**
+```typescript
+// Priority order for loading states:
+// 1. Page skeleton (initial load)
+// 2. Section skeletons (partial updates) 
+// 3. Button loading (user actions)
+// 4. Inline spinners (small operations)
+```
+
+**Integration with TanStack Query:**
+```typescript
+// Always check isLoading state first
+const { data, isLoading, error } = useQuery({ /* ... */ });
+
+if (isLoading) return <PageSkeleton />;
+if (error) return <ErrorComponent error={error} />;
+return <PageContent data={data} />;
+```
+
+**Responsive Skeleton Design:**
+- Ensure skeletons work across all screen sizes
+- Use responsive utilities (`hidden sm:block`, `w-full sm:w-48`)
+- Test skeleton appearance in both light and dark themes
+- Match skeleton spacing to actual content spacing
+
 ### State Management & Data Fetching
 - **Global State**: Use Zustand for complex state management
 - **Server State**: Use TanStack Query for API calls and caching
