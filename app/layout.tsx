@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Markathon',
+  title: 'Kosuke Template',
   description: 'Modern Next.js template with Clerk authentication',
 };
 
