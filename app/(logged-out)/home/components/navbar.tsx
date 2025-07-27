@@ -109,69 +109,82 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
         </nav>
 
         {/* Mobile navigation */}
-        <div className="flex items-center gap-3 md:hidden">
+        <div className="flex items-center gap-2 md:hidden">
           <ThemeToggle />
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="h-9 w-9 hover:bg-accent/50 transition-colors"
+              >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right">
-              <nav className="flex flex-col gap-4 mt-8">
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+              <nav className="flex flex-col gap-6 mt-6">
                 {isSignedIn && user ? (
                   // Mobile navigation for logged-in users
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-3 p-2 border rounded-lg">
-                      <Avatar className="h-10 w-10">
+                  <div className="flex flex-col gap-6">
+                    {/* User Profile Section */}
+                    <div className="flex flex-col items-center gap-3 pb-4 border-b">
+                      <Avatar className="h-16 w-16">
                         <AvatarImage src={profileImageUrl} alt={displayName} />
-                        <AvatarFallback>{initials}</AvatarFallback>
+                        <AvatarFallback className="text-lg">{initials}</AvatarFallback>
                       </Avatar>
-                      <div>
-                        <div className="text-sm font-medium">{displayName}</div>
-                        <div className="text-xs text-muted-foreground">{primaryEmail}</div>
+                      <div className="text-center">
+                        <div className="text-base font-semibold">{displayName}</div>
+                        <div className="text-sm text-muted-foreground">{primaryEmail}</div>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2">
+
+                    {/* Navigation Links */}
+                    <div className="flex flex-col gap-1">
                       <Link href="/dashboard">
-                        <Button variant="ghost" className="w-full justify-start">
-                          <User className="mr-2 h-4 w-4" />
+                        <Button variant="ghost" className="w-full justify-start h-12 text-base">
+                          <User className="mr-3 h-5 w-5" />
                           Dashboard
                         </Button>
                       </Link>
                       <Link href="/settings">
-                        <Button variant="ghost" className="w-full justify-start">
-                          <Settings className="mr-2 h-4 w-4" />
+                        <Button variant="ghost" className="w-full justify-start h-12 text-base">
+                          <Settings className="mr-3 h-5 w-5" />
                           Settings
                         </Button>
                       </Link>
                       <Link href="/settings/billing">
-                        <Button variant="ghost" className="w-full justify-start">
-                          <CreditCard className="mr-2 h-4 w-4" />
+                        <Button variant="ghost" className="w-full justify-start h-12 text-base">
+                          <CreditCard className="mr-3 h-5 w-5" />
                           Billing
                         </Button>
                       </Link>
+                    </div>
+
+                    {/* Sign Out Button */}
+                    <div className="pt-4 border-t">
                       <Button
                         variant="ghost"
-                        className="w-full justify-start text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                        className="w-full justify-start h-12 text-base text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50"
                         onClick={() => handleSignOut()}
                       >
-                        <LogOut className="mr-2 h-4 w-4" />
+                        <LogOut className="mr-3 h-5 w-5" />
                         Log out
                       </Button>
                     </div>
                   </div>
                 ) : (
                   // Mobile navigation for logged-out users
-                  <div className="flex flex-col gap-2 pt-2">
+                  <div className="flex flex-col gap-3 pt-4">
                     <Link href="/sign-in">
-                      <Button variant="ghost" className="w-full justify-start">
+                      <Button variant="ghost" className="w-full h-12 text-base">
                         Log in
                       </Button>
                     </Link>
                     <Link href="/sign-up">
-                      <Button className="w-full">Sign up</Button>
+                      <Button className="w-full h-12 text-base">
+                        Sign up
+                      </Button>
                     </Link>
                   </div>
                 )}
