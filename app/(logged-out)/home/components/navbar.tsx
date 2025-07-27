@@ -129,7 +129,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
             </SheetTrigger>
             <SheetContent 
               side="right" 
-              className="w-full sm:w-80 p-0 border-l bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+              className="w-full sm:w-80 p-0 border-l bg-background"
             >
               {/* Header */}
               <SheetHeader className="px-6 py-4 border-b bg-muted/30">
@@ -231,7 +231,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                       </p>
                     </div>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       <Link href="/sign-in" onClick={handleMenuClose}>
                         <Button 
                           variant="outline" 
