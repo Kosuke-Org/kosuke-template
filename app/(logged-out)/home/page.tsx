@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useEffect } from 'react';
+import { RemotionPlayer } from './components/RemotionPlayer';
 
 // Developer-focused features with minimal design
 const coreFeatures = [
@@ -156,6 +157,35 @@ export default function HomePage() {
               <Code2 className="mr-2 h-4 w-4" />
               Documentation
             </Button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Remotion Animation Section */}
+      <section className="py-16 sm:py-24 px-4 sm:px-6">
+        <div className="container mx-auto max-w-6xl">
+          <motion.div
+            className="text-center mb-12 sm:mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 font-mono">
+              # See it in action
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto font-sans px-2">
+              Watch how quickly you can get started with our production-ready stack
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <RemotionPlayer />
           </motion.div>
         </div>
       </section>

@@ -9,6 +9,12 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-const eslintConfig = [...compat.extends('next/core-web-vitals', 'next/typescript', 'prettier')];
+const eslintConfig = [
+  ...compat.extends('next/core-web-vitals', 'next/typescript', 'prettier'),
+  {
+    files: ['remotion/*.{ts,tsx}'],
+    ...compat.extends('plugin:@remotion/recommended')[0],
+  },
+];
 
 export default eslintConfig;
