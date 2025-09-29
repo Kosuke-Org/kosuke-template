@@ -85,7 +85,7 @@
     "react-email": "^4.2.3",
     "react-hook-form": "^7.60.0",
     "react-resizable-panels": "^3.0.3",
-    "recharts": "^2.15.4",
+    "recharts": "^3.2.1",
     "resend": "^4.6.0",
     "sonner": "^2.0.6",
     "svix": "^1.69.0",
