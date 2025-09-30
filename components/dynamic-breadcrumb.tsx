@@ -20,6 +20,7 @@ const routeNames: Record<string, string> = {
   security: 'Security',
   success: 'Success',
   account: 'Account',
+  tasks: 'Tasks',
 };
 
 export function DynamicBreadcrumb() {
@@ -73,21 +74,16 @@ export function DynamicBreadcrumb() {
     <Breadcrumb>
       <BreadcrumbList>
         {breadcrumbItems.map((item, index) => (
-          <>
-            <BreadcrumbItem
-              key={`${item.href}-${index}`}
-              className={index === 0 ? 'hidden md:block' : ''}
-            >
+          <div key={`breadcrumb-${item.href}-${index}`} className="contents">
+            <BreadcrumbItem className={index === 0 ? 'hidden md:block' : ''}>
               {item.isLast ? (
                 <BreadcrumbPage>{item.name}</BreadcrumbPage>
               ) : (
                 <BreadcrumbLink href={item.href}>{item.name}</BreadcrumbLink>
               )}
             </BreadcrumbItem>
-            {!item.isLast && (
-              <BreadcrumbSeparator key={`sep-${index}`} className="hidden md:block" />
-            )}
-          </>
+            {!item.isLast && <BreadcrumbSeparator className="hidden md:block" />}
+          </div>
         ))}
       </BreadcrumbList>
     </Breadcrumb>

@@ -21,9 +21,11 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
 
 - `./app`: Next.js 15 App Router pages and layouts
   - `./app/(logged-in)`: Protected routes for authenticated users
+    - Feature modules should include their own `components/` directory
+    - Example: `./app/(logged-in)/tasks/components/` for task-specific components
   - `./app/(logged-out)`: Public routes for unauthenticated users
   - `./app/api`: API routes (billing webhooks, user management, cron jobs)
-- `./components`: Reusable UI components
+- `./components`: Global reusable UI components shared across multiple modules
   - `./components/ui`: Shadcn UI components (pre-installed, don't reinstall)
 - `./lib`: Core utilities and configurations
   - `./lib/db`: Drizzle ORM schema, migrations, and database utilities
@@ -132,6 +134,11 @@ const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
 - **Layout**: Responsive design with mobile-first approach
 - **Loading States**: Use Shadcn skeleton components for loading
 - **Error Handling**: Implement proper error boundaries
+- **Component Colocation**: Module-specific components should be colocated within their feature directory
+  - Place components inside `app/(logged-in)/[module]/components/` for feature modules
+  - Example: `app/(logged-in)/tasks/components/task-item.tsx`
+  - Only use `./components/` for truly global, reusable components shared across multiple modules
+  - This improves code organization, discoverability, and maintains clear feature boundaries
 
 ### Loading States & Skeleton Components - MANDATORY
 

@@ -45,6 +45,24 @@ export type {
   NotificationSettings,
 } from './user';
 
+// Task-related types
+export type {
+  // Base types
+  Task,
+  TaskPriority,
+
+  // Operations
+  CreateTaskInput,
+  UpdateTaskInput,
+
+  // Display types
+  TaskListItem,
+
+  // Filters and stats
+  TaskFilters,
+  TaskStats,
+} from './task';
+
 // Billing and subscription types
 export type {
   // Base types

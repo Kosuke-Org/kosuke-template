@@ -7,6 +7,7 @@ import {
   Command,
   Frame,
   LifeBuoy,
+  ListTodo,
   Map,
   PieChart,
   Send,
@@ -36,6 +37,11 @@ const data = {
       url: '/dashboard',
       icon: SquareTerminal,
       isActive: true,
+    },
+    {
+      title: 'Tasks',
+      url: '/tasks',
+      icon: ListTodo,
     },
     {
       title: 'Playground',
