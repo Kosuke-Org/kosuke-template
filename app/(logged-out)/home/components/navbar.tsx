@@ -51,16 +51,12 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
             <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-lg hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none active:bg-transparent"
-                  >
+                  <div className="cursor-pointer">
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarImage src={profileImageUrl} alt={displayName} />
                       <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                     </Avatar>
-                  </Button>
+                  </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel className="font-normal">
