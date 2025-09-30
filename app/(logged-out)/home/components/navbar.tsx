@@ -51,10 +51,14 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
             <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full hover:bg-transparent">
-                    <Avatar className="h-8 w-8">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-lg hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none active:bg-transparent"
+                  >
+                    <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarImage src={profileImageUrl} alt={displayName} />
-                      <AvatarFallback>{initials}</AvatarFallback>
+                      <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
@@ -124,9 +128,9 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                   // Mobile navigation for logged-in users
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-3 p-2 border rounded-lg">
-                      <Avatar className="h-10 w-10">
+                      <Avatar className="h-10 w-10 rounded-lg">
                         <AvatarImage src={profileImageUrl} alt={displayName} />
-                        <AvatarFallback>{initials}</AvatarFallback>
+                        <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="text-sm font-medium">{displayName}</div>
