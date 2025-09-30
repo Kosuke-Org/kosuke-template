@@ -1,16 +1,6 @@
 'use client';
 
-import {
-  Star,
-  Zap,
-  Rocket,
-  ArrowRight,
-  Code2,
-  Database,
-  Lock,
-  Sparkles,
-  Clock,
-} from 'lucide-react';
+import { Star, Zap, Rocket, ArrowRight, Code2, Database, Lock, Sparkles } from 'lucide-react';
 import { TechLogo } from './components/TechCard';
 import { technologies } from './data/technologies';
 import { motion } from 'framer-motion';
@@ -55,7 +45,6 @@ export default function HomePage() {
 
   return (
     <div className="w-full min-h-screen bg-background">
-
       {/* Hero Section - Terminal First */}
       <section className="pt-12 sm:pt-20 pb-16 sm:pb-32 px-4 sm:px-6">
         <div className="container mx-auto max-w-6xl">
@@ -73,7 +62,7 @@ export default function HomePage() {
             >
               <Badge
                 variant="outline"
-                className="mb-4 sm:mb-6 px-2 sm:px-3 py-1 text-xs font-mono bg-emerald-500/10 border-emerald-500/20 text-emerald-600 hover:bg-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 cursor-default relative overflow-hidden"
+                className="mb-4 sm:mb-6 px-2 sm:px-3 py-1 text-xs cursor-default relative overflow-hidden"
               >
                 {/* Shine effect */}
                 <motion.div
@@ -88,24 +77,20 @@ export default function HomePage() {
                   }}
                 />
                 <Sparkles className="w-3 h-3 mr-1" />
-                production-ready
+                Production Ready
               </Badge>
             </motion.div>
 
             <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold mb-4 sm:mb-6 leading-tight tracking-tight px-2">
-              Skip the <span className="text-muted-foreground/30 font-light">boilerplate</span>
+              Skip the boilerplate
               <br />
-              <span className="bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent block mt-2 sm:mt-4">
-                Ship features
-              </span>
+              Ship features
             </h1>
 
             <p className="text-base sm:text-lg lg:text-xl text-muted-foreground mb-6 sm:mb-8 max-w-2xl mx-auto font-sans px-2">
               Production-ready Next.js template with auth, billing, database, and deployment.
             </p>
           </motion.div>
-
-          
 
           {/* CTA Buttons */}
           <motion.div
@@ -116,7 +101,7 @@ export default function HomePage() {
           >
             <Button
               size="lg"
-              className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-black font-semibold"
+              className="w-full sm:w-auto"
               onClick={() => window.open('https://github.com/filopedraz/kosuke-template', '_blank')}
             >
               <Rocket className="mr-2 h-4 w-4" />
@@ -125,7 +110,7 @@ export default function HomePage() {
             <Button
               size="lg"
               variant="outline"
-              className="w-full sm:w-auto px-6 sm:px-8 py-3"
+              className="w-full sm:w-auto"
               onClick={() =>
                 window.open('https://github.com/filopedraz/kosuke-template#readme', '_blank')
               }
@@ -164,10 +149,10 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <Card className="h-full border border-border/50 bg-card/50 hover:bg-card/80 transition-all duration-300 group">
-                  <CardContent className="p-6 sm:p-8">
-                    <div className="flex items-start justify-between mb-4 sm:mb-6">
-                      <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
+                <Card className="h-full py-4 transition-colors">
+                  <CardContent className="py-0">
+                    <div className="flex items-start justify-between mb-3 sm:mb-4">
+                      <div className="p-2 rounded-lg bg-muted text-muted-foreground">
                         <feature.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                       </div>
                       <Badge variant="outline" className="text-xs">
@@ -219,7 +204,7 @@ export default function HomePage() {
                 whileHover={{ y: -2 }}
                 transition={{ type: 'spring', stiffness: 300 }}
               >
-                <div className="p-2 sm:p-3 rounded-lg bg-card/30 border border-border/30 group-hover:border-emerald-500/30 transition-all duration-300">
+                <div className="p-2 sm:p-3 rounded-lg bg-card/30 border border-border/30 transition-all duration-300">
                   <TechLogo name={tech.name} logoPath={tech.logoPath} url={tech.url} size="md" />
                 </div>
                 <span className="text-xs mt-2 text-muted-foreground group-hover:text-foreground transition-colors text-center">
@@ -259,16 +244,14 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
               >
-                <Card className="h-full p-6 sm:p-8 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20 hover:border-emerald-500/30 transition-all duration-300">
+                <Card className="h-full p-6 sm:p-8 bg-card border border-border hover:bg-card/80 transition-all duration-300">
                   <CardContent className="p-0 h-full flex flex-col justify-between">
                     <div>
                       <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                        <div className="p-2 rounded-lg bg-emerald-500/20">
-                          <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500" />
+                        <div className="p-2 rounded-lg bg-muted">
+                          <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-foreground" />
                         </div>
-                        <h3 className="text-lg sm:text-xl font-semibold">
-                          Ship in Minutes
-                        </h3>
+                        <h3 className="text-lg sm:text-xl font-semibold">Ship in Minutes</h3>
                       </div>
                       <p className="text-sm sm:text-base text-muted-foreground font-sans mb-4 sm:mb-6 leading-relaxed">
                         Complete full-stack application with authentication, database, billing, and
@@ -276,17 +259,17 @@ export default function HomePage() {
                       </p>
                     </div>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between text-emerald-500">
-                        <span>Clone to Deploy</span>
-                        <span>&lt; 5 min</span>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Clone to Deploy</span>
+                        <span className="text-foreground">&lt; 5 min</span>
                       </div>
-                      <div className="flex justify-between text-emerald-500">
-                        <span>Auth + DB + Billing</span>
-                        <span>✓ Included</span>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Auth + DB + Billing</span>
+                        <span className="text-foreground">✓ Included</span>
                       </div>
-                      <div className="flex justify-between text-emerald-500">
-                        <span>Production Ready</span>
-                        <span>Day 1</span>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Production Ready</span>
+                        <span className="text-foreground">Day 1</span>
                       </div>
                     </div>
                   </CardContent>
@@ -300,10 +283,10 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.1 }}
               >
-                <Card className="h-full p-4 sm:p-6 bg-card/50 border-border/50 hover:bg-card/80 transition-all duration-300">
+                <Card className="h-full p-4 sm:p-6 bg-card/50 border border-border hover:bg-card/80 transition-all duration-300">
                   <CardContent className="p-0">
                     <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                      <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500" />
+                      <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
                       <h3 className="text-base sm:text-lg font-semibold">Secure Auth</h3>
                     </div>
                     <p className="text-sm text-muted-foreground font-sans">
@@ -320,10 +303,10 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <Card className="h-full p-4 sm:p-6 bg-card/50 border-border/50 hover:bg-card/80 transition-all duration-300">
+                <Card className="h-full p-4 sm:p-6 bg-card/50 border border-border hover:bg-card/80 transition-all duration-300">
                   <CardContent className="p-0">
                     <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                      <Database className="h-4 w-4 sm:h-5 sm:w-5 text-purple-500" />
+                      <Database className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
                       <h3 className="text-base sm:text-lg font-semibold">Type-Safe DB</h3>
                     </div>
                     <p className="text-sm text-muted-foreground font-sans">
@@ -342,14 +325,12 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
-                <Card className="h-full p-4 sm:p-6 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-300">
+                <Card className="h-full p-4 sm:p-6 bg-card border border-border hover:bg-card/80 transition-all duration-300">
                   <CardContent className="p-0">
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <div className="flex items-center gap-2">
-                        <Rocket className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
-                        <h3 className="text-base sm:text-lg font-semibold">
-                          Revenue Ready
-                        </h3>
+                        <Rocket className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
+                        <h3 className="text-base sm:text-lg font-semibold">Revenue Ready</h3>
                       </div>
                       <Badge variant="outline" className="text-xs">
                         Polar + Stripe
@@ -387,7 +368,7 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <Button
                 size="lg"
-                className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-black font-semibold"
+                className="w-full sm:w-auto"
                 onClick={() =>
                   window.open('https://github.com/filopedraz/kosuke-template', '_blank')
                 }
@@ -398,7 +379,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="w-full sm:w-auto px-6 sm:px-8 py-3"
+                className="w-full sm:w-auto"
                 onClick={() =>
                   window.open(
                     'https://github.com/filopedraz/kosuke-template/blob/main/cli/README.md',
