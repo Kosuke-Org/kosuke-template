@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, ListTodo, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -23,13 +23,56 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTasks } from '@/hooks/use-tasks';
 import { TaskItem } from '@/app/(logged-in)/tasks/components/task-item';
 import { TaskDialog } from '@/app/(logged-in)/tasks/components/task-dialog';
-import { TasksPageSkeleton } from '@/app/(logged-in)/tasks/components/task-skeleton';
-import type { TaskPriority, CreateTaskInput } from '@/lib/types';
+import type { TaskPriority } from '@/lib/types';
 
 type TaskFilter = 'all' | 'active' | 'completed';
+
+// Skeleton components colocated with the page
+function TaskSkeleton() {
+  return (
+    <Card className="py-3">
+      <CardHeader className="flex flex-row items-center gap-4 px-6 py-0">
+        <Skeleton className="h-5 w-5 rounded" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+        <Skeleton className="h-8 w-16" />
+      </CardHeader>
+    </Card>
+  );
+}
+
+function TasksPageSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-96" />
+      </div>
+
+      {/* Tabs & Action Bar */}
+      <div className="flex items-center gap-4 overflow-x-auto">
+        <Skeleton className="h-10 w-80" />
+        <Skeleton className="h-10 flex-1 max-w-sm" />
+        <Skeleton className="h-10 w-32" />
+        <Skeleton className="h-10 w-28" />
+      </div>
+
+      {/* Task List */}
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <TaskSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function TasksPage() {
   const [filter, setFilter] = useState<TaskFilter>('all');
@@ -42,7 +85,6 @@ export default function TasksPage() {
 
   const {
     tasks,
-    stats,
     isLoading,
     createTask,
     updateTask,
@@ -88,15 +130,33 @@ export default function TasksPage() {
     [tasks, selectedTaskId]
   );
 
-  const handleCreateTask = async (values: CreateTaskInput) => {
-    await createTask(values);
+  const handleCreateTask = async (values: {
+    title: string;
+    description?: string;
+    priority: 'low' | 'medium' | 'high';
+    dueDate?: Date | null;
+  }) => {
+    await createTask({
+      title: values.title,
+      description: values.description,
+      priority: values.priority,
+      dueDate: values.dueDate ?? undefined,
+    });
   };
 
-  const handleUpdateTask = async (values: Partial<CreateTaskInput>) => {
+  const handleUpdateTask = async (values: {
+    title: string;
+    description?: string;
+    priority: 'low' | 'medium' | 'high';
+    dueDate?: Date | null;
+  }) => {
     if (!selectedTaskId) return;
     await updateTask({
       id: selectedTaskId,
-      ...values,
+      title: values.title,
+      description: values.description,
+      priority: values.priority,
+      dueDate: values.dueDate ?? undefined,
     });
   };
 
@@ -131,96 +191,44 @@ export default function TasksPage() {
         </p>
       </div>
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-              <ListTodo className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-muted-foreground">All your tasks</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.completed}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.total > 0
-                  ? `${Math.round((stats.completed / stats.total) * 100)}% completion rate`
-                  : 'No tasks yet'}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pending}</div>
-              <p className="text-xs text-muted-foreground">Tasks to complete</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.overdue}</div>
-              <p className="text-xs text-muted-foreground">Past due date</p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Input
-            placeholder="Search tasks..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <Select
-          value={priorityFilter}
-          onValueChange={(value) => setPriorityFilter(value as TaskPriority | 'all')}
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Priority" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Task
-        </Button>
-      </div>
-
-      {/* Task List */}
+      {/* Tabs & Action Bar */}
       <Tabs value={filter} onValueChange={(v) => setFilter(v as TaskFilter)}>
-        <TabsList>
-          <TabsTrigger value="all">All ({tasks.length})</TabsTrigger>
-          <TabsTrigger value="active">
-            Active ({tasks.filter((t) => !t.completed).length})
-          </TabsTrigger>
-          <TabsTrigger value="completed">
-            Completed ({tasks.filter((t) => t.completed).length})
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center gap-4 overflow-x-auto">
+          <TabsList>
+            <TabsTrigger value="all">All ({tasks.length})</TabsTrigger>
+            <TabsTrigger value="active">
+              Active ({tasks.filter((t) => !t.completed).length})
+            </TabsTrigger>
+            <TabsTrigger value="completed">
+              Completed ({tasks.filter((t) => t.completed).length})
+            </TabsTrigger>
+          </TabsList>
+          <div className="relative flex-1 max-w-sm">
+            <Input
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Select
+            value={priorityFilter}
+            onValueChange={(value) => setPriorityFilter(value as TaskPriority | 'all')}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="high">High</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={() => setCreateDialogOpen(true)} className="whitespace-nowrap">
+            <Plus className="mr-2 h-4 w-4" />
+            New Task
+          </Button>
+        </div>
         <TabsContent value={filter} className="mt-6 space-y-3">
           {filteredTasks.length === 0 ? (
             <Card className="border-dashed">

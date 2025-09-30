@@ -39,7 +39,7 @@ import { cn } from '@/lib/utils';
 const taskFormSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255),
   description: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
+  priority: z.enum(['low', 'medium', 'high']),
   dueDate: z.date().optional().nullable(),
 });
 
@@ -141,7 +141,7 @@ export function TaskDialog({
                     <FormLabel>Priority</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                       </FormControl>

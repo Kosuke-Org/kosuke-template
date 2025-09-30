@@ -20,19 +20,6 @@ export interface TaskFilters {
   dueDateAfter?: Date;
 }
 
-// Task statistics
-export interface TaskStats {
-  total: number;
-  completed: number;
-  pending: number;
-  overdue: number;
-  byPriority: {
-    low: number;
-    medium: number;
-    high: number;
-  };
-}
-
 // Create task input
 export interface CreateTaskInput {
   title: string;

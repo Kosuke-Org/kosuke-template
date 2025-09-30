@@ -161,35 +161,52 @@ const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
 
 #### **🔧 Implementation Patterns**
 
-**✅ CORRECT - Page-level skeleton:**
+**✅ CORRECT - Page-level skeleton (colocated):**
 
 ```typescript
-// Create dedicated skeleton component for each page
-function PageSkeleton() {
+// app/(logged-in)/tasks/page.tsx
+'use client';
+
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardHeader } from '@/components/ui/card';
+
+// Skeleton components colocated with the page
+function TaskSkeleton() {
+  return (
+    <Card className="py-3">
+      <CardHeader className="flex flex-row items-center gap-4 px-6 py-0">
+        <Skeleton className="h-5 w-5 rounded" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+      </CardHeader>
+    </Card>
+  );
+}
+
+function TasksPageSkeleton() {
   return (
     <div className="space-y-6">
-      <div>
-        <Skeleton className="h-6 w-48 mb-2" />
-        <Skeleton className="h-4 w-72" />
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-4 w-96" />
       </div>
-      <div className="rounded-lg border p-6 space-y-4">
-        <Skeleton className="h-5 w-32" />
-        <Skeleton className="h-4 w-full" />
-        <div className="flex gap-2">
-          <Skeleton className="h-10 flex-1" />
-          <Skeleton className="h-10 w-20" />
-        </div>
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <TaskSkeleton key={i} />
+        ))}
       </div>
     </div>
   );
 }
 
-// Use in component
-export default function MyPage() {
+// Main page component
+export default function TasksPage() {
   const { data, isLoading } = useQuery({ /* ... */ });
 
   if (isLoading) {
-    return <PageSkeleton />;
+    return <TasksPageSkeleton />;
   }
 
   return <div>{/* actual content */}</div>;
@@ -227,12 +244,18 @@ if (isLoading) {
 
 #### **🏗️ Skeleton Best Practices**
 
-**Component Structure:**
+**Component Structure & Organization:**
 
+- **Colocate skeleton components** with their corresponding pages/components
+  - Page skeletons: Define within the page file (e.g., `TasksPageSkeleton` in `tasks/page.tsx`)
+  - Component skeletons: Define within the component file or near usage
+  - NEVER create separate skeleton files (e.g., no `task-skeleton.tsx`)
+- **Generic reusable skeletons**: Only in `@/components/skeletons.tsx` for truly global patterns
+  - Examples: `CardSkeleton`, `FormSkeleton`, `UserSkeleton`, `TableRowSkeleton`
+  - Use these as building blocks, but prefer page-specific skeleton composition
 - Create dedicated `{PageName}Skeleton` components for each page
 - Use realistic proportions that match actual content layout
 - Include proper spacing and hierarchy with skeleton elements
-- Use `@/components/skeletons` for reusable skeleton patterns
 
 **Design Guidelines:**
 
@@ -241,6 +264,7 @@ if (isLoading) {
 - Include rounded corners for profile images (`rounded-full`)
 - Use proper grid layouts for card-based content
 - Animate skeletons with Shadcn's built-in pulse animation
+- Match skeleton padding/spacing to actual component styles
 
 **Loading Hierarchy:**
 

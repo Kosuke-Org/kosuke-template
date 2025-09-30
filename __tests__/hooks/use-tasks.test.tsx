@@ -24,9 +24,6 @@ jest.mock('@/lib/trpc/client', () => ({
       list: {
         useQuery: jest.fn(),
       },
-      stats: {
-        useQuery: jest.fn(),
-      },
       create: {
         useMutation: jest.fn(),
       },
@@ -85,18 +82,6 @@ describe('useTasks', () => {
     },
   ];
 
-  const mockStats = {
-    total: 2,
-    completed: 1,
-    pending: 1,
-    overdue: 0,
-    byPriority: {
-      low: 0,
-      medium: 1,
-      high: 1,
-    },
-  };
-
   it('should fetch tasks successfully', async () => {
     const mockRefetch = jest.fn();
 
@@ -105,10 +90,6 @@ describe('useTasks', () => {
       isLoading: false,
       error: null,
       refetch: mockRefetch,
-    });
-
-    (trpc.tasks.stats.useQuery as jest.Mock).mockReturnValue({
-      data: mockStats,
     });
 
     (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
@@ -135,7 +116,6 @@ describe('useTasks', () => {
 
     await waitFor(() => {
       expect(result.current.tasks).toEqual(mockTasks);
-      expect(result.current.stats).toEqual(mockStats);
       expect(result.current.isLoading).toBe(false);
     });
   });
@@ -146,10 +126,6 @@ describe('useTasks', () => {
       isLoading: true,
       error: null,
       refetch: jest.fn(),
-    });
-
-    (trpc.tasks.stats.useQuery as jest.Mock).mockReturnValue({
-      data: undefined,
     });
 
     (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
@@ -197,10 +173,6 @@ describe('useTasks', () => {
       isLoading: false,
       error: null,
       refetch: mockRefetch,
-    });
-
-    (trpc.tasks.stats.useQuery as jest.Mock).mockReturnValue({
-      data: mockStats,
     });
 
     (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
@@ -261,10 +233,6 @@ describe('useTasks', () => {
       refetch: mockRefetch,
     });
 
-    (trpc.tasks.stats.useQuery as jest.Mock).mockReturnValue({
-      data: mockStats,
-    });
-
     (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
       mutateAsync: jest.fn(),
       isPending: false,
@@ -311,10 +279,6 @@ describe('useTasks', () => {
       refetch: mockRefetch,
     });
 
-    (trpc.tasks.stats.useQuery as jest.Mock).mockReturnValue({
-      data: mockStats,
-    });
-
     (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
       mutateAsync: jest.fn(),
       isPending: false,
@@ -357,10 +321,6 @@ describe('useTasks', () => {
       refetch: mockRefetch,
     });
 
-    (trpc.tasks.stats.useQuery as jest.Mock).mockReturnValue({
-      data: mockStats,
-    });
-
     (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
       mutateAsync: jest.fn(),
       isPending: false,
@@ -398,10 +358,6 @@ describe('useTasks', () => {
       refetch: mockRefetch,
     }));
 
-    (trpc.tasks.stats.useQuery as jest.Mock).mockReturnValue({
-      data: mockStats,
-    });
-
     (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
       mutateAsync: jest.fn(),
       isPending: false,
@@ -436,10 +392,6 @@ describe('useTasks', () => {
       error: null,
       refetch: mockRefetch,
     }));
-
-    (trpc.tasks.stats.useQuery as jest.Mock).mockReturnValue({
-      data: mockStats,
-    });
 
     (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
       mutateAsync: jest.fn(),

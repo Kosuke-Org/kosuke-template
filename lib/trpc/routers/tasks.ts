@@ -56,35 +56,6 @@ export const tasksRouter = router({
     }),
 
   /**
-   * Get task statistics
-   */
-  stats: protectedProcedure.query(async ({ ctx }) => {
-    const userTasks = await db.select().from(tasks).where(eq(tasks.clerkUserId, ctx.userId));
-
-    const total = userTasks.length;
-    const completed = userTasks.filter((t) => t.completed === 'true').length;
-    const pending = total - completed;
-    const now = new Date();
-    const overdue = userTasks.filter(
-      (t) => t.completed === 'false' && t.dueDate && new Date(t.dueDate) < now
-    ).length;
-
-    const byPriority = {
-      low: userTasks.filter((t) => t.priority === 'low').length,
-      medium: userTasks.filter((t) => t.priority === 'medium').length,
-      high: userTasks.filter((t) => t.priority === 'high').length,
-    };
-
-    return {
-      total,
-      completed,
-      pending,
-      overdue,
-      byPriority,
-    };
-  }),
-
-  /**
    * Create a new task
    */
   create: protectedProcedure

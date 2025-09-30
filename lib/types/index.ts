@@ -58,9 +58,8 @@ export type {
   // Display types
   TaskListItem,
 
-  // Filters and stats
+  // Filters
   TaskFilters,
-  TaskStats,
 } from './task';
 
 // Billing and subscription types

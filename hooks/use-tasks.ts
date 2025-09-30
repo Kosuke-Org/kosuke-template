@@ -22,11 +22,6 @@ export function useTasks(filters?: { completed?: boolean; priority?: 'low' | 'me
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
-  // Fetch stats (no input needed for stats query)
-  const { data: stats } = trpc.tasks.stats.useQuery(void 0, {
-    staleTime: 1000 * 60 * 2, // 2 minutes
-  });
-
   // Create task mutation
   const createTask = trpc.tasks.create.useMutation({
     onSuccess: () => {
@@ -97,7 +92,6 @@ export function useTasks(filters?: { completed?: boolean; priority?: 'low' | 'me
 
   return {
     tasks: tasks ?? [],
-    stats,
     isLoading,
     error,
     createTask: (input: CreateTaskInput) => createTask.mutateAsync(input),

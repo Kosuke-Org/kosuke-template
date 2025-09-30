@@ -54,14 +54,14 @@ export function TaskItem({
   return (
     <Card
       className={cn(
-        'transition-all hover:shadow-md',
+        'py-3 transition-all hover:shadow-md',
         completed && 'opacity-60',
         isOverdue && !completed && 'border-red-500/50'
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-3">
+      <CardHeader className="flex flex-row items-start gap-4 space-y-0 px-6 py-0">
         <Checkbox
           checked={completed}
           onCheckedChange={() => onToggleComplete(id)}
@@ -82,7 +82,7 @@ export function TaskItem({
               {description}
             </p>
           )}
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex items-center gap-2 pt-1">
             <Badge variant="outline" className={priorityColors[priority]}>
               {priority}
             </Badge>
