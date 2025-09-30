@@ -135,19 +135,14 @@ export default function ProfileSettings() {
                   </div>
                 )}
               </div>
-              <div className="relative w-[152px]">
-                <Button variant="outline" className="w-full" disabled={isUploading}>
+              <div className="relative">
+                <Button variant="outline" disabled={isUploading}>
                   {isUploading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="inline-block w-[80px] text-center">Uploading...</span>
-                    </>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <>
-                      <Upload className="h-4 w-4" />
-                      <span className="inline-block w-[80px] text-center">Change Image</span>
-                    </>
+                    <Upload className="h-4 w-4" />
                   )}
+                  Change Image
                 </Button>
                 {!isUploading && (
                   <Input
