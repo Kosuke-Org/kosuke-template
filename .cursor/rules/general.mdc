@@ -665,11 +665,45 @@ type Task = RouterOutput['tasks']['list'][number];
 - Implement pagination for large datasets
 - Use select to transform data when needed
 
+**User Router Patterns:**
+
+The user router handles user settings and profile management:
+
+```typescript
+// Notification Settings
+const { data: settings } = trpc.user.getNotificationSettings.useQuery();
+const updateSettings = trpc.user.updateNotificationSettings.useMutation({
+  onSuccess: () => {
+    utils.user.getNotificationSettings.invalidate();
+  },
+});
+
+// Profile Image Upload (base64)
+const upload = trpc.user.uploadProfileImage.useMutation();
+const deleteImage = trpc.user.deleteProfileImage.useMutation();
+
+const handleUpload = async (file: File) => {
+  const base64 = await fileToBase64(file);
+  await upload.mutateAsync({
+    fileBase64: base64,
+    fileName: file.name,
+    mimeType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
+  });
+};
+```
+
+**File Upload with tRPC:**
+- tRPC doesn't support multipart form data natively
+- Solution: Convert files to base64 strings for transmission
+- Use `fileToBase64()` helper from `@/lib/utils`
+- Server converts base64 back to buffer for storage
+- Size limit: 5MB (accounts for base64 encoding overhead ~33%)
+
 #### **🚫 When NOT to Use tRPC**
 
 - **External API integrations** - Use direct fetch/axios
 - **Webhooks** - Use standard Next.js API routes
-- **File uploads** - Use dedicated upload endpoints
+- **Large file uploads (>5MB)** - Use dedicated multipart upload endpoints
 - **Public APIs** - Consider REST for external consumers
 
 #### **✅ When TO Use tRPC**

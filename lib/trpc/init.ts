@@ -4,7 +4,7 @@
  */
 
 import { initTRPC, TRPCError } from '@trpc/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import superjson from 'superjson';
 
 /**
@@ -13,9 +13,11 @@ import superjson from 'superjson';
  */
 export const createTRPCContext = async () => {
   const { userId } = await auth();
+  const user = userId ? await currentUser() : null;
 
   return {
     userId,
+    user,
   };
 };
 
@@ -40,7 +42,7 @@ export const publicProcedure = t.procedure;
 export const protectedProcedure = t.procedure.use(async (opts) => {
   const { ctx } = opts;
 
-  if (!ctx.userId) {
+  if (!ctx.userId || !ctx.user) {
     throw new TRPCError({
       code: 'UNAUTHORIZED',
       message: 'You must be logged in to perform this action',
@@ -50,6 +52,7 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
   return opts.next({
     ctx: {
       userId: ctx.userId,
+      user: ctx.user,
     },
   });
 });

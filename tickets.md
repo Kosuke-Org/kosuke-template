@@ -5,10 +5,12 @@
 Migrate user-facing REST API endpoints (non-billing) to tRPC for end-to-end type safety, better DX, and consistent patterns across the application.
 
 ### Endpoints to Migrate
+
 - ✅ User notification settings (2 endpoints)
 - ✅ File upload operations (1 endpoint)
 
 ### Deleted as Unused
+
 - ❌ User sync endpoint - Not called from anywhere, syncing happens automatically via webhooks and `ensureUserSynced()` in API routes
 
 ---
@@ -18,22 +20,27 @@ Migrate user-facing REST API endpoints (non-billing) to tRPC for end-to-end type
 ### Phase 1: User Router Setup
 
 #### Ticket 1: Create User Router
+
 **Priority:** High  
 **Estimated Time:** 1.5 hours
 
 **Tasks:**
+
 1. Create `lib/trpc/routers/user.ts`
 2. Set up base router structure
 3. Add user router to main router
 4. Migrate notification settings endpoints
 
 **Files to Create:**
+
 - `lib/trpc/routers/user.ts`
 
 **Files to Modify:**
+
 - `lib/trpc/router.ts` (add user router)
 
 **Implementation:**
+
 ```typescript
 // lib/trpc/routers/user.ts
 import { router, protectedProcedure } from '../init';
@@ -49,35 +56,34 @@ const notificationSettingsSchema = z.object({
 });
 
 export const userRouter = router({
-  getNotificationSettings: protectedProcedure
-    .query(async ({ ctx }) => {
-      const user = await db
-        .select({ notificationSettings: users.notificationSettings })
-        .from(users)
-        .where(eq(users.clerkUserId, ctx.userId))
-        .limit(1);
-      
-      if (!user.length) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
-      }
-      
-      const defaultSettings = {
-        emailNotifications: true,
-        marketingEmails: false,
-        securityAlerts: true,
-      };
-      
-      if (!user[0].notificationSettings) {
-        return defaultSettings;
-      }
-      
-      try {
-        return JSON.parse(user[0].notificationSettings);
-      } catch {
-        return defaultSettings;
-      }
-    }),
-  
+  getNotificationSettings: protectedProcedure.query(async ({ ctx }) => {
+    const user = await db
+      .select({ notificationSettings: users.notificationSettings })
+      .from(users)
+      .where(eq(users.clerkUserId, ctx.userId))
+      .limit(1);
+
+    if (!user.length) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+    }
+
+    const defaultSettings = {
+      emailNotifications: true,
+      marketingEmails: false,
+      securityAlerts: true,
+    };
+
+    if (!user[0].notificationSettings) {
+      return defaultSettings;
+    }
+
+    try {
+      return JSON.parse(user[0].notificationSettings);
+    } catch {
+      return defaultSettings;
+    }
+  }),
+
   updateNotificationSettings: protectedProcedure
     .input(notificationSettingsSchema)
     .mutation(async ({ input, ctx }) => {
@@ -88,28 +94,32 @@ export const userRouter = router({
           updatedAt: new Date(),
         })
         .where(eq(users.clerkUserId, ctx.userId));
-      
+
       return input;
     }),
 });
 ```
 
 **Files to Delete:**
+
 - `app/api/user/notification-settings/route.ts`
 - ~~`app/api/user/sync/route.ts`~~ (already deleted - unused endpoint)
 
 ---
 
 #### Ticket 2: Migrate Profile Image Upload
+
 **Priority:** High  
 **Estimated Time:** 2 hours  
 **Depends On:** Ticket 1
 
-**Current Endpoint:** 
+**Current Endpoint:**
+
 - `POST /api/upload/profile-image`
 - `DELETE /api/upload/profile-image`
 
 **Tasks:**
+
 1. Create helper function to convert File to base64
 2. Create `uploadProfileImage` mutation with base64 input
 3. Create `deleteProfileImage` mutation
@@ -117,6 +127,7 @@ export const userRouter = router({
 5. Test upload/delete flows
 
 **Implementation:**
+
 ```typescript
 // lib/trpc/routers/user.ts (add to existing router)
 
@@ -130,26 +141,26 @@ uploadProfileImage: protectedProcedure
     // Validate file size (base64 is ~33% larger)
     const estimatedSize = (input.fileBase64.length * 3) / 4;
     const maxSize = 5 * 1024 * 1024; // 5MB
-    
+
     if (estimatedSize > maxSize) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'File too large. Please upload an image smaller than 5MB.',
       });
     }
-    
+
     // Convert base64 to buffer
     const buffer = Buffer.from(input.fileBase64.split(',')[1], 'base64');
     const file = new File([buffer], input.fileName, { type: input.mimeType });
-    
+
     // Delete old image if exists
     if (ctx.user.imageUrl) {
       await deleteProfileImage(ctx.user.imageUrl);
     }
-    
+
     // Upload new image
     const imageUrl = await uploadProfileImage(file, ctx.userId);
-    
+
     // Update Clerk user metadata
     const clerk = await clerkClient();
     await clerk.users.updateUser(ctx.userId, {
@@ -158,11 +169,11 @@ uploadProfileImage: protectedProcedure
         customProfileImageUrl: imageUrl,
       },
     });
-    
+
     // Sync to local DB
     const updatedUser = await clerk.users.getUser(ctx.userId);
     await syncUserFromClerk(updatedUser);
-    
+
     return {
       success: true,
       imageUrl,
@@ -178,9 +189,9 @@ deleteProfileImage: protectedProcedure
         message: 'No profile image to delete',
       });
     }
-    
+
     await deleteProfileImage(ctx.user.imageUrl);
-    
+
     const clerk = await clerkClient();
     await clerk.users.updateUser(ctx.userId, {
       publicMetadata: {
@@ -188,10 +199,10 @@ deleteProfileImage: protectedProcedure
         customProfileImageUrl: null,
       },
     });
-    
+
     const updatedUser = await clerk.users.getUser(ctx.userId);
     await syncUserFromClerk(updatedUser);
-    
+
     return {
       success: true,
       message: 'Profile image deleted successfully',
@@ -200,6 +211,7 @@ deleteProfileImage: protectedProcedure
 ```
 
 **Helper Function:**
+
 ```typescript
 // lib/utils.ts (add this utility)
 export function fileToBase64(file: File): Promise<string> {
@@ -213,9 +225,11 @@ export function fileToBase64(file: File): Promise<string> {
 ```
 
 **Files to Delete:**
+
 - `app/api/upload/profile-image/route.ts`
 
 **Files to Modify:**
+
 - `lib/utils.ts` (add fileToBase64 helper)
 - `lib/trpc/routers/user.ts` (add procedures)
 
@@ -224,19 +238,23 @@ export function fileToBase64(file: File): Promise<string> {
 ### Phase 2: Hooks Updates
 
 #### Ticket 3: Update Notification Settings Hook
+
 **Priority:** High  
 **Estimated Time:** 1 hour  
 **Depends On:** Ticket 1
 
 **Tasks:**
+
 1. Update `hooks/use-notification-settings.ts` to use tRPC
 2. Remove old fetch implementation
 3. Test settings page
 
 **Files to Modify:**
+
 - `hooks/use-notification-settings.ts`
 
 **Example Update:**
+
 ```typescript
 // hooks/use-notification-settings.ts
 import { trpc } from '@/lib/trpc/client';
@@ -245,9 +263,9 @@ import { useToast } from './use-toast';
 export function useNotificationSettings() {
   const { toast } = useToast();
   const utils = trpc.useContext();
-  
+
   const { data: settings, isLoading } = trpc.user.getNotificationSettings.useQuery();
-  
+
   const updateSettings = trpc.user.updateNotificationSettings.useMutation({
     onSuccess: () => {
       utils.user.getNotificationSettings.invalidate();
@@ -264,7 +282,7 @@ export function useNotificationSettings() {
       });
     },
   });
-  
+
   return {
     settings,
     isLoading,
@@ -277,20 +295,24 @@ export function useNotificationSettings() {
 ---
 
 #### Ticket 4: Update Profile Upload Hook
+
 **Priority:** High  
 **Estimated Time:** 1 hour  
 **Depends On:** Ticket 2
 
 **Tasks:**
+
 1. Update `hooks/use-profile-upload.ts` to use tRPC
 2. Add base64 conversion logic
 3. Remove old fetch implementation
 4. Test profile image upload/delete
 
 **Files to Modify:**
+
 - `hooks/use-profile-upload.ts`
 
 **Example Update:**
+
 ```typescript
 // hooks/use-profile-upload.ts
 import { trpc } from '@/lib/trpc/client';
@@ -300,7 +322,7 @@ import { fileToBase64 } from '@/lib/utils';
 export function useProfileUpload() {
   const { toast } = useToast();
   const utils = trpc.useContext();
-  
+
   const uploadMutation = trpc.user.uploadProfileImage.useMutation({
     onSuccess: () => {
       utils.user.getProfile.invalidate();
@@ -317,7 +339,7 @@ export function useProfileUpload() {
       });
     },
   });
-  
+
   const deleteMutation = trpc.user.deleteProfileImage.useMutation({
     onSuccess: () => {
       utils.user.getProfile.invalidate();
@@ -327,7 +349,7 @@ export function useProfileUpload() {
       });
     },
   });
-  
+
   const handleUpload = async (file: File) => {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -339,17 +361,17 @@ export function useProfileUpload() {
       });
       return;
     }
-    
+
     // Convert to base64
     const fileBase64 = await fileToBase64(file);
-    
+
     await uploadMutation.mutateAsync({
       fileBase64,
       fileName: file.name,
       mimeType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
     });
   };
-  
+
   return {
     handleUpload,
     handleDelete: deleteMutation.mutate,
@@ -364,23 +386,28 @@ export function useProfileUpload() {
 ### Phase 3: Testing & Cleanup
 
 #### Ticket 5: Update Tests for User Router
+
 **Priority:** High  
 **Estimated Time:** 2 hours  
 **Depends On:** Tickets 1-4
 
 **Tasks:**
+
 1. Update existing tests to mock tRPC procedures
 2. Add new tests for user router
 3. Test error handling and edge cases
 4. Ensure coverage for user router paths
 
 **Files to Modify:**
+
 - `__tests__/hooks/use-auth-actions.test.tsx`
 
 **Files to Create:**
+
 - `__tests__/lib/trpc/routers/user.test.ts`
 
 **Test Pattern:**
+
 ```typescript
 // __tests__/lib/trpc/routers/user.test.ts
 import { appRouter } from '@/lib/trpc/router';
@@ -388,81 +415,82 @@ import { createCallerFactory } from '@trpc/server';
 
 describe('User Router', () => {
   const createCaller = createCallerFactory(appRouter);
-  
+
   it('should get notification settings', async () => {
     const caller = createCaller({
       userId: 'test-user',
       user: mockClerkUser,
       localUser: mockLocalUser,
     });
-    
+
     const result = await caller.user.getNotificationSettings();
-    
+
     expect(result).toHaveProperty('emailNotifications');
     expect(result).toHaveProperty('marketingEmails');
     expect(result).toHaveProperty('securityAlerts');
   });
-  
+
   it('should update notification settings', async () => {
     const caller = createCaller({
       userId: 'test-user',
       user: mockClerkUser,
       localUser: mockLocalUser,
     });
-    
+
     const newSettings = {
       emailNotifications: false,
       marketingEmails: true,
       securityAlerts: true,
     };
-    
+
     const result = await caller.user.updateNotificationSettings(newSettings);
-    
+
     expect(result).toEqual(newSettings);
   });
-  
+
   it('should sync user data', async () => {
     const caller = createCaller({
       userId: 'test-user',
       user: mockClerkUser,
       localUser: mockLocalUser,
     });
-    
+
     const result = await caller.user.sync();
-    
+
     expect(result.success).toBe(true);
     expect(result.user).toHaveProperty('localId');
     expect(result.user).toHaveProperty('clerkId');
   });
-  
+
   it('should upload profile image', async () => {
     const caller = createCaller({
       userId: 'test-user',
       user: mockClerkUser,
       localUser: mockLocalUser,
     });
-    
-    const mockBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-    
+
+    const mockBase64 =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
     const result = await caller.user.uploadProfileImage({
       fileBase64: mockBase64,
       fileName: 'test.png',
       mimeType: 'image/png',
     });
-    
+
     expect(result.success).toBe(true);
     expect(result.imageUrl).toBeDefined();
   });
-  
+
   it('should delete profile image', async () => {
     const caller = createCaller({
       userId: 'test-user',
       user: { ...mockClerkUser, imageUrl: 'https://example.com/image.png' },
       localUser: mockLocalUser,
     });
-    
+
     const result = await caller.user.deleteProfileImage();
-    
+
     expect(result.success).toBe(true);
   });
 });
@@ -471,11 +499,13 @@ describe('User Router', () => {
 ---
 
 #### Ticket 6: Documentation & Cleanup
+
 **Priority:** Medium  
 **Estimated Time:** 1 hour  
 **Depends On:** All previous tickets
 
 **Tasks:**
+
 1. Update README.md with tRPC user router usage examples
 2. Document tRPC procedures in code comments
 3. Delete all migrated REST endpoint files
@@ -483,19 +513,23 @@ describe('User Router', () => {
 5. Create migration completion checklist
 
 **Files to Modify:**
+
 - `README.md` (update API section)
 - `.cursor/rules/general.mdc` (update with user router tRPC patterns)
 
 **Files to Delete:**
+
 - `app/api/user/notification-settings/route.ts`
 - ~~`app/api/user/sync/route.ts`~~ (already deleted - unused endpoint)
 - `app/api/upload/profile-image/route.ts`
 
 **Documentation to Add:**
-```markdown
+
+````markdown
 ### User Router Examples
 
 #### Notification Settings
+
 ```typescript
 // Get notification settings
 const { data: settings } = trpc.user.getNotificationSettings.useQuery();
@@ -508,8 +542,10 @@ await updateSettings.mutateAsync({
   securityAlerts: true,
 });
 ```
+````
 
 #### Profile Image Upload
+
 ```typescript
 // Upload profile image
 const upload = trpc.user.uploadProfileImage.useMutation();
@@ -524,6 +560,7 @@ await upload.mutateAsync({
 const deleteImage = trpc.user.deleteProfileImage.useMutation();
 await deleteImage.mutateAsync();
 ```
+
 ```
 
 ---
@@ -615,3 +652,4 @@ If issues arise:
 - Validated with Zod schema
 - Default settings provided for new users
 - Graceful fallback for malformed JSON
+```

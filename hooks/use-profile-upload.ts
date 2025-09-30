@@ -1,37 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
 import { useProfileImage } from '@/hooks/use-profile-image';
+import { fileToBase64 } from '@/lib/utils';
 
 export function useProfileUpload() {
   const { toast } = useToast();
   const { setCurrentImageUrl } = useProfileImage();
-  const [isUploading, setIsUploading] = useState(false);
+  const utils = trpc.useContext();
 
-  const uploadMutation = useMutation({
-    mutationFn: async (
-      file: File
-    ): Promise<{ success: boolean; imageUrl: string; message?: string; error?: string }> => {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/api/upload/profile-image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload image');
-      }
-
-      return response.json();
-    },
-    onMutate: () => {
-      setIsUploading(true);
-    },
+  const uploadMutation = trpc.user.uploadProfileImage.useMutation({
     onSuccess: (data) => {
       toast({
         title: 'Profile image updated',
@@ -45,17 +24,33 @@ export function useProfileUpload() {
       console.error('Error uploading image:', error);
       toast({
         title: 'Error',
-        description:
-          error instanceof Error ? error.message : 'Failed to upload image. Please try again.',
+        description: error.message || 'Failed to upload image. Please try again.',
         variant: 'destructive',
       });
     },
-    onSettled: () => {
-      setIsUploading(false);
+  });
+
+  const deleteMutation = trpc.user.deleteProfileImage.useMutation({
+    onSuccess: (data) => {
+      toast({
+        title: 'Profile image deleted',
+        description: data.message || 'Your profile image has been deleted successfully.',
+      });
+
+      // Clear local state
+      setCurrentImageUrl(null);
+    },
+    onError: (error) => {
+      console.error('Error deleting image:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete image. Please try again.',
+        variant: 'destructive',
+      });
     },
   });
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -70,21 +65,41 @@ export function useProfileUpload() {
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
       toast({
         title: 'Invalid file type',
-        description: 'Please select a valid image file.',
+        description: 'Please upload a JPEG, PNG, or WebP image.',
         variant: 'destructive',
       });
       return;
     }
 
-    uploadMutation.mutate(file);
+    try {
+      // Convert file to base64
+      const fileBase64 = await fileToBase64(file);
+
+      // Upload via tRPC
+      await uploadMutation.mutateAsync({
+        fileBase64,
+        fileName: file.name,
+        mimeType: file.type as 'image/jpeg' | 'image/png' | 'image/webp',
+      });
+    } catch (error) {
+      console.error('Error processing file:', error);
+    }
+  };
+
+  const handleImageDelete = () => {
+    deleteMutation.mutate();
   };
 
   return {
     handleImageUpload,
-    isUploading: isUploading || uploadMutation.isPending,
-    error: uploadMutation.error,
+    handleImageDelete,
+    isUploading: uploadMutation.isPending,
+    isDeleting: deleteMutation.isPending,
+    error: uploadMutation.error || deleteMutation.error,
   };
 }
