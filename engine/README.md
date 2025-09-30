@@ -87,7 +87,7 @@ Interactive API documentation (Swagger UI).
    source .venv/bin/activate  # Linux/Mac
    # or
    .venv\Scripts\activate     # Windows
-   
+
    uv pip install -e ".[dev]"
    ```
 

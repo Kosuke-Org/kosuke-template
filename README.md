@@ -58,20 +58,20 @@ If you prefer to set up services manually or already have accounts configured:
 
    ```bash
    docker compose up -d
-   npm run db:migrate
+   pnpm run db:migrate
    ```
 
 3. **Install and run:**
 
    ```bash
-   npm install
-   npm run dev
+   pnpm install
+   pnpm run dev
    ```
 
 4. **Email development (optional):**
    ```bash
-   npm run dev:email  # Runs Next.js + React Email preview
-   npm run email:dev  # React Email preview only
+   pnpm run dev:email  # Runs Next.js + React Email preview
+   pnpm run email:dev  # React Email preview only
    ```
 
 ### Environment Variables
@@ -120,9 +120,9 @@ For detailed instructions on obtaining these keys and setting up each service, s
 Run tests with:
 
 ```bash
-npm test              # Run all tests
-npm run test:watch    # Watch mode
-npm run test:coverage # Coverage report
+pnpm test              # Run all tests
+pnpm run test:watch    # Watch mode
+pnpm run test:coverage # Coverage report
 ```
 
 ## 🤖 Automated Shadcn/UI Updates
@@ -135,9 +135,9 @@ This template includes an automated system to keep your shadcn/ui components up-
 - **🔧 Manual Control**: Run updates manually when needed
 
 ```bash
-npm run shadcn:check    # Check for available updates
-npm run shadcn:update   # Update components manually
-npm run shadcn:force    # Force update all components
+pnpm run shadcn:check    # Check for available updates
+pnpm run shadcn:update   # Update components manually
+pnpm run shadcn:force    # Force update all components
 ```
 
 ## ⚡ Automated Subscription Sync
@@ -158,9 +158,9 @@ This template uses **React Email** for building beautiful, responsive email temp
 ### Email Development Workflow
 
 ```bash
-npm run email:dev     # Start React Email preview server (port 3001)
-npm run dev:email     # Run both Next.js and React Email preview
-npm run email:export  # Export email templates to static HTML
+pnpm run email:dev     # Start React Email preview server (port 3001)
+pnpm run dev:email     # Run both Next.js and React Email preview
+pnpm run email:export  # Export email templates to static HTML
 ```
 
 ### Creating Email Templates
@@ -199,7 +199,7 @@ await sendEmail({
 
 ### Email Preview & Testing
 
-- **Preview**: Visit [http://localhost:3001](http://localhost:3001) when running `npm run email:dev`
+- **Preview**: Visit [http://localhost:3001](http://localhost:3001) when running `pnpm run email:dev`
 - **Live Reload**: Template changes are reflected instantly in the preview
 - **Responsive**: Test email rendering across different screen sizes
 - **Plain Text**: Automatically generates plain text versions
@@ -207,19 +207,19 @@ await sendEmail({
 ## 📦 Available Scripts
 
 ```bash
-npm run dev           # Start development server
-npm run dev:email     # Start Next.js + React Email preview
-npm run build         # Build for production
-npm run start         # Start production server
-npm run lint          # Run ESLint
-npm run format        # Format code with Prettier
-npm run email:dev     # Start React Email preview server
-npm run email:export  # Export email templates to HTML
-npm run db:generate   # Generate database migrations
-npm run db:migrate    # Run database migrations
-npm run db:push       # Push schema changes
-npm run db:studio     # Open Drizzle Studio
-npm run db:seed       # Seed database
+pnpm run dev           # Start development server
+pnpm run dev:email     # Start Next.js + React Email preview
+pnpm run build         # Build for production
+pnpm run start         # Start production server
+pnpm run lint          # Run ESLint
+pnpm run format        # Format code with Prettier
+pnpm run email:dev     # Start React Email preview server
+pnpm run email:export  # Export email templates to HTML
+pnpm run db:generate   # Generate database migrations
+pnpm run db:migrate    # Run database migrations
+pnpm run db:push       # Push schema changes
+pnpm run db:studio     # Open Drizzle Studio
+pnpm run db:seed       # Seed database
 ```
 
 ## 🚀 Deployment & Production

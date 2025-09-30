@@ -7,8 +7,8 @@ WORKDIR /app
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Update npm to latest version for better performance
-RUN npm install -g npm@latest
+# Update pnpm to latest version for better performance
+RUN npm install -g pnpm@latest-10
 
 # Copy and set up simplified entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
@@ -19,4 +19,4 @@ EXPOSE 3000
 
 # Use simplified entrypoint for dependency management and startup
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["npm", "run", "dev", "--", "-H", "0.0.0.0"] 
+CMD ["pnpm", "run", "dev", "--", "-H", "0.0.0.0"] 

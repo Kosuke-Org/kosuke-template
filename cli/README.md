@@ -109,19 +109,19 @@ After the interactive setup completes:
    ```bash
    # Make sure you have docker-compose.yml in your project root
    docker-compose up -d postgres  # Start PostgreSQL locally
-   npm run db:migrate             # Run database migrations
+   pnpm run db:migrate             # Run database migrations
    ```
 
 5. **Install dependencies:**
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 6. **Start development:**
 
    ```bash
-   npm run dev                   # Local development at http://localhost:3000
+   pnpm run dev                   # Local development at http://localhost:3000
    ```
 
 7. **Environment files explained:**

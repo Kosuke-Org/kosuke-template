@@ -56,7 +56,7 @@ if [ -n "$js_files" ]; then
 
   # Run linting
   echo "🔍 Running ESLint..."
-  npm run lint
+  pnpm run lint
   if [ $? -ne 0 ]; then
     echo "❌ Linting failed. Please fix the errors before committing."
     exit 1
@@ -64,7 +64,7 @@ if [ -n "$js_files" ]; then
 
   # Run tests
   echo "🧪 Running tests..."
-  npm test
+  pnpm test
   if [ $? -ne 0 ]; then
     echo "❌ Tests failed. Please fix the failing tests before committing."
     exit 1
@@ -72,7 +72,7 @@ if [ -n "$js_files" ]; then
 
   # Run formatting
   echo "💅 Running formatting..."
-  npm run format
+  pnpm run format
 
   # Check if any files were modified by formatting
   if [ -n "$(git diff)" ]; then

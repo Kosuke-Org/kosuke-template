@@ -10,7 +10,7 @@ services:
       - '54321:5432'
     volumes:
       - kosuke_template_postgres_data:/var/lib/postgresql/data
-  
+
   engine:
     build:
       context: ./engine
