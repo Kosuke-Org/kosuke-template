@@ -69,11 +69,11 @@ const interactiveChartData = [
 const chartConfig = {
   desktop: {
     label: 'Desktop',
-    color: 'hsl(var(--chart-1))',
+    color: 'var(--chart-1)',
   },
   mobile: {
     label: 'Mobile',
-    color: 'hsl(var(--chart-2))',
+    color: 'var(--chart-2)',
   },
 } satisfies ChartConfig;
 
@@ -123,15 +123,15 @@ const gradientAreaData = [
 const stackedAreaConfig = {
   desktop: {
     label: 'Desktop',
-    color: 'hsl(var(--chart-1))',
+    color: 'var(--chart-1)',
   },
   mobile: {
     label: 'Mobile',
-    color: 'hsl(var(--chart-2))',
+    color: 'var(--chart-2)',
   },
   tablet: {
     label: 'Tablet',
-    color: 'hsl(var(--chart-3))',
+    color: 'var(--chart-3)',
   },
 } satisfies ChartConfig;
 
@@ -159,44 +159,44 @@ const mixedBarData = [
 const stackedBarConfig = {
   desktop: {
     label: 'Desktop',
-    color: 'hsl(var(--chart-1))',
+    color: 'var(--chart-1)',
   },
   mobile: {
     label: 'Mobile',
-    color: 'hsl(var(--chart-2))',
+    color: 'var(--chart-2)',
   },
   tablet: {
     label: 'Tablet',
-    color: 'hsl(var(--chart-3))',
+    color: 'var(--chart-3)',
   },
 } satisfies ChartConfig;
 
 const mixedBarConfig = {
   revenue: {
     label: 'Revenue',
-    color: 'hsl(var(--chart-1))',
+    color: 'var(--chart-1)',
   },
   expenses: {
     label: 'Expenses',
-    color: 'hsl(var(--chart-2))',
+    color: 'var(--chart-2)',
   },
 } satisfies ChartConfig;
 
 const linearAreaConfig = {
   desktop: {
     label: 'Desktop',
-    color: 'hsl(var(--chart-1))',
+    color: 'var(--chart-1)',
   },
 } satisfies ChartConfig;
 
 const gradientAreaConfig = {
   desktop: {
     label: 'Desktop',
-    color: 'hsl(var(--chart-1))',
+    color: 'var(--chart-1)',
   },
   mobile: {
     label: 'Mobile',
-    color: 'hsl(var(--chart-2))',
+    color: 'var(--chart-2)',
   },
 } satisfies ChartConfig;
 
@@ -336,7 +336,7 @@ export function AreaChartDemo() {
         <CardDescription>Showing total visitors for the last 6 months</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[300px]">
+        <ChartContainer config={chartConfig} className="h-[300px] w-full">
           <AreaChart
             accessibilityLayer
             data={chartData}
@@ -398,7 +398,7 @@ export function StackedAreaChart() {
         <CardDescription>Showing total visitors for the last 6 months</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={stackedAreaConfig} className="h-[300px]">
+        <ChartContainer config={stackedAreaConfig} className="h-[300px] w-full">
           <AreaChart
             accessibilityLayer
             data={stackedAreaData}
@@ -468,7 +468,7 @@ export function LinearAreaChart() {
         <CardDescription>January - June 2024</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={linearAreaConfig} className="h-[300px]">
+        <ChartContainer config={linearAreaConfig} className="h-[300px] w-full">
           <AreaChart
             accessibilityLayer
             data={linearAreaData}
@@ -523,7 +523,7 @@ export function GradientAreaChart() {
         <CardDescription>Showing total visitors for the last 6 months</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={gradientAreaConfig} className="h-[300px]">
+        <ChartContainer config={gradientAreaConfig} className="h-[300px] w-full">
           <AreaChart
             accessibilityLayer
             data={gradientAreaData}
@@ -582,7 +582,7 @@ export function StackedBarChart() {
         <CardDescription>Device usage by month</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={stackedBarConfig} className="h-[300px]">
+        <ChartContainer config={stackedBarConfig} className="h-[300px] w-full">
           <BarChart
             accessibilityLayer
             data={stackedBarData}
@@ -632,7 +632,7 @@ export function MixedBarChart() {
         <CardDescription>Revenue vs Expenses comparison</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={mixedBarConfig} className="h-[300px]">
+        <ChartContainer config={mixedBarConfig} className="h-[300px] w-full">
           <BarChart
             accessibilityLayer
             data={mixedBarData}
