@@ -29,7 +29,8 @@ describe('useFormSubmission', () => {
       await result.current.handleSubmit(testData);
     });
 
-    expect(mockOnSubmit).toHaveBeenCalledWith(testData);
+    expect(mockOnSubmit).toHaveBeenCalled();
+    expect(mockOnSubmit.mock.calls[0][0]).toEqual(testData);
     expect(result.current.isSubmitting).toBe(false);
     expect(result.current.error).toBeNull();
   });
