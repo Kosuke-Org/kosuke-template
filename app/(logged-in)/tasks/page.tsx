@@ -184,7 +184,7 @@ export default function TasksPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+      <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
         <p className="text-muted-foreground">
           Manage your tasks and stay organized with your personal todo list.

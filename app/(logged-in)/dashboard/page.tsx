@@ -135,7 +135,7 @@ export default function Page() {
     <TooltipProvider>
       <div className="space-y-8">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="space-y-2">
             <h2 className="text-3xl font-bold tracking-tight">Component Showcase</h2>
             <p className="text-muted-foreground">
               Explore all available shadcn/ui components with live examples

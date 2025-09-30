@@ -445,6 +445,240 @@ const query = useQuery<UserProfile, Error>({
 });
 ```
 
+### tRPC Integration - Type-Safe API Layer
+
+**tRPC provides end-to-end type safety for API routes. Use it for ALL internal API endpoints.**
+
+#### **📁 tRPC Structure**
+
+```plaintext
+lib/trpc/
+├── init.ts          # tRPC initialization, context, and procedures
+├── router.ts        # Main app router combining all sub-routers
+├── client.ts        # Client-side tRPC configuration
+├── server.ts        # Server-side tRPC configuration
+├── routers/         # Feature-specific routers
+│   ├── tasks.ts
+│   ├── user.ts
+│   └── ...
+└── index.ts         # Exports
+```
+
+#### **🔧 Core Concepts**
+
+**Context & Authentication:**
+
+```typescript
+// lib/trpc/init.ts
+export const createTRPCContext = async () => {
+  const { userId } = await auth();
+  return { userId };
+};
+
+// Use protectedProcedure for authenticated routes
+export const protectedProcedure = t.procedure.use(async (opts) => {
+  if (!opts.ctx.userId) {
+    throw new TRPCError({ code: 'UNAUTHORIZED' });
+  }
+  return opts.next({ ctx: { userId: opts.ctx.userId } });
+});
+```
+
+**Router Organization:**
+
+```typescript
+// lib/trpc/routers/tasks.ts
+import { router, protectedProcedure } from '../init';
+import { z } from 'zod';
+
+export const tasksRouter = router({
+  list: protectedProcedure
+    .input(z.object({ completed: z.boolean().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      // Implementation
+    }),
+
+  create: protectedProcedure
+    .input(z.object({
+      title: z.string().min(1).max(255),
+      description: z.string().optional(),
+      priority: z.enum(['low', 'medium', 'high']).default('medium'),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Implementation
+    }),
+});
+```
+
+**Main Router:**
+
+```typescript
+// lib/trpc/router.ts
+import { router } from './init';
+import { tasksRouter } from './routers/tasks';
+
+export const appRouter = router({
+  tasks: tasksRouter,
+  // Add more routers here
+});
+
+export type AppRouter = typeof appRouter;
+```
+
+#### **📱 Client-Side Usage**
+
+**Setup in Providers:**
+
+```typescript
+// components/providers.tsx
+import { trpc } from '@/lib/trpc/client';
+
+export function Providers({ children }: { children: ReactNode }) {
+  const [trpcClient] = useState(() =>
+    trpc.createClient({
+      links: [
+        httpBatchLink({
+          url: '/api/trpc',
+          transformer: superjson, // Required for Date/Map/Set support
+        }),
+      ],
+    })
+  );
+
+  return (
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </trpc.Provider>
+  );
+}
+```
+
+**Custom Hook Pattern:**
+
+```typescript
+// hooks/use-tasks.ts
+'use client';
+
+import { trpc } from '@/lib/trpc/client';
+import { useToast } from '@/hooks/use-toast';
+
+export function useTasks(filters?: { completed?: boolean }) {
+  const { toast } = useToast();
+
+  // Query
+  const { data: tasks, isLoading, refetch } = trpc.tasks.list.useQuery(filters, {
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+
+  // Mutation with optimistic updates
+  const createTask = trpc.tasks.create.useMutation({
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Task created' });
+      refetch();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  return {
+    tasks: tasks ?? [],
+    isLoading,
+    createTask: createTask.mutate,
+    isCreating: createTask.isPending,
+  };
+}
+```
+
+#### **🏗️ Best Practices**
+
+**Input Validation:**
+
+- Always use Zod for input validation
+- Reuse Zod schemas from centralized types when possible
+- Provide clear error messages in validation rules
+
+```typescript
+.input(z.object({
+  title: z.string().min(1, 'Title is required').max(255),
+  priority: z.enum(['low', 'medium', 'high']).default('medium'),
+}))
+```
+
+**Authorization & Security:**
+
+- Always verify data ownership in mutations
+- Use `protectedProcedure` for authenticated endpoints
+- Use `publicProcedure` only for truly public data
+
+```typescript
+// Verify ownership before updates
+const existingTask = await db
+  .select()
+  .from(tasks)
+  .where(and(eq(tasks.id, input.id), eq(tasks.clerkUserId, ctx.userId)))
+  .limit(1);
+
+if (existingTask.length === 0) {
+  throw new TRPCError({ code: 'NOT_FOUND', message: 'Task not found' });
+}
+```
+
+**Error Handling:**
+
+```typescript
+// Use appropriate error codes
+throw new TRPCError({
+  code: 'NOT_FOUND',        // 404
+  // code: 'UNAUTHORIZED',   // 401
+  // code: 'FORBIDDEN',      // 403
+  // code: 'BAD_REQUEST',    // 400
+  // code: 'INTERNAL_SERVER_ERROR', // 500
+  message: 'Resource not found',
+});
+```
+
+**Type Safety:**
+
+- Export router types for client usage
+- Use `inferRouterOutputs` for response types
+- Leverage end-to-end type safety
+
+```typescript
+import type { AppRouter } from '@/lib/trpc/router';
+import type { inferRouterOutputs } from '@trpc/server';
+
+type RouterOutput = inferRouterOutputs<AppRouter>;
+type Task = RouterOutput['tasks']['list'][number];
+```
+
+**Performance:**
+
+- Use batching for multiple queries (enabled by default with httpBatchLink)
+- Set appropriate staleTime for queries
+- Implement pagination for large datasets
+- Use select to transform data when needed
+
+#### **🚫 When NOT to Use tRPC**
+
+- **External API integrations** - Use direct fetch/axios
+- **Webhooks** - Use standard Next.js API routes
+- **File uploads** - Use dedicated upload endpoints
+- **Public APIs** - Consider REST for external consumers
+
+#### **✅ When TO Use tRPC**
+
+- **CRUD operations** - All database operations
+- **Internal APIs** - Any communication between frontend and backend
+- **Type-safe mutations** - Form submissions, updates, deletes
+- **Protected endpoints** - Authenticated user actions
+
 ### File Upload & Storage (Vercel Blob)
 
 - **Configuration**: Use `./lib/storage.ts` utilities
