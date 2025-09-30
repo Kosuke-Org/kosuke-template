@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/sync-subscriptions?secret=$CRON_SECRET",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
