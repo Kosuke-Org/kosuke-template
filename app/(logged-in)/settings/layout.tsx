@@ -24,7 +24,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
         </div>
 
         <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="!grid !w-full !grid-cols-5">
+          <TabsList className="grid grid-cols-5 w-fit">
             <TabsTrigger value="account" className="flex items-center gap-1.5">
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Account</span>
