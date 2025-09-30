@@ -13,24 +13,22 @@ describe('useFormSubmission', () => {
   const wrapper = createQueryWrapper();
 
   it('should handle successful form submission', async () => {
+    const testData = { name: 'John' };
     const mockOnSubmit = jest.fn().mockResolvedValue(undefined);
     const { result } = renderHook(
       () =>
         useFormSubmission({
-          onSubmit: mockOnSubmit,
+          onSubmit: () => mockOnSubmit(testData),
           successMessage: 'Success!',
         }),
       { wrapper }
     );
 
-    const testData = { name: 'John' };
-
     await act(async () => {
       await result.current.handleSubmit(testData);
     });
 
-    expect(mockOnSubmit).toHaveBeenCalled();
-    expect(mockOnSubmit.mock.calls[0][0]).toEqual(testData);
+    expect(mockOnSubmit).toHaveBeenCalledWith(testData);
     expect(result.current.isSubmitting).toBe(false);
     expect(result.current.error).toBeNull();
   });
