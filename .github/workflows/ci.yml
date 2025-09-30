@@ -5,8 +5,8 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  test:
-    name: Test and Lint
+  test-nextjs:
+    name: Test and Lint Next.js
     runs-on: ubuntu-latest
 
     steps:
@@ -37,3 +37,42 @@ jobs:
 
       - name: Build application
         run: pnpm run build
+
+  test-engine:
+    name: Test and Lint Engine Service
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./engine
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Add UV to PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Create virtual environment
+        run: uv venv
+
+      - name: Install dependencies
+        run: uv pip install -e ".[dev]"
+
+      - name: Run Ruff linting
+        run: uv run ruff check .
+
+      - name: Run Ruff formatting check
+        run: uv run ruff format --check .
+
+      - name: Run MyPy type checking
+        run: uv run mypy .
+
+      - name: Run tests
+        run: uv run pytest -v --cov=. --cov-report=term-missing

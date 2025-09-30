@@ -1,27 +1,86 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Run linting and store the exit code
-pnpm run lint
-if [ $? -ne 0 ]; then
-  echo "❌ Linting failed. Please fix the errors before committing."
-  exit 1
+# Check if we have Python files in the commit
+python_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(py)$' | grep '^engine/' || true)
+
+# Run Python checks if there are Python files in engine/
+if [ -n "$python_files" ]; then
+  echo "🐍 Running Python code quality checks for engine/..."
+
+  # Check if UV is installed
+  if ! command -v uv &> /dev/null; then
+    echo "❌ UV is not installed. Please install it first:"
+    echo "   curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
+  fi
+
+  # Check if virtual environment exists
+  if [ -f "./engine/.venv/bin/activate" ]; then
+    cd engine
+
+    echo "  → Running ruff linting..."
+    uv run ruff check . --fix
+    if [ $? -ne 0 ]; then
+      echo "❌ Python linting failed. Please fix the errors before committing."
+      cd ..
+      exit 1
+    fi
+
+    echo "  → Running ruff formatting..."
+    uv run ruff format .
+
+    echo "  → Running mypy type checking..."
+    uv run mypy .
+    if [ $? -ne 0 ]; then
+      echo "❌ Python type checking failed. Please fix the errors before committing."
+      cd ..
+      exit 1
+    fi
+
+    cd ..
+    echo "✅ Python checks passed!"
+  else
+    echo "⚠️  Python virtual environment not found at engine/.venv"
+    echo "   Run: cd engine && uv sync && uv pip install -e \".[dev]\""
+    exit 1
+  fi
 fi
 
-# Run tests
-pnpm run test
-if [ $? -ne 0 ]; then
-  echo "❌ Tests failed. Please fix the failing tests before committing."
-  exit 1
+# Check if we have TypeScript/JavaScript files in the commit
+js_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|jsx|ts|tsx)$' | grep -v '^engine/' || true)
+
+# Run Node.js checks if there are JS/TS files
+if [ -n "$js_files" ]; then
+  echo "🌐 Running Next.js code quality checks..."
+
+  # Run linting
+  echo "🔍 Running ESLint..."
+  pnpm run lint
+  if [ $? -ne 0 ]; then
+    echo "❌ Linting failed. Please fix the errors before committing."
+    exit 1
+  fi
+
+  # Run tests
+  echo "🧪 Running tests..."
+  pnpm test
+  if [ $? -ne 0 ]; then
+    echo "❌ Tests failed. Please fix the failing tests before committing."
+    exit 1
+  fi
+
+  # Run formatting
+  echo "💅 Running formatting..."
+  pnpm run format
+
+  # Check if any files were modified by formatting
+  if [ -n "$(git diff)" ]; then
+    echo "❌ Formatting changed some files. Please stage the changes and try committing again."
+    exit 1
+  fi
+
+  echo "✅ Next.js checks passed!"
 fi
 
-# Run formatting
-pnpm run format
-
-# Check if any files were modified by formatting
-if [ -n "$(git diff)" ]; then
-  echo "❌ Formatting changed some files. Please stage the changes and try committing again."
-  exit 1
-fi
-
-echo "✅ Pre-commit checks passed!"
+echo "✅ All pre-commit checks passed!"
