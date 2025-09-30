@@ -1,7 +1,7 @@
 version: 2
 updates:
   # Enable version updates for npm
-  - package-ecosystem: 'npm'
+  - package-ecosystem: 'pnpm'
     # Look for `package.json` and `lock` files in the `root` directory
     directory: '/'
     # Check for updates once a week
@@ -9,7 +9,7 @@ updates:
       interval: 'weekly'
     # Specify labels for npm pull requests
     labels:
-      - 'npm'
+      - 'pnpm'
       - 'dependencies'
     # Set reviewers for pull requests
     reviewers:

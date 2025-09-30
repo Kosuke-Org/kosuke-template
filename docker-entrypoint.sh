@@ -6,7 +6,7 @@ DEV_MODE=${DEV_MODE:-true}
 
 # Print system information
 echo "🚀 Node version: $(node -v)"
-echo "📦 NPM version: $(npm -v)"
+echo "📦 PNPM version: $(pnpm -v)"
 
 # Check if package.json exists (should exist from GitHub template)
 if [ ! -f "package.json" ]; then
@@ -18,12 +18,12 @@ fi
 echo "📁 Working directory: $(pwd)"
 
 echo "📦 Installing dependencies..."
-npm install --silent  
+pnpm install --silent
 echo "📦 Dependencies installed"
 
 # Run database migrations/push schema
 echo "🗄️ Setting up database schema..."
-npm run db:push || {
+pnpm run db:push || {
   echo "⚠️ Database setup failed. Make sure PostgreSQL is running and accessible."
   echo "   You can start it with: docker compose up -d postgres"
 }

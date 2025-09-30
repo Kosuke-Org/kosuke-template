@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:email": "concurrently \"npm run dev\" \"npm run email:dev\"",
+    "dev:email": "concurrently \"pnpm run dev\" \"pnpm run email:dev\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.25.0",
+    "@clerk/types": "^4.89.0",
     "@hookform/resolvers": "^5.1.1",
     "@polar-sh/nextjs": "^0.4.2",
     "@polar-sh/sdk": "^0.34.3",
@@ -106,7 +107,6 @@
     "@types/jest": "^29.5.0",
     "@types/node": "^20",
     "@types/react": "^19",
-    "@types/react-day-picker": "^5.2.1",
     "@types/react-dom": "^19",
     "concurrently": "^9.2.0",
     "eslint": "^9",
@@ -123,5 +123,9 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.19.3",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": "10"
   }
 }
