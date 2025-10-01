@@ -239,8 +239,11 @@ export const organizationsRouter = router({
         });
       }
 
+      // Create File object from buffer
+      const file = new File([buffer], input.fileName, { type: input.mimeType });
+
       // Upload to Vercel Blob
-      const logoUrl = await uploadProfileImage(buffer, input.fileName, input.mimeType);
+      const logoUrl = await uploadProfileImage(file, org.id);
 
       // Update database
       await db
@@ -251,11 +254,15 @@ export const organizationsRouter = router({
         })
         .where(eq(organizations.id, org.id));
 
-      // Update Clerk organization
+      // Update Clerk organization metadata (store custom logo URL)
       const clerk = await clerkClient();
+      const clerkOrg = await clerk.organizations.getOrganization({
+        organizationId: org.clerkOrgId,
+      });
+
       await clerk.organizations.updateOrganization(org.clerkOrgId, {
         publicMetadata: {
-          ...org.settings,
+          ...clerkOrg.publicMetadata,
           customLogoUrl: logoUrl,
         },
       });
@@ -306,6 +313,23 @@ export const organizationsRouter = router({
           updatedAt: new Date(),
         })
         .where(eq(organizations.id, org.id));
+
+      // Remove from Clerk organization metadata
+      const clerk = await clerkClient();
+      const clerkOrg = await clerk.organizations.getOrganization({
+        organizationId: org.clerkOrgId,
+      });
+
+      // Remove customLogoUrl from metadata
+      const metadata = clerkOrg.publicMetadata || {};
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { customLogoUrl, ...remainingMetadata } = metadata as Record<string, unknown> & {
+        customLogoUrl?: string;
+      };
+
+      await clerk.organizations.updateOrganization(org.clerkOrgId, {
+        publicMetadata: remainingMetadata,
+      });
 
       return {
         success: true,

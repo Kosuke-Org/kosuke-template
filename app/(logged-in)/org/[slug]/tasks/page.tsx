@@ -6,12 +6,11 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus, Building2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -162,10 +161,6 @@ export default function OrgTasksPage() {
           <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
           <p className="text-muted-foreground">Manage tasks for {activeOrganization.name}</p>
         </div>
-        <Badge variant="outline" className="gap-1.5">
-          <Building2 className="h-3 w-3" />
-          {activeOrganization.slug}
-        </Badge>
       </div>
 
       {/* Tabs & Action Bar */}

@@ -7,7 +7,12 @@ import { db } from '@/lib/db';
 import { organizations, orgMemberships, activityLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { clerkClient } from '@clerk/nextjs/server';
-import { generateUniqueOrgSlug, getOrgByClerkId, getMembershipByClerkId } from './utils';
+import {
+  generateUniqueOrgSlug,
+  getOrgByClerkId,
+  getOrgById,
+  getMembershipByClerkId,
+} from './utils';
 import type { Organization, OrgMembership, NewOrganization, NewOrgMembership } from '@/lib/types';
 import { ActivityType } from '@/lib/db/schema';
 
@@ -65,7 +70,7 @@ export async function syncOrganizationFromClerk(clerkOrgId: string): Promise<Org
       clerkOrgId: clerkOrg.id,
       name: clerkOrg.name,
       slug: clerkOrg.slug || (await generateUniqueOrgSlug(clerkOrg.name)),
-      logoUrl: clerkOrg.imageUrl || null,
+      logoUrl: (clerkOrg.publicMetadata?.customLogoUrl as string) || null, // Use custom logo from metadata, never Clerk's imageUrl
       settings: JSON.stringify(clerkOrg.publicMetadata || {}),
       updatedAt: new Date(),
     };
@@ -119,7 +124,7 @@ export async function syncOrgFromWebhook(data: ClerkOrgWebhook): Promise<Organiz
       clerkOrgId: data.id,
       name: data.name,
       slug: data.slug || (await generateUniqueOrgSlug(data.name)),
-      logoUrl: data.image_url || null,
+      logoUrl: (data.public_metadata?.customLogoUrl as string) || null, // Use custom logo from metadata, never Clerk's image_url
       settings: JSON.stringify(data.public_metadata || {}),
       updatedAt: new Date(),
     };
@@ -161,22 +166,41 @@ export async function syncOrgFromWebhook(data: ClerkOrgWebhook): Promise<Organiz
 
 /**
  * Sync membership from Clerk API
+ * Note: Clerk doesn't provide a direct method to get a single membership by ID
+ * This function fetches the organization's memberships and finds the specific one
  */
 export async function syncMembershipFromClerk(clerkMembershipId: string): Promise<OrgMembership> {
   try {
     console.log('🔄 Syncing membership from Clerk:', clerkMembershipId);
 
-    // Fetch membership from Clerk
+    // First, check if membership exists locally to get the organization ID
+    const existingMembership = await getMembershipByClerkId(clerkMembershipId);
+
+    if (!existingMembership) {
+      throw new Error('Membership not found locally. Cannot sync without organization context.');
+    }
+
+    const localOrg = await getOrgById(existingMembership.organizationId);
+
+    if (!localOrg) {
+      throw new Error('Organization not found locally');
+    }
+
+    // Fetch all memberships for the organization from Clerk
     const client = await clerkClient();
-    const clerkMembership = await client.organizations.getOrganizationMembership({
-      organizationMembershipId: clerkMembershipId,
+    const memberships = await client.organizations.getOrganizationMembershipList({
+      organizationId: localOrg.clerkOrgId,
     });
 
-    // Ensure organization exists in local database
-    const org = await syncOrganizationFromClerk(clerkMembership.organization.id);
+    // Find the specific membership
+    const clerkMembership = memberships.data.find((m) => m.id === clerkMembershipId);
 
-    // Check if membership already exists
-    const existingMembership = await getMembershipByClerkId(clerkMembershipId);
+    if (!clerkMembership || !clerkMembership.publicUserData) {
+      throw new Error(`Membership ${clerkMembershipId} not found in Clerk or missing user data`);
+    }
+
+    // Ensure organization data is up-to-date
+    const org = await syncOrganizationFromClerk(clerkMembership.organization.id);
 
     const membershipData: Partial<NewOrgMembership> = {
       clerkMembershipId: clerkMembership.id,
@@ -186,32 +210,19 @@ export async function syncMembershipFromClerk(clerkMembershipId: string): Promis
       invitedBy: null, // Not available from API
     };
 
-    if (existingMembership) {
-      // Update existing membership
-      await db
-        .update(orgMemberships)
-        .set(membershipData)
-        .where(eq(orgMemberships.id, existingMembership.id));
+    // Update existing membership
+    await db
+      .update(orgMemberships)
+      .set(membershipData)
+      .where(eq(orgMemberships.id, existingMembership.id));
 
-      const [updated] = await db
-        .select()
-        .from(orgMemberships)
-        .where(eq(orgMemberships.id, existingMembership.id))
-        .limit(1);
+    const [updated] = await db
+      .select()
+      .from(orgMemberships)
+      .where(eq(orgMemberships.id, existingMembership.id))
+      .limit(1);
 
-      return updated;
-    } else {
-      // Create new membership
-      const [newMembership] = await db
-        .insert(orgMemberships)
-        .values({
-          ...(membershipData as NewOrgMembership),
-          joinedAt: new Date(),
-        })
-        .returning();
-
-      return newMembership;
-    }
+    return updated;
   } catch (error) {
     console.error('💥 Error syncing membership from Clerk:', error);
     throw error;
