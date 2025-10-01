@@ -23,7 +23,7 @@ export interface ClerkWebhookEvent {
 
 // Local User Types (migrated from lib/auth/types.ts)
 export interface LocalUser {
-  id: number;
+  id: string;
   clerkUserId: string;
   email: string;
   displayName: string | null;
@@ -34,7 +34,7 @@ export interface LocalUser {
 }
 
 export interface UserSyncResult {
-  id: number;
+  id: string;
   clerkUserId: string;
   wasUpdated?: boolean;
 }
@@ -100,12 +100,7 @@ export interface UpdateUserData
   lastSyncedAt?: Date;
 }
 
-// User sync types
-export interface UserSyncResult {
-  id: number;
-  clerkUserId: string;
-  wasUpdated?: boolean;
-}
+// User sync types (duplicate removed - already defined above)
 
 export interface UserSyncOptions {
   forceSync?: boolean;
