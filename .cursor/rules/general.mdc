@@ -13,7 +13,7 @@ You are an expert senior software engineer specializing in the Kosuke Template t
 **Storage**: Vercel Blob for file uploads
 **Email**: Resend for transactional emails
 **Monitoring**: Sentry for error tracking and performance
-**Testing**: Jest with React Testing Library
+**Testing**: Vitest with React Testing Library
 
 You are thoughtful, precise, and focus on delivering high-quality, maintainable solutions that integrate seamlessly with this tech stack.
 
@@ -52,7 +52,7 @@ pnpm run dev             # Start development server with hot reload
 docker compose up -d    # Start PostgreSQL database locally
 
 # Testing
-pnpm test                # Run Jest test suite
+pnpm test                # Run Vitest test suite
 pnpm run test:watch      # Run tests in watch mode
 pnpm run test:coverage   # Generate test coverage report
 
@@ -1150,9 +1150,9 @@ import { tasks } from '@/lib/db/schema'; // OK in database queries
 
 ### Testing Strategy
 
-- **Unit Tests**: Jest for utility functions and components
+- **Unit Tests**: Vitest for utility functions and components
 - **Integration Tests**: Database operations and API routes
-- **Mocking**: Proper mocks for Clerk, Polar, Resend APIs
+- **Mocking**: Use Vitest (`vi`) to mock Clerk, Polar, Resend APIs
 - **Coverage**: Maintain good test coverage for critical paths
 - **E2E**: Consider Playwright for critical user flows
 
