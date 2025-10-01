@@ -13,6 +13,7 @@ import { Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -79,34 +80,42 @@ export function OrgGeneralForm({ organization }: OrgGeneralFormProps) {
   const hasChanges = form.watch('name') !== organization.name;
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Organization Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Acme Inc." {...field} disabled={isSubmitting} />
-              </FormControl>
-              <FormDescription>This is your organization&apos;s visible name.</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <>
+      <CardHeader>
+        <CardTitle>Organization Details</CardTitle>
+        <CardDescription>Update your organization&apos;s information</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Organization Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Acme Inc." {...field} disabled={isSubmitting} />
+                  </FormControl>
+                  <FormDescription>This is your organization&apos;s visible name.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <Button type="submit" disabled={isSubmitting || !hasChanges}>
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            'Save Changes'
-          )}
-        </Button>
-      </form>
-    </Form>
+            <Button type="submit" disabled={isSubmitting || !hasChanges}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+    </>
   );
 }

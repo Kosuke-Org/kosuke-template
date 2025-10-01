@@ -10,6 +10,7 @@ import { Upload, Loader2, X } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
 import { fileToBase64, getInitials } from '@/lib/utils';
@@ -125,76 +126,78 @@ export function OrgLogoUpload({ organization }: OrgLogoUploadProps) {
   const orgInitials = getInitials(organization.name);
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h4 className="text-sm font-medium">Organization Logo</h4>
-        <p className="text-sm text-muted-foreground">Update your organization&apos;s logo image</p>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <Avatar className="h-20 w-20 rounded-lg">
-          {organization.logoUrl && (
-            <AvatarImage src={organization.logoUrl} alt={organization.name} />
-          )}
-          <AvatarFallback className="rounded-lg bg-primary text-primary-foreground text-2xl">
-            {orgInitials}
-          </AvatarFallback>
-        </Avatar>
-
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading || deleteLogo.isPending}
-          >
-            {isUploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Logo
-              </>
+    <>
+      <CardHeader>
+        <CardTitle>Organization Logo</CardTitle>
+        <CardDescription>Update your organization&apos;s logo image</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-20 w-20 rounded-lg">
+            {organization.logoUrl && (
+              <AvatarImage src={organization.logoUrl} alt={organization.name} />
             )}
-          </Button>
+            <AvatarFallback className="rounded-lg bg-primary text-primary-foreground text-2xl">
+              {orgInitials}
+            </AvatarFallback>
+          </Avatar>
 
-          {organization.logoUrl && (
+          <div className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={handleDelete}
+              onClick={() => fileInputRef.current?.click()}
               disabled={isUploading || deleteLogo.isPending}
             >
-              {deleteLogo.isPending ? (
+              {isUploading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Removing...
+                  Uploading...
                 </>
               ) : (
                 <>
-                  <X className="mr-2 h-4 w-4" />
-                  Remove
+                  <Upload className="mr-2 h-4 w-4" />
+                  Upload Logo
                 </>
               )}
             </Button>
-          )}
+
+            {organization.logoUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDelete}
+                disabled={isUploading || deleteLogo.isPending}
+              >
+                {deleteLogo.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Removing...
+                  </>
+                ) : (
+                  <>
+                    <X className="mr-2 h-4 w-4" />
+                    Remove
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/svg+xml"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
         </div>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/svg+xml"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-      </div>
-
-      <p className="text-xs text-muted-foreground">
-        Recommended: Square image, at least 256x256px. Max size: 2MB. Formats: JPEG, PNG, WebP, SVG.
-      </p>
-    </div>
+        <p className="text-xs text-muted-foreground">
+          Recommended: Square image, at least 256x256px. Max size: 2MB. Formats: JPEG, PNG, WebP,
+          SVG.
+        </p>
+      </CardContent>
+    </>
   );
 }
