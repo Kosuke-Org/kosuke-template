@@ -464,15 +464,121 @@ const query = useQuery<UserProfile, Error>({
 
 ```plaintext
 lib/trpc/
-├── init.ts          # tRPC initialization, context, and procedures
-├── router.ts        # Main app router combining all sub-routers
+├── init.ts          # tRPC initialization, context, and procedures (SERVER-ONLY)
+├── router.ts        # Main app router combining all sub-routers (SERVER-ONLY)
 ├── client.ts        # Client-side tRPC configuration
 ├── server.ts        # Server-side tRPC configuration
-├── routers/         # Feature-specific routers
+├── schemas/         # Zod schemas (CLIENT-SAFE - no server dependencies!)
+│   ├── tasks.ts     # Task validation schemas
+│   ├── user.ts      # User validation schemas
+│   └── ...
+├── routers/         # Feature-specific routers (SERVER-ONLY)
 │   ├── tasks.ts
 │   ├── user.ts
 │   └── ...
-└── index.ts         # Exports
+└── index.ts         # Exports (re-exports client-safe schemas)
+```
+
+#### **🔒 Schema Separation - CRITICAL**
+
+**ALWAYS separate Zod schemas from tRPC routers to prevent "server-only" import errors in client components.**
+
+**The Problem:**
+Client components importing schemas from router files will transitively import server-only code (`auth()` from Clerk, database connections, etc.), causing build/runtime errors.
+
+**The Solution:**
+Create a dedicated `lib/trpc/schemas/` directory with **zero server dependencies** - only Zod imports allowed!
+
+```typescript
+// ✅ CORRECT - lib/trpc/schemas/tasks.ts (CLIENT-SAFE)
+import { z } from 'zod';
+
+export const createTaskSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(255),
+  description: z.string().optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
+  dueDate: z.date().optional(),
+});
+
+export const updateTaskSchema = z.object({
+  id: z.number(),
+  title: z.string().min(1).max(255).optional(),
+  description: z.string().nullable().optional(),
+  completed: z.boolean().optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
+  dueDate: z.date().nullable().optional(),
+});
+```
+
+**Server Usage (Router):**
+
+```typescript
+// lib/trpc/routers/tasks.ts (SERVER-ONLY)
+import { router, protectedProcedure } from '../init';
+import { createTaskSchema, updateTaskSchema } from '../schemas/tasks';
+
+export const tasksRouter = router({
+  create: protectedProcedure.input(createTaskSchema).mutation(async ({ ctx, input }) => {
+    // Implementation
+  }),
+
+  update: protectedProcedure.input(updateTaskSchema).mutation(async ({ ctx, input }) => {
+    // Implementation
+  }),
+});
+```
+
+**Client Usage (Forms/Components):**
+
+```typescript
+// app/(logged-in)/tasks/components/task-dialog.tsx (CLIENT)
+'use client';
+
+import { createTaskSchema } from '@/lib/trpc/schemas/tasks';
+// or via barrel export
+import { createTaskSchema } from '@/lib/trpc';
+
+type TaskFormValues = z.infer<typeof createTaskSchema>;
+
+const form = useForm<TaskFormValues>({
+  resolver: zodResolver(createTaskSchema), // Reuse the exact schema!
+});
+```
+
+**Re-export for Convenience:**
+
+```typescript
+// lib/trpc/index.ts
+export { trpc } from './client';
+export { createCaller } from './server';
+export type { AppRouter } from './router';
+
+// Re-export schemas for convenience (client-safe, no server dependencies)
+export * from './schemas/tasks';
+export * from './schemas/user';
+```
+
+**Benefits:**
+
+- ✅ Single source of truth - schemas defined once
+- ✅ Client-safe imports - no server-only code leaks
+- ✅ Type safety - same schemas validate both client forms and server inputs
+- ✅ DRY principle - zero duplication
+- ✅ Runtime validation - Zod validates at both layers
+
+**❌ WRONG - Importing from router in client code:**
+
+```typescript
+// ❌ NO! This will cause "server-only cannot be imported" error
+import { createTaskSchema } from '@/lib/trpc/routers/tasks';
+// Router → init.ts → auth() from Clerk (SERVER-ONLY!) → ERROR
+```
+
+**✅ CORRECT - Import from schemas directory:**
+
+```typescript
+// ✅ YES! Schemas have zero server dependencies
+import { createTaskSchema } from '@/lib/trpc/schemas/tasks';
 ```
 
 #### **🔧 Core Concepts**
@@ -500,24 +606,16 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
 ```typescript
 // lib/trpc/routers/tasks.ts
 import { router, protectedProcedure } from '../init';
-import { z } from 'zod';
+import { createTaskSchema, taskListFiltersSchema } from '../schemas/tasks';
 
 export const tasksRouter = router({
-  list: protectedProcedure
-    .input(z.object({ completed: z.boolean().optional() }).optional())
-    .query(async ({ ctx, input }) => {
-      // Implementation
-    }),
+  list: protectedProcedure.input(taskListFiltersSchema).query(async ({ ctx, input }) => {
+    // Implementation
+  }),
 
-  create: protectedProcedure
-    .input(z.object({
-      title: z.string().min(1).max(255),
-      description: z.string().optional(),
-      priority: z.enum(['low', 'medium', 'high']).default('medium'),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      // Implementation
-    }),
+  create: protectedProcedure.input(createTaskSchema).mutation(async ({ ctx, input }) => {
+    // Implementation
+  }),
 });
 ```
 
@@ -579,7 +677,11 @@ export function useTasks(filters?: { completed?: boolean }) {
   const { toast } = useToast();
 
   // Query
-  const { data: tasks, isLoading, refetch } = trpc.tasks.list.useQuery(filters, {
+  const {
+    data: tasks,
+    isLoading,
+    refetch,
+  } = trpc.tasks.list.useQuery(filters, {
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
@@ -646,7 +748,7 @@ if (existingTask.length === 0) {
 ```typescript
 // Use appropriate error codes
 throw new TRPCError({
-  code: 'NOT_FOUND',        // 404
+  code: 'NOT_FOUND', // 404
   // code: 'UNAUTHORIZED',   // 401
   // code: 'FORBIDDEN',      // 403
   // code: 'BAD_REQUEST',    // 400
@@ -678,7 +780,8 @@ type TaskListFilters = RouterInput['tasks']['list'];
 type TaskWithOverdue = RouterOutput['tasks']['list'][number];
 
 // ❌ WRONG - Manual type definitions that duplicate router
-interface CreateTaskInput {  // NO! This duplicates router input
+interface CreateTaskInput {
+  // NO! This duplicates router input
   title: string;
   description?: string;
   priority: 'low' | 'medium' | 'high';
@@ -705,11 +808,13 @@ import type { TaskPriority } from '@/lib/db/schema';
 export const tasksRouter = router({
   list: protectedProcedure
     .input(
-      z.object({
-        completed: z.boolean().optional(),
-        priority: z.enum(['low', 'medium', 'high']).optional(),
-        searchQuery: z.string().optional(), // Server-side search
-      }).optional()
+      z
+        .object({
+          completed: z.boolean().optional(),
+          priority: z.enum(['low', 'medium', 'high']).optional(),
+          searchQuery: z.string().optional(), // Server-side search
+        })
+        .optional()
     )
     .query(async ({ ctx, input }) => {
       const conditions = [eq(tasks.clerkUserId, ctx.userId)];
@@ -722,15 +827,13 @@ export const tasksRouter = router({
       // Server-side search using SQL LIKE
       if (input?.searchQuery && input.searchQuery.trim()) {
         const searchTerm = `%${input.searchQuery.trim()}%`;
-        conditions.push(
-          or(
-            like(tasks.title, searchTerm),
-            like(tasks.description, searchTerm)
-          )!
-        );
+        conditions.push(or(like(tasks.title, searchTerm), like(tasks.description, searchTerm))!);
       }
 
-      return await db.select().from(tasks).where(and(...conditions));
+      return await db
+        .select()
+        .from(tasks)
+        .where(and(...conditions));
     }),
 });
 
@@ -744,13 +847,12 @@ const { tasks } = useTasks({
 // ❌ WRONG - Client-side filtering (slow, inefficient)
 const { tasks } = useTasks(); // Fetches ALL tasks
 const filteredTasks = useMemo(() => {
-  return tasks.filter(t => 
-    t.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  return tasks.filter((t) => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
 }, [tasks, searchQuery]); // NO! This loads all data then filters in browser
 ```
 
 **Why Server-Side Filtering?**
+
 - ✅ Better performance - only matching data sent over network
 - ✅ Scales with large datasets - database indexes are fast
 - ✅ Lower bandwidth usage - reduced data transfer
@@ -785,6 +887,7 @@ const handleUpload = async (file: File) => {
 ```
 
 **File Upload with tRPC:**
+
 - tRPC doesn't support multipart form data natively
 - Solution: Convert files to base64 strings for transmission
 - Use `fileToBase64()` helper from `@/lib/utils`

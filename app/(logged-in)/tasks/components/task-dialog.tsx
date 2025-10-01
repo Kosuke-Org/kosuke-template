@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { createTaskSchema } from '@/lib/trpc/schemas/tasks';
 import {
   Dialog,
   DialogContent,
@@ -36,14 +37,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 
-const taskFormSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(255),
-  description: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high']),
-  dueDate: z.date().optional().nullable(),
-});
-
-type TaskFormValues = z.infer<typeof taskFormSchema>;
+// Reuse the exact Zod schema from tRPC router - single source of truth!
+type TaskFormValues = z.infer<typeof createTaskSchema>;
 
 interface TaskDialogProps {
   open: boolean;
@@ -63,12 +58,12 @@ export function TaskDialog({
   isSubmitting,
 }: TaskDialogProps) {
   const form = useForm<TaskFormValues>({
-    resolver: zodResolver(taskFormSchema),
+    resolver: zodResolver(createTaskSchema),
     defaultValues: {
       title: initialValues?.title ?? '',
       description: initialValues?.description ?? '',
       priority: initialValues?.priority ?? 'medium',
-      dueDate: initialValues?.dueDate ?? null,
+      dueDate: initialValues?.dueDate ?? undefined,
     },
   });
 
@@ -79,7 +74,7 @@ export function TaskDialog({
         title: initialValues?.title ?? '',
         description: initialValues?.description ?? '',
         priority: initialValues?.priority ?? 'medium',
-        dueDate: initialValues?.dueDate ?? null,
+        dueDate: initialValues?.dueDate ?? undefined,
       });
     }
   }, [open, initialValues, form]);

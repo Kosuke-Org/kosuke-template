@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Plus } from 'lucide-react';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ import { useTasks } from '@/hooks/use-tasks';
 import { TaskItem } from '@/app/(logged-in)/tasks/components/task-item';
 import { TaskDialog } from '@/app/(logged-in)/tasks/components/task-dialog';
 import type { TaskPriority } from '@/lib/types';
+import { createTaskSchema, updateTaskSchema } from '@/lib/trpc/schemas/tasks';
 
 type TaskFilter = 'all' | 'active' | 'completed';
 
@@ -109,34 +111,12 @@ export default function TasksPage() {
     [tasks, selectedTaskId]
   );
 
-  const handleCreateTask = async (values: {
-    title: string;
-    description?: string;
-    priority: 'low' | 'medium' | 'high';
-    dueDate?: Date | null;
-  }) => {
-    await createTask({
-      title: values.title,
-      description: values.description,
-      priority: values.priority,
-      dueDate: values.dueDate ?? undefined,
-    });
+  const handleCreateTask = async (values: z.infer<typeof createTaskSchema>) => {
+    await createTask(values);
   };
 
-  const handleUpdateTask = async (values: {
-    title: string;
-    description?: string;
-    priority: 'low' | 'medium' | 'high';
-    dueDate?: Date | null;
-  }) => {
-    if (!selectedTaskId) return;
-    await updateTask({
-      id: selectedTaskId,
-      title: values.title,
-      description: values.description,
-      priority: values.priority,
-      dueDate: values.dueDate ?? undefined,
-    });
+  const handleUpdateTask = async (values: z.infer<typeof updateTaskSchema>) => {
+    await updateTask(values);
   };
 
   const handleDeleteTask = async () => {
@@ -250,14 +230,17 @@ export default function TasksPage() {
       <TaskDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
-        onSubmit={handleUpdateTask}
+        onSubmit={async (values) => {
+          if (!selectedTaskId) return;
+          await handleUpdateTask({ id: selectedTaskId, ...values });
+        }}
         initialValues={
           selectedTask
             ? {
                 title: selectedTask.title,
-                description: selectedTask.description ?? '',
+                description: selectedTask.description ?? undefined,
                 priority: selectedTask.priority,
-                dueDate: selectedTask.dueDate ?? null,
+                dueDate: selectedTask.dueDate ?? undefined,
               }
             : undefined
         }
