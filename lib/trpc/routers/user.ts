@@ -3,7 +3,6 @@
  * Handles user settings and profile management
  */
 
-import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { clerkClient } from '@clerk/nextjs/server';
@@ -12,12 +11,11 @@ import { users } from '@/lib/db/schema';
 import { router, protectedProcedure } from '../init';
 import { uploadProfileImage, deleteProfileImage } from '@/lib/storage';
 import { syncUserFromClerk } from '@/lib/auth';
-
-const notificationSettingsSchema = z.object({
-  emailNotifications: z.boolean(),
-  marketingEmails: z.boolean(),
-  securityAlerts: z.boolean(),
-});
+import {
+  notificationSettingsSchema,
+  uploadProfileImageSchema,
+  updateDisplayNameSchema,
+} from '../schemas/user';
 
 export const userRouter = router({
   /**
@@ -72,13 +70,7 @@ export const userRouter = router({
    * Upload profile image
    */
   uploadProfileImage: protectedProcedure
-    .input(
-      z.object({
-        fileBase64: z.string(),
-        fileName: z.string(),
-        mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
-      })
-    )
+    .input(uploadProfileImageSchema)
     .mutation(async ({ input, ctx }) => {
       // Validate file size (base64 is ~33% larger)
       const estimatedSize = (input.fileBase64.length * 3) / 4;
@@ -157,11 +149,7 @@ export const userRouter = router({
    * Update user display name
    */
   updateDisplayName: protectedProcedure
-    .input(
-      z.object({
-        displayName: z.string().min(1, 'Display name is required').max(100),
-      })
-    )
+    .input(updateDisplayNameSchema)
     .mutation(async ({ input, ctx }) => {
       const clerk = await clerkClient();
 
