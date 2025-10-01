@@ -83,7 +83,7 @@ export default function TasksPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   // Server-side filtering with tRPC - no client-side filtering needed! 🚀
   const {
@@ -126,12 +126,12 @@ export default function TasksPage() {
     setSelectedTaskId(null);
   };
 
-  const handleEditClick = (id: number) => {
+  const handleEditClick = (id: string) => {
     setSelectedTaskId(id);
     setEditDialogOpen(true);
   };
 
-  const handleDeleteClick = (id: number) => {
+  const handleDeleteClick = (id: string) => {
     setSelectedTaskId(id);
     setDeleteDialogOpen(true);
   };

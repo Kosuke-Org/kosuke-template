@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
  */
 async function syncUserFromWebhook(
   webhookUser: ClerkWebhookUser
-): Promise<{ id: number; clerkUserId: string }> {
+): Promise<{ id: string; clerkUserId: string }> {
   try {
     console.log('🔄 Syncing user from webhook:', webhookUser.id);
 
@@ -132,7 +132,7 @@ async function syncUserFromWebhook(
       updatedAt: new Date(),
     };
 
-    let user: { id: number; clerkUserId: string };
+    let user: { id: string; clerkUserId: string };
 
     if (existingUser) {
       console.log('👤 User exists, checking for updates...');
