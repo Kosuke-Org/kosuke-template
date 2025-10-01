@@ -21,6 +21,8 @@ permissions:
 jobs:
   update-shadcn-components:
     runs-on: ubuntu-latest
+    env:
+      HUSKY: 0  # Disable Husky hooks in CI - we run checks explicitly
 
     steps:
       - name: Checkout repository
@@ -57,7 +59,7 @@ jobs:
       - name: Lint code with ESLint
         run: |
           echo "🔍 Linting code with ESLint..."
-          pnpm run lint -- --fix
+          pnpm run lint
 
       - name: Check for file changes
         id: check-changes

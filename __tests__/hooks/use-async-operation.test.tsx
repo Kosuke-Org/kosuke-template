@@ -1,16 +1,17 @@
 import { renderHook, act } from '@testing-library/react';
 import { useAsyncOperation } from '@/hooks/use-async-operation';
+import { vi } from 'vitest';
 
 // Mock useToast hook
-jest.mock('@/hooks/use-toast', () => ({
+vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
-    toast: jest.fn(),
+    toast: vi.fn(),
   }),
 }));
 
 describe('useAsyncOperation', () => {
   it('should handle successful async operations', async () => {
-    const mockOperation = jest.fn().mockResolvedValue('success');
+    const mockOperation = vi.fn().mockResolvedValue('success');
     const { result } = renderHook(() => useAsyncOperation(mockOperation));
 
     expect(result.current.isLoading).toBe(false);
@@ -29,7 +30,7 @@ describe('useAsyncOperation', () => {
 
   it('should handle async operation errors', async () => {
     const mockError = new Error('Operation failed');
-    const mockOperation = jest.fn().mockRejectedValue(mockError);
+    const mockOperation = vi.fn().mockRejectedValue(mockError);
     const { result } = renderHook(() => useAsyncOperation(mockOperation));
 
     await act(async () => {
@@ -44,7 +45,7 @@ describe('useAsyncOperation', () => {
 
   it('should track loading state during execution', async () => {
     let resolveOperation: (value: string) => void;
-    const mockOperation = jest.fn().mockImplementation(() => {
+    const mockOperation = vi.fn().mockImplementation(() => {
       return new Promise<string>((resolve) => {
         resolveOperation = resolve;
       });
@@ -69,7 +70,7 @@ describe('useAsyncOperation', () => {
   });
 
   it('should handle multiple executions correctly', async () => {
-    const mockOperation = jest
+    const mockOperation = vi
       .fn()
       .mockResolvedValueOnce('first')
       .mockRejectedValueOnce(new Error('second failed'));
@@ -95,7 +96,7 @@ describe('useAsyncOperation', () => {
   });
 
   it('should pass arguments to the async operation', async () => {
-    const mockOperation = jest.fn().mockResolvedValue('success');
+    const mockOperation = vi.fn().mockResolvedValue('success');
     const { result } = renderHook(() => useAsyncOperation(mockOperation));
 
     await act(async () => {
@@ -108,7 +109,7 @@ describe('useAsyncOperation', () => {
   it('should prevent concurrent executions', async () => {
     let resolveFirst: (value: string) => void;
 
-    const mockOperation = jest.fn().mockImplementationOnce(
+    const mockOperation = vi.fn().mockImplementationOnce(
       () =>
         new Promise<string>((resolve) => {
           resolveFirst = resolve;
@@ -145,7 +146,7 @@ describe('useAsyncOperation', () => {
   });
 
   it('should provide reset functionality', async () => {
-    const mockOperation = jest.fn().mockResolvedValue('success');
+    const mockOperation = vi.fn().mockResolvedValue('success');
     const { result } = renderHook(() => useAsyncOperation(mockOperation));
 
     await act(async () => {
@@ -164,9 +165,9 @@ describe('useAsyncOperation', () => {
   });
 
   it('should call success and error callbacks', async () => {
-    const mockOnSuccess = jest.fn();
-    const mockOnError = jest.fn();
-    const mockOperation = jest.fn().mockResolvedValue('success');
+    const mockOnSuccess = vi.fn();
+    const mockOnError = vi.fn();
+    const mockOperation = vi.fn().mockResolvedValue('success');
 
     const { result } = renderHook(() =>
       useAsyncOperation(mockOperation, {

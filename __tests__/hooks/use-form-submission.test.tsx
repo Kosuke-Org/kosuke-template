@@ -1,11 +1,12 @@
 import { renderHook, act } from '@testing-library/react';
 import { useFormSubmission } from '@/hooks/use-form-submission';
 import { createQueryWrapper } from '../setup/mocks';
+import { vi } from 'vitest';
 
 // Mock useToast hook
-jest.mock('@/hooks/use-toast', () => ({
+vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
-    toast: jest.fn(),
+    toast: vi.fn(),
   }),
 }));
 
@@ -14,7 +15,7 @@ describe('useFormSubmission', () => {
 
   it('should handle successful form submission', async () => {
     const testData = { name: 'John' };
-    const mockOnSubmit = jest.fn().mockResolvedValue(undefined);
+    const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
     const { result } = renderHook(
       () =>
         useFormSubmission({
@@ -35,7 +36,7 @@ describe('useFormSubmission', () => {
 
   it('should handle form submission errors', async () => {
     const mockError = new Error('Submission failed');
-    const mockOnSubmit = jest.fn().mockRejectedValue(mockError);
+    const mockOnSubmit = vi.fn().mockRejectedValue(mockError);
     const { result } = renderHook(
       () =>
         useFormSubmission({
@@ -59,7 +60,7 @@ describe('useFormSubmission', () => {
 
   it('should track submission state', async () => {
     let resolveSubmission: () => void;
-    const mockOnSubmit = jest.fn().mockImplementation(() => {
+    const mockOnSubmit = vi.fn().mockImplementation(() => {
       return new Promise<void>((resolve) => {
         resolveSubmission = resolve;
       });
@@ -95,7 +96,7 @@ describe('useFormSubmission', () => {
   });
 
   it('should handle concurrent submissions correctly', async () => {
-    const mockOnSubmit = jest
+    const mockOnSubmit = vi
       .fn()
       .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 50)));
 
@@ -123,7 +124,7 @@ describe('useFormSubmission', () => {
   });
 
   it('should clear errors on new submission', async () => {
-    const mockOnSubmit = jest
+    const mockOnSubmit = vi
       .fn()
       .mockRejectedValueOnce(new Error('First error'))
       .mockResolvedValueOnce(undefined);
@@ -167,9 +168,9 @@ describe('useFormSubmission', () => {
   });
 
   it('should call success and error callbacks', async () => {
-    const mockOnSuccess = jest.fn();
-    const mockOnError = jest.fn();
-    const mockOnSubmit = jest.fn().mockResolvedValue(undefined);
+    const mockOnSuccess = vi.fn();
+    const mockOnError = vi.fn();
+    const mockOnSubmit = vi.fn().mockResolvedValue(undefined);
 
     const { result } = renderHook(
       () =>

@@ -1,6 +1,7 @@
-/// <reference types="jest" />
+/// <reference types="vitest/globals" />
 import '@testing-library/jest-dom';
 import { setupMocks } from './__tests__/setup/mocks';
+import { vi } from 'vitest';
 
 // Setup mocks before all tests
 setupMocks();
@@ -24,8 +25,8 @@ if (typeof window !== 'undefined') {
 
 // Suppress console errors/warnings in test output
 beforeAll(() => {
-  console.error = jest.fn();
-  console.warn = jest.fn();
+  console.error = vi.fn();
+  console.warn = vi.fn();
 });
 
 // Setup environment variables for testing
