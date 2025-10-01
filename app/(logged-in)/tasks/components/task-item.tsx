@@ -17,16 +17,16 @@ import { cn } from '@/lib/utils';
 import type { TaskPriority } from '@/lib/types';
 
 interface TaskItemProps {
-  id: number;
+  id: string;
   title: string;
   description: string | null;
   completed: boolean;
   priority: TaskPriority;
   dueDate: Date | null;
   isOverdue: boolean;
-  onToggleComplete: (id: number) => void;
-  onEdit: (id: number) => void;
-  onDelete: (id: number) => void;
+  onToggleComplete: (id: string) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
   isToggling?: boolean;
 }
 

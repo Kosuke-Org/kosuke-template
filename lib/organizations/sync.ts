@@ -8,12 +8,7 @@ import { organizations, orgMemberships, activityLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { clerkClient } from '@clerk/nextjs/server';
 import { generateUniqueOrgSlug, getOrgByClerkId, getMembershipByClerkId } from './utils';
-import type {
-  Organization,
-  OrgMembership,
-  NewOrganization,
-  NewOrgMembership,
-} from '@/lib/types';
+import type { Organization, OrgMembership, NewOrganization, NewOrgMembership } from '@/lib/types';
 import { ActivityType } from '@/lib/db/schema';
 
 /**
@@ -79,10 +74,7 @@ export async function syncOrganizationFromClerk(clerkOrgId: string): Promise<Org
       // Update existing organization
       console.log('📝 Updating existing organization:', existingOrg.id);
 
-      await db
-        .update(organizations)
-        .set(orgData)
-        .where(eq(organizations.id, existingOrg.id));
+      await db.update(organizations).set(orgData).where(eq(organizations.id, existingOrg.id));
 
       // Return updated organization
       const [updated] = await db
@@ -134,10 +126,7 @@ export async function syncOrgFromWebhook(data: ClerkOrgWebhook): Promise<Organiz
 
     if (existingOrg) {
       // Update existing
-      await db
-        .update(organizations)
-        .set(orgData)
-        .where(eq(organizations.id, existingOrg.id));
+      await db.update(organizations).set(orgData).where(eq(organizations.id, existingOrg.id));
 
       const [updated] = await db
         .select()
@@ -173,9 +162,7 @@ export async function syncOrgFromWebhook(data: ClerkOrgWebhook): Promise<Organiz
 /**
  * Sync membership from Clerk API
  */
-export async function syncMembershipFromClerk(
-  clerkMembershipId: string
-): Promise<OrgMembership> {
+export async function syncMembershipFromClerk(clerkMembershipId: string): Promise<OrgMembership> {
   try {
     console.log('🔄 Syncing membership from Clerk:', clerkMembershipId);
 
@@ -289,11 +276,7 @@ export async function syncMembershipFromWebhook(
         .returning();
 
       // Log activity
-      await logOrgActivity(
-        data.public_user_data.user_id,
-        ActivityType.ORG_MEMBER_ADDED,
-        org.id
-      );
+      await logOrgActivity(data.public_user_data.user_id, ActivityType.ORG_MEMBER_ADDED, org.id);
 
       return newMembership;
     }
@@ -312,7 +295,7 @@ export async function syncAllUserOrganizations(clerkUserId: string): Promise<voi
     console.log('🔄 Syncing all organizations for user:', clerkUserId);
 
     const client = await clerkClient();
-    
+
     // Get all organization memberships for user
     const { data: memberships } = await client.users.getOrganizationMembershipList({
       userId: clerkUserId,

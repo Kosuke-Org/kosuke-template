@@ -6,13 +6,7 @@
 import { db } from '@/lib/db';
 import { organizations, orgMemberships, teams, teamMemberships } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import type {
-  Organization,
-  OrgMembership,
-  OrgRoleValue,
-  Team,
-  TeamMembership,
-} from '@/lib/types';
+import type { Organization, OrgMembership, OrgRoleValue, Team, TeamMembership } from '@/lib/types';
 
 /**
  * Slug generation
@@ -189,11 +183,7 @@ export async function getOrgById(organizationId: string): Promise<Organization |
  * Get organization by slug
  */
 export async function getOrgBySlug(slug: string): Promise<Organization | null> {
-  const [org] = await db
-    .select()
-    .from(organizations)
-    .where(eq(organizations.slug, slug))
-    .limit(1);
+  const [org] = await db.select().from(organizations).where(eq(organizations.slug, slug)).limit(1);
 
   return org || null;
 }
@@ -224,10 +214,7 @@ export async function getUserOrganizations(clerkUserId: string): Promise<Organiz
  * Get all memberships for a user
  */
 export async function getUserMemberships(clerkUserId: string): Promise<OrgMembership[]> {
-  return await db
-    .select()
-    .from(orgMemberships)
-    .where(eq(orgMemberships.clerkUserId, clerkUserId));
+  return await db.select().from(orgMemberships).where(eq(orgMemberships.clerkUserId, clerkUserId));
 }
 
 /**
@@ -288,10 +275,7 @@ export async function isUserTeamMember(clerkUserId: string, teamId: string): Pro
 /**
  * Get user's teams in an organization
  */
-export async function getUserTeams(
-  clerkUserId: string,
-  organizationId: string
-): Promise<Team[]> {
+export async function getUserTeams(clerkUserId: string, organizationId: string): Promise<Team[]> {
   const result = await db
     .select({
       id: teams.id,
@@ -306,10 +290,7 @@ export async function getUserTeams(
     .from(teams)
     .innerJoin(teamMemberships, eq(teamMemberships.teamId, teams.id))
     .where(
-      and(
-        eq(teamMemberships.clerkUserId, clerkUserId),
-        eq(teams.organizationId, organizationId)
-      )
+      and(eq(teamMemberships.clerkUserId, clerkUserId), eq(teams.organizationId, organizationId))
     );
 
   return result;

@@ -18,6 +18,7 @@ import type {
   AnyClerkWebhookEvent,
   ClerkOrganizationWebhook,
   ClerkMembershipWebhook,
+  ClerkWebhookUser,
 } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
@@ -81,15 +82,15 @@ export async function POST(req: NextRequest) {
     switch (eventType) {
       // User events
       case 'user.created':
-        await handleUserCreated(eventData as any);
+        await handleUserCreated(eventData as ClerkWebhookUser);
         break;
 
       case 'user.updated':
-        await handleUserUpdated(eventData as any);
+        await handleUserUpdated(eventData as ClerkWebhookUser);
         break;
 
       case 'user.deleted':
-        await handleUserDeleted(eventData as any);
+        await handleUserDeleted(eventData as ClerkWebhookUser);
         break;
 
       // Organization events
@@ -150,7 +151,7 @@ export async function POST(req: NextRequest) {
  */
 async function syncUserFromWebhook(
   webhookUser: ClerkWebhookUser
-): Promise<{ id: number; clerkUserId: string }> {
+): Promise<{ id: string; clerkUserId: string }> {
   try {
     console.log('🔄 Syncing user from webhook:', webhookUser.id);
 
@@ -169,7 +170,7 @@ async function syncUserFromWebhook(
       updatedAt: new Date(),
     };
 
-    let user: { id: number; clerkUserId: string };
+    let user: { id: string; clerkUserId: string };
 
     if (existingUser) {
       console.log('👤 User exists, checking for updates...');

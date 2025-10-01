@@ -57,7 +57,7 @@ export interface OperationResult<T = unknown> {
 
 export interface SubscriptionWithUser extends UserSubscription {
   user: {
-    id: number;
+    id: string;
     email: string;
     displayName: string | null;
   };

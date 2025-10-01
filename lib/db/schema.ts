@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, varchar, pgEnum, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, varchar, pgEnum, uuid } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { relations } from 'drizzle-orm';
@@ -10,7 +10,7 @@ export const teamRoleEnum = pgEnum('team_role', ['lead', 'member']);
 
 // Users - Minimal sync from Clerk for local queries and future expansion
 export const users = pgTable('users', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').defaultRandom().primaryKey(),
   clerkUserId: text('clerk_user_id').notNull().unique(), // Clerk user ID
   email: text('email').notNull(),
   displayName: text('display_name'),
@@ -77,7 +77,7 @@ export const teamMemberships = pgTable('team_memberships', {
 
 // User Subscriptions - Links Clerk users/organizations to Polar subscriptions
 export const userSubscriptions = pgTable('user_subscriptions', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').defaultRandom().primaryKey(),
   clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID (owner/admin)
   organizationId: uuid('organization_id').references(() => organizations.id, {
     onDelete: 'cascade',
@@ -96,7 +96,7 @@ export const userSubscriptions = pgTable('user_subscriptions', {
 
 // Activity Logs - Optional app-specific logging (references Clerk user IDs)
 export const activityLogs = pgTable('activity_logs', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').defaultRandom().primaryKey(),
   clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID
   action: text('action').notNull(),
   timestamp: timestamp('timestamp').notNull().defaultNow(),
@@ -106,7 +106,7 @@ export const activityLogs = pgTable('activity_logs', {
 
 // Tasks - Simple todo list functionality with organization support
 export const tasks = pgTable('tasks', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').defaultRandom().primaryKey(),
   clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID (creator)
   organizationId: uuid('organization_id').references(() => organizations.id, {
     onDelete: 'cascade',

@@ -16,7 +16,7 @@ export const createTaskSchema = z.object({
 });
 
 export const updateTaskSchema = z.object({
-  id: z.number(),
+  id: z.string().uuid(),
   title: z.string().min(1).max(255).optional(),
   description: z.string().nullable().optional(),
   completed: z.boolean().optional(),
@@ -37,9 +37,9 @@ export const taskListFiltersSchema = z
   .optional();
 
 export const deleteTaskSchema = z.object({
-  id: z.number(),
+  id: z.string().uuid(),
 });
 
 export const toggleTaskCompleteSchema = z.object({
-  id: z.number(),
+  id: z.string().uuid(),
 });

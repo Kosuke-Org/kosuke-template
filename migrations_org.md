@@ -10,25 +10,32 @@
 ## 📋 CONFIGURATION DECISIONS
 
 ### Data Ownership Model
+
 ✅ **Option A**: Organization-owned tasks (all members can see/edit all org tasks)
 
 ### Billing Model
+
 ✅ **Option A**: Per-organization subscriptions (no tier limits on members)
 
 ### Organization Structure
+
 ✅ **Option B**: Two-level hierarchy (Org → Teams → Members)
 
 ### Roles & Permissions
+
 ✅ **Default Clerk Roles**: `org:admin`, `org:member`
 
 ### Existing Data Migration
+
 ✅ **Option A**: Auto-create personal org for each existing user
 
 ### Collaboration Features
+
 ✅ **Phase 1**: Invite members via email  
 ⏳ **Future**: Team mentions, activity feed, real-time collaboration
 
 ### Multi-Workspace Support
+
 ✅ **Option A**: Users can belong to multiple organizations
 
 ---
@@ -40,6 +47,7 @@
 ## **PHASE 1: DATABASE SCHEMA** (Tickets 1-5)
 
 ### ✅ Ticket #1: Create Organizations Table
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 2 hours  
 **Dependencies**: None
@@ -48,6 +56,7 @@
 Create the core `organizations` table to store Clerk organization data.
 
 **Schema**:
+
 ```typescript
 organizations {
   id: uuid (primary key)
@@ -62,10 +71,12 @@ organizations {
 ```
 
 **Indexes**:
+
 - `idx_orgs_clerk_id` on `clerkOrgId`
 - `idx_orgs_slug` on `slug`
 
 **Acceptance Criteria**:
+
 - [ ] Schema defined in `/lib/db/schema.ts`
 - [ ] Migration generated with `pnpm run db:generate`
 - [ ] Migration applied successfully
@@ -74,6 +85,7 @@ organizations {
 ---
 
 ### ✅ Ticket #2: Create Organization Memberships Table
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 2 hours  
 **Dependencies**: Ticket #1
@@ -82,6 +94,7 @@ organizations {
 Track which users belong to which organizations and their roles.
 
 **Schema**:
+
 ```typescript
 orgMemberships {
   id: uuid (primary key)
@@ -95,12 +108,14 @@ orgMemberships {
 ```
 
 **Indexes**:
+
 - `idx_org_memberships_org_id` on `organizationId`
 - `idx_org_memberships_user_id` on `clerkUserId`
 - `idx_org_memberships_clerk_id` on `clerkMembershipId`
 - Unique constraint on `(organizationId, clerkUserId)`
 
 **Acceptance Criteria**:
+
 - [ ] Schema defined with proper foreign keys
 - [ ] Cascade delete on org/user deletion
 - [ ] Migration generated and applied
@@ -109,6 +124,7 @@ orgMemberships {
 ---
 
 ### ✅ Ticket #3: Create Teams Table
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 2 hours  
 **Dependencies**: Ticket #1
@@ -117,6 +133,7 @@ orgMemberships {
 Create teams within organizations for better organization structure.
 
 **Schema**:
+
 ```typescript
 teams {
   id: uuid (primary key)
@@ -131,10 +148,12 @@ teams {
 ```
 
 **Indexes**:
+
 - `idx_teams_org_id` on `organizationId`
 - Unique constraint on `(organizationId, name)`
 
 **Acceptance Criteria**:
+
 - [ ] Schema defined with proper foreign keys
 - [ ] Cascade delete when org deleted
 - [ ] Migration generated and applied
@@ -143,6 +162,7 @@ teams {
 ---
 
 ### ✅ Ticket #4: Create Team Memberships Table
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 2 hours  
 **Dependencies**: Ticket #2, Ticket #3
@@ -151,6 +171,7 @@ teams {
 Track which users belong to which teams within an organization.
 
 **Schema**:
+
 ```typescript
 teamMemberships {
   id: uuid (primary key)
@@ -162,11 +183,13 @@ teamMemberships {
 ```
 
 **Indexes**:
+
 - `idx_team_memberships_team_id` on `teamId`
 - `idx_team_memberships_user_id` on `clerkUserId`
 - Unique constraint on `(teamId, clerkUserId)`
 
 **Acceptance Criteria**:
+
 - [ ] Schema defined with proper foreign keys
 - [ ] Cascade delete on team/user deletion
 - [ ] Migration generated and applied
@@ -175,6 +198,7 @@ teamMemberships {
 ---
 
 ### ✅ Ticket #5: Update Tasks Table for Organization Ownership
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 2 hours  
 **Dependencies**: Ticket #1, Ticket #3
@@ -183,12 +207,13 @@ teamMemberships {
 Add organization and team references to tasks table for multi-tenant support.
 
 **Schema Changes**:
+
 ```typescript
 tasks {
   // ADD:
   organizationId: uuid (FK → organizations.id, nullable, cascade delete)
   teamId: uuid (FK → teams.id, nullable, set null on delete)
-  
+
   // KEEP existing:
   clerkUserId (creator of task)
   // ... all other fields
@@ -196,14 +221,17 @@ tasks {
 ```
 
 **Indexes**:
+
 - `idx_tasks_org_id` on `organizationId`
 - `idx_tasks_team_id` on `teamId`
 - Composite index on `(organizationId, clerkUserId)`
 
 **Data Migration**:
+
 - Existing tasks: `organizationId` and `teamId` stay NULL until Phase 5
 
 **Acceptance Criteria**:
+
 - [ ] Schema updated with new nullable fields
 - [ ] Foreign keys and indexes added
 - [ ] Migration generated and applied
@@ -213,6 +241,7 @@ tasks {
 ---
 
 ### ✅ Ticket #6: Update User Subscriptions for Organization Billing
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 2 hours  
 **Dependencies**: Ticket #1
@@ -221,12 +250,13 @@ tasks {
 Update subscriptions table to support both personal and organization-level billing.
 
 **Schema Changes**:
+
 ```typescript
 userSubscriptions {
   // ADD:
   organizationId: uuid (FK → organizations.id, nullable, cascade delete)
   subscriptionType: text (not null, default 'personal') // 'personal' | 'organization'
-  
+
   // KEEP existing:
   clerkUserId (owner for personal, admin for org)
   // ... all other fields
@@ -234,15 +264,18 @@ userSubscriptions {
 ```
 
 **Business Logic**:
+
 - Personal subscription: `subscriptionType = 'personal'`, `organizationId = NULL`
 - Org subscription: `subscriptionType = 'organization'`, `organizationId = org.id`
 - Check constraint: If `subscriptionType = 'organization'` then `organizationId IS NOT NULL`
 
 **Indexes**:
+
 - `idx_user_subs_org_id` on `organizationId`
 - Unique constraint on `organizationId` (one subscription per org)
 
 **Acceptance Criteria**:
+
 - [ ] Schema updated with new fields
 - [ ] Check constraints enforced
 - [ ] Migration generated and applied
@@ -254,6 +287,7 @@ userSubscriptions {
 ## **PHASE 2: TYPE SYSTEM & UTILITIES** (Tickets 7-10)
 
 ### ✅ Ticket #7: Create Organization Type Definitions
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 1 hour  
 **Dependencies**: Tickets #1-6
@@ -264,6 +298,7 @@ Define centralized TypeScript types for organizations domain.
 **File**: `/lib/types/organization.ts`
 
 **Types to Define**:
+
 ```typescript
 // Re-export from schema
 export type { Organization, OrgMembership, Team, TeamMembership } from '@/lib/db/schema';
@@ -311,6 +346,7 @@ export interface OrgContext {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Types defined in `/lib/types/organization.ts`
 - [ ] Exported from `/lib/types/index.ts`
 - [ ] Re-exports schema types (no duplication)
@@ -320,6 +356,7 @@ export interface OrgContext {
 ---
 
 ### ✅ Ticket #8: Update Task Types for Organization Context
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 1 hour  
 **Dependencies**: Ticket #5, Ticket #7
@@ -330,6 +367,7 @@ Update task types to include organization and team context.
 **File**: `/lib/types/task.ts`
 
 **Changes**:
+
 ```typescript
 // Re-export base types (ALWAYS re-export even if not extending)
 export type { Task, TaskPriority } from '@/lib/db/schema';
@@ -356,6 +394,7 @@ export interface TaskWithOrg extends Task {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Types updated in `/lib/types/task.ts`
 - [ ] Re-exported from `/lib/types/index.ts`
 - [ ] Backward compatible with existing code
@@ -364,6 +403,7 @@ export interface TaskWithOrg extends Task {
 ---
 
 ### ✅ Ticket #9: Create Organization Utilities
+
 **Priority**: P1 (High)  
 **Estimate**: 3 hours  
 **Dependencies**: Ticket #7
@@ -374,6 +414,7 @@ Create utility functions for organization operations.
 **File**: `/lib/organizations/utils.ts`
 
 **Utilities to Implement**:
+
 ```typescript
 // Slug generation
 generateOrgSlug(name: string): string
@@ -394,6 +435,7 @@ getUserMemberships(clerkUserId: string): Promise<OrgMembershipWithUser[]>
 ```
 
 **Acceptance Criteria**:
+
 - [ ] All utility functions implemented
 - [ ] Unit tests with 80%+ coverage
 - [ ] Error handling for edge cases
@@ -403,6 +445,7 @@ getUserMemberships(clerkUserId: string): Promise<OrgMembershipWithUser[]>
 ---
 
 ### ✅ Ticket #10: Create Organization Sync Utilities
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #7, Ticket #9
@@ -413,6 +456,7 @@ Create utilities to sync Clerk organizations with local database.
 **File**: `/lib/organizations/sync.ts`
 
 **Functions to Implement**:
+
 ```typescript
 // Sync organization from Clerk
 syncOrganizationFromClerk(clerkOrgId: string): Promise<Organization>
@@ -433,6 +477,7 @@ softDeleteOrganization(organizationId: string): Promise<void>
 ```
 
 **Acceptance Criteria**:
+
 - [ ] All sync functions implemented
 - [ ] Idempotent operations (safe to run multiple times)
 - [ ] Error handling and logging
@@ -444,6 +489,7 @@ softDeleteOrganization(organizationId: string): Promise<void>
 ## **PHASE 3: CLERK WEBHOOK INTEGRATION** (Tickets 11-13)
 
 ### ✅ Ticket #11: Update Clerk Webhook Handler for Organizations
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #10
@@ -454,6 +500,7 @@ Extend existing Clerk webhook handler to support organization events.
 **File**: `/app/api/clerk/webhook/route.ts`
 
 **New Event Handlers**:
+
 ```typescript
 // Organization events
 - organization.created → createOrganization()
@@ -472,6 +519,7 @@ Extend existing Clerk webhook handler to support organization events.
 ```
 
 **Acceptance Criteria**:
+
 - [ ] All organization webhook events handled
 - [ ] Webhook signature validation
 - [ ] Database sync on each event
@@ -483,6 +531,7 @@ Extend existing Clerk webhook handler to support organization events.
 ---
 
 ### ✅ Ticket #12: Add Webhook Type Definitions
+
 **Priority**: P1 (High)  
 **Estimate**: 1 hour  
 **Dependencies**: Ticket #11
@@ -493,6 +542,7 @@ Create TypeScript types for Clerk organization webhook payloads.
 **File**: `/lib/types/webhooks.ts`
 
 **Types to Define**:
+
 ```typescript
 export interface ClerkOrganizationWebhook {
   id: string;
@@ -532,6 +582,7 @@ export interface ClerkWebhookEvent {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] All webhook types defined
 - [ ] Type guards implemented
 - [ ] Exported from `/lib/types/index.ts`
@@ -541,6 +592,7 @@ export interface ClerkWebhookEvent {
 ---
 
 ### ✅ Ticket #13: Test Webhook Integration
+
 **Priority**: P1 (High)  
 **Estimate**: 3 hours  
 **Dependencies**: Ticket #11, Ticket #12
@@ -551,6 +603,7 @@ Create comprehensive tests for organization webhook handling.
 **Test File**: `/__tests__/api/clerk/webhook-orgs.test.ts`
 
 **Test Cases**:
+
 - [ ] Organization created → database record created
 - [ ] Organization updated → database record updated
 - [ ] Organization deleted → soft delete performed
@@ -562,6 +615,7 @@ Create comprehensive tests for organization webhook handling.
 - [ ] Missing required fields → proper error
 
 **Acceptance Criteria**:
+
 - [ ] All test cases passing
 - [ ] Coverage > 85% for webhook handlers
 - [ ] Integration tests with test database
@@ -573,6 +627,7 @@ Create comprehensive tests for organization webhook handling.
 ## **PHASE 4: tRPC ROUTER UPDATES** (Tickets 14-18)
 
 ### ✅ Ticket #14: Create Organization tRPC Router
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #10
@@ -583,6 +638,7 @@ Create new tRPC router for organization operations.
 **File**: `/lib/trpc/routers/organizations.ts`
 
 **Procedures**:
+
 ```typescript
 // Queries
 - getUserOrganizations() → Get all orgs user belongs to
@@ -600,6 +656,7 @@ Create new tRPC router for organization operations.
 ```
 
 **Acceptance Criteria**:
+
 - [ ] All procedures implemented
 - [ ] Input validation with Zod schemas
 - [ ] Authorization checks (admin-only for mutations)
@@ -610,6 +667,7 @@ Create new tRPC router for organization operations.
 ---
 
 ### ✅ Ticket #15: Create Teams tRPC Router
+
 **Priority**: P1 (High)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #14
@@ -620,6 +678,7 @@ Create tRPC router for team management within organizations.
 **File**: `/lib/trpc/routers/teams.ts`
 
 **Procedures**:
+
 ```typescript
 // Queries
 - getTeams(orgId) → List teams in org
@@ -636,6 +695,7 @@ Create tRPC router for team management within organizations.
 ```
 
 **Acceptance Criteria**:
+
 - [ ] All procedures implemented
 - [ ] Org membership verification before team access
 - [ ] Input validation with Zod schemas
@@ -647,6 +707,7 @@ Create tRPC router for team management within organizations.
 ---
 
 ### ✅ Ticket #16: Update Tasks tRPC Router for Organization Context
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #5, Ticket #14
@@ -657,6 +718,7 @@ Update existing tasks router to support organization-scoped operations.
 **File**: `/lib/trpc/routers/tasks.ts`
 
 **Changes**:
+
 ```typescript
 // Update list query
 list(orgId, filters?) → Filter by organizationId
@@ -673,12 +735,14 @@ unassignFromTeam(taskId) → Remove team assignment
 ```
 
 **Authorization Rules**:
+
 - User must be member of organization to view/edit org tasks
 - Personal tasks (no orgId) only visible to creator
 - Org admins can manage all org tasks
 - Regular members can manage all org tasks (per requirement #1)
 
 **Acceptance Criteria**:
+
 - [ ] All procedures updated with org context
 - [ ] Authorization checks implemented
 - [ ] Backward compatibility for personal tasks
@@ -689,6 +753,7 @@ unassignFromTeam(taskId) → Remove team assignment
 ---
 
 ### ✅ Ticket #17: Update tRPC Context for Organization
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 2 hours  
 **Dependencies**: Ticket #9
@@ -699,6 +764,7 @@ Enhance tRPC context to include active organization context.
 **File**: `/lib/trpc/init.ts`
 
 **Changes**:
+
 ```typescript
 export const createTRPCContext = async () => {
   const { userId, orgId, orgRole } = await auth();
@@ -715,7 +781,7 @@ export const createTRPCContext = async () => {
 // New middleware: Require organization context
 export const orgProcedure = protectedProcedure.use(async (opts) => {
   const { ctx } = opts;
-  
+
   if (!ctx.orgId) {
     throw new TRPCError({
       code: 'FORBIDDEN',
@@ -755,6 +821,7 @@ export const orgAdminProcedure = orgProcedure.use(async (opts) => {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Context includes org information
 - [ ] New middleware procedures defined
 - [ ] Proper authorization checks
@@ -764,6 +831,7 @@ export const orgAdminProcedure = orgProcedure.use(async (opts) => {
 ---
 
 ### ✅ Ticket #18: Create tRPC Schemas for Organizations
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 2 hours  
 **Dependencies**: Ticket #7
@@ -774,11 +842,17 @@ Create Zod validation schemas for organization operations (client-safe).
 **File**: `/lib/trpc/schemas/organizations.ts`
 
 **Schemas**:
+
 ```typescript
 // Organization schemas
 export const createOrganizationSchema = z.object({
   name: z.string().min(1).max(100),
-  slug: z.string().min(1).max(50).regex(/^[a-z0-9-]+$/).optional(),
+  slug: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
 });
 
 export const updateOrganizationSchema = z.object({
@@ -806,13 +880,17 @@ export const createTeamSchema = z.object({
   organizationId: z.string().uuid(),
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .optional(),
 });
 ```
 
 **File**: `/lib/trpc/schemas/tasks.ts` (update)
 
 **Updated Schemas**:
+
 ```typescript
 // Update existing schemas
 export const createTaskSchema = z.object({
@@ -824,16 +902,19 @@ export const createTaskSchema = z.object({
   teamId: z.string().uuid().optional(), // NEW
 });
 
-export const taskListFiltersSchema = z.object({
-  completed: z.boolean().optional(),
-  priority: z.enum(['low', 'medium', 'high']).optional(),
-  searchQuery: z.string().optional(),
-  organizationId: z.string().uuid().optional(), // NEW
-  teamId: z.string().uuid().optional(), // NEW
-}).optional();
+export const taskListFiltersSchema = z
+  .object({
+    completed: z.boolean().optional(),
+    priority: z.enum(['low', 'medium', 'high']).optional(),
+    searchQuery: z.string().optional(),
+    organizationId: z.string().uuid().optional(), // NEW
+    teamId: z.string().uuid().optional(), // NEW
+  })
+  .optional();
 ```
 
 **Acceptance Criteria**:
+
 - [ ] All schemas defined (client-safe, no server imports)
 - [ ] Proper validation rules
 - [ ] Exported from `/lib/trpc/index.ts`
@@ -845,6 +926,7 @@ export const taskListFiltersSchema = z.object({
 ## **PHASE 5: DATA MIGRATION** (Tickets 19-21)
 
 ### ✅ Ticket #19: Create Personal Organizations for Existing Users
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 4 hours  
 **Dependencies**: Tickets #1-6, Ticket #10
@@ -855,6 +937,7 @@ Migrate existing users to personal organizations automatically.
 **File**: `/scripts/migrate-to-orgs.ts`
 
 **Migration Steps**:
+
 1. Fetch all existing users from database
 2. For each user:
    - Create organization in Clerk via API
@@ -865,10 +948,11 @@ Migrate existing users to personal organizations automatically.
    - Log migration activity
 
 **Script Structure**:
+
 ```typescript
 async function migrateUsersToOrgs() {
   const users = await db.select().from(users);
-  
+
   for (const user of users) {
     try {
       // Create org in Clerk
@@ -876,18 +960,19 @@ async function migrateUsersToOrgs() {
         name: `${user.displayName || user.email}'s Workspace`,
         createdBy: user.clerkUserId,
       });
-      
+
       // Sync to database
       const org = await syncOrganizationFromClerk(clerkOrg.id);
-      
+
       // Transfer task ownership
-      await db.update(tasks)
+      await db
+        .update(tasks)
         .set({ organizationId: org.id })
         .where(eq(tasks.clerkUserId, user.clerkUserId));
-      
+
       // Create default team
       await createDefaultTeam(org.id, user.clerkUserId);
-      
+
       console.log(`✅ Migrated user ${user.email}`);
     } catch (error) {
       console.error(`❌ Failed to migrate ${user.email}:`, error);
@@ -898,6 +983,7 @@ async function migrateUsersToOrgs() {
 ```
 
 **Safety Features**:
+
 - Dry-run mode (preview without changes)
 - Transaction support (rollback on error)
 - Progress logging
@@ -905,6 +991,7 @@ async function migrateUsersToOrgs() {
 - Backup database before running
 
 **Acceptance Criteria**:
+
 - [ ] Migration script completed
 - [ ] Dry-run mode implemented
 - [ ] Transaction safety
@@ -917,6 +1004,7 @@ async function migrateUsersToOrgs() {
 ---
 
 ### ✅ Ticket #20: Migrate User Subscriptions to Organizations
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 3 hours  
 **Dependencies**: Ticket #19
@@ -927,36 +1015,40 @@ Transfer existing user subscriptions to their personal organizations.
 **File**: `/scripts/migrate-subscriptions.ts`
 
 **Migration Logic**:
+
 ```typescript
 async function migrateSubscriptionsToOrgs() {
-  const subscriptions = await db.select()
+  const subscriptions = await db
+    .select()
     .from(userSubscriptions)
     .where(eq(userSubscriptions.subscriptionType, 'personal'));
-  
+
   for (const sub of subscriptions) {
     // Find user's personal organization
     const org = await findPersonalOrg(sub.clerkUserId);
-    
+
     if (!org) {
       console.warn(`No org found for user ${sub.clerkUserId}`);
       continue;
     }
-    
+
     // Update subscription
-    await db.update(userSubscriptions)
+    await db
+      .update(userSubscriptions)
       .set({
         organizationId: org.id,
         subscriptionType: 'organization',
         updatedAt: new Date(),
       })
       .where(eq(userSubscriptions.id, sub.id));
-    
+
     console.log(`✅ Migrated subscription for ${sub.clerkUserId}`);
   }
 }
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Migration script completed
 - [ ] All active subscriptions transferred
 - [ ] Subscription metadata preserved
@@ -968,6 +1060,7 @@ async function migrateSubscriptionsToOrgs() {
 ---
 
 ### ✅ Ticket #21: Add Migration Commands to package.json
+
 **Priority**: P1 (High)  
 **Estimate**: 1 hour  
 **Dependencies**: Ticket #19, Ticket #20
@@ -978,6 +1071,7 @@ Add npm scripts for running migration safely.
 **File**: `/package.json`
 
 **Scripts to Add**:
+
 ```json
 {
   "scripts": {
@@ -992,12 +1086,14 @@ Add npm scripts for running migration safely.
 
 **Documentation**:
 Create `/scripts/README.md` with:
+
 - Migration order
 - Safety checks
 - Rollback procedures
 - Troubleshooting guide
 
 **Acceptance Criteria**:
+
 - [ ] Scripts added to package.json
 - [ ] Documentation created
 - [ ] Tested locally
@@ -1009,6 +1105,7 @@ Create `/scripts/README.md` with:
 ## **PHASE 6: BILLING INTEGRATION** (Tickets 22-24)
 
 ### ✅ Ticket #22: Update Billing Utilities for Organizations
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 3 hours  
 **Dependencies**: Ticket #6
@@ -1017,22 +1114,22 @@ Create `/scripts/README.md` with:
 Update billing utilities to support organization-level subscriptions.
 
 **Files to Update**:
+
 - `/lib/billing/subscription.ts`
 - `/lib/billing/operations.ts`
 - `/lib/billing/eligibility.ts`
 
 **Key Changes**:
+
 ```typescript
 // subscription.ts
-export async function getOrgSubscription(
-  organizationId: string
-): Promise<UserSubscription | null> {
+export async function getOrgSubscription(organizationId: string): Promise<UserSubscription | null> {
   const [subscription] = await db
     .select()
     .from(userSubscriptions)
     .where(eq(userSubscriptions.organizationId, organizationId))
     .limit(1);
-  
+
   return subscription || null;
 }
 
@@ -1055,6 +1152,7 @@ export async function createOrgCheckoutSession(
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Organization subscription functions implemented
 - [ ] Backward compatibility for personal subscriptions
 - [ ] Feature gating works for orgs
@@ -1064,6 +1162,7 @@ export async function createOrgCheckoutSession(
 ---
 
 ### ✅ Ticket #23: Update Polar Webhook Handler for Organizations
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 3 hours  
 **Dependencies**: Ticket #22
@@ -1074,14 +1173,15 @@ Update Polar webhook handler to process organization subscriptions.
 **File**: `/app/api/billing/webhook/route.ts`
 
 **Updates**:
+
 ```typescript
 // Handle subscription.created
 async function handleSubscriptionCreated(event: PolarWebhookEvent) {
   const { customer_id, subscription_id } = event.data;
-  
+
   // Determine if personal or organization subscription
   // Check metadata for organizationId
-  
+
   const subscription = await createOrUpdateSubscription({
     subscriptionId: subscription_id,
     organizationId: metadata.organizationId || null,
@@ -1092,6 +1192,7 @@ async function handleSubscriptionCreated(event: PolarWebhookEvent) {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Webhook handles org subscriptions
 - [ ] Metadata includes organization context
 - [ ] Subscription updates propagate to all org members
@@ -1102,6 +1203,7 @@ async function handleSubscriptionCreated(event: PolarWebhookEvent) {
 ---
 
 ### ✅ Ticket #24: Create Billing tRPC Router for Organizations
+
 **Priority**: P1 (High)  
 **Estimate**: 3 hours  
 **Dependencies**: Ticket #22
@@ -1112,6 +1214,7 @@ Create tRPC procedures for organization billing operations.
 **File**: `/lib/trpc/routers/billing.ts`
 
 **Procedures**:
+
 ```typescript
 // Queries
 - getOrgSubscription(orgId) → Get org subscription
@@ -1125,10 +1228,12 @@ Create tRPC procedures for organization billing operations.
 ```
 
 **Authorization**:
+
 - Only org admins can manage billing
 - All members can view subscription status
 
 **Acceptance Criteria**:
+
 - [ ] All procedures implemented
 - [ ] Admin-only authorization
 - [ ] Integration with Polar API
@@ -1141,6 +1246,7 @@ Create tRPC procedures for organization billing operations.
 ## **PHASE 7: UI COMPONENTS** (Tickets 25-32)
 
 ### ✅ Ticket #25: Add Clerk Organization Components
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 2 hours  
 **Dependencies**: Ticket #17
@@ -1149,16 +1255,19 @@ Create tRPC procedures for organization billing operations.
 Integrate Clerk's pre-built organization UI components.
 
 **Components to Add**:
+
 - `<OrganizationSwitcher />` - Switch between orgs
 - `<OrganizationProfile />` - Manage org settings
 - `<OrganizationList />` - List user's organizations
 - `<CreateOrganization />` - Create new org
 
 **Files to Update**:
+
 - `/components/app-sidebar.tsx` - Add org switcher
 - `/app/(logged-in)/layout.tsx` - Provide org context
 
 **Acceptance Criteria**:
+
 - [ ] Clerk components integrated
 - [ ] Styled with Shadcn theme
 - [ ] Responsive design
@@ -1168,6 +1277,7 @@ Integrate Clerk's pre-built organization UI components.
 ---
 
 ### ✅ Ticket #26: Create Organization Settings Page
+
 **Priority**: P1 (High)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #14, Ticket #25
@@ -1178,12 +1288,14 @@ Create settings page for organization management.
 **Route**: `/app/(logged-in)/settings/organization/page.tsx`
 
 **Tabs**:
+
 1. **General**: Name, slug, logo
 2. **Members**: List members, invite, manage roles
 3. **Teams**: Create/manage teams
 4. **Billing**: Subscription management (admin only)
 
 **Components**:
+
 ```typescript
 <OrganizationSettingsLayout>
   <GeneralSettings />
@@ -1194,6 +1306,7 @@ Create settings page for organization management.
 ```
 
 **Acceptance Criteria**:
+
 - [ ] All tabs implemented
 - [ ] Forms use react-hook-form + Zod
 - [ ] Proper authorization checks
@@ -1205,6 +1318,7 @@ Create settings page for organization management.
 ---
 
 ### ✅ Ticket #27: Create Invite Members Flow
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #14, Ticket #26
@@ -1213,11 +1327,13 @@ Create settings page for organization management.
 Build UI for inviting members to organization via email.
 
 **Components**:
+
 - `InviteMemberDialog` - Modal form for sending invites
 - `PendingInvitationsList` - Show pending invites
 - `InvitationEmailTemplate` - Email template for invites
 
 **Flow**:
+
 1. Admin clicks "Invite Members"
 2. Enter email address(es) and role
 3. Send invitation via Clerk API
@@ -1227,6 +1343,7 @@ Build UI for inviting members to organization via email.
 **File**: `/app/(logged-in)/settings/organization/components/invite-member-dialog.tsx`
 
 **Acceptance Criteria**:
+
 - [ ] Dialog component created
 - [ ] Multiple email input support
 - [ ] Role selection dropdown
@@ -1239,6 +1356,7 @@ Build UI for inviting members to organization via email.
 ---
 
 ### ✅ Ticket #28: Update Tasks Page for Organization Context
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #16, Ticket #25
@@ -1249,6 +1367,7 @@ Update tasks page to show organization-scoped tasks.
 **File**: `/app/(logged-in)/tasks/page.tsx`
 
 **Changes**:
+
 - Get active organization from Clerk
 - Filter tasks by organizationId
 - Show organization/team context in task cards
@@ -1256,6 +1375,7 @@ Update tasks page to show organization-scoped tasks.
 - Update task creation dialog with org context
 
 **New UI Elements**:
+
 ```typescript
 <TasksHeader>
   <OrganizationBreadcrumb />
@@ -1273,6 +1393,7 @@ Update tasks page to show organization-scoped tasks.
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Tasks filtered by active organization
 - [ ] Team filter works correctly
 - [ ] Task cards show team badges
@@ -1284,6 +1405,7 @@ Update tasks page to show organization-scoped tasks.
 ---
 
 ### ✅ Ticket #29: Create Teams Management Page
+
 **Priority**: P1 (High)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #15, Ticket #26
@@ -1294,6 +1416,7 @@ Build dedicated page for managing teams within organization.
 **Route**: `/app/(logged-in)/org/[orgId]/teams/page.tsx`
 
 **Features**:
+
 - List all teams in organization
 - Create new team (with color picker)
 - Edit team details
@@ -1302,6 +1425,7 @@ Build dedicated page for managing teams within organization.
 - View team statistics (member count, task count)
 
 **Components**:
+
 ```typescript
 <TeamsGrid>
   <TeamCard
@@ -1323,6 +1447,7 @@ Build dedicated page for managing teams within organization.
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Teams grid with cards
 - [ ] Create/edit/delete functionality
 - [ ] Color picker for team colors
@@ -1335,6 +1460,7 @@ Build dedicated page for managing teams within organization.
 ---
 
 ### ✅ Ticket #30: Update Sidebar for Organization Navigation
+
 **Priority**: P1 (High)  
 **Estimate**: 3 hours  
 **Dependencies**: Ticket #25
@@ -1345,17 +1471,18 @@ Update app sidebar to show organization context and teams.
 **File**: `/components/app-sidebar.tsx`
 
 **Changes**:
+
 ```typescript
 <Sidebar>
   <OrganizationSwitcher /> {/* Top of sidebar */}
-  
+
   <NavMain>
     <NavItem href="/dashboard">Dashboard</NavItem>
     <NavItem href="/tasks">All Tasks</NavItem>
-    
+
     <NavGroup label="Teams">
       {teams.map(team => (
-        <NavItem 
+        <NavItem
           key={team.id}
           href={`/tasks?team=${team.id}`}
           color={team.color}
@@ -1365,13 +1492,14 @@ Update app sidebar to show organization context and teams.
       ))}
       <CreateTeamButton />
     </NavGroup>
-    
+
     <NavItem href="/settings/organization">Settings</NavItem>
   </NavMain>
 </Sidebar>
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Organization switcher at top
 - [ ] Teams section with dynamic list
 - [ ] Team colors displayed
@@ -1383,6 +1511,7 @@ Update app sidebar to show organization context and teams.
 ---
 
 ### ✅ Ticket #31: Create Organization Dashboard Page
+
 **Priority**: P1 (High)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #14, Ticket #15
@@ -1393,6 +1522,7 @@ Create dashboard showing organization overview and statistics.
 **Route**: `/app/(logged-in)/dashboard/page.tsx` (update)
 
 **Widgets**:
+
 - Organization overview (name, member count, team count)
 - Recent activity feed
 - Task statistics by team
@@ -1400,6 +1530,7 @@ Create dashboard showing organization overview and statistics.
 - Quick actions (invite member, create team, etc.)
 
 **Layout**:
+
 ```typescript
 <DashboardGrid>
   <OrgOverviewCard />
@@ -1411,6 +1542,7 @@ Create dashboard showing organization overview and statistics.
 ```
 
 **Acceptance Criteria**:
+
 - [ ] All widgets implemented
 - [ ] Real-time statistics from tRPC
 - [ ] Charts using Shadcn charts
@@ -1422,6 +1554,7 @@ Create dashboard showing organization overview and statistics.
 ---
 
 ### ✅ Ticket #32: Create Onboarding Flow for Organizations
+
 **Priority**: P1 (High)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #25, Ticket #27
@@ -1432,6 +1565,7 @@ Create guided onboarding flow for new organizations.
 **Trigger**: First login after migration OR creating new org
 
 **Steps**:
+
 1. Welcome to your organization
 2. Invite team members (optional)
 3. Create your first team (optional)
@@ -1441,6 +1575,7 @@ Create guided onboarding flow for new organizations.
 **Component**: `/components/onboarding-wizard.tsx`
 
 **Acceptance Criteria**:
+
 - [ ] Multi-step wizard implemented
 - [ ] Skip and "Do this later" options
 - [ ] Progress indicator
@@ -1454,6 +1589,7 @@ Create guided onboarding flow for new organizations.
 ## **PHASE 8: TESTING & DOCUMENTATION** (Tickets 33-36)
 
 ### ✅ Ticket #33: Write Unit Tests for Organization Utilities
+
 **Priority**: P1 (High)  
 **Estimate**: 4 hours  
 **Dependencies**: Ticket #9, Ticket #10
@@ -1462,10 +1598,12 @@ Create guided onboarding flow for new organizations.
 Comprehensive unit tests for organization utility functions.
 
 **Files**:
+
 - `/__tests__/lib/organizations/utils.test.ts`
 - `/__tests__/lib/organizations/sync.test.ts`
 
 **Test Coverage**:
+
 - [ ] Slug generation (unique, valid format)
 - [ ] Role checking functions
 - [ ] Membership verification
@@ -1477,6 +1615,7 @@ Comprehensive unit tests for organization utility functions.
 **Target**: 90%+ coverage
 
 **Acceptance Criteria**:
+
 - [ ] All utility functions tested
 - [ ] Mock database operations
 - [ ] Mock Clerk API calls
@@ -1486,6 +1625,7 @@ Comprehensive unit tests for organization utility functions.
 ---
 
 ### ✅ Ticket #34: Write Integration Tests for tRPC Routers
+
 **Priority**: P1 (High)  
 **Estimate**: 6 hours  
 **Dependencies**: Tickets #14-18
@@ -1494,11 +1634,13 @@ Comprehensive unit tests for organization utility functions.
 End-to-end tests for organization and team tRPC procedures.
 
 **Files**:
+
 - `/__tests__/lib/trpc/routers/organizations.test.ts`
 - `/__tests__/lib/trpc/routers/teams.test.ts`
 - `/__tests__/lib/trpc/routers/tasks-org.test.ts`
 
 **Test Scenarios**:
+
 - [ ] Create organization → verify database record
 - [ ] Invite member → verify membership created
 - [ ] Update member role → verify role changed
@@ -1508,6 +1650,7 @@ End-to-end tests for organization and team tRPC procedures.
 - [ ] Error cases (invalid input, missing org)
 
 **Acceptance Criteria**:
+
 - [ ] All routers tested
 - [ ] Test database setup/teardown
 - [ ] Mock Clerk context
@@ -1518,6 +1661,7 @@ End-to-end tests for organization and team tRPC procedures.
 ---
 
 ### ✅ Ticket #35: Write E2E Tests for Organization Flows
+
 **Priority**: P2 (Medium)  
 **Estimate**: 6 hours  
 **Dependencies**: Tickets #25-32
@@ -1528,6 +1672,7 @@ End-to-end tests using Playwright for user-facing organization features.
 **Test File**: `/e2e/organizations.spec.ts`
 
 **Scenarios**:
+
 - [ ] User creates new organization
 - [ ] Admin invites member via email
 - [ ] Member accepts invitation
@@ -1540,6 +1685,7 @@ End-to-end tests using Playwright for user-facing organization features.
 - [ ] Admin removes member from organization
 
 **Acceptance Criteria**:
+
 - [ ] All critical flows tested
 - [ ] Tests run in CI/CD
 - [ ] Screenshots on failure
@@ -1549,6 +1695,7 @@ End-to-end tests using Playwright for user-facing organization features.
 ---
 
 ### ✅ Ticket #36: Update Documentation
+
 **Priority**: P1 (High)  
 **Estimate**: 4 hours  
 **Dependencies**: All previous tickets
@@ -1557,6 +1704,7 @@ End-to-end tests using Playwright for user-facing organization features.
 Update project documentation for organization features.
 
 **Files to Update/Create**:
+
 1. `/README.md` - Add organization features section
 2. `/docs/ORGANIZATIONS.md` - Complete organization guide
 3. `/docs/MIGRATION.md` - Migration guide for existing users
@@ -1564,6 +1712,7 @@ Update project documentation for organization features.
 5. `/lib/trpc/README.md` - tRPC router documentation
 
 **Documentation Sections**:
+
 - Overview of organization features
 - User roles and permissions
 - How to create and manage organizations
@@ -1574,6 +1723,7 @@ Update project documentation for organization features.
 - Troubleshooting common issues
 
 **Acceptance Criteria**:
+
 - [ ] All documentation files created/updated
 - [ ] Code examples included
 - [ ] Screenshots/diagrams added
@@ -1586,6 +1736,7 @@ Update project documentation for organization features.
 ## **PHASE 9: DEPLOYMENT** (Tickets 37-40)
 
 ### ✅ Ticket #37: Update Environment Variables
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 1 hour  
 **Dependencies**: None
@@ -1594,10 +1745,12 @@ Update project documentation for organization features.
 Add required environment variables for organization features.
 
 **Files**:
+
 - `.env.example`
 - Production environment (Vercel)
 
 **New Variables**:
+
 ```bash
 # Clerk Organization Settings
 CLERK_ORGANIZATIONS_ENABLED=true
@@ -1610,6 +1763,7 @@ NEXT_PUBLIC_ENABLE_ORG_BILLING=true
 ```
 
 **Acceptance Criteria**:
+
 - [ ] `.env.example` updated
 - [ ] Production env vars configured
 - [ ] Staging env vars configured
@@ -1618,6 +1772,7 @@ NEXT_PUBLIC_ENABLE_ORG_BILLING=true
 ---
 
 ### ✅ Ticket #38: Run Database Migration in Production
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 2 hours  
 **Dependencies**: Tickets #1-6
@@ -1626,6 +1781,7 @@ NEXT_PUBLIC_ENABLE_ORG_BILLING=true
 Apply database schema migrations to production safely.
 
 **Steps**:
+
 1. Backup production database
 2. Test migrations on staging
 3. Schedule maintenance window
@@ -1634,6 +1790,7 @@ Apply database schema migrations to production safely.
 6. Monitor for errors
 
 **Commands**:
+
 ```bash
 # Backup
 pg_dump $DATABASE_URL > backup_$(date +%Y%m%d).sql
@@ -1646,12 +1803,14 @@ pnpm run db:studio
 ```
 
 **Rollback Plan**:
+
 ```bash
 # Restore from backup if needed
 psql $DATABASE_URL < backup_20251001.sql
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Backup completed
 - [ ] Migrations tested on staging
 - [ ] Production migration successful
@@ -1662,6 +1821,7 @@ psql $DATABASE_URL < backup_20251001.sql
 ---
 
 ### ✅ Ticket #39: Run Data Migration Script
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 3 hours  
 **Dependencies**: Ticket #19, Ticket #20, Ticket #38
@@ -1670,12 +1830,14 @@ psql $DATABASE_URL < backup_20251001.sql
 Execute data migration to create personal organizations for existing users.
 
 **Pre-Flight Checks**:
+
 - [ ] Database backup completed
 - [ ] Staging migration successful
 - [ ] Dry-run completed without errors
 - [ ] Team notified
 
 **Execution**:
+
 ```bash
 # Dry run first
 pnpm run migrate:orgs:dry
@@ -1688,12 +1850,14 @@ pnpm run migrate:subs
 ```
 
 **Monitoring**:
+
 - Watch error logs
 - Track progress
 - Monitor database performance
 - Check Clerk API rate limits
 
 **Acceptance Criteria**:
+
 - [ ] All users migrated to personal orgs
 - [ ] All tasks assigned to organizations
 - [ ] All subscriptions transferred
@@ -1704,6 +1868,7 @@ pnpm run migrate:subs
 ---
 
 ### ✅ Ticket #40: Deploy to Production
+
 **Priority**: P0 (Blocker)  
 **Estimate**: 2 hours  
 **Dependencies**: All previous tickets
@@ -1712,6 +1877,7 @@ pnpm run migrate:subs
 Deploy organization features to production.
 
 **Deployment Checklist**:
+
 - [ ] All tests passing in CI/CD
 - [ ] Code reviewed and approved
 - [ ] Database migrations completed
@@ -1722,6 +1888,7 @@ Deploy organization features to production.
 - [ ] Security audit passed
 
 **Steps**:
+
 1. Merge feature branch to main
 2. Vercel auto-deploys to production
 3. Run smoke tests
@@ -1731,11 +1898,13 @@ Deploy organization features to production.
 7. Test critical user flows
 
 **Rollback Plan**:
+
 - Revert deployment in Vercel
 - Restore database from backup if needed
 - Notify users of any issues
 
 **Acceptance Criteria**:
+
 - [ ] Production deployment successful
 - [ ] All features working as expected
 - [ ] No critical errors in Sentry
@@ -1749,49 +1918,53 @@ Deploy organization features to production.
 
 ### Phase Summary
 
-| Phase | Tickets | Status | Completion |
-|-------|---------|--------|------------|
-| Phase 1: Database Schema | #1-6 | 🔄 In Progress | 0/6 |
-| Phase 2: Type System | #7-10 | ⏳ Pending | 0/4 |
-| Phase 3: Webhooks | #11-13 | ⏳ Pending | 0/3 |
-| Phase 4: tRPC Routers | #14-18 | ⏳ Pending | 0/5 |
-| Phase 5: Data Migration | #19-21 | ⏳ Pending | 0/3 |
-| Phase 6: Billing | #22-24 | ⏳ Pending | 0/3 |
-| Phase 7: UI Components | #25-32 | ⏳ Pending | 0/8 |
-| Phase 8: Testing & Docs | #33-36 | ⏳ Pending | 0/4 |
-| Phase 9: Deployment | #37-40 | ⏳ Pending | 0/4 |
-| **TOTAL** | **40 Tickets** | **0% Complete** | **0/40** |
+| Phase                    | Tickets        | Status          | Completion |
+| ------------------------ | -------------- | --------------- | ---------- |
+| Phase 1: Database Schema | #1-6           | 🔄 In Progress  | 0/6        |
+| Phase 2: Type System     | #7-10          | ⏳ Pending      | 0/4        |
+| Phase 3: Webhooks        | #11-13         | ⏳ Pending      | 0/3        |
+| Phase 4: tRPC Routers    | #14-18         | ⏳ Pending      | 0/5        |
+| Phase 5: Data Migration  | #19-21         | ⏳ Pending      | 0/3        |
+| Phase 6: Billing         | #22-24         | ⏳ Pending      | 0/3        |
+| Phase 7: UI Components   | #25-32         | ⏳ Pending      | 0/8        |
+| Phase 8: Testing & Docs  | #33-36         | ⏳ Pending      | 0/4        |
+| Phase 9: Deployment      | #37-40         | ⏳ Pending      | 0/4        |
+| **TOTAL**                | **40 Tickets** | **0% Complete** | **0/40**   |
 
 ### Risk Assessment
 
-| Risk Level | Count | Tickets |
-|------------|-------|---------|
-| 🔴 High | 6 | #6, #19, #20, #38, #39, #40 |
-| 🟡 Medium | 10 | #5, #11, #16, #22, #23, #26, #27, #28, #34, #35 |
-| 🟢 Low | 24 | All others |
+| Risk Level | Count | Tickets                                         |
+| ---------- | ----- | ----------------------------------------------- |
+| 🔴 High    | 6     | #6, #19, #20, #38, #39, #40                     |
+| 🟡 Medium  | 10    | #5, #11, #16, #22, #23, #26, #27, #28, #34, #35 |
+| 🟢 Low     | 24    | All others                                      |
 
 ---
 
 ## 📝 NOTES
 
 ### Breaking Changes
+
 - Task API now requires organization context for new tasks
 - Billing endpoints moved from user-level to org-level
 - URL structure changed for organization routes
 
 ### Backward Compatibility
+
 - Personal tasks (no orgId) remain supported
 - Personal subscriptions still work
 - Existing webhooks continue functioning
 - Gradual migration strategy prevents service interruption
 
 ### Performance Considerations
+
 - Added indexes on all foreign keys
 - Composite indexes for common query patterns
 - Query optimization for org-scoped data
 - Caching strategy for permission checks
 
 ### Security Considerations
+
 - Row-level access control via tRPC middleware
 - Clerk handles authentication and org membership
 - Activity logging for audit trail

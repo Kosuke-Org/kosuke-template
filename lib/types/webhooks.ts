@@ -151,18 +151,26 @@ export type AnyClerkWebhookEvent =
 /**
  * Type guards
  */
-export function isUserEvent(event: AnyClerkWebhookEvent): event is UserCreatedEvent | UserUpdatedEvent | UserDeletedEvent {
+export function isUserEvent(
+  event: AnyClerkWebhookEvent
+): event is UserCreatedEvent | UserUpdatedEvent | UserDeletedEvent {
   return event.type.startsWith('user.');
 }
 
-export function isOrganizationEvent(event: AnyClerkWebhookEvent): event is OrganizationCreatedEvent | OrganizationUpdatedEvent | OrganizationDeletedEvent {
+export function isOrganizationEvent(
+  event: AnyClerkWebhookEvent
+): event is OrganizationCreatedEvent | OrganizationUpdatedEvent | OrganizationDeletedEvent {
   return event.type.startsWith('organization.');
 }
 
-export function isMembershipEvent(event: AnyClerkWebhookEvent): event is MembershipCreatedEvent | MembershipUpdatedEvent | MembershipDeletedEvent {
+export function isMembershipEvent(
+  event: AnyClerkWebhookEvent
+): event is MembershipCreatedEvent | MembershipUpdatedEvent | MembershipDeletedEvent {
   return event.type.startsWith('organizationMembership.');
 }
 
-export function isInvitationEvent(event: AnyClerkWebhookEvent): event is InvitationCreatedEvent | InvitationAcceptedEvent | InvitationRevokedEvent {
+export function isInvitationEvent(
+  event: AnyClerkWebhookEvent
+): event is InvitationCreatedEvent | InvitationAcceptedEvent | InvitationRevokedEvent {
   return event.type.startsWith('organizationInvitation.');
 }
