@@ -8,7 +8,6 @@ import { fileToBase64 } from '@/lib/utils';
 export function useProfileUpload() {
   const { toast } = useToast();
   const { setCurrentImageUrl } = useProfileImage();
-  const utils = trpc.useContext();
 
   const uploadMutation = trpc.user.uploadProfileImage.useMutation({
     onSuccess: (data) => {
