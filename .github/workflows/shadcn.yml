@@ -22,7 +22,7 @@ jobs:
   update-shadcn-components:
     runs-on: ubuntu-latest
     env:
-      HUSKY: 0  # Disable Husky hooks in CI - we run checks explicitly
+      HUSKY: 0 # Disable Husky hooks in CI - we run checks explicitly
 
     steps:
       - name: Checkout repository

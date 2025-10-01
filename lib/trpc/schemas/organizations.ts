@@ -26,6 +26,14 @@ export const updateOrganizationSchema = z.object({
   settings: z.record(z.unknown()).optional(),
 });
 
+/**
+ * Form-specific schema for organization general settings
+ * Used for client-side form validation
+ */
+export const orgGeneralFormSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(100, 'Name is too long'),
+});
+
 export const deleteOrganizationSchema = z.object({
   organizationId: z.string().uuid('Invalid organization ID'),
 });

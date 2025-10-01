@@ -25,13 +25,10 @@ import {
 } from '@/components/ui/form';
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
+import { orgGeneralFormSchema } from '@/lib/trpc/schemas/organizations';
 import type { Organization } from '@/hooks/use-organizations';
 
-const orgFormSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name is too long'),
-});
-
-type OrgFormValues = z.infer<typeof orgFormSchema>;
+type OrgFormValues = z.infer<typeof orgGeneralFormSchema>;
 
 interface OrgGeneralFormProps {
   organization: Organization;
@@ -43,7 +40,7 @@ export function OrgGeneralForm({ organization }: OrgGeneralFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<OrgFormValues>({
-    resolver: zodResolver(orgFormSchema),
+    resolver: zodResolver(orgGeneralFormSchema),
     defaultValues: {
       name: organization.name,
     },
