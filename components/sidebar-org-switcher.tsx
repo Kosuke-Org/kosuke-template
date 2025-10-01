@@ -106,7 +106,7 @@ export function SidebarOrgSwitcher() {
                 >
                   <Avatar className="h-6 w-6 rounded-md">
                     {org.logoUrl && <AvatarImage src={org.logoUrl} alt={org.name} />}
-                    <AvatarFallback className="rounded-md bg-primary/10 text-primary text-xs">
+                    <AvatarFallback className="rounded-md bg-primary text-primary-foreground text-xs">
                       {orgInitials}
                     </AvatarFallback>
                   </Avatar>

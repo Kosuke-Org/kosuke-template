@@ -77,10 +77,8 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
       onOpenChange(false);
       form.reset();
 
-      // Wait a moment for webhook to sync before redirecting
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
       // Redirect to the new organization
+      // The mutation has already synced the org to local DB and invalidated the cache
       router.push(`/org/${result.slug}/dashboard`);
     } catch (error) {
       console.error('Error creating organization:', error);

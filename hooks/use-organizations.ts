@@ -30,9 +30,10 @@ export function useOrganizations() {
 
   // Create organization mutation
   const createOrganization = trpc.organizations.createOrganization.useMutation({
-    onSuccess: () => {
-      // Refetch organizations list - don't show toast here, let the caller handle it
-      utils.organizations.getUserOrganizations.invalidate();
+    onSuccess: async () => {
+      // Refetch organizations list immediately to ensure new org appears in the sidebar
+      // Use refetch() instead of invalidate() to wait for completion
+      await utils.organizations.getUserOrganizations.refetch();
     },
   });
 
