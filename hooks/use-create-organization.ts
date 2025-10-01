@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface CreateOrganizationOptions {
   onSuccess?: (slug: string) => void;
-  onError?: (error: Error) => void;
+  onError?: (error: unknown) => void;
   redirectAfterCreate?: boolean;
 }
 
@@ -54,7 +54,7 @@ export function useCreateOrganization() {
         variant: 'destructive',
       });
       setIsCreating(false);
-      options?.onError?.(error as Error);
+      options?.onError?.(error);
     }
   };
 

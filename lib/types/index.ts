@@ -11,8 +11,6 @@ export type {
 
   // Clerk integration
   ClerkUserType,
-  ClerkWebhookUser,
-  ClerkWebhookEvent,
 
   // Extended user types
   UserWithSubscription,
@@ -103,9 +101,6 @@ export type {
   OrgRoleValue,
   TeamRoleValue,
 } from './organization';
-
-// Organization constants
-export { OrgRole as OrgRoleEnum, TeamRole as TeamRoleEnum } from './organization';
 
 // Organization helper functions
 export {

@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface UpdateOrganizationOptions {
   onSuccess?: () => void;
-  onError?: (error: Error) => void;
+  onError?: (error: unknown) => void;
 }
 
 export function useUpdateOrganization(organizationId: string) {

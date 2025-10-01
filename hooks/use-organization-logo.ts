@@ -12,7 +12,7 @@ import { fileToBase64 } from '@/lib/utils';
 
 interface UploadLogoOptions {
   onSuccess?: () => void;
-  onError?: (error: Error) => void;
+  onError?: (error: unknown) => void;
 }
 
 export function useOrganizationLogo(organizationId: string) {

@@ -13,8 +13,6 @@ export type {
   NewTeam,
   TeamMembership,
   NewTeamMembership,
-  OrgRole,
-  TeamRole,
 } from '@/lib/db/schema';
 
 /**

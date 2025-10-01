@@ -6,20 +6,6 @@ export type { User, ActivityType } from '@/lib/db/schema';
 
 // Clerk User Types (migrated from lib/auth/types.ts)
 export type ClerkUserType = ClerkUser;
-
-export interface ClerkWebhookUser {
-  id: string;
-  email_addresses?: Array<{ email_address: string }>;
-  first_name?: string;
-  last_name?: string;
-  image_url?: string;
-  [key: string]: unknown;
-}
-
-export interface ClerkWebhookEvent {
-  type: 'user.created' | 'user.updated' | 'user.deleted';
-  data: ClerkWebhookUser;
-}
 export interface LocalUser {
   id: string;
   clerkUserId: string;
