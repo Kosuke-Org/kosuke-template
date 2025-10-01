@@ -95,6 +95,9 @@ jobs:
             echo "change_summary<<EOF" >> $GITHUB_OUTPUT
             echo -e "$SUMMARY" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
+            
+            # Clean up temporary files
+            rm -f changed_files.txt
           fi
 
       - name: Generate timestamp for branch
