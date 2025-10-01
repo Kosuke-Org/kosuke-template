@@ -25,5 +25,32 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     restart: unless-stopped
 
+  strapi:
+    image: strapi/strapi:latest
+    container_name: kosuke_template_strapi
+    depends_on:
+      - postgres
+    ports:
+      - '1337:1337'
+    environment:
+      # Database
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: strapi
+      DATABASE_USERNAME: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      # App secrets (optional - can be set in .env for persistence)
+      # APP_KEYS: ${STRAPI_APP_KEYS}
+      # ADMIN_JWT_SECRET: ${STRAPI_ADMIN_JWT_SECRET}
+      # API_TOKEN_SALT: ${STRAPI_API_TOKEN_SALT}
+      # Transfer token salt if using transfers
+      # TRANSFER_TOKEN_SALT: ${STRAPI_TRANSFER_TOKEN_SALT}
+      NODE_ENV: development
+    volumes:
+      - strapi_app:/srv/app
+    restart: unless-stopped
+
 volumes:
   kosuke_template_postgres_data:
+  strapi_app:

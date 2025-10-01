@@ -46,6 +46,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
 
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center gap-6">
+          <Link href="/blog" className="text-sm font-medium hover:underline">Blog</Link>
           {isSignedIn && user ? (
             // Show user profile for logged-in users
             <div className="flex items-center gap-3">
@@ -120,6 +121,9 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
             </SheetTrigger>
             <SheetContent side="right">
               <nav className="flex flex-col gap-4 mt-8">
+                <Link href="/blog">
+                  <Button variant="ghost" className="w-full justify-start">Blog</Button>
+                </Link>
                 {isSignedIn && user ? (
                   // Mobile navigation for logged-in users
                   <div className="flex flex-col gap-4">

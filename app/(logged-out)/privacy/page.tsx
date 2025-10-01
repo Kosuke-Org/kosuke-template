@@ -1,112 +1,44 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { createCaller } from '@/lib/trpc/server';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function PrivacyPage() {
+function PrivacySkeleton() {
+  return (
+    <div className="container max-w-4xl pt-12 sm:pt-20 pb-16 px-4 sm:px-6 space-y-4">
+      <Skeleton className="h-10 w-2/3" />
+      <Skeleton className="h-4 w-1/3" />
+      {Array.from({ length: 12 }).map((_, i) => (
+        <Skeleton key={i} className="h-4 w-full" />
+      ))}
+    </div>
+  );
+}
+
+export default async function PrivacyPage() {
+  const caller = await createCaller();
+  const page = await caller.cms.page.bySlug({ slug: 'privacy' });
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-4xl pt-12 sm:pt-20 pb-16 px-4 sm:px-6">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight">Privacy Policy</h1>
-          <p className="text-muted-foreground mt-2">
-            Last updated:{' '}
-            {new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Information We Collect</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
-              <p>
-                We collect information you provide directly to us, information we obtain
-                automatically when you use our services, and information from other sources as
-                described below.
+        {!page ? (
+          <PrivacySkeleton />
+        ) : (
+          <div className="space-y-4">
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold tracking-tight">{page.title}</h1>
+              <p className="text-muted-foreground mt-2">
+                Last updated:{' '}
+                {new Date(page.updatedAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
               </p>
-              <h4 className="text-lg font-semibold mt-4 mb-2">Account Information</h4>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Name and email address</li>
-                <li>Profile information you choose to provide</li>
-                <li>Billing and payment information</li>
-              </ul>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>How We Use Your Information</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
-              <p>We use the information we collect to:</p>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Provide, maintain, and improve our services</li>
-                <li>Process transactions and send related information</li>
-                <li>Send technical notices and support messages</li>
-                <li>Communicate with you about products, services, and events</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Information Sharing</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
-              <p>
-                We do not sell, trade, or otherwise transfer your personal information to third
-                parties without your consent, except as described in this policy.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Data Security</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
-              <p>
-                We implement appropriate security measures to protect your personal information
-                against unauthorized access, alteration, disclosure, or destruction.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Rights</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
-              <p>You have the right to:</p>
-              <ul className="list-disc pl-6 space-y-1">
-                <li>Access your personal information</li>
-                <li>Correct inaccurate information</li>
-                <li>Delete your account and personal information</li>
-                <li>Object to processing of your information</li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact Us</CardTitle>
-            </CardHeader>
-            <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
-              <p>
-                If you have any questions about this Privacy Policy, please contact us at{' '}
-                <a
-                  href="mailto:privacy@kosuketemplate.com"
-                  className="text-primary hover:underline"
-                >
-                  privacy@kosuketemplate.com
-                </a>
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            <div className="prose prose-neutral dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: page.contentHtml }} />
+          </div>
+        )}
       </div>
     </div>
   );

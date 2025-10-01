@@ -102,6 +102,10 @@ export type {
 // Billing enums
 export { SubscriptionState } from './billing';
 
+// CMS domain types (blog posts and single pages)
+// Re-export from ./cms to keep imports consistent across the app
+export type { BlogPost, BlogTag, CmsPage, CmsSeo } from './cms';
+
 // Note: API types are now handled by lib/api module
 // Import from '@/lib/api' for API-related types and utilities
 
