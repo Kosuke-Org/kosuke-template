@@ -2,10 +2,11 @@ import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
 import { resetMocks } from '../setup/mocks';
+import { vi } from 'vitest';
 
 // Mock useToast hook
-const mockToast = jest.fn();
-jest.mock('@/hooks/use-toast', () => ({
+const mockToast = vi.fn();
+vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
     toast: mockToast,
   }),
@@ -28,7 +29,7 @@ const createWrapper = () => {
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
     resetMocks();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockToast.mockClear();
   });
 

@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { vi } from 'vitest';
 import React, { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -59,70 +59,70 @@ export const mockPolarWebhookEvent = {
 // Setup mocks
 export function setupMocks() {
   // Mock Clerk
-  jest.mock('@clerk/nextjs/server', () => ({
-    auth: jest.fn(() => Promise.resolve(mockClerkAuth)),
+  vi.mock('@clerk/nextjs/server', () => ({
+    auth: vi.fn(() => Promise.resolve(mockClerkAuth)),
     clerkClient: {
       users: {
-        getUser: jest.fn(() => Promise.resolve(mockClerkUserType)),
+        getUser: vi.fn(() => Promise.resolve(mockClerkUserType)),
       },
     },
   }));
 
   // Mock Polar client
-  jest.mock('@/lib/billing/client', () => ({
+  vi.mock('@/lib/billing/client', () => ({
     polar: {
       checkouts: {
-        create: jest.fn(() => Promise.resolve(mockPolarCheckout)),
+        create: vi.fn(() => Promise.resolve(mockPolarCheckout)),
       },
       subscriptions: {
-        list: jest.fn(() => Promise.resolve({ items: [mockPolarSubscription] })),
-        get: jest.fn(() => Promise.resolve(mockPolarSubscription)),
-        cancel: jest.fn(() => Promise.resolve(mockPolarSubscription)),
-        reactivate: jest.fn(() => Promise.resolve(mockPolarSubscription)),
+        list: vi.fn(() => Promise.resolve({ items: [mockPolarSubscription] })),
+        get: vi.fn(() => Promise.resolve(mockPolarSubscription)),
+        cancel: vi.fn(() => Promise.resolve(mockPolarSubscription)),
+        reactivate: vi.fn(() => Promise.resolve(mockPolarSubscription)),
       },
       webhooks: {
-        constructEvent: jest.fn(() => mockPolarWebhookEvent),
+        constructEvent: vi.fn(() => mockPolarWebhookEvent),
       },
     },
   }));
 
   // Mock Next.js navigation
-  jest.mock('next/navigation', () => ({
-    redirect: jest.fn(),
-    useRouter: jest.fn(() => ({
-      push: jest.fn(),
-      replace: jest.fn(),
-      back: jest.fn(),
+  vi.mock('next/navigation', () => ({
+    redirect: vi.fn(),
+    useRouter: vi.fn(() => ({
+      push: vi.fn(),
+      replace: vi.fn(),
+      back: vi.fn(),
     })),
-    useSearchParams: jest.fn(() => new URLSearchParams()),
+    useSearchParams: vi.fn(() => new URLSearchParams()),
   }));
 
   // Mock fetch
-  global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
+  global.fetch = vi.fn() as typeof fetch;
 
   // Mock file operations
-  jest.mock('@vercel/blob', () => ({
-    put: jest.fn(() => Promise.resolve({ url: 'https://blob.vercel-storage.com/file.jpg' })),
-    del: jest.fn(() => Promise.resolve()),
+  vi.mock('@vercel/blob', () => ({
+    put: vi.fn(() => Promise.resolve({ url: 'https://blob.vercel-storage.com/file.jpg' })),
+    del: vi.fn(() => Promise.resolve()),
   }));
 
   // Mock email service
-  jest.mock('resend', () => ({
-    Resend: jest.fn().mockImplementation(() => ({
+  vi.mock('resend', () => ({
+    Resend: vi.fn().mockImplementation(() => ({
       emails: {
-        send: jest.fn(() => Promise.resolve({ id: 'email_123' })),
+        send: vi.fn(() => Promise.resolve({ id: 'email_123' })),
       },
     })),
   }));
 }
 
 export function resetMocks() {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 }
 
 // Helper to mock fetch responses
 export function mockFetchResponse(data: unknown, status = 200) {
-  (global.fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+  (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
     ok: status >= 200 && status < 300,
     status,
     json: () => Promise.resolve(data),
@@ -132,7 +132,7 @@ export function mockFetchResponse(data: unknown, status = 200) {
 
 // Helper to mock fetch error
 export function mockFetchError(error: string) {
-  (global.fetch as jest.MockedFunction<typeof fetch>).mockRejectedValueOnce(new Error(error));
+  (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error(error));
 }
 
 // TanStack Query test wrapper

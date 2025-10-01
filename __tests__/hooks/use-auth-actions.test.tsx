@@ -1,27 +1,28 @@
 import { renderHook, act } from '@testing-library/react';
 import { useAuthActions } from '@/hooks/use-auth-actions';
 import { createQueryWrapper } from '../setup/mocks';
+import { vi } from 'vitest';
 
 // Mock useRouter
-const mockPush = jest.fn();
-jest.mock('next/navigation', () => ({
+const mockPush = vi.fn();
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
   }),
 }));
 
 // Mock Clerk
-const mockSignOut = jest.fn();
-jest.mock('@clerk/nextjs', () => ({
+const mockSignOut = vi.fn();
+vi.mock('@clerk/nextjs', () => ({
   useClerk: () => ({
     signOut: mockSignOut,
   }),
 }));
 
 // Mock useToast hook
-jest.mock('@/hooks/use-toast', () => ({
+vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
-    toast: jest.fn(),
+    toast: vi.fn(),
   }),
 }));
 
@@ -29,7 +30,7 @@ describe('useAuthActions', () => {
   const wrapper = createQueryWrapper();
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockSignOut.mockResolvedValue(undefined);
   });
 
