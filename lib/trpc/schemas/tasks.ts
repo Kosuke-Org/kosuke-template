@@ -31,8 +31,8 @@ export const taskListFiltersSchema = z
     completed: z.boolean().optional(),
     priority: z.enum(['low', 'medium', 'high']).optional(),
     searchQuery: z.string().optional(),
-    organizationId: z.string().uuid().optional(), // NEW: Filter by organization
-    teamId: z.string().uuid().optional(), // NEW: Filter by team
+    organizationId: z.string().uuid().nullable().optional(), // Can filter by org or null (personal)
+    teamId: z.string().uuid().nullable().optional(), // Can filter by team or null
   })
   .optional();
 

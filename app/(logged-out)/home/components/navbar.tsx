@@ -70,7 +70,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard" className="cursor-pointer">
+                      <Link href="/" className="cursor-pointer">
                         <User className="mr-2 h-4 w-4" />
                         Dashboard
                       </Link>
@@ -82,7 +82,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/settings/billing" className="cursor-pointer">
+                      <Link href="/billing" className="cursor-pointer">
                         <CreditCard className="mr-2 h-4 w-4" />
                         Billing
                       </Link>
@@ -138,7 +138,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Link href="/dashboard">
+                      <Link href="/">
                         <Button variant="ghost" className="w-full justify-start">
                           <User className="mr-2 h-4 w-4" />
                           Dashboard

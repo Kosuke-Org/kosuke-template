@@ -88,13 +88,13 @@ export default function BillingSuccessPage() {
           </div>
 
           <div className="flex flex-col space-y-2">
-            <Link href="/settings/billing">
+            <Link href="/billing">
               <Button className="w-full">
                 View Billing Details
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </Link>
-            <Link href="/dashboard">
+            <Link href="/">
               <Button variant="outline" className="w-full">
                 Go to Dashboard
               </Button>

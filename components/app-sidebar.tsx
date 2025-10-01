@@ -73,11 +73,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           items: [
             {
               title: 'Tasks',
-              url: '/tasks', // Tasks are not org-scoped yet
+              url: `${orgPrefix}/tasks`,
             },
             {
               title: 'Docs',
-              url: '/docs', // Docs are not org-scoped yet
+              url: `${orgPrefix}/docs`,
             },
           ],
         },

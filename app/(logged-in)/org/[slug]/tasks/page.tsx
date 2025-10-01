@@ -1,11 +1,17 @@
+/**
+ * Organization Tasks Page
+ * Org-scoped tasks management
+ */
+
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Building2 } from 'lucide-react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -26,14 +32,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTasks } from '@/hooks/use-tasks';
-import { TaskItem } from '@/app/(logged-in)/tasks/components/task-item';
-import { TaskDialog } from '@/app/(logged-in)/tasks/components/task-dialog';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { TaskItem } from '@/app/(logged-in)/org/[slug]/tasks/components/task-item';
+import { TaskDialog } from '@/app/(logged-in)/org/[slug]/tasks/components/task-dialog';
 import type { TaskPriority } from '@/lib/types';
 import { createTaskSchema, updateTaskSchema } from '@/lib/trpc/schemas/tasks';
 
 type TaskFilter = 'all' | 'active' | 'completed';
 
-// Skeleton components colocated with the page
+// Skeleton components
 function TaskSkeleton() {
   return (
     <Card className="py-3">
@@ -52,21 +59,16 @@ function TaskSkeleton() {
 function TasksPageSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="space-y-2">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-96" />
       </div>
-
-      {/* Tabs & Action Bar */}
       <div className="flex items-center gap-4 overflow-x-auto">
         <Skeleton className="h-10 w-80" />
         <Skeleton className="h-10 flex-1 max-w-sm" />
         <Skeleton className="h-10 w-32" />
         <Skeleton className="h-10 w-28" />
       </div>
-
-      {/* Task List */}
       <div className="space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
           <TaskSkeleton key={i} />
@@ -76,7 +78,8 @@ function TasksPageSkeleton() {
   );
 }
 
-export default function TasksPage() {
+export default function OrgTasksPage() {
+  const { activeOrganization, isLoading: isLoadingOrg } = useActiveOrganization();
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -85,7 +88,7 @@ export default function TasksPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  // Server-side filtering with tRPC - no client-side filtering needed! 🚀
+  // Fetch org-scoped tasks
   const {
     tasks,
     isLoading,
@@ -101,10 +104,8 @@ export default function TasksPage() {
     completed: filter === 'all' ? undefined : filter === 'completed',
     priority: priorityFilter === 'all' ? undefined : priorityFilter,
     searchQuery: searchQuery.trim() || undefined,
+    organizationId: activeOrganization?.id, // Filter by org
   });
-
-  // Tasks are already filtered server-side, use them directly
-  const filteredTasks = tasks;
 
   const selectedTask = useMemo(
     () => tasks.find((t) => t.id === selectedTaskId),
@@ -112,7 +113,10 @@ export default function TasksPage() {
   );
 
   const handleCreateTask = async (values: z.infer<typeof createTaskSchema>) => {
-    await createTask(values);
+    await createTask({
+      ...values,
+      organizationId: activeOrganization?.id, // Associate with org
+    });
   };
 
   const handleUpdateTask = async (values: z.infer<typeof updateTaskSchema>) => {
@@ -136,18 +140,32 @@ export default function TasksPage() {
     setDeleteDialogOpen(true);
   };
 
-  if (isLoading) {
+  if (isLoadingOrg || isLoading) {
     return <TasksPageSkeleton />;
+  }
+
+  if (!activeOrganization) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">No organization selected</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
-        <p className="text-muted-foreground">
-          Manage your tasks and stay organized with your personal todo list.
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
+          <p className="text-muted-foreground">Manage tasks for {activeOrganization.name}</p>
+        </div>
+        <Badge variant="outline" className="gap-1.5">
+          <Building2 className="h-3 w-3" />
+          {activeOrganization.slug}
+        </Badge>
       </div>
 
       {/* Tabs & Action Bar */}
@@ -185,7 +203,7 @@ export default function TasksPage() {
           </Button>
         </div>
         <TabsContent value={filter} className="mt-6 space-y-3">
-          {filteredTasks.length === 0 ? (
+          {tasks.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <h3 className="font-semibold text-lg mb-1">No tasks found</h3>
@@ -203,7 +221,7 @@ export default function TasksPage() {
               </CardContent>
             </Card>
           ) : (
-            filteredTasks.map((task) => (
+            tasks.map((task) => (
               <TaskItem
                 key={task.id}
                 {...task}
