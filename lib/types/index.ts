@@ -50,7 +50,19 @@ export type {
   // Base types
   Task,
   TaskPriority,
+  NewTask,
+
+  // Extended types
+  TaskWithOrg,
+  TaskWithDetails,
+  TaskStatistics,
+  TaskFilters,
+  TaskGroupBy,
+  GroupedTasks,
 } from './task';
+
+// Task helper functions
+export { isTaskOverdue, getTaskCompletionStatus, getDaysUntilDue } from './task';
 
 // Note: Task input/output types are inferred from tRPC router
 // Use: import type { AppRouter } from '@/lib/trpc/router';
@@ -59,6 +71,62 @@ export type {
 //      type RouterOutput = inferRouterOutputs<AppRouter>;
 //      type CreateTaskInput = RouterInput['tasks']['create'];
 //      type TaskWithOverdue = RouterOutput['tasks']['list'][number];
+
+// Organization-related types
+export type {
+  // Base types
+  Organization,
+  NewOrganization,
+  OrgMembership,
+  NewOrgMembership,
+  Team,
+  NewTeam,
+  TeamMembership,
+  NewTeamMembership,
+  OrgRole,
+  TeamRole,
+
+  // Extended types
+  OrganizationWithMemberCount,
+  OrganizationWithDetails,
+  OrgMembershipWithUser,
+  TeamWithMemberCount,
+  TeamWithDetails,
+  TeamMembershipWithUser,
+
+  // Context and permissions
+  OrgContext,
+
+  // Statistics
+  OrgStatistics,
+  TeamStatistics,
+
+  // Settings
+  OrganizationSettings,
+
+  // Invitations
+  OrganizationInvitation,
+
+  // Role types
+  OrgRoleValue,
+  TeamRoleValue,
+} from './organization';
+
+// Organization constants
+export { OrgRole as OrgRoleEnum, TeamRole as TeamRoleEnum } from './organization';
+
+// Organization helper functions
+export {
+  isOrgAdmin,
+  isOrgMember,
+  isTeamLead,
+  isTeamMember,
+  canManageOrganization,
+  canInviteMembers,
+  canManageTeams,
+  canManageBilling,
+  canManageTeam,
+} from './organization';
 
 // Billing and subscription types
 export type {
@@ -101,6 +169,32 @@ export type {
 
 // Billing enums
 export { SubscriptionState } from './billing';
+
+// Webhook types
+export type {
+  ClerkWebhookUser,
+  ClerkOrganizationWebhook,
+  ClerkMembershipWebhook,
+  ClerkInvitationWebhook,
+  ClerkWebhookEvent,
+  ClerkWebhookEventType,
+  UserCreatedEvent,
+  UserUpdatedEvent,
+  UserDeletedEvent,
+  OrganizationCreatedEvent,
+  OrganizationUpdatedEvent,
+  OrganizationDeletedEvent,
+  MembershipCreatedEvent,
+  MembershipUpdatedEvent,
+  MembershipDeletedEvent,
+  InvitationCreatedEvent,
+  InvitationAcceptedEvent,
+  InvitationRevokedEvent,
+  AnyClerkWebhookEvent,
+} from './webhooks';
+
+// Webhook type guards
+export { isUserEvent, isOrganizationEvent, isMembershipEvent, isInvitationEvent } from './webhooks';
 
 // Note: API types are now handled by lib/api module
 // Import from '@/lib/api' for API-related types and utilities

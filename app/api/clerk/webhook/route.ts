@@ -8,21 +8,17 @@ import { headers } from 'next/headers';
 import { sendEmail } from '@/lib/email';
 import { WelcomeEmail } from '@/lib/email/templates';
 import React from 'react';
-
-// Define types for webhook events
-interface ClerkWebhookEvent {
-  type: string;
-  data: ClerkWebhookUser;
-}
-
-interface ClerkWebhookUser {
-  id: string;
-  email_addresses?: Array<{ email_address: string }>;
-  first_name?: string;
-  last_name?: string;
-  image_url?: string;
-  [key: string]: unknown;
-}
+import {
+  syncOrgFromWebhook,
+  syncMembershipFromWebhook,
+  removeOrgMembership,
+  softDeleteOrganization,
+} from '@/lib/organizations';
+import type {
+  AnyClerkWebhookEvent,
+  ClerkOrganizationWebhook,
+  ClerkMembershipWebhook,
+} from '@/lib/types';
 
 export async function POST(req: NextRequest) {
   console.log('🔔 Clerk webhook received');
@@ -47,7 +43,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Get the body
-  let payload: ClerkWebhookEvent;
+  let payload: AnyClerkWebhookEvent;
   let body: string;
 
   try {
@@ -61,7 +57,7 @@ export async function POST(req: NextRequest) {
   // Create a new Svix instance with your secret
   const wh = new Webhook(WEBHOOK_SECRET);
 
-  let evt: ClerkWebhookEvent;
+  let evt: AnyClerkWebhookEvent;
 
   // Verify the payload with the headers
   try {
@@ -69,7 +65,7 @@ export async function POST(req: NextRequest) {
       'svix-id': svix_id,
       'svix-timestamp': svix_timestamp,
       'svix-signature': svix_signature,
-    }) as ClerkWebhookEvent;
+    }) as AnyClerkWebhookEvent;
   } catch (err) {
     console.error('❌ Error verifying webhook signature:', err);
     return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
@@ -77,22 +73,63 @@ export async function POST(req: NextRequest) {
 
   // Handle the webhook
   const eventType = evt.type;
-  const userData = evt.data;
+  const eventData = evt.data;
 
-  console.log(`📨 Processing ${eventType} for user: ${userData.id}`);
+  console.log(`📨 Processing ${eventType}`);
 
   try {
     switch (eventType) {
+      // User events
       case 'user.created':
-        await handleUserCreated(userData);
+        await handleUserCreated(eventData as any);
         break;
 
       case 'user.updated':
-        await handleUserUpdated(userData);
+        await handleUserUpdated(eventData as any);
         break;
 
       case 'user.deleted':
-        await handleUserDeleted(userData);
+        await handleUserDeleted(eventData as any);
+        break;
+
+      // Organization events
+      case 'organization.created':
+        await handleOrganizationCreated(eventData as ClerkOrganizationWebhook);
+        break;
+
+      case 'organization.updated':
+        await handleOrganizationUpdated(eventData as ClerkOrganizationWebhook);
+        break;
+
+      case 'organization.deleted':
+        await handleOrganizationDeleted(eventData as ClerkOrganizationWebhook);
+        break;
+
+      // Membership events
+      case 'organizationMembership.created':
+        await handleMembershipCreated(eventData as ClerkMembershipWebhook);
+        break;
+
+      case 'organizationMembership.updated':
+        await handleMembershipUpdated(eventData as ClerkMembershipWebhook);
+        break;
+
+      case 'organizationMembership.deleted':
+        await handleMembershipDeleted(eventData as ClerkMembershipWebhook);
+        break;
+
+      // Invitation events (logged only)
+      case 'organizationInvitation.created':
+        console.log('📧 Organization invitation created');
+        break;
+
+      case 'organizationInvitation.accepted':
+        console.log('✅ Organization invitation accepted');
+        // Membership will be created via organizationMembership.created event
+        break;
+
+      case 'organizationInvitation.revoked':
+        console.log('🚫 Organization invitation revoked');
         break;
 
       default:
@@ -100,7 +137,7 @@ export async function POST(req: NextRequest) {
         break;
     }
 
-    console.log(`✅ Successfully processed ${eventType} for user: ${userData.id}`);
+    console.log(`✅ Successfully processed ${eventType}`);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error(`❌ Error processing ${eventType}:`, error);
@@ -330,6 +367,104 @@ async function handleUserDeleted(userData: ClerkWebhookUser) {
     */
   } catch (error) {
     console.error('💥 Error in handleUserDeleted:', error);
+    throw error;
+  }
+}
+
+/**
+ * ORGANIZATION EVENT HANDLERS
+ */
+
+/**
+ * Handle organization.created webhook event
+ */
+async function handleOrganizationCreated(orgData: ClerkOrganizationWebhook) {
+  console.log('🏢 Creating organization from webhook:', orgData.id);
+
+  try {
+    await syncOrgFromWebhook(orgData);
+    console.log(`✅ Organization created: ${orgData.id}`);
+  } catch (error) {
+    console.error('💥 Error in handleOrganizationCreated:', error);
+    throw error;
+  }
+}
+
+/**
+ * Handle organization.updated webhook event
+ */
+async function handleOrganizationUpdated(orgData: ClerkOrganizationWebhook) {
+  console.log('📝 Updating organization from webhook:', orgData.id);
+
+  try {
+    await syncOrgFromWebhook(orgData);
+    console.log(`✅ Organization updated: ${orgData.id}`);
+  } catch (error) {
+    console.error('💥 Error in handleOrganizationUpdated:', error);
+    throw error;
+  }
+}
+
+/**
+ * Handle organization.deleted webhook event
+ */
+async function handleOrganizationDeleted(orgData: ClerkOrganizationWebhook) {
+  console.log('🗑️ Processing organization deletion from webhook:', orgData.id);
+
+  try {
+    await softDeleteOrganization(orgData.id);
+    console.log(`✅ Organization deleted: ${orgData.id}`);
+  } catch (error) {
+    console.error('💥 Error in handleOrganizationDeleted:', error);
+    throw error;
+  }
+}
+
+/**
+ * MEMBERSHIP EVENT HANDLERS
+ */
+
+/**
+ * Handle organizationMembership.created webhook event
+ */
+async function handleMembershipCreated(membershipData: ClerkMembershipWebhook) {
+  console.log('👤 Adding member to organization:', membershipData.id);
+
+  try {
+    await syncMembershipFromWebhook(membershipData);
+    console.log(`✅ Membership created: ${membershipData.id}`);
+  } catch (error) {
+    console.error('💥 Error in handleMembershipCreated:', error);
+    throw error;
+  }
+}
+
+/**
+ * Handle organizationMembership.updated webhook event
+ */
+async function handleMembershipUpdated(membershipData: ClerkMembershipWebhook) {
+  console.log('📝 Updating organization membership:', membershipData.id);
+
+  try {
+    await syncMembershipFromWebhook(membershipData);
+    console.log(`✅ Membership updated: ${membershipData.id}`);
+  } catch (error) {
+    console.error('💥 Error in handleMembershipUpdated:', error);
+    throw error;
+  }
+}
+
+/**
+ * Handle organizationMembership.deleted webhook event
+ */
+async function handleMembershipDeleted(membershipData: ClerkMembershipWebhook) {
+  console.log('🗑️ Removing member from organization:', membershipData.id);
+
+  try {
+    await removeOrgMembership(membershipData.id);
+    console.log(`✅ Membership deleted: ${membershipData.id}`);
+  } catch (error) {
+    console.error('💥 Error in handleMembershipDeleted:', error);
     throw error;
   }
 }

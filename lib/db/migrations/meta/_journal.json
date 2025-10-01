@@ -29,6 +29,13 @@
       "when": 1759306983625,
       "tag": "0003_tiny_corsair",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1759319174670,
+      "tag": "0004_regular_loners",
+      "breakpoints": true
     }
   ]
 }

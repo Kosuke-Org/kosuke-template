@@ -6,18 +6,21 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import superjson from 'superjson';
+import { getUserOrgMembership } from '@/lib/organizations';
 
 /**
  * Create context for tRPC
- * This runs on every request and provides access to auth state
+ * This runs on every request and provides access to auth state and organization context
  */
 export const createTRPCContext = async () => {
-  const { userId } = await auth();
+  const { userId, orgId, orgRole } = await auth();
   const user = userId ? await currentUser() : null;
 
   return {
     userId,
     user,
+    orgId, // Active organization ID from Clerk (can be null)
+    orgRole, // User's role in active organization (can be null)
   };
 };
 
@@ -53,6 +56,61 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
     ctx: {
       userId: ctx.userId,
       user: ctx.user,
+      orgId: ctx.orgId,
+      orgRole: ctx.orgRole,
     },
+  });
+});
+
+/**
+ * Organization procedure - requires organization context
+ * Verifies user is a member of the active organization
+ */
+export const orgProcedure = protectedProcedure.use(async (opts) => {
+  const { ctx } = opts;
+
+  if (!ctx.orgId) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Organization context required. Please select an organization.',
+    });
+  }
+
+  // Verify user is a member of the organization
+  const membership = await getUserOrgMembership(ctx.userId, ctx.orgId);
+
+  if (!membership) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'You are not a member of this organization',
+    });
+  }
+
+  return opts.next({
+    ctx: {
+      ...ctx,
+      orgId: ctx.orgId,
+      orgRole: ctx.orgRole as string,
+      membership,
+    },
+  });
+});
+
+/**
+ * Organization admin procedure - requires admin role
+ * Only org admins can perform these actions
+ */
+export const orgAdminProcedure = orgProcedure.use(async (opts) => {
+  const { ctx } = opts;
+
+  if (ctx.orgRole !== 'org:admin') {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Organization admin access required',
+    });
+  }
+
+  return opts.next({
+    ctx,
   });
 });
