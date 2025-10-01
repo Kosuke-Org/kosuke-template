@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "Artiforge": {
+      "url": "https://mcp.artiforge.ai/mcp?pat=pat_94ff878dc99b8f1afb98aaf71e609391a365b293cedcc5452532961c1a3a54bf",
+      "type": "http",
+      "description": "Artiforge - Build with AI without frictions"
+    }
+  }
+}

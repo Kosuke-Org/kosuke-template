@@ -11,9 +11,10 @@ import { Label } from '@/components/ui/label';
 import { useUser } from '@clerk/nextjs';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { useProfileUpload } from '@/hooks/use-profile-upload';
-import { useFormSubmission } from '@/hooks/use-form-submission';
 import { ButtonSkeleton } from '@/components/skeletons';
 import { Skeleton } from '@/components/ui/skeleton';
+import { trpc } from '@/lib/trpc/client';
+import { useToast } from '@/hooks/use-toast';
 
 // Page-specific skeleton for profile settings
 function ProfileSettingsSkeleton() {
@@ -60,20 +61,28 @@ export default function ProfileSettings() {
   const { user, isSignedIn } = useUser();
   const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
   const { handleImageUpload, isUploading } = useProfileUpload();
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editDisplayName, setEditDisplayName] = useState(displayName);
 
-  const { handleSubmit: submitProfileUpdate, isSubmitting } = useFormSubmission({
-    onSubmit: async () => {
-      // Note: Clerk handles name updates differently
-      // You might need to use clerkClient.users.updateUser() in an API route
-      // For now, we'll show a message about this limitation
-      throw new Error('Name updates need to be implemented via Clerk API routes.');
-    },
-    onSuccess: () => {
+  const updateDisplayName = trpc.user.updateDisplayName.useMutation({
+    onSuccess: async (data) => {
       setIsEditing(false);
+      setEditDisplayName(data.displayName); // Update local state
+      toast({
+        title: 'Profile updated',
+        description: 'Your display name has been updated successfully.',
+      });
+      // Force Clerk to reload the user data
+      await user?.reload();
     },
-    errorMessage: 'Failed to update profile. Please try again.',
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update profile. Please try again.',
+        variant: 'destructive',
+      });
+    },
   });
 
   if (!isSignedIn || !user) {
@@ -82,12 +91,22 @@ export default function ProfileSettings() {
 
   const handleSaveProfile = () => {
     if (!editDisplayName.trim()) return;
-    submitProfileUpdate({ displayName: editDisplayName });
+    updateDisplayName.mutate({ displayName: editDisplayName });
   };
 
   const handleCancelEdit = () => {
     setEditDisplayName(displayName);
     setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveProfile();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelEdit();
+    }
   };
 
   return (
@@ -117,18 +136,13 @@ export default function ProfileSettings() {
                 )}
               </div>
               <div className="relative">
-                <Button variant="outline" className="flex gap-2" disabled={isUploading}>
+                <Button variant="outline" disabled={isUploading}>
                   {isUploading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Uploading...
-                    </>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <>
-                      <Upload className="h-4 w-4" />
-                      Change Image
-                    </>
+                    <Upload className="h-4 w-4" />
                   )}
+                  Change Image
                 </Button>
                 {!isUploading && (
                   <Input
@@ -158,15 +172,17 @@ export default function ProfileSettings() {
                         id="displayName"
                         value={editDisplayName}
                         onChange={(e) => setEditDisplayName(e.target.value)}
+                        onKeyDown={handleKeyDown}
                         placeholder="Enter your display name"
                         className="flex-1"
+                        autoFocus
                       />
                       <Button
                         onClick={handleSaveProfile}
-                        disabled={isSubmitting || !editDisplayName.trim()}
+                        disabled={updateDisplayName.isPending || !editDisplayName.trim()}
                         size="sm"
                       >
-                        {isSubmitting ? (
+                        {updateDisplayName.isPending ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
                           <Check className="h-4 w-4" />
@@ -192,8 +208,8 @@ export default function ProfileSettings() {
                     </div>
                   )}
                 </div>
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Email</h3>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Email</Label>
                   <p className="text-base">{primaryEmail}</p>
                 </div>
               </div>

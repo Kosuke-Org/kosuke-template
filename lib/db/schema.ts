@@ -1,7 +1,10 @@
-import { pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, varchar, pgEnum } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { relations } from 'drizzle-orm';
+
+// Enums
+export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);
 
 // Users - Minimal sync from Clerk for local queries and future expansion
 export const users = pgTable('users', {
@@ -41,10 +44,24 @@ export const activityLogs = pgTable('activity_logs', {
   metadata: text('metadata'), // JSON string for additional context
 });
 
+// Tasks - Simple todo list functionality
+export const tasks = pgTable('tasks', {
+  id: serial('id').primaryKey(),
+  clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID
+  title: text('title').notNull(),
+  description: text('description'),
+  completed: text('completed').notNull().default('false'), // 'true' or 'false' as text
+  priority: taskPriorityEnum('priority').notNull().default('medium'),
+  dueDate: timestamp('due_date'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Relations for better queries
 export const usersRelations = relations(users, ({ many }) => ({
   subscriptions: many(userSubscriptions),
   activityLogs: many(activityLogs),
+  tasks: many(tasks),
 }));
 
 export const userSubscriptionsRelations = relations(userSubscriptions, ({ one }) => ({
@@ -61,6 +78,13 @@ export const activityLogsRelations = relations(activityLogs, ({ one }) => ({
   }),
 }));
 
+export const tasksRelations = relations(tasks, ({ one }) => ({
+  user: one(users, {
+    fields: [tasks.clerkUserId],
+    references: [users.clerkUserId],
+  }),
+}));
+
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const selectUserSchema = createSelectSchema(users);
@@ -72,6 +96,9 @@ export const selectUserSubscriptionSchema = createSelectSchema(userSubscriptions
 
 export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({ id: true });
 export const selectActivityLogSchema = createSelectSchema(activityLogs);
+
+export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true });
+export const selectTaskSchema = createSelectSchema(tasks);
 
 // Enums for type safety
 export enum SubscriptionTier {
@@ -110,3 +137,8 @@ export type UserSubscription = z.infer<typeof selectUserSubscriptionSchema>;
 export type NewUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
 export type ActivityLog = z.infer<typeof selectActivityLogSchema>;
 export type NewActivityLog = z.infer<typeof insertActivityLogSchema>;
+export type Task = z.infer<typeof selectTaskSchema>;
+export type NewTask = z.infer<typeof insertTaskSchema>;
+
+// Infer enum types from schema
+export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];

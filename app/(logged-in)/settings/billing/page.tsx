@@ -250,7 +250,7 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Billing & Subscription</h2>
         <p className="text-sm text-muted-foreground">
           Manage your subscription and billing information.
