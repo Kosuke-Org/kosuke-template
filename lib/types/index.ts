@@ -52,14 +52,6 @@ export type {
   TaskPriority,
 } from './task';
 
-// Note: Task input/output types are inferred from tRPC router
-// Use: import type { AppRouter } from '@/lib/trpc/router';
-//      import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
-//      type RouterInput = inferRouterInputs<AppRouter>;
-//      type RouterOutput = inferRouterOutputs<AppRouter>;
-//      type CreateTaskInput = RouterInput['tasks']['create'];
-//      type TaskWithOverdue = RouterOutput['tasks']['list'][number];
-
 // Billing and subscription types
 export type {
   // Base types
