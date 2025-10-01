@@ -83,6 +83,7 @@ export default function TasksPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
 
+  // Server-side filtering with tRPC - no client-side filtering needed! 🚀
   const {
     tasks,
     isLoading,
@@ -94,36 +95,14 @@ export default function TasksPage() {
     isUpdating,
     isDeleting,
     isToggling,
-  } = useTasks();
+  } = useTasks({
+    completed: filter === 'all' ? undefined : filter === 'completed',
+    priority: priorityFilter === 'all' ? undefined : priorityFilter,
+    searchQuery: searchQuery.trim() || undefined,
+  });
 
-  // Filter and search tasks
-  const filteredTasks = useMemo(() => {
-    let result = tasks;
-
-    // Filter by completion status
-    if (filter === 'active') {
-      result = result.filter((task) => !task.completed);
-    } else if (filter === 'completed') {
-      result = result.filter((task) => task.completed);
-    }
-
-    // Filter by priority
-    if (priorityFilter !== 'all') {
-      result = result.filter((task) => task.priority === priorityFilter);
-    }
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (task) =>
-          task.title.toLowerCase().includes(query) ||
-          (task.description && task.description.toLowerCase().includes(query))
-      );
-    }
-
-    return result;
-  }, [tasks, filter, priorityFilter, searchQuery]);
+  // Tasks are already filtered server-side, use them directly
+  const filteredTasks = tasks;
 
   const selectedTask = useMemo(
     () => tasks.find((t) => t.id === selectedTaskId),
@@ -195,13 +174,9 @@ export default function TasksPage() {
       <Tabs value={filter} onValueChange={(v) => setFilter(v as TaskFilter)}>
         <div className="flex items-center gap-4 overflow-x-auto">
           <TabsList>
-            <TabsTrigger value="all">All ({tasks.length})</TabsTrigger>
-            <TabsTrigger value="active">
-              Active ({tasks.filter((t) => !t.completed).length})
-            </TabsTrigger>
-            <TabsTrigger value="completed">
-              Completed ({tasks.filter((t) => t.completed).length})
-            </TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
           <div className="relative flex-1 max-w-sm">
             <Input

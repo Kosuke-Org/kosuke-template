@@ -417,4 +417,94 @@ describe('useTasks', () => {
 
     expect(trpc.tasks.list.useQuery).toHaveBeenCalledWith({ priority: 'high' }, expect.any(Object));
   });
+
+  it('should filter tasks by search query (server-side)', () => {
+    const mockRefetch = jest.fn();
+    const searchQuery = 'Test Task 1';
+
+    (trpc.tasks.list.useQuery as jest.Mock).mockImplementation((filters) => ({
+      data: filters?.searchQuery ? [mockTasks[0]] : mockTasks,
+      isLoading: false,
+      error: null,
+      refetch: mockRefetch,
+    }));
+
+    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
+      mutateAsync: jest.fn(),
+      isPending: false,
+    });
+
+    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
+      mutateAsync: jest.fn(),
+      isPending: false,
+    });
+
+    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
+      mutateAsync: jest.fn(),
+      isPending: false,
+    });
+
+    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
+      mutateAsync: jest.fn(),
+      isPending: false,
+    });
+
+    const { result } = renderHook(() => useTasks({ searchQuery }), { wrapper });
+
+    expect(trpc.tasks.list.useQuery).toHaveBeenCalledWith({ searchQuery }, expect.any(Object));
+    expect(result.current.tasks).toHaveLength(1);
+  });
+
+  it('should handle combined filters (completed + priority + search)', () => {
+    const mockRefetch = jest.fn();
+
+    (trpc.tasks.list.useQuery as jest.Mock).mockImplementation((filters) => ({
+      data:
+        filters?.completed && filters?.priority === 'high' && filters?.searchQuery
+          ? [mockTasks[0]]
+          : mockTasks,
+      isLoading: false,
+      error: null,
+      refetch: mockRefetch,
+    }));
+
+    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
+      mutateAsync: jest.fn(),
+      isPending: false,
+    });
+
+    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
+      mutateAsync: jest.fn(),
+      isPending: false,
+    });
+
+    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
+      mutateAsync: jest.fn(),
+      isPending: false,
+    });
+
+    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
+      mutateAsync: jest.fn(),
+      isPending: false,
+    });
+
+    const { result } = renderHook(
+      () =>
+        useTasks({
+          completed: true,
+          priority: 'high',
+          searchQuery: 'task',
+        }),
+      { wrapper }
+    );
+
+    expect(trpc.tasks.list.useQuery).toHaveBeenCalledWith(
+      {
+        completed: true,
+        priority: 'high',
+        searchQuery: 'task',
+      },
+      expect.any(Object)
+    );
+  });
 });

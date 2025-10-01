@@ -1,7 +1,10 @@
-import { pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, varchar, pgEnum } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { relations } from 'drizzle-orm';
+
+// Enums
+export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);
 
 // Users - Minimal sync from Clerk for local queries and future expansion
 export const users = pgTable('users', {
@@ -48,7 +51,7 @@ export const tasks = pgTable('tasks', {
   title: text('title').notNull(),
   description: text('description'),
   completed: text('completed').notNull().default('false'), // 'true' or 'false' as text
-  priority: text('priority').notNull().default('medium'), // 'low', 'medium', 'high'
+  priority: taskPriorityEnum('priority').notNull().default('medium'),
   dueDate: timestamp('due_date'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -136,3 +139,6 @@ export type ActivityLog = z.infer<typeof selectActivityLogSchema>;
 export type NewActivityLog = z.infer<typeof insertActivityLogSchema>;
 export type Task = z.infer<typeof selectTaskSchema>;
 export type NewTask = z.infer<typeof insertTaskSchema>;
+
+// Infer enum types from schema
+export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];

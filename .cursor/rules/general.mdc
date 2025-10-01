@@ -71,18 +71,29 @@ pnpm run shadcn:check    # Check for available component updates
 - **Schema Management**: Always use Drizzle schema definitions in `./lib/db/schema.ts`
 - **Migrations**: Generate migrations with `pnpm run db:generate` after schema changes
 - **Type Safety**: Use `createInsertSchema` and `createSelectSchema` from drizzle-zod
+- **Enums**: Use `pgEnum` for enum types - provides type safety AND database-level validation
+- **Type Inference**: Export inferred types from schema enums for automatic type sync
 - **Relations**: Define proper relations for complex queries
 - **Connection**: Use the configured database instance from `./lib/db/drizzle.ts`
 - **Environment**: PostgreSQL runs on port 54321 locally via Docker Compose
 
 ```typescript
-// Example schema pattern
+// Example schema pattern with enum
+import { pgTable, serial, text, timestamp, pgEnum } from 'drizzle-orm/pg-core';
+
+// Define enum at database level
+export const statusEnum = pgEnum('status', ['pending', 'active', 'completed']);
+
 export const tableName = pgTable('table_name', {
   id: serial('id').primaryKey(),
   clerkUserId: text('clerk_user_id').notNull(), // Always reference Clerk users
+  status: statusEnum('status').notNull().default('pending'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+// Export inferred type - automatically syncs with enum values
+export type Status = (typeof statusEnum.enumValues)[number];
 
 // Example query pattern
 import { db } from '@/lib/db/drizzle';
@@ -644,18 +655,38 @@ throw new TRPCError({
 });
 ```
 
-**Type Safety:**
+**Type Safety & Inference (MANDATORY):**
 
+- **ALWAYS infer types from tRPC router** - Never manually define input/output types
+- **Use schema enums for type inference** - Import from `@/lib/db/schema` for enum types
 - Export router types for client usage
-- Use `inferRouterOutputs` for response types
-- Leverage end-to-end type safety
+- Leverage end-to-end type safety from database to UI
 
 ```typescript
+// ✅ CORRECT - Infer types from tRPC router
 import type { AppRouter } from '@/lib/trpc/router';
-import type { inferRouterOutputs } from '@trpc/server';
+import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 
+type RouterInput = inferRouterInputs<AppRouter>;
 type RouterOutput = inferRouterOutputs<AppRouter>;
-type Task = RouterOutput['tasks']['list'][number];
+
+// Input types (create, update, filters)
+type CreateTaskInput = RouterInput['tasks']['create'];
+type TaskListFilters = RouterInput['tasks']['list'];
+
+// Output types (query results)
+type TaskWithOverdue = RouterOutput['tasks']['list'][number];
+
+// ❌ WRONG - Manual type definitions that duplicate router
+interface CreateTaskInput {  // NO! This duplicates router input
+  title: string;
+  description?: string;
+  priority: 'low' | 'medium' | 'high';
+}
+
+// ✅ CORRECT - Import enum types from schema
+import type { TaskPriority } from '@/lib/db/schema';
+// Type is inferred from pgEnum, automatically syncs
 ```
 
 **Performance:**
@@ -664,6 +695,67 @@ type Task = RouterOutput['tasks']['list'][number];
 - Set appropriate staleTime for queries
 - Implement pagination for large datasets
 - Use select to transform data when needed
+
+**Server-Side Search & Filtering (MANDATORY):**
+
+**ALWAYS implement search and filters at the database level via tRPC. NEVER use client-side filtering.**
+
+```typescript
+// ✅ CORRECT - Server-side search and filtering
+export const tasksRouter = router({
+  list: protectedProcedure
+    .input(
+      z.object({
+        completed: z.boolean().optional(),
+        priority: z.enum(['low', 'medium', 'high']).optional(),
+        searchQuery: z.string().optional(), // Server-side search
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const conditions = [eq(tasks.clerkUserId, ctx.userId)];
+
+      // Filter by completion
+      if (input?.completed !== undefined) {
+        conditions.push(eq(tasks.completed, input.completed));
+      }
+
+      // Server-side search using SQL LIKE
+      if (input?.searchQuery && input.searchQuery.trim()) {
+        const searchTerm = `%${input.searchQuery.trim()}%`;
+        conditions.push(
+          or(
+            like(tasks.title, searchTerm),
+            like(tasks.description, searchTerm)
+          )!
+        );
+      }
+
+      return await db.select().from(tasks).where(and(...conditions));
+    }),
+});
+
+// Client usage - filters applied server-side
+const { tasks } = useTasks({
+  completed: filter === 'active' ? false : undefined,
+  priority: priorityFilter === 'all' ? undefined : priorityFilter,
+  searchQuery, // Sent to server for database-level search
+});
+
+// ❌ WRONG - Client-side filtering (slow, inefficient)
+const { tasks } = useTasks(); // Fetches ALL tasks
+const filteredTasks = useMemo(() => {
+  return tasks.filter(t => 
+    t.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+}, [tasks, searchQuery]); // NO! This loads all data then filters in browser
+```
+
+**Why Server-Side Filtering?**
+- ✅ Better performance - only matching data sent over network
+- ✅ Scales with large datasets - database indexes are fast
+- ✅ Lower bandwidth usage - reduced data transfer
+- ✅ Better UX - faster response times
+- ✅ Security - filtered data never leaves server
 
 **User Router Patterns:**
 
@@ -769,26 +861,47 @@ const handleUpload = async (file: File) => {
 
 ### Type Management and Organization
 
+- **Type Inference Priority (MANDATORY)**:
+  1. **tRPC Router Types** - ALWAYS infer from router using `inferRouterInputs` and `inferRouterOutputs`
+  2. **Database Schema Types** - Import from `@/lib/db/schema` (includes pgEnum types)
+  3. **Domain Extension Types** - Only define in `lib/types/` when extending base types
+  4. **Infrastructure Types** - API utilities, errors, and configurations in `lib/api/`
+
 - **Centralized Types**: All shared types are organized by domain and functionality
-  - `lib/types/user.ts` - User-related types extending schema types
-  - `lib/types/billing.ts` - Billing and subscription types extending schema types
+  - `lib/types/user.ts` - Re-exports User from schema + domain extensions (UserProfile, etc.)
+  - `lib/types/billing.ts` - Re-exports subscription types + domain extensions
+  - `lib/types/task.ts` - Re-exports Task, TaskPriority from schema (even if not extending)
   - `lib/types/index.ts` - Re-exports all domain types for easy importing
   - `lib/api/` - API infrastructure types and utilities (errors, responses, etc.)
-- **Type Hierarchy**: Always extend existing schema types rather than creating duplicate interfaces
-  - Use `import type { User } from '@/lib/db/schema'` as base types
-  - Create variants for different use cases (e.g., `UserWithSubscription`, `UserProfile`)
-  - Prefer `Pick<>`, `Omit<>`, and intersection types over full redefinition
+
+- **Type Hierarchy & Re-export Pattern**: Follow this priority order
+  1. **Database Schema** → Define with pgEnum and export inferred types
+  2. **Domain Type Files** → ALWAYS re-export schema types (provides domain boundary)
+  3. **tRPC Router** → Infer input/output types, never manually define
+  4. **Domain Extensions** → Add computed/derived fields when needed
+  5. Prefer `Pick<>`, `Omit<>`, and intersection types over full redefinition
+
+- **Why Re-export?** Even when not extending types:
+  - ✅ Consistent import patterns across codebase
+  - ✅ Domain boundary - separates database from application layer
+  - ✅ Extension point - easy to add derived types later
+  - ✅ Single source - change import location once if schema changes
+
 - **Import Patterns**:
-  - Use `import type { TypeName } from '@/lib/types'` for domain types (user, billing)
-  - Use `import type { TypeName } from '@/lib/api'` for API infrastructure types
-  - Import directly from schema only when using base types without extensions
-  - Never duplicate type definitions across files
+  - **tRPC Types**: Use `inferRouterInputs<AppRouter>['feature']['procedure']`
+  - **Domain Types**: ALWAYS use `import type { Task, User, TaskPriority } from '@/lib/types'`
+  - **Schema Direct**: Only import from `@/lib/db/schema` for database operations (queries, migrations)
+  - **Infrastructure**: Use `import type { ApiResponse } from '@/lib/api'`
+  - **Never duplicate** type definitions that exist in schema or router
+
 - **Type Naming**: Follow consistent naming conventions
-  - Base types: `User`, `UserSubscription`, `Notification` (match schema exports)
-  - Extended types: `UserWithSubscription`, `UserProfile`, `NotificationWithUser`
-  - List types: `UserListItem`, `SubscriptionSummary`
-  - Operation types: `CreateUserData`, `UpdateSubscriptionData`
-  - Statistics: `UserStats`, `BillingStats`, `SubscriptionMetrics`
+  - Base types: `User`, `UserSubscription`, `Task` (match schema exports)
+  - Enum types: `TaskPriority`, `SubscriptionTier` (inferred from pgEnum)
+  - Extended types: `UserWithSubscription`, `UserProfile`, `TaskWithUser`
+  - List types: Infer from router output `RouterOutput['tasks']['list'][number]`
+  - Input types: Infer from router input `RouterInput['tasks']['create']`
+  - Statistics: `UserStats`, `BillingStats` (computed aggregations)
+
 - **Component Props**: Define component-specific prop interfaces inline
   - Shadcn UI components already provide comprehensive typed interfaces
   - Create component-specific interfaces only when needed (e.g., `TechCardProps`)
@@ -809,17 +922,24 @@ const handleUpload = async (file: File) => {
   - Form handling configurations
   - Generic utility types
 
-**✅ CORRECT - Centralized types:**
+**✅ CORRECT - Type inference and centralization:**
 
 ```typescript
-// lib/types/user.ts
+// lib/db/schema.ts - Define enum at database level
+export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);
+export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];
+
+// lib/types/task.ts - Minimal re-exports only
+export type { Task, TaskPriority } from '@/lib/db/schema';
+
+// lib/types/user.ts - Domain extensions (not in schema/router)
 export interface NotificationSettings {
   emailNotifications: boolean;
   marketingEmails: boolean;
   securityAlerts: boolean;
 }
 
-// lib/api/index.ts
+// lib/api/index.ts - Infrastructure types
 export interface AsyncOperationOptions {
   successMessage?: string;
   errorMessage?: string;
@@ -827,14 +947,35 @@ export interface AsyncOperationOptions {
   onError?: (error: Error) => void;
 }
 
-// hooks/use-notification-settings.ts
-import { useQuery, useMutation } from '@tanstack/react-query';
-import type { NotificationSettings } from '@/lib/types';
+// hooks/use-tasks.ts - Infer types from tRPC router
+import { trpc } from '@/lib/trpc/client';
+import type { AppRouter } from '@/lib/trpc/router';
+import type { inferRouterInputs } from '@trpc/server';
+
+type RouterInput = inferRouterInputs<AppRouter>;
+type CreateTaskInput = RouterInput['tasks']['create'];
+type TaskListFilters = RouterInput['tasks']['list'];
+
+export function useTasks(filters?: TaskListFilters) {
+  // Types are automatically inferred from router!
+}
 ```
 
-**❌ WRONG - Inline types:**
+**❌ WRONG - Manual type definitions:**
 
 ```typescript
+// ❌ NO! Don't manually define types that can be inferred
+// hooks/use-tasks.ts
+interface CreateTaskInput {
+  // This duplicates the tRPC router input definition!
+  title: string;
+  description?: string;
+  priority: 'low' | 'medium' | 'high'; // Should use pgEnum from schema
+}
+
+// lib/types/task.ts
+export type TaskPriority = 'low' | 'medium' | 'high'; // ❌ NO! Infer from pgEnum
+
 // hooks/use-notification-settings.ts
 interface NotificationSettings {
   // ❌ NO! Move to lib/types/
@@ -853,29 +994,46 @@ interface AsyncOperationOptions {
 **✅ Import Patterns:**
 
 ```typescript
-// For domain types
-import type { UserProfile, NotificationSettings } from '@/lib/types';
+// For tRPC types (highest priority - infer from router)
+import type { AppRouter } from '@/lib/trpc/router';
+import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
+type RouterInput = inferRouterInputs<AppRouter>;
+type CreateTaskInput = RouterInput['tasks']['create'];
+
+// For domain types (ALWAYS import from @/lib/types, even if just re-exports)
+import type { User, Task, TaskPriority, UserProfile, NotificationSettings } from '@/lib/types';
 
 // For infrastructure types
 import type { ApiResponse, AsyncOperationOptions } from '@/lib/api';
 
-// For database types
-import type { User } from '@/lib/db/schema';
+// ❌ WRONG - Don't import domain types directly from schema in application code
+import type { User, Task } from '@/lib/db/schema'; // NO! Use @/lib/types instead
+
+// ✅ OK - Only import from schema in database operations (tRPC routers, migrations)
+// lib/trpc/routers/tasks.ts
+import { tasks } from '@/lib/db/schema'; // OK in database queries
 ```
 
 **✅ Type Location Decision Tree:**
 
-- **Is it domain-specific business logic?** → `lib/types/{domain}.ts`
+- **Is it a tRPC input/output type?** → Infer from router with `inferRouterInputs`/`inferRouterOutputs`
+- **Is it a database enum?** → Define with `pgEnum` in schema, export inferred type, re-export in `lib/types/`
+- **Is it a database entity?** → Define in `lib/db/schema.ts`, ALWAYS re-export in `lib/types/{domain}.ts`
+- **Is it domain-specific business logic?** → `lib/types/{domain}.ts` (re-export base + add extensions)
 - **Is it API/infrastructure related?** → `lib/api/index.ts`
-- **Is it database entity?** → Already in `lib/db/schema.ts`
 - **Is it component-specific props?** → Define inline ONLY if truly unique to that component
 
 **Enforcement:**
 
-- All hooks MUST import types from centralized locations
+- **Type Inference First**: ALWAYS infer from tRPC router and database schema before creating manual types
+- **No Duplicate Types**: If a type exists in router or schema, NEVER manually define it
+- **Always Re-export**: ALWAYS re-export schema types in `lib/types/` even if not extending
+- **Import from Domain**: Application code MUST import domain types from `@/lib/types`, not schema
+- **Schema Direct Imports**: Only in database operations (tRPC routers, migrations, queries)
+- All hooks MUST import types from `@/lib/types` or infer from tRPC
 - NO type definitions allowed in hooks, utilities, or components (except component props)
-- Use TanStack Query for data fetching where beneficial
-- Always export new types through `lib/types/index.ts` or `lib/api/index.ts`
+- **pgEnum for Enums**: Use database-level enums, export inferred type, re-export in domain types
+- Always export new domain types through `lib/types/index.ts` for consistent imports
 
 ### Performance Optimization
 

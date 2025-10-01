@@ -1,18 +1,25 @@
 /**
  * Custom hook for task operations
- * Uses tRPC for type-safe task management
+ * Uses tRPC for type-safe task management with inferred types
  */
 
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
-import type { CreateTaskInput, UpdateTaskInput } from '@/lib/types';
+import type { AppRouter } from '@/lib/trpc/router';
+import type { inferRouterInputs } from '@trpc/server';
 
-export function useTasks(filters?: { completed?: boolean; priority?: 'low' | 'medium' | 'high' }) {
+// Infer types from tRPC router - no need for centralized type definitions!
+type RouterInput = inferRouterInputs<AppRouter>;
+type CreateTaskInput = RouterInput['tasks']['create'];
+type UpdateTaskInput = RouterInput['tasks']['update'];
+type TaskListFilters = RouterInput['tasks']['list'];
+
+export function useTasks(filters?: TaskListFilters) {
   const { toast } = useToast();
 
-  // Fetch tasks
+  // Fetch tasks with server-side filtering (completed, priority, search)
   const {
     data: tasks,
     isLoading,

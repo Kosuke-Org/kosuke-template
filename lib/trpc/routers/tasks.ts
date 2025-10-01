@@ -1,10 +1,10 @@
 /**
  * tRPC router for task operations
- * Handles CRUD operations for the todo list
+ * Handles CRUD operations for the todo list with server-side filtering
  */
 
 import { z } from 'zod';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, or, like } from 'drizzle-orm';
 import { db } from '@/lib/db/drizzle';
 import { tasks } from '@/lib/db/schema';
 import { router, protectedProcedure } from '../init';
@@ -12,7 +12,7 @@ import { TRPCError } from '@trpc/server';
 
 export const tasksRouter = router({
   /**
-   * Get all tasks for the authenticated user
+   * Get all tasks for the authenticated user with server-side filtering
    */
   list: protectedProcedure
     .input(
@@ -20,18 +20,27 @@ export const tasksRouter = router({
         .object({
           completed: z.boolean().optional(),
           priority: z.enum(['low', 'medium', 'high']).optional(),
+          searchQuery: z.string().optional(),
         })
         .optional()
     )
     .query(async ({ ctx, input }) => {
       const conditions = [eq(tasks.clerkUserId, ctx.userId)];
 
+      // Filter by completion status
       if (input?.completed !== undefined) {
         conditions.push(eq(tasks.completed, input.completed ? 'true' : 'false'));
       }
 
+      // Filter by priority
       if (input?.priority) {
         conditions.push(eq(tasks.priority, input.priority));
+      }
+
+      // Server-side search by title or description
+      if (input?.searchQuery && input.searchQuery.trim()) {
+        const searchTerm = `%${input.searchQuery.trim()}%`;
+        conditions.push(or(like(tasks.title, searchTerm), like(tasks.description, searchTerm))!);
       }
 
       const userTasks = await db
@@ -46,7 +55,7 @@ export const tasksRouter = router({
         title: task.title,
         description: task.description,
         completed: task.completed === 'true',
-        priority: task.priority as 'low' | 'medium' | 'high',
+        priority: task.priority, // Type is now inferred from pgEnum in schema
         dueDate: task.dueDate,
         createdAt: task.createdAt,
         updatedAt: task.updatedAt,
@@ -85,7 +94,7 @@ export const tasksRouter = router({
         title: task.title,
         description: task.description,
         completed: task.completed === 'true',
-        priority: task.priority as 'low' | 'medium' | 'high',
+        priority: task.priority, // Type is now inferred from pgEnum in schema
         dueDate: task.dueDate,
         createdAt: task.createdAt,
         updatedAt: task.updatedAt,
@@ -142,7 +151,7 @@ export const tasksRouter = router({
         title: updatedTask.title,
         description: updatedTask.description,
         completed: updatedTask.completed === 'true',
-        priority: updatedTask.priority as 'low' | 'medium' | 'high',
+        priority: updatedTask.priority, // Type is now inferred from pgEnum in schema
         dueDate: updatedTask.dueDate,
         createdAt: updatedTask.createdAt,
         updatedAt: updatedTask.updatedAt,
