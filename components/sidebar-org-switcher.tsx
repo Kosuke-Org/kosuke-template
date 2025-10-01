@@ -28,17 +28,17 @@ import { useActiveOrganization } from '@/hooks/use-active-organization';
 import { useOrganizations } from '@/hooks/use-organizations';
 import { getInitials } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useRouter } from 'next/navigation';
+import { CreateOrgDialog } from '@/components/create-org-dialog';
 
 export function SidebarOrgSwitcher() {
   const { isMobile } = useSidebar();
-  const router = useRouter();
   const { organizations, isLoading } = useOrganizations();
   const {
     activeOrganization,
     switchOrganization,
     isLoading: isActivating,
   } = useActiveOrganization();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
 
   // Loading state
   if (isLoading || isActivating || !activeOrganization) {
@@ -133,7 +133,7 @@ export function SidebarOrgSwitcher() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => router.push('/onboarding')}
+              onClick={() => setIsCreateDialogOpen(true)}
               className="gap-2 p-2 cursor-pointer"
             >
               <Plus className="h-4 w-4" />
@@ -142,6 +142,7 @@ export function SidebarOrgSwitcher() {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
+      <CreateOrgDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
     </SidebarMenu>
   );
 }

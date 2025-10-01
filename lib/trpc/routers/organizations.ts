@@ -102,12 +102,42 @@ export const organizationsRouter = router({
         createdBy: ctx.userId,
       });
 
-      // The webhook will create the organization in our database
-      // and add the creator as admin, so we just return the Clerk org ID
+      // Immediately sync to local database instead of waiting for webhook
+      // This ensures the organization is available right away
+      const { syncOrganizationFromClerk } = await import('@/lib/organizations');
+      const localOrg = await syncOrganizationFromClerk(clerkOrg.id);
+
+      console.log('✅ Organization synced to local database:', localOrg.id);
+
+      // Also sync the creator's membership immediately
+      // Clerk automatically adds the creator as admin when org is created
+      try {
+        const memberships = await clerk.organizations.getOrganizationMembershipList({
+          organizationId: clerkOrg.id,
+        });
+
+        // Find the creator's membership and sync it
+        const creatorMembership = memberships.data.find(
+          (m) => m.publicUserData?.userId === ctx.userId
+        );
+
+        if (creatorMembership) {
+          const { syncMembershipFromClerk } = await import('@/lib/organizations');
+          await syncMembershipFromClerk(creatorMembership.id);
+          console.log('✅ Creator membership synced to local database');
+        }
+      } catch (error) {
+        console.error('⚠️ Error syncing creator membership:', error);
+        // Don't fail the entire operation if membership sync fails
+        // The webhook will handle it as a fallback
+      }
+
+      // The webhooks serve as a backup reconciliation mechanism
       return {
         success: true,
         clerkOrgId: clerkOrg.id,
         slug: clerkOrg.slug || slug,
+        organizationId: localOrg.id,
         message: 'Organization created successfully',
       };
     }),

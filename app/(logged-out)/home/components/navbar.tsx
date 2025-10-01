@@ -54,7 +54,9 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                   <div className="cursor-pointer">
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarImage src={profileImageUrl} alt={displayName} />
-                      <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                      <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                        {initials}
+                      </AvatarFallback>
                     </Avatar>
                   </div>
                 </DropdownMenuTrigger>
@@ -126,7 +128,9 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                     <div className="flex items-center gap-3 p-2 border rounded-lg">
                       <Avatar className="h-10 w-10 rounded-lg">
                         <AvatarImage src={profileImageUrl} alt={displayName} />
-                        <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                        <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                          {initials}
+                        </AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="text-sm font-medium">{displayName}</div>

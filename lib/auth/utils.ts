@@ -30,11 +30,14 @@ export function getUserInitials(user: ClerkUserType | null): string {
  * Extract user data from Clerk API user object
  */
 export function extractUserData(clerkUser: ClerkUserType) {
+  // Prioritize custom uploaded image over Clerk's default avatar
+  const customImageUrl = clerkUser.publicMetadata?.customProfileImageUrl as string | undefined;
+
   return {
     clerkUserId: clerkUser.id,
     email: clerkUser.emailAddresses[0]?.emailAddress || '',
     displayName: clerkUser.fullName || clerkUser.firstName || null,
-    profileImageUrl: clerkUser.imageUrl || null,
+    profileImageUrl: customImageUrl || null, // Use custom image or null (don't use Clerk's default)
     lastSyncedAt: new Date(),
     updatedAt: new Date(),
   };
@@ -44,6 +47,10 @@ export function extractUserData(clerkUser: ClerkUserType) {
  * Extract user data from Clerk webhook user object
  */
 export function extractUserDataFromWebhook(webhookUser: ClerkWebhookUser) {
+  // Prioritize custom uploaded image over Clerk's default avatar
+  const metadata = webhookUser.public_metadata as Record<string, unknown> | undefined;
+  const customImageUrl = metadata?.customProfileImageUrl as string | undefined;
+
   return {
     clerkUserId: webhookUser.id,
     email: webhookUser.email_addresses?.[0]?.email_address || '',
@@ -51,7 +58,7 @@ export function extractUserDataFromWebhook(webhookUser: ClerkWebhookUser) {
       webhookUser.first_name && webhookUser.last_name
         ? `${webhookUser.first_name} ${webhookUser.last_name}`.trim()
         : webhookUser.first_name || null,
-    profileImageUrl: webhookUser.image_url || null,
+    profileImageUrl: customImageUrl || null, // Use custom image or null (don't use Clerk's default)
     lastSyncedAt: new Date(),
     updatedAt: new Date(),
   };

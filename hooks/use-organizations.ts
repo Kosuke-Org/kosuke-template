@@ -30,20 +30,9 @@ export function useOrganizations() {
 
   // Create organization mutation
   const createOrganization = trpc.organizations.createOrganization.useMutation({
-    onSuccess: (data) => {
-      toast({
-        title: 'Success',
-        description: data.message,
-      });
-      // Refetch organizations list
+    onSuccess: () => {
+      // Refetch organizations list - don't show toast here, let the caller handle it
       utils.organizations.getUserOrganizations.invalidate();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
     },
   });
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Webhook } from 'svix';
-import { getUserByClerkId, ActivityType, isValidEmail } from '@/lib/auth';
+import { getUserByClerkId, ActivityType, isValidEmail, syncUserFromWebhook } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { users, activityLogs } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -147,97 +147,6 @@ export async function POST(req: NextRequest) {
 }
 
 /**
- * Sync user from webhook data (different structure than API User object)
- */
-async function syncUserFromWebhook(
-  webhookUser: ClerkWebhookUser
-): Promise<{ id: string; clerkUserId: string }> {
-  try {
-    console.log('🔄 Syncing user from webhook:', webhookUser.id);
-
-    // Check if user already exists in our database
-    const existingUser = await getUserByClerkId(webhookUser.id);
-
-    const userData = {
-      clerkUserId: webhookUser.id,
-      email: webhookUser.email_addresses?.[0]?.email_address || '',
-      displayName:
-        webhookUser.first_name && webhookUser.last_name
-          ? `${webhookUser.first_name} ${webhookUser.last_name}`.trim()
-          : webhookUser.first_name || null,
-      profileImageUrl: webhookUser.image_url || null,
-      lastSyncedAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    let user: { id: string; clerkUserId: string };
-
-    if (existingUser) {
-      console.log('👤 User exists, checking for updates...');
-
-      // Check if any data has changed
-      const hasChanges =
-        existingUser.email !== userData.email ||
-        existingUser.displayName !== userData.displayName ||
-        existingUser.profileImageUrl !== userData.profileImageUrl;
-
-      if (hasChanges) {
-        console.log('📝 User data changed, updating...');
-
-        // Update existing user
-        await db.update(users).set(userData).where(eq(users.clerkUserId, webhookUser.id));
-
-        user = { id: existingUser.id, clerkUserId: webhookUser.id };
-
-        // Log the update activity
-        await db.insert(activityLogs).values({
-          clerkUserId: webhookUser.id,
-          action: ActivityType.UPDATE_ACCOUNT,
-          timestamp: new Date(),
-        });
-      } else {
-        console.log('✅ User data unchanged, updating sync timestamp only');
-
-        // Just update the sync timestamp
-        await db
-          .update(users)
-          .set({ lastSyncedAt: new Date() })
-          .where(eq(users.clerkUserId, webhookUser.id));
-
-        user = { id: existingUser.id, clerkUserId: webhookUser.id };
-      }
-    } else {
-      console.log('🆕 Creating new user in database...');
-
-      // Create new user
-      const [newUser] = await db
-        .insert(users)
-        .values({
-          ...userData,
-          createdAt: new Date(),
-        })
-        .returning({ id: users.id, clerkUserId: users.clerkUserId });
-
-      user = newUser;
-
-      // Log the signup activity
-      await db.insert(activityLogs).values({
-        clerkUserId: webhookUser.id,
-        action: ActivityType.SIGN_UP,
-        timestamp: new Date(),
-      });
-
-      console.log('✅ New user created with ID:', newUser.id);
-    }
-
-    return user;
-  } catch (error) {
-    console.error('💥 Error syncing user from webhook:', error);
-    throw error;
-  }
-}
-
-/**
  * Handle user.created webhook event
  */
 async function handleUserCreated(userData: ClerkWebhookUser) {
@@ -249,12 +158,12 @@ async function handleUserCreated(userData: ClerkWebhookUser) {
 
     if (existingUser) {
       console.log('👤 User already exists, updating instead');
-      await syncUserFromWebhook(userData);
+      await syncUserFromWebhook(userData, { includeActivity: true });
       return;
     }
 
-    // Create new user
-    await syncUserFromWebhook(userData);
+    // Create new user (with activity logging enabled)
+    await syncUserFromWebhook(userData, { includeActivity: true });
 
     console.log(`✅ New user created: ${userData.id}`);
 
@@ -308,8 +217,8 @@ async function handleUserUpdated(userData: ClerkWebhookUser) {
   console.log('📝 Updating existing user from webhook');
 
   try {
-    // Update user data
-    await syncUserFromWebhook(userData);
+    // Update user data (with activity logging enabled)
+    await syncUserFromWebhook(userData, { includeActivity: true });
 
     console.log(`✅ User updated: ${userData.id}`);
   } catch (error) {

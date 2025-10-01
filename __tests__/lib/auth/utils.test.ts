@@ -112,7 +112,31 @@ describe('Auth Utils', () => {
   });
 
   describe('extractUserData', () => {
-    it('should extract user data from Clerk user object', () => {
+    it('should extract user data from Clerk user object with custom profile image', () => {
+      const clerkUser = {
+        id: 'user_123',
+        emailAddresses: [{ emailAddress: 'test@example.com' }],
+        fullName: 'John Doe',
+        firstName: 'John',
+        imageUrl: 'https://example.com/avatar.jpg',
+        publicMetadata: {
+          customProfileImageUrl: 'https://example.com/custom-avatar.jpg',
+        },
+      } as unknown as ClerkUserType;
+
+      const result = extractUserData(clerkUser);
+
+      expect(result).toEqual({
+        clerkUserId: 'user_123',
+        email: 'test@example.com',
+        displayName: 'John Doe',
+        profileImageUrl: 'https://example.com/custom-avatar.jpg',
+        lastSyncedAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      });
+    });
+
+    it('should extract user data from Clerk user object without custom profile image', () => {
       const clerkUser = {
         id: 'user_123',
         emailAddresses: [{ emailAddress: 'test@example.com' }],
@@ -127,7 +151,7 @@ describe('Auth Utils', () => {
         clerkUserId: 'user_123',
         email: 'test@example.com',
         displayName: 'John Doe',
-        profileImageUrl: 'https://example.com/avatar.jpg',
+        profileImageUrl: null,
         lastSyncedAt: expect.any(Date),
         updatedAt: expect.any(Date),
       });
@@ -178,7 +202,31 @@ describe('Auth Utils', () => {
   });
 
   describe('extractUserDataFromWebhook', () => {
-    it('should extract user data from webhook user object', () => {
+    it('should extract user data from webhook user object with custom profile image', () => {
+      const webhookUser: ClerkWebhookUser = {
+        id: 'user_123',
+        email_addresses: [{ email_address: 'test@example.com' }],
+        first_name: 'John',
+        last_name: 'Doe',
+        image_url: 'https://example.com/avatar.jpg',
+        public_metadata: {
+          customProfileImageUrl: 'https://example.com/custom-avatar.jpg',
+        },
+      };
+
+      const result = extractUserDataFromWebhook(webhookUser);
+
+      expect(result).toEqual({
+        clerkUserId: 'user_123',
+        email: 'test@example.com',
+        displayName: 'John Doe',
+        profileImageUrl: 'https://example.com/custom-avatar.jpg',
+        lastSyncedAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      });
+    });
+
+    it('should extract user data from webhook user object without custom profile image', () => {
       const webhookUser: ClerkWebhookUser = {
         id: 'user_123',
         email_addresses: [{ email_address: 'test@example.com' }],
@@ -193,7 +241,7 @@ describe('Auth Utils', () => {
         clerkUserId: 'user_123',
         email: 'test@example.com',
         displayName: 'John Doe',
-        profileImageUrl: 'https://example.com/avatar.jpg',
+        profileImageUrl: null,
         lastSyncedAt: expect.any(Date),
         updatedAt: expect.any(Date),
       });

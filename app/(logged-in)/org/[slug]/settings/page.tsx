@@ -25,13 +25,6 @@ export default function OrgGeneralSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium">General Settings</h3>
-        <p className="text-sm text-muted-foreground">
-          Update your organization&apos;s name and logo.
-        </p>
-      </div>
-      <Separator />
       <OrgLogoUpload organization={activeOrganization} />
       <Separator />
       <OrgGeneralForm organization={activeOrganization} />

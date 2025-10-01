@@ -130,8 +130,8 @@ export default function ProfileSettings() {
                     unoptimized={profileImageUrl.includes('localhost')}
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-muted">
-                    <span className="text-2xl font-medium text-muted-foreground">{initials}</span>
+                  <div className="flex h-full w-full items-center justify-center bg-primary">
+                    <span className="text-2xl font-medium text-primary-foreground">{initials}</span>
                   </div>
                 )}
               </div>

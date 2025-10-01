@@ -59,22 +59,20 @@ export default function OnboardingPage() {
   }
 
   const onSubmit = async (data: OrganizationFormValues) => {
-    try {
-      setIsSubmitting(true);
+    setIsSubmitting(true);
 
+    try {
       const result = await createOrganizationAsync({
         name: data.name,
       });
-
-      // Wait a moment for webhook to sync
-      await new Promise((resolve) => setTimeout(resolve, 1500));
 
       toast({
         title: 'Success!',
         description: 'Your workspace has been created.',
       });
 
-      // Redirect to the new organization
+      // Organization is now immediately synced to local database
+      // No need to wait for webhook
       router.push(`/org/${result.slug}/dashboard`);
     } catch (error) {
       console.error('Error creating organization:', error);
@@ -96,7 +94,7 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 bg-muted/30">
+    <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center gap-2">
