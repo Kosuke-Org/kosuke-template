@@ -20,8 +20,6 @@ export interface ClerkWebhookEvent {
   type: 'user.created' | 'user.updated' | 'user.deleted';
   data: ClerkWebhookUser;
 }
-
-// Local User Types (migrated from lib/auth/types.ts)
 export interface LocalUser {
   id: string;
   clerkUserId: string;
@@ -99,8 +97,6 @@ export interface UpdateUserData
   extends Partial<Pick<User, 'email' | 'displayName' | 'profileImageUrl'>> {
   lastSyncedAt?: Date;
 }
-
-// User sync types (duplicate removed - already defined above)
 
 export interface UserSyncOptions {
   forceSync?: boolean;
