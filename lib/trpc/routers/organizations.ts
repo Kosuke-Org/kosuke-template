@@ -402,12 +402,14 @@ export const organizationsRouter = router({
 
     const clerk = await clerkClient();
 
-    // Create invitation in Clerk
+    // Create invitation in Clerk with redirect URL
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     await clerk.organizations.createOrganizationInvitation({
       organizationId: org.clerkOrgId,
       emailAddress: input.email,
       role: input.role,
       inviterUserId: ctx.userId,
+      redirectUrl: `${appUrl}/org/${org.slug}/dashboard`,
     });
 
     return {
