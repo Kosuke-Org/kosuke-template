@@ -5,7 +5,6 @@
 
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { Loader2, Building2 } from 'lucide-react';
@@ -26,26 +25,19 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useOrganizations } from '@/hooks/use-organizations';
-import { useToast } from '@/hooks/use-toast';
+import { useCreateOrganization } from '@/hooks/use-create-organization';
+import { createOrgFormSchema } from '@/lib/trpc/schemas/organizations';
 
-const organizationSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Organization name is required')
-    .max(100, 'Name must be less than 100 characters'),
-});
-
-type OrganizationFormValues = z.infer<typeof organizationSchema>;
+type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { isLoaded } = useUser();
-  const { toast } = useToast();
-  const { createOrganizationAsync, organizations, isLoading: isLoadingOrgs } = useOrganizations();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { organizations, isLoading: isLoadingOrgs } = useOrganizations();
+  const { createOrganization, isCreating } = useCreateOrganization();
 
   const form = useForm<OrganizationFormValues>({
-    resolver: zodResolver(organizationSchema),
+    resolver: zodResolver(createOrgFormSchema),
     defaultValues: {
       name: '',
     },
@@ -58,31 +50,8 @@ export default function OnboardingPage() {
     return null;
   }
 
-  const onSubmit = async (data: OrganizationFormValues) => {
-    setIsSubmitting(true);
-
-    try {
-      const result = await createOrganizationAsync({
-        name: data.name,
-      });
-
-      toast({
-        title: 'Success!',
-        description: 'Your workspace has been created.',
-      });
-
-      // Organization is now immediately synced to local database
-      // No need to wait for webhook
-      router.push(`/org/${result.slug}/dashboard`);
-    } catch (error) {
-      console.error('Error creating organization:', error);
-      setIsSubmitting(false);
-      toast({
-        title: 'Error',
-        description: 'Failed to create workspace. Please try again.',
-        variant: 'destructive',
-      });
-    }
+  const onSubmit = (data: OrganizationFormValues) => {
+    createOrganization(data);
   };
 
   if (!isLoaded || isLoadingOrgs) {
@@ -120,7 +89,7 @@ export default function OnboardingPage() {
                   <FormItem>
                     <FormLabel>Workspace Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Acme Inc." {...field} disabled={isSubmitting} autoFocus />
+                      <Input placeholder="Acme Inc." {...field} disabled={isCreating} autoFocus />
                     </FormControl>
                     <FormDescription>
                       This is your organization&apos;s visible name. You can change it later.
@@ -130,8 +99,8 @@ export default function OnboardingPage() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" className="w-full" disabled={isCreating}>
+                {isCreating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Creating workspace...

@@ -82,7 +82,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/billing" className="cursor-pointer">
+                      <Link href="/settings/billing" className="cursor-pointer">
                         <CreditCard className="mr-2 h-4 w-4" />
                         Billing
                       </Link>

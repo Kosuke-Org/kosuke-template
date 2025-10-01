@@ -8,6 +8,7 @@
 import * as React from 'react';
 import { ChevronsUpDown, Plus, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -31,14 +32,32 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CreateOrgDialog } from '@/components/create-org-dialog';
 
 export function SidebarOrgSwitcher() {
+  const router = useRouter();
   const { isMobile } = useSidebar();
-  const { organizations, isLoading } = useOrganizations();
+  const { organizations, isLoading, refetch } = useOrganizations();
   const {
     activeOrganization,
     switchOrganization,
     isLoading: isActivating,
   } = useActiveOrganization();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
+
+  // Handle organization creation from sidebar
+  // We need to refetch orgs, update localStorage, and redirect to the new org's dashboard
+  const handleOrganizationCreated = async (slug: string) => {
+    // Wait for organizations list to be refreshed
+    const result = await refetch();
+
+    // Find the new org by slug from the refetched data
+    const newOrg = result.data?.find((org) => org.slug === slug);
+    if (newOrg) {
+      // Update localStorage to set the new org as active
+      localStorage.setItem('activeOrganizationId', newOrg.id);
+
+      // Redirect to the new organization's dashboard
+      router.push(`/org/${newOrg.slug}/dashboard`);
+    }
+  };
 
   // Loading state
   if (isLoading || isActivating || !activeOrganization) {
@@ -142,7 +161,11 @@ export function SidebarOrgSwitcher() {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
-      <CreateOrgDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+      <CreateOrgDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onOrganizationCreated={handleOrganizationCreated}
+      />
     </SidebarMenu>
   );
 }

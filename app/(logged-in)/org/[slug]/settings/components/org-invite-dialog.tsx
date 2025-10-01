@@ -38,13 +38,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useOrgInvitation } from '@/hooks/use-org-invitation';
+import { orgInviteFormSchema } from '@/lib/trpc/schemas/organizations';
 
-const inviteSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  role: z.enum(['org:admin', 'org:member']),
-});
-
-type InviteFormValues = z.infer<typeof inviteSchema>;
+type InviteFormValues = z.infer<typeof orgInviteFormSchema>;
 
 interface OrgInviteDialogProps {
   organizationId: string;
@@ -55,7 +51,7 @@ export function OrgInviteDialog({ organizationId }: OrgInviteDialogProps) {
   const { inviteMember, isInviting } = useOrgInvitation(organizationId);
 
   const form = useForm<InviteFormValues>({
-    resolver: zodResolver(inviteSchema),
+    resolver: zodResolver(orgInviteFormSchema),
     defaultValues: {
       email: '',
       role: 'org:member',

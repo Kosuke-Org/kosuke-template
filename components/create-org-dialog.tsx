@@ -5,8 +5,6 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,65 +28,47 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useOrganizations } from '@/hooks/use-organizations';
-import { useToast } from '@/hooks/use-toast';
+import { useCreateOrganization } from '@/hooks/use-create-organization';
+import { createOrgFormSchema } from '@/lib/trpc/schemas/organizations';
 
-const organizationSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Organization name is required')
-    .max(100, 'Name must be less than 100 characters'),
-});
-
-type OrganizationFormValues = z.infer<typeof organizationSchema>;
+type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 
 interface CreateOrgDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /**
+   * Custom success handler. If provided, automatic redirect is disabled.
+   * Use this when you want to handle navigation differently (e.g., in sidebar switcher)
+   */
+  onOrganizationCreated?: (slug: string) => void;
 }
 
-export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
-  const router = useRouter();
-  const { toast } = useToast();
-  const { createOrganizationAsync } = useOrganizations();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export function CreateOrgDialog({
+  open,
+  onOpenChange,
+  onOrganizationCreated,
+}: CreateOrgDialogProps) {
+  const { createOrganization, isCreating } = useCreateOrganization();
 
   const form = useForm<OrganizationFormValues>({
-    resolver: zodResolver(organizationSchema),
+    resolver: zodResolver(createOrgFormSchema),
     defaultValues: {
       name: '',
     },
   });
 
-  const onSubmit = async (data: OrganizationFormValues) => {
-    setIsSubmitting(true);
+  const onSubmit = (data: OrganizationFormValues) => {
+    createOrganization(data, {
+      redirectAfterCreate: !onOrganizationCreated, // Disable redirect if custom handler provided
+      onSuccess: (slug) => {
+        // Close dialog and reset form
+        onOpenChange(false);
+        form.reset();
 
-    try {
-      const result = await createOrganizationAsync({
-        name: data.name,
-      });
-
-      toast({
-        title: 'Success!',
-        description: 'Your workspace has been created.',
-      });
-
-      // Close dialog and reset form
-      onOpenChange(false);
-      form.reset();
-
-      // Redirect to the new organization
-      // The mutation has already synced the org to local DB and invalidated the cache
-      router.push(`/org/${result.slug}/dashboard`);
-    } catch (error) {
-      console.error('Error creating organization:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create workspace. Please try again.',
-        variant: 'destructive',
-      });
-      setIsSubmitting(false);
-    }
+        // Call custom handler if provided
+        onOrganizationCreated?.(slug);
+      },
+    });
   };
 
   return (
@@ -111,7 +91,7 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
                 <FormItem>
                   <FormLabel>Workspace Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Acme Inc." {...field} disabled={isSubmitting} autoFocus />
+                    <Input placeholder="Acme Inc." {...field} disabled={isCreating} autoFocus />
                   </FormControl>
                   <FormDescription>
                     This is your organization&apos;s visible name. You can change it later.
@@ -126,12 +106,12 @@ export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isSubmitting}
+                disabled={isCreating}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" disabled={isCreating}>
+                {isCreating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Creating...

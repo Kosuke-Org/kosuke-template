@@ -19,6 +19,17 @@ export const createOrganizationSchema = z.object({
     .optional(),
 });
 
+/**
+ * Form-specific schema for creating organizations
+ * Used for client-side form validation (slug is auto-generated)
+ */
+export const createOrgFormSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Organization name is required')
+    .max(100, 'Name must be less than 100 characters'),
+});
+
 export const updateOrganizationSchema = z.object({
   organizationId: z.string().uuid('Invalid organization ID'),
   name: z.string().min(1).max(100).optional(),
@@ -49,6 +60,15 @@ export const inviteMemberSchema = z.object({
   organizationId: z.string().uuid('Invalid organization ID'),
   email: z.string().email('Invalid email address'),
   role: z.enum(['org:admin', 'org:member']).default('org:member'),
+});
+
+/**
+ * Form-specific schema for inviting members
+ * Used for client-side form validation (organizationId provided separately)
+ */
+export const orgInviteFormSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  role: z.enum(['org:admin', 'org:member']),
 });
 
 export const updateMemberRoleSchema = z.object({

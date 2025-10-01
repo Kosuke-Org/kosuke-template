@@ -5,15 +5,14 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { Upload, Loader2, X } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { trpc } from '@/lib/trpc/client';
-import { useToast } from '@/hooks/use-toast';
-import { fileToBase64, getInitials } from '@/lib/utils';
+import { getInitials } from '@/lib/utils';
+import { useOrganizationLogo } from '@/hooks/use-organization-logo';
 import type { Organization } from '@/hooks/use-organizations';
 
 interface OrgLogoUploadProps {
@@ -21,93 +20,14 @@ interface OrgLogoUploadProps {
 }
 
 export function OrgLogoUpload({ organization }: OrgLogoUploadProps) {
-  const { toast } = useToast();
-  const utils = trpc.useUtils();
+  const { uploadLogo, deleteLogo, isUploading, isDeleting } = useOrganizationLogo(organization.id);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const uploadLogo = trpc.organizations.uploadOrganizationLogo.useMutation({
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Organization logo updated successfully',
-      });
-      utils.organizations.getUserOrganizations.invalidate();
-      utils.organizations.getOrganization.invalidate({ organizationId: organization.id });
-      setIsUploading(false);
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-      setIsUploading(false);
-    },
-  });
-
-  const deleteLogo = trpc.organizations.deleteOrganizationLogo.useMutation({
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Organization logo removed successfully',
-      });
-      utils.organizations.getUserOrganizations.invalidate();
-      utils.organizations.getOrganization.invalidate({ organizationId: organization.id });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
-    if (!validTypes.includes(file.type)) {
-      toast({
-        title: 'Invalid file type',
-        description: 'Please upload a JPEG, PNG, WebP, or SVG image',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast({
-        title: 'File too large',
-        description: 'Please upload an image smaller than 2MB',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      setIsUploading(true);
-      const base64 = await fileToBase64(file);
-
-      uploadLogo.mutate({
-        organizationId: organization.id,
-        fileBase64: base64,
-        fileName: file.name,
-        mimeType: file.type as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/svg+xml',
-      });
-    } catch (error) {
-      console.error('Error uploading logo:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to upload logo',
-        variant: 'destructive',
-      });
-      setIsUploading(false);
-    }
+    await uploadLogo(file);
 
     // Reset input
     if (fileInputRef.current) {
@@ -117,10 +37,7 @@ export function OrgLogoUpload({ organization }: OrgLogoUploadProps) {
 
   const handleDelete = () => {
     if (!organization.logoUrl) return;
-
-    deleteLogo.mutate({
-      organizationId: organization.id,
-    });
+    deleteLogo();
   };
 
   const orgInitials = getInitials(organization.name);
@@ -147,7 +64,7 @@ export function OrgLogoUpload({ organization }: OrgLogoUploadProps) {
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading || deleteLogo.isPending}
+              disabled={isUploading || isDeleting}
             >
               {isUploading ? (
                 <>
@@ -167,9 +84,9 @@ export function OrgLogoUpload({ organization }: OrgLogoUploadProps) {
                 variant="outline"
                 size="sm"
                 onClick={handleDelete}
-                disabled={isUploading || deleteLogo.isPending}
+                disabled={isUploading || isDeleting}
               >
-                {deleteLogo.isPending ? (
+                {isDeleting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Removing...
