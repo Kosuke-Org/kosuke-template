@@ -41,7 +41,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
     >
       <div className="container flex h-10 items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <span className="text-xl font-bold">Kosuke</span>
+          <span className="text-xl font-bold">Kosuke Template</span>
         </Link>
 
         {/* Desktop navigation */}
