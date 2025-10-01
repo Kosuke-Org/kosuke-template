@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, varchar, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, varchar, pgEnum } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { relations } from 'drizzle-orm';
@@ -8,7 +8,7 @@ export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high'
 
 // Users - Minimal sync from Clerk for local queries and future expansion
 export const users = pgTable('users', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').defaultRandom().primaryKey(),
   clerkUserId: text('clerk_user_id').notNull().unique(), // Clerk user ID
   email: text('email').notNull(),
   displayName: text('display_name'),
@@ -21,7 +21,7 @@ export const users = pgTable('users', {
 
 // User Subscriptions - Links Clerk users to Polar subscriptions
 export const userSubscriptions = pgTable('user_subscriptions', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').defaultRandom().primaryKey(),
   clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID
   subscriptionId: text('subscription_id').unique(), // Polar subscription ID (nullable for free tier)
   productId: text('product_id'), // Polar product ID (nullable for free tier)
@@ -36,7 +36,7 @@ export const userSubscriptions = pgTable('user_subscriptions', {
 
 // Activity Logs - Optional app-specific logging (references Clerk user IDs)
 export const activityLogs = pgTable('activity_logs', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').defaultRandom().primaryKey(),
   clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID
   action: text('action').notNull(),
   timestamp: timestamp('timestamp').notNull().defaultNow(),
@@ -46,7 +46,7 @@ export const activityLogs = pgTable('activity_logs', {
 
 // Tasks - Simple todo list functionality
 export const tasks = pgTable('tasks', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').defaultRandom().primaryKey(),
   clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID
   title: text('title').notNull(),
   description: text('description'),
