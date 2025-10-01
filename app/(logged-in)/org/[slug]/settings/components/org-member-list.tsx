@@ -6,10 +6,11 @@
 'use client';
 
 import { useState } from 'react';
-import { MoreHorizontal, Shield, Loader2, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Shield, Trash2 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +44,44 @@ interface OrgMemberListProps {
   organizationId: string;
 }
 
+function MemberListSkeleton() {
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Member</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <TableRow key={i}>
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-4 w-48" />
+              </TableCell>
+              <TableCell>
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </TableCell>
+              <TableCell className="text-right">
+                <Skeleton className="h-8 w-8 ml-auto" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 export function OrgMemberList({ organizationId }: OrgMemberListProps) {
   const { user: currentUser } = useUser();
   const { members, isLoading, removeMember, isRemoving, updateMemberRole, isUpdatingRole } =
@@ -50,11 +89,7 @@ export function OrgMemberList({ organizationId }: OrgMemberListProps) {
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <MemberListSkeleton />;
   }
 
   if (members.length === 0) {
@@ -105,25 +140,25 @@ export function OrgMemberList({ organizationId }: OrgMemberListProps) {
           </TableHeader>
           <TableBody>
             {members.map((member) => {
-              const initials = getInitials(member.displayName);
+              const displayName = member.displayName || 'User';
+              const initials = getInitials(displayName);
               const isCurrentUser = member.userId === currentUser?.id;
 
               return (
                 <TableRow key={member.membershipId}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-8 w-8 rounded-lg">
                         {member.profileImageUrl && (
-                          <AvatarImage
-                            src={member.profileImageUrl}
-                            alt={member.displayName || ''}
-                          />
+                          <AvatarImage src={member.profileImageUrl} alt={displayName} />
                         )}
-                        <AvatarFallback>{initials}</AvatarFallback>
+                        <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                          {initials}
+                        </AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="font-medium">
-                          {member.displayName || 'Unknown'}
+                          {displayName}
                           {isCurrentUser && (
                             <span className="ml-2 text-xs text-muted-foreground">(You)</span>
                           )}
