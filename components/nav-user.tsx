@@ -31,12 +31,16 @@ import { useUser } from '@clerk/nextjs';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { useAuthActions } from '@/hooks/use-auth-actions';
 import { UserSkeleton } from '@/components/skeletons';
+import { getInitials } from '@/lib/utils';
 
 export function NavUser() {
   const { user, isSignedIn } = useUser();
   const { isMobile } = useSidebar();
-  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
+  const { profileImageUrl, displayName, primaryEmail } = useUserAvatar(user);
   const { handleSignOut } = useAuthActions();
+
+  // Generate initials from display name
+  const initials = getInitials(displayName);
 
   if (!isSignedIn || !user) {
     return (

@@ -19,3 +19,17 @@ export function fileToBase64(file: File): Promise<string> {
     reader.onerror = (error) => reject(error);
   });
 }
+
+/**
+ * Generate initials from a name
+ * @param name - The name to generate initials from
+ * @returns The first letter of the name (uppercase)
+ */
+export function getInitials(name: string | null | undefined): string {
+  if (!name || name.trim() === '') return '?';
+
+  const trimmedName = name.trim();
+
+  // Always return just the first letter
+  return trimmedName.charAt(0).toUpperCase();
+}

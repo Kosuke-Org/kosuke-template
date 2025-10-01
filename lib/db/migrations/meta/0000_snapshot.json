@@ -112,12 +112,8 @@
           "name": "org_memberships_organization_id_organizations_id_fk",
           "tableFrom": "org_memberships",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -125,12 +121,8 @@
           "name": "org_memberships_clerk_user_id_users_clerk_user_id_fk",
           "tableFrom": "org_memberships",
           "tableTo": "users",
-          "columnsFrom": [
-            "clerk_user_id"
-          ],
-          "columnsTo": [
-            "clerk_user_id"
-          ],
+          "columnsFrom": ["clerk_user_id"],
+          "columnsTo": ["clerk_user_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -140,9 +132,7 @@
         "org_memberships_clerk_membership_id_unique": {
           "name": "org_memberships_clerk_membership_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clerk_membership_id"
-          ]
+          "columns": ["clerk_membership_id"]
         }
       },
       "policies": {},
@@ -213,16 +203,12 @@
         "organizations_clerk_org_id_unique": {
           "name": "organizations_clerk_org_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clerk_org_id"
-          ]
+          "columns": ["clerk_org_id"]
         },
         "organizations_slug_unique": {
           "name": "organizations_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -312,12 +298,8 @@
           "name": "tasks_organization_id_organizations_id_fk",
           "tableFrom": "tasks",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -325,12 +307,8 @@
           "name": "tasks_team_id_teams_id_fk",
           "tableFrom": "tasks",
           "tableTo": "teams",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["team_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -386,12 +364,8 @@
           "name": "team_memberships_team_id_teams_id_fk",
           "tableFrom": "team_memberships",
           "tableTo": "teams",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["team_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -399,12 +373,8 @@
           "name": "team_memberships_clerk_user_id_users_clerk_user_id_fk",
           "tableFrom": "team_memberships",
           "tableTo": "users",
-          "columnsFrom": [
-            "clerk_user_id"
-          ],
-          "columnsTo": [
-            "clerk_user_id"
-          ],
+          "columnsFrom": ["clerk_user_id"],
+          "columnsTo": ["clerk_user_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -477,12 +447,8 @@
           "name": "teams_organization_id_organizations_id_fk",
           "tableFrom": "teams",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -586,12 +552,8 @@
           "name": "user_subscriptions_organization_id_organizations_id_fk",
           "tableFrom": "user_subscriptions",
           "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organization_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -601,9 +563,7 @@
         "user_subscriptions_subscription_id_unique": {
           "name": "user_subscriptions_subscription_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "subscription_id"
-          ]
+          "columns": ["subscription_id"]
         }
       },
       "policies": {},
@@ -680,9 +640,7 @@
         "users_clerk_user_id_unique": {
           "name": "users_clerk_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clerk_user_id"
-          ]
+          "columns": ["clerk_user_id"]
         }
       },
       "policies": {},
@@ -694,27 +652,17 @@
     "public.org_role": {
       "name": "org_role",
       "schema": "public",
-      "values": [
-        "org:admin",
-        "org:member"
-      ]
+      "values": ["org:admin", "org:member"]
     },
     "public.task_priority": {
       "name": "task_priority",
       "schema": "public",
-      "values": [
-        "low",
-        "medium",
-        "high"
-      ]
+      "values": ["low", "medium", "high"]
     },
     "public.team_role": {
       "name": "team_role",
       "schema": "public",
-      "values": [
-        "lead",
-        "member"
-      ]
+      "values": ["lead", "member"]
     }
   },
   "schemas": {},
