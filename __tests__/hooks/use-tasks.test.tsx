@@ -7,34 +7,35 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
 import { useTasks } from '@/hooks/use-tasks';
 import { trpc } from '@/lib/trpc/client';
+import { vi, type Mock } from 'vitest';
 
 // Mock toast
-const mockToast = jest.fn();
-jest.mock('@/hooks/use-toast', () => ({
+const mockToast = vi.fn();
+vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
     toast: mockToast,
-    dismiss: jest.fn(),
+    dismiss: vi.fn(),
   }),
 }));
 
 // Mock the trpc client
-jest.mock('@/lib/trpc/client', () => ({
+vi.mock('@/lib/trpc/client', () => ({
   trpc: {
     tasks: {
       list: {
-        useQuery: jest.fn(),
+        useQuery: vi.fn(),
       },
       create: {
-        useMutation: jest.fn(),
+        useMutation: vi.fn(),
       },
       update: {
-        useMutation: jest.fn(),
+        useMutation: vi.fn(),
       },
       delete: {
-        useMutation: jest.fn(),
+        useMutation: vi.fn(),
       },
       toggleComplete: {
-        useMutation: jest.fn(),
+        useMutation: vi.fn(),
       },
     },
   },
@@ -50,7 +51,7 @@ describe('useTasks', () => {
         mutations: { retry: false },
       },
     });
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -83,32 +84,32 @@ describe('useTasks', () => {
   ];
 
   it('should fetch tasks successfully', async () => {
-    const mockRefetch = jest.fn();
+    const mockRefetch = vi.fn();
 
-    (trpc.tasks.list.useQuery as jest.Mock).mockReturnValue({
+    (trpc.tasks.list.useQuery as Mock).mockReturnValue({
       data: mockTasks,
       isLoading: false,
       error: null,
       refetch: mockRefetch,
     });
 
-    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.create.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.update.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
@@ -121,30 +122,30 @@ describe('useTasks', () => {
   });
 
   it('should handle loading state', () => {
-    (trpc.tasks.list.useQuery as jest.Mock).mockReturnValue({
+    (trpc.tasks.list.useQuery as Mock).mockReturnValue({
       data: undefined,
       isLoading: true,
       error: null,
-      refetch: jest.fn(),
+      refetch: vi.fn(),
     });
 
-    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.create.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.update.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
@@ -155,7 +156,7 @@ describe('useTasks', () => {
   });
 
   it('should create task successfully', async () => {
-    const mockMutateAsync = jest.fn().mockResolvedValue({
+    const mockMutateAsync = vi.fn().mockResolvedValue({
       id: 3,
       title: 'New Task',
       description: 'New Description',
@@ -166,34 +167,34 @@ describe('useTasks', () => {
       updatedAt: new Date(),
     });
 
-    const mockRefetch = jest.fn();
+    const mockRefetch = vi.fn();
 
-    (trpc.tasks.list.useQuery as jest.Mock).mockReturnValue({
+    (trpc.tasks.list.useQuery as Mock).mockReturnValue({
       data: mockTasks,
       isLoading: false,
       error: null,
       refetch: mockRefetch,
     });
 
-    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
+    (trpc.tasks.create.useMutation as Mock).mockReturnValue({
       mutateAsync: mockMutateAsync,
       isPending: false,
-      onSuccess: jest.fn((callback: () => void) => callback()),
-      onError: jest.fn(),
+      onSuccess: vi.fn((callback: () => void) => callback()),
+      onError: vi.fn(),
     });
 
-    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.update.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
@@ -213,7 +214,7 @@ describe('useTasks', () => {
   });
 
   it('should update task successfully', async () => {
-    const mockMutateAsync = jest.fn().mockResolvedValue({
+    const mockMutateAsync = vi.fn().mockResolvedValue({
       id: 1,
       title: 'Updated Task',
       description: 'Updated Description',
@@ -224,32 +225,32 @@ describe('useTasks', () => {
       updatedAt: new Date(),
     });
 
-    const mockRefetch = jest.fn();
+    const mockRefetch = vi.fn();
 
-    (trpc.tasks.list.useQuery as jest.Mock).mockReturnValue({
+    (trpc.tasks.list.useQuery as Mock).mockReturnValue({
       data: mockTasks,
       isLoading: false,
       error: null,
       refetch: mockRefetch,
     });
 
-    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.create.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
+    (trpc.tasks.update.useMutation as Mock).mockReturnValue({
       mutateAsync: mockMutateAsync,
       isPending: false,
     });
 
-    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
@@ -269,33 +270,33 @@ describe('useTasks', () => {
   });
 
   it('should delete task successfully', async () => {
-    const mockMutateAsync = jest.fn().mockResolvedValue({ success: true });
-    const mockRefetch = jest.fn();
+    const mockMutateAsync = vi.fn().mockResolvedValue({ success: true });
+    const mockRefetch = vi.fn();
 
-    (trpc.tasks.list.useQuery as jest.Mock).mockReturnValue({
+    (trpc.tasks.list.useQuery as Mock).mockReturnValue({
       data: mockTasks,
       isLoading: false,
       error: null,
       refetch: mockRefetch,
     });
 
-    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.create.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.update.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
+    (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
       mutateAsync: mockMutateAsync,
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
@@ -307,36 +308,36 @@ describe('useTasks', () => {
   });
 
   it('should toggle task completion', async () => {
-    const mockMutateAsync = jest.fn().mockResolvedValue({
+    const mockMutateAsync = vi.fn().mockResolvedValue({
       id: 1,
       completed: true,
     });
 
-    const mockRefetch = jest.fn();
+    const mockRefetch = vi.fn();
 
-    (trpc.tasks.list.useQuery as jest.Mock).mockReturnValue({
+    (trpc.tasks.list.useQuery as Mock).mockReturnValue({
       data: mockTasks,
       isLoading: false,
       error: null,
       refetch: mockRefetch,
     });
 
-    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.create.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.update.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
+    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
       mutateAsync: mockMutateAsync,
       isPending: false,
     });
@@ -349,32 +350,32 @@ describe('useTasks', () => {
   });
 
   it('should filter tasks by completion status', () => {
-    const mockRefetch = jest.fn();
+    const mockRefetch = vi.fn();
 
-    (trpc.tasks.list.useQuery as jest.Mock).mockImplementation((filters) => ({
+    (trpc.tasks.list.useQuery as Mock).mockImplementation((filters) => ({
       data: filters?.completed ? [mockTasks[1]] : mockTasks,
       isLoading: false,
       error: null,
       refetch: mockRefetch,
     }));
 
-    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.create.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.update.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
@@ -384,32 +385,32 @@ describe('useTasks', () => {
   });
 
   it('should filter tasks by priority', () => {
-    const mockRefetch = jest.fn();
+    const mockRefetch = vi.fn();
 
-    (trpc.tasks.list.useQuery as jest.Mock).mockImplementation((filters) => ({
+    (trpc.tasks.list.useQuery as Mock).mockImplementation((filters) => ({
       data: filters?.priority === 'high' ? [mockTasks[0]] : mockTasks,
       isLoading: false,
       error: null,
       refetch: mockRefetch,
     }));
 
-    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.create.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.update.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
@@ -419,33 +420,33 @@ describe('useTasks', () => {
   });
 
   it('should filter tasks by search query (server-side)', () => {
-    const mockRefetch = jest.fn();
+    const mockRefetch = vi.fn();
     const searchQuery = 'Test Task 1';
 
-    (trpc.tasks.list.useQuery as jest.Mock).mockImplementation((filters) => ({
+    (trpc.tasks.list.useQuery as Mock).mockImplementation((filters) => ({
       data: filters?.searchQuery ? [mockTasks[0]] : mockTasks,
       isLoading: false,
       error: null,
       refetch: mockRefetch,
     }));
 
-    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.create.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.update.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
@@ -456,9 +457,9 @@ describe('useTasks', () => {
   });
 
   it('should handle combined filters (completed + priority + search)', () => {
-    const mockRefetch = jest.fn();
+    const mockRefetch = vi.fn();
 
-    (trpc.tasks.list.useQuery as jest.Mock).mockImplementation((filters) => ({
+    (trpc.tasks.list.useQuery as Mock).mockImplementation((filters) => ({
       data:
         filters?.completed && filters?.priority === 'high' && filters?.searchQuery
           ? [mockTasks[0]]
@@ -468,23 +469,23 @@ describe('useTasks', () => {
       refetch: mockRefetch,
     }));
 
-    (trpc.tasks.create.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.create.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.update.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.update.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.delete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as jest.Mock).mockReturnValue({
-      mutateAsync: jest.fn(),
+    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
       isPending: false,
     });
 

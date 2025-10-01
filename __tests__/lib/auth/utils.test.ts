@@ -17,17 +17,18 @@ import { ClerkUserType, ClerkWebhookUser, AuthState } from '@/lib/types';
 import { ActivityType } from '@/lib/db/schema';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+import { vi, type Mock } from 'vitest';
 
 // Mock external dependencies
-jest.mock('@clerk/nextjs/server');
-jest.mock('next/navigation');
+vi.mock('@clerk/nextjs/server');
+vi.mock('next/navigation');
 
-const mockAuth = auth as jest.MockedFunction<typeof auth>;
-const mockRedirect = redirect as jest.MockedFunction<typeof redirect>;
+const mockAuth = auth as Mock;
+const mockRedirect = redirect as Mock;
 
 describe('Auth Utils', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('isSyncStale', () => {

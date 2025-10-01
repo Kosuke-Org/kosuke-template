@@ -130,13 +130,13 @@ export const technologies: Technology[] = [
     category: 'frontend',
   },
   {
-    name: 'Jest',
-    description: 'A delightful JavaScript testing framework with a focus on simplicity',
+    name: 'Vitest',
+    description: 'Next Generation Testing Framework',
     logoPath: {
-      light: '/logos/jest.svg',
-      dark: '/logos/jest.svg',
+      light: '/logos/vitest.svg',
+      dark: '/logos/vitest.svg',
     },
-    url: 'https://jestjs.io',
+    url: 'https://vitest.dev/',
     category: 'testing',
   },
   {

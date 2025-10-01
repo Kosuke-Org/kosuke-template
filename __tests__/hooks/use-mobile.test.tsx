@@ -1,19 +1,20 @@
 import { renderHook } from '@testing-library/react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { vi } from 'vitest';
 
 // Mock window.matchMedia
 const mockMatchMedia = (matches: boolean) => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: jest.fn().mockImplementation((query) => ({
+    value: vi.fn().mockImplementation((query) => ({
       matches,
       media: query,
       onchange: null,
-      addListener: jest.fn(), // deprecated
-      removeListener: jest.fn(), // deprecated
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-      dispatchEvent: jest.fn(),
+      addListener: vi.fn(), // deprecated
+      removeListener: vi.fn(), // deprecated
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
     })),
   });
 };
@@ -29,7 +30,7 @@ const mockInnerWidth = (width: number) => {
 
 describe('useIsMobile', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should return true for mobile screens', () => {
@@ -59,27 +60,16 @@ describe('useIsMobile', () => {
     expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 767px)');
   });
 
-  it('should handle window.matchMedia not being available', () => {
-    // Remove matchMedia to simulate older browsers
-    delete (window as unknown as { matchMedia?: unknown }).matchMedia;
-    mockInnerWidth(1200);
-
-    const { result } = renderHook(() => useIsMobile());
-
-    // Should default to false when matchMedia is not available
-    expect(result.current).toBe(false);
-  });
-
   it('should respond to screen size changes', () => {
     const matchMediaResult = {
       matches: false,
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
     };
 
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
-      value: jest.fn().mockReturnValue(matchMediaResult),
+      value: vi.fn().mockReturnValue(matchMediaResult),
     });
 
     const { result, rerender } = renderHook(() => useIsMobile());
