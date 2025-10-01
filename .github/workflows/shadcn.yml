@@ -76,21 +76,22 @@ jobs:
             git diff --name-only | tee changed_files.txt
             
             # Create a summary of changes
-            echo "## Changed Components" > change_summary.md
-            echo "" >> change_summary.md
+            SUMMARY="## Changed Components\n\n"
             
             while IFS= read -r file; do
               if [[ $file == components/ui/* ]]; then
                 component_name=$(basename "$file" .tsx)
-                echo "- **$component_name**: Updated to latest version" >> change_summary.md
+                SUMMARY="${SUMMARY}- **$component_name**: Updated to latest version\n"
               fi
             done < changed_files.txt
             
-            echo "" >> change_summary.md
-            echo "## Summary of Changes" >> change_summary.md
-            echo "\`\`\`" >> change_summary.md
-            git diff --stat >> change_summary.md
-            echo "\`\`\`" >> change_summary.md
+            SUMMARY="${SUMMARY}\n## Summary of Changes\n\`\`\`\n"
+            SUMMARY="${SUMMARY}$(git diff --stat)\n\`\`\`"
+            
+            # Save summary to output (using delimiter for multi-line)
+            echo "change_summary<<EOF" >> $GITHUB_OUTPUT
+            echo -e "$SUMMARY" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           fi
 
       - name: Create Pull Request
@@ -111,7 +112,7 @@ jobs:
             This PR contains automated updates to shadcn/ui components to keep them in sync with the latest versions from the official registry.
 
             ### 📋 What's Changed
-            $(cat change_summary.md 2>/dev/null || echo "Updated shadcn/ui components to latest versions")
+            ${{ steps.check-changes.outputs.change_summary || 'Updated shadcn/ui components to latest versions' }}
 
             ### 🔍 Review Guidelines
             - **Breaking Changes**: Review the diff carefully for any breaking changes
@@ -128,10 +129,6 @@ jobs:
             *This PR was automatically created by the Shadcn/UI update workflow.*
           branch: feature/update-shadcn-components
           delete-branch: true
-          add-paths: |
-            components/**
-            package.json
-            pnpm-lock.yaml
           labels: |
             dependencies
             automated
@@ -149,7 +146,8 @@ jobs:
           if [[ "${{ steps.check-changes.outputs.has_changes }}" == "true" ]]; then
             echo "- **Pull Request**: Created successfully" >> $GITHUB_STEP_SUMMARY
             if [ -f changed_files.txt ]; then
-              echo "- **Components Updated**: $(cat changed_files.txt | wc -l) files" >> $GITHUB_STEP_SUMMARY
+              FILE_COUNT=$(cat changed_files.txt | wc -l)
+              echo "- **Files Changed**: $FILE_COUNT" >> $GITHUB_STEP_SUMMARY
             fi
           else
             echo "- **Pull Request**: Not needed (no changes)" >> $GITHUB_STEP_SUMMARY
