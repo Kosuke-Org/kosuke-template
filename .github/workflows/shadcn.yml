@@ -57,7 +57,7 @@ jobs:
       - name: Lint code with ESLint
         run: |
           echo "🔍 Linting code with ESLint..."
-          pnpm run lint -- --fix
+          pnpm run lint
 
       - name: Check for file changes
         id: check-changes
