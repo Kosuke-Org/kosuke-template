@@ -129,6 +129,10 @@ jobs:
             *This PR was automatically created by the Shadcn/UI update workflow.*
           branch: feature/update-shadcn-components
           delete-branch: true
+          add-paths: |
+            components/**
+            package.json
+            pnpm-lock.yaml
           labels: |
             dependencies
             automated
