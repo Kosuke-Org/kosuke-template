@@ -1,24 +1,47 @@
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import { getUserOrganizations } from '@/lib/organizations';
+'use client';
 
-export default async function Home() {
-  const { userId } = await auth();
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
+import { Loader2 } from 'lucide-react';
+import { useOrganizations } from '@/hooks/use-organizations';
 
-  if (userId) {
-    // Fetch user's organizations to redirect to org dashboard
-    const organizations = await getUserOrganizations(userId);
+export default function RootPage() {
+  const router = useRouter();
+  const { isLoaded, isSignedIn } = useUser();
+  const { organizations, isLoading: isLoadingOrgs } = useOrganizations();
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    // Immediately redirect logged-out users (no loading state)
+    if (!isSignedIn) {
+      router.replace('/home');
+      return;
+    }
+
+    // Handle logged-in users
+    if (isLoadingOrgs) return;
 
     if (organizations.length > 0) {
       // Redirect to first organization's dashboard
       const firstOrg = organizations[0];
-      redirect(`/org/${firstOrg.slug}/dashboard`);
+      router.replace(`/org/${firstOrg.slug}/dashboard`);
     } else {
       // No organizations - redirect to onboarding
-      redirect('/onboarding');
+      router.replace('/onboarding');
     }
-  } else {
-    // Redirect to the home page in the logged-out route group
-    redirect('/home');
+  }, [isLoaded, isSignedIn, organizations, isLoadingOrgs, router]);
+
+  // Only show loading for logged-in users
+  if (isLoaded && isSignedIn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
+
+  // Don't render anything for logged-out users - redirect happens immediately
+  return null;
 }

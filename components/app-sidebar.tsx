@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Blocks, LifeBuoy, Send, SquareTerminal } from 'lucide-react';
+import { CheckSquare, FileText, LifeBuoy, Send, SquareTerminal } from 'lucide-react';
 
 import { NavMain } from '@/components/nav-main';
 import { NavSecondary } from '@/components/nav-secondary';
@@ -26,19 +26,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             isActive: true,
           },
           {
-            title: 'Modules',
-            url: '#',
-            icon: Blocks,
-            items: [
-              {
-                title: 'Tasks',
-                url: '/tasks',
-              },
-              {
-                title: 'Docs',
-                url: '/docs',
-              },
-            ],
+            title: 'Tasks',
+            url: '/tasks',
+            icon: CheckSquare,
+          },
+          {
+            title: 'Docs',
+            url: '/docs',
+            icon: FileText,
           },
         ],
         navSecondary: [
@@ -67,19 +62,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           isActive: true,
         },
         {
-          title: 'Modules',
-          url: '#',
-          icon: Blocks,
-          items: [
-            {
-              title: 'Tasks',
-              url: `${orgPrefix}/tasks`,
-            },
-            {
-              title: 'Docs',
-              url: `${orgPrefix}/docs`,
-            },
-          ],
+          title: 'Tasks',
+          url: `${orgPrefix}/tasks`,
+          icon: CheckSquare,
+        },
+        {
+          title: 'Docs',
+          url: `${orgPrefix}/docs`,
+          icon: FileText,
         },
       ],
       navSecondary: [
