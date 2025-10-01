@@ -17,7 +17,6 @@ permissions:
   contents: write
   pull-requests: write
   actions: read
-  workflows: write  # Required to update workflow files in PRs
 
 jobs:
   update-shadcn-components:
