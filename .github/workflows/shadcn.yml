@@ -64,6 +64,9 @@ jobs:
       - name: Check for file changes
         id: check-changes
         run: |
+          # Reset any workflow file changes (prevent permission issues)
+          git checkout -- .github/workflows/ 2>/dev/null || true
+          
           if git diff --quiet; then
             echo "No file changes detected"
             echo "has_changes=false" >> $GITHUB_OUTPUT
@@ -94,6 +97,13 @@ jobs:
             echo "EOF" >> $GITHUB_OUTPUT
           fi
 
+      - name: Generate timestamp for branch
+        if: steps.check-changes.outputs.has_changes == 'true'
+        id: timestamp
+        run: |
+          TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
+          echo "value=$TIMESTAMP" >> $GITHUB_OUTPUT
+
       - name: Create Pull Request
         if: steps.check-changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v6
@@ -105,7 +115,7 @@ jobs:
             - Automated update via GitHub Actions
             - Updated components to match latest shadcn/ui registry
             - No breaking changes expected (please review)
-          title: '🤖 Update Shadcn/UI Components'
+          title: '🤖 Update Shadcn/UI Components (${{ steps.timestamp.outputs.value }})'
           body: |
             ## 🤖 Automated Shadcn/UI Component Update
 
@@ -122,12 +132,13 @@ jobs:
 
             ### 📊 Update Details
             - **Triggered**: ${{ github.event_name == 'schedule' && 'Scheduled run' || 'Manual trigger' }}
+            - **Timestamp**: ${{ steps.timestamp.outputs.value }}
             - **CLI Version**: Latest
 
             ---
 
             *This PR was automatically created by the Shadcn/UI update workflow.*
-          branch: feature/update-shadcn-components
+          branch: feature/update-shadcn-components-${{ steps.timestamp.outputs.value }}
           delete-branch: true
           labels: |
             dependencies
