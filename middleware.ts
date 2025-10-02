@@ -15,9 +15,6 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)',
 ]);
 
-// Onboarding is a special case - requires auth but is public-ish
-const isOnboardingRoute = createRouteMatcher(['/onboarding']);
-
 export default clerkMiddleware(async (auth, req) => {
   // Get the current path
   const { pathname } = req.nextUrl;
@@ -31,14 +28,12 @@ export default clerkMiddleware(async (auth, req) => {
   const { userId } = await auth();
 
   if (!userId) {
-    // Redirect to sign-in for unauthenticated users (except onboarding)
-    if (!isOnboardingRoute(req)) {
-      const signInUrl = createSafeRedirectUrl(
-        new URL(AUTH_ROUTES.SIGN_IN, req.url).toString(),
-        pathname
-      );
-      return NextResponse.redirect(new URL(signInUrl));
-    }
+    // Redirect to sign-in for unauthenticated users
+    const signInUrl = createSafeRedirectUrl(
+      new URL(AUTH_ROUTES.SIGN_IN, req.url).toString(),
+      pathname
+    );
+    return NextResponse.redirect(new URL(signInUrl));
   }
 
   return NextResponse.next();

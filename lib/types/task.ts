@@ -22,7 +22,7 @@ export type { Task, TaskPriority, NewTask } from '@/lib/db/schema';
  * Used when displaying tasks in organization context
  */
 export interface TaskWithOrg {
-  id: number;
+  id: string;
   clerkUserId: string;
   organizationId: string | null;
   teamId: string | null;
