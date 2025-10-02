@@ -964,10 +964,16 @@ const handleUpload = async (file: File) => {
 
 ### Type Management and Organization
 
+- **Type Creation Philosophy (MANDATORY)**:
+  - **ONLY create types that are ACTUALLY USED** - Never create types "just in case" or for completeness
+  - **Verify usage before creation** - Before defining any type, ensure it has at least one concrete usage
+  - **Remove unused types immediately** - If a type becomes unused, delete it rather than keeping it around
+  - **Prefer inference over manual definition** - Always try to infer types from existing sources first
+
 - **Type Inference Priority (MANDATORY)**:
   1. **tRPC Router Types** - ALWAYS infer from router using `inferRouterInputs` and `inferRouterOutputs`
   2. **Database Schema Types** - Import from `@/lib/db/schema` (includes pgEnum types)
-  3. **Domain Extension Types** - Only define in `lib/types/` when extending base types
+  3. **Domain Extension Types** - Only define in `lib/types/` when extending base types AND actively used
   4. **Infrastructure Types** - API utilities, errors, and configurations in `lib/api/`
 
 - **Centralized Types**: All shared types are organized by domain and functionality

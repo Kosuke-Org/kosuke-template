@@ -12,29 +12,14 @@ export type {
   // Clerk integration
   ClerkUserType,
 
-  // Extended user types
-  UserWithSubscription,
-  UserProfile,
-  UserListItem,
-
   // User operations
-  CreateUserData,
-  UpdateUserData,
-
-  // User sync
+  LocalUser,
   UserSyncResult,
   UserSyncOptions,
   UserSyncResponse,
 
   // Activity logs
   ActivityLogEntry,
-
-  // Local user types
-  LocalUser,
-
-  // User analytics
-  UserStats,
-  UserActivitySummary,
 
   // Auth state
   AuthState,
@@ -49,18 +34,7 @@ export type {
   Task,
   TaskPriority,
   NewTask,
-
-  // Extended types
-  TaskWithOrg,
-  TaskWithDetails,
-  TaskStatistics,
-  TaskFilters,
-  TaskGroupBy,
-  GroupedTasks,
 } from './task';
-
-// Task helper functions
-export { isTaskOverdue, getTaskCompletionStatus, getDaysUntilDue } from './task';
 
 // Organization-related types
 export type {
@@ -73,37 +47,16 @@ export type {
   NewTeam,
   TeamMembership,
   NewTeamMembership,
-  OrgRole,
-  TeamRole,
-
-  // Extended types
-  OrganizationWithMemberCount,
-  OrganizationWithDetails,
-  OrgMembershipWithUser,
-  TeamWithMemberCount,
-  TeamWithDetails,
-  TeamMembershipWithUser,
-
-  // Context and permissions
-  OrgContext,
-
-  // Statistics
-  OrgStatistics,
-  TeamStatistics,
-
-  // Settings
-  OrganizationSettings,
-
-  // Invitations
-  OrganizationInvitation,
 
   // Role types
   OrgRoleValue,
   TeamRoleValue,
 } from './organization';
 
-// Organization helper functions
+// Organization constants and helper functions
 export {
+  OrgRole,
+  TeamRole,
   isOrgAdmin,
   isOrgMember,
   isTeamLead,
@@ -124,30 +77,14 @@ export type {
 
   // Enhanced types
   UserSubscriptionInfo,
-  SubscriptionWithUser,
-  SubscriptionSummary,
-
-  // Operations
-  CreateSubscriptionData,
-  UpdateSubscriptionData,
-
-  // State and eligibility
-  SubscriptionEligibility,
   SubscriptionUpdateParams,
   OperationResult,
 
+  // State and eligibility
+  SubscriptionEligibility,
+
   // Checkout and billing
   CheckoutSessionParams,
-  BillingOperationResult,
-
-  // Analytics
-  BillingStats,
-  SubscriptionMetrics,
-  RevenueSummary,
-
-  // Polar integration
-  PolarSubscriptionData,
-  PolarWebhookEvent,
 
   // Subscription actions
   UpgradeResponse,
