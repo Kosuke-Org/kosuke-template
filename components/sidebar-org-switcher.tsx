@@ -87,7 +87,7 @@ export function SidebarOrgSwitcher() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
+              <Avatar key={activeOrganization.id} className="h-8 w-8 rounded-lg">
                 {activeOrganization.logoUrl && (
                   <AvatarImage src={activeOrganization.logoUrl} alt={activeOrganization.name} />
                 )}
