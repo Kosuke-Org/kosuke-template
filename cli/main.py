@@ -7,10 +7,15 @@ This interactive script guides you through setting up the kosuke template infras
 step-by-step, with a mix of manual guidance and automated setup:
 
 1. GitHub Repository (Manual) - Fork repository manually with guidance
-2. Vercel Project (Automated) - Auto-create project + storage with API token
+2. Vercel Project (Manual) - Create project + storage through Vercel UI
 3. Neon Database (Manual) - Complete integration through Vercel marketplace
-4. Polar Billing (Automated) - Auto-create organization + products with API token  
-5. Clerk Authentication (Manual) - Create application + configure OAuth manually
+4. Polar Billing (Manual) - Create organization + products + webhooks
+5. Clerk Authentication (Manual) - Create app + enable organizations + configure webhooks
+6. Resend Email Service (Manual) - Configure email API for notifications
+7. Sentry Error Monitoring (Manual) - Set up error tracking and performance monitoring
+8. Vercel Environment Variables (Critical) - Add all env vars for deployment
+
+Features: Multi-tenant SaaS with Clerk Organizations, Teams, Role-based access control
 
 Progress is saved automatically, so you can resume if interrupted.
 """
@@ -206,13 +211,14 @@ class InteractiveSetup:
 {Colors.HEADER}{Colors.BOLD}
 ╔══════════════════════════════════════════════════════════════╗
 ║            🤖 KOSUKE TEMPLATE INTERACTIVE SETUP 🤖           ║
+║                 Multi-Tenant SaaS Starter                    ║
 ║                                                              ║
 ║  Step-by-step guided setup with progress saving:            ║
 ║  1. GitHub Repository (Manual guided fork)                  ║
 ║  2. Vercel Project (Manual guided setup)                    ║
 ║  3. Neon Database (Manual guided setup)                     ║
-║  4. Polar Billing (Manual product creation)                 ║
-║  5. Clerk Authentication (Manual app creation)              ║
+║  4. Polar Billing (Manual product + webhook setup)          ║
+║  5. Clerk Auth + Organizations (Manual + webhooks)          ║
 ║  6. Resend Email Service (Manual API key setup)             ║
 ║  7. Sentry Error Monitoring (Manual project creation)       ║
 ║  8. Vercel Environment Variables (Critical for deployment)  ║
@@ -569,14 +575,27 @@ class InteractiveSetup:
         vercel_config = self.progress.service_configs.get('vercel', {})
         app_url = vercel_config.get('credentials', {}).get('project_url', 'your-app.vercel.app')
         
-        print(f"\n{Colors.BOLD}📋 Set up Clerk Webhook (Required for user sync):{Colors.ENDC}")
+        print(f"\n{Colors.BOLD}📋 Set up Clerk Webhook (Required for user & organization sync):{Colors.ENDC}")
         print(f"1. In your Clerk dashboard, go to {Colors.BOLD}'Webhooks'{Colors.ENDC}")
         print(f"2. Click {Colors.BOLD}'Add Endpoint'{Colors.ENDC}")
         print(f"3. Endpoint URL: {Colors.OKCYAN}{app_url}/api/clerk/webhook{Colors.ENDC}")
         print(f"4. Select events:")
+        print(f"   {Colors.BOLD}User Events:{Colors.ENDC}")
         print(f"   • ☑️ user.created")
         print(f"   • ☑️ user.updated") 
         print(f"   • ☑️ user.deleted")
+        print(f"   {Colors.BOLD}Organization Events:{Colors.ENDC}")
+        print(f"   • ☑️ organization.created")
+        print(f"   • ☑️ organization.updated")
+        print(f"   • ☑️ organization.deleted")
+        print(f"   {Colors.BOLD}Membership Events:{Colors.ENDC}")
+        print(f"   • ☑️ organizationMembership.created")
+        print(f"   • ☑️ organizationMembership.updated")
+        print(f"   • ☑️ organizationMembership.deleted")
+        print(f"   {Colors.BOLD}Invitation Events (Optional - for logging only):{Colors.ENDC}")
+        print(f"   • ☐ organizationInvitation.created")
+        print(f"   • ☐ organizationInvitation.accepted")
+        print(f"   • ☐ organizationInvitation.revoked")
         print(f"5. Click {Colors.BOLD}'Create'{Colors.ENDC}")
         print(f"6. Copy the {Colors.BOLD}'Signing Secret'{Colors.ENDC} (starts with 'whsec_')")
         
@@ -590,13 +609,25 @@ class InteractiveSetup:
         self.progress.completed_services.append('clerk')
         
         print_success("Clerk authentication configured!")
-        print_success("Webhook configured for user synchronization!")
+        print_success("Webhook configured for user & organization synchronization!")
         print()
         
-        print(f"{Colors.BOLD}📋 Additional Clerk Setup (Optional - do this after deployment):{Colors.ENDC}")
+        print(f"{Colors.BOLD}📋 Enable Organizations (Required for team features):{Colors.ENDC}")
+        print(f"1. In your Clerk app, go to {Colors.BOLD}'Settings > Organizations'{Colors.ENDC}")
+        print(f"2. Toggle {Colors.BOLD}'Enable Organizations'{Colors.ENDC} ON")
+        print(f"3. Configure organization settings:")
+        print(f"   • Organization naming: Allow custom names")
+        print(f"   • Roles: Use default roles (admin, member) or customize")
+        print(f"   • Permissions: Review organization permissions")
+        print(f"4. Click {Colors.BOLD}'Save'{Colors.ENDC}")
+        
+        input(f"\n{Colors.OKCYAN}Press Enter when you've enabled organizations...{Colors.ENDC}")
+        
+        print(f"\n{Colors.BOLD}📋 Additional Clerk Setup (Optional - do this after deployment):{Colors.ENDC}")
         print(f"1. In your Clerk app, go to {Colors.BOLD}'User & Authentication > Social Connections'{Colors.ENDC}")
         print(f"2. Enable {Colors.BOLD}'Google'{Colors.ENDC} OAuth provider if desired")
         print(f"3. Configure other authentication methods as needed")
+        print(f"4. Customize organization invitation emails in {Colors.BOLD}'Customization > Emails'{Colors.ENDC}")
     
     def step_6_resend_manual(self):
         """Step 6: Manual Resend email service setup"""
