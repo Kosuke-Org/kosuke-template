@@ -14,12 +14,12 @@ export function useProfileImageUrl(user?: UserResource | null) {
     // Priority order:
     // 1. Current image URL from context (newly uploaded)
     // 2. Custom profile image from user metadata
-    // 3. Clerk's default imageUrl
+    // 3. Return null to show initials fallback (don't use Clerk's default avatar)
     if (currentImageUrl) return currentImageUrl;
     if (user?.publicMetadata?.customProfileImageUrl)
-      return user.publicMetadata.customProfileImageUrl;
-    return user?.imageUrl || null;
-  }, [currentImageUrl, user?.publicMetadata?.customProfileImageUrl, user?.imageUrl]);
+      return user.publicMetadata.customProfileImageUrl as string;
+    return null;
+  }, [currentImageUrl, user?.publicMetadata?.customProfileImageUrl]);
 }
 
 // Profile Image Context for managing profile image state

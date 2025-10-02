@@ -1,18 +1,19 @@
 # Kosuke Template
 
-A modern Next.js 15 template with TypeScript, Clerk authentication, Polar Billing, Vercel Blob, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring.
+A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Polar Billing, Vercel Blob, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
 
 ## 🚀 Features
 
 - **Next.js 15** with App Router
 - **TypeScript** for type safety
-- **Clerk Authentication** for user management
+- **Clerk Authentication** for user management with **Organizations & Teams**
 - **PostgreSQL** database with Drizzle ORM
 - **Shadcn UI** components with Tailwind CSS
-- **Polar** billing integration with automated sync
+- **Polar** billing integration with automated sync (personal & organization subscriptions)
 - **Vercel Cron Jobs** for subscription data synchronization
 - **Resend** email service with **React Email** templates
 - **Profile image uploads** with Vercel Blob
+- **Multi-tenancy** with organization and team management
 - **Sentry** error monitoring and performance tracking
 - **Plausible Analytics** integration with configurable domains
 - **Responsive design** with dark/light mode
@@ -69,6 +70,7 @@ If you prefer to set up services manually or already have accounts configured:
    ```
 
 4. **Email development (optional):**
+
    ```bash
    pnpm run dev:email  # Runs Next.js + React Email preview
    pnpm run email:dev  # React Email preview only
@@ -82,7 +84,7 @@ Create a `.env` file with these required variables:
 # Database
 POSTGRES_URL=postgres://postgres:postgres@localhost:54321/postgres
 
-# Clerk Authentication
+# Clerk Authentication (Organizations enabled)
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 CLERK_WEBHOOK_SECRET=whsec_...

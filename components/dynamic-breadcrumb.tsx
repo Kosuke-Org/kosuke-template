@@ -9,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
 
 // Define human-readable names for routes
 const routeNames: Record<string, string> = {
@@ -25,6 +26,7 @@ const routeNames: Record<string, string> = {
 
 export function DynamicBreadcrumb() {
   const pathname = usePathname();
+  const { activeOrganization } = useActiveOrganization();
 
   // Split the pathname and filter out empty strings
   const pathSegments = pathname.split('/').filter(Boolean);
@@ -34,7 +36,13 @@ export function DynamicBreadcrumb() {
     return null;
   }
 
-  let breadcrumbItems: Array<{ href: string; name: string; isLast: boolean }> = [];
+  let breadcrumbItems: Array<{ href: string | null; name: string; isLast: boolean }> = [];
+
+  const getDisplayName = (path: string) => {
+    const pathSegments = path.split('/').filter(Boolean);
+    const subPage = pathSegments[pathSegments.length - 1];
+    return routeNames[subPage] || subPage.charAt(0).toUpperCase() + subPage.slice(1);
+  };
 
   // Handle different route patterns
   if (pathname === '/dashboard') {
@@ -48,12 +56,19 @@ export function DynamicBreadcrumb() {
     ];
   } else if (pathname.startsWith('/settings/')) {
     // Nested settings pages - show "Settings > [SubPage]"
-    const subPage = pathSegments[pathSegments.length - 1];
-    const displayName = routeNames[subPage] || subPage.charAt(0).toUpperCase() + subPage.slice(1);
 
     breadcrumbItems = [
       { href: '/settings', name: 'Settings', isLast: false },
-      { href: pathname, name: displayName, isLast: true },
+      { href: pathname, name: getDisplayName(pathname), isLast: true },
+    ];
+  } else if (pathname.startsWith('/org/')) {
+    breadcrumbItems = [
+      {
+        href: `/org/${pathSegments[1]}/settings`,
+        name: activeOrganization?.name || 'Organization',
+        isLast: false,
+      },
+      { href: pathname, name: getDisplayName(pathname), isLast: true },
     ];
   } else {
     // Default handling for other routes
@@ -76,7 +91,7 @@ export function DynamicBreadcrumb() {
         {breadcrumbItems.map((item, index) => (
           <div key={`breadcrumb-${item.href}-${index}`} className="contents">
             <BreadcrumbItem className={index === 0 ? 'hidden md:block' : ''}>
-              {item.isLast ? (
+              {item.isLast || item.href === null ? (
                 <BreadcrumbPage>{item.name}</BreadcrumbPage>
               ) : (
                 <BreadcrumbLink href={item.href}>{item.name}</BreadcrumbLink>

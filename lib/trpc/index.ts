@@ -9,4 +9,5 @@ export type { AppRouter } from './router';
 
 // Re-export schemas for convenience (client-safe, no server dependencies)
 export * from './schemas/tasks';
+export * from './schemas/organizations';
 export * from './schemas/user';

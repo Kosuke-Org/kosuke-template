@@ -11,6 +11,8 @@ export const createTaskSchema = z.object({
   description: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
   dueDate: z.date().optional(),
+  organizationId: z.string().uuid().optional(), // NEW: Organization context
+  teamId: z.string().uuid().optional(), // NEW: Team assignment
 });
 
 export const updateTaskSchema = z.object({
@@ -20,6 +22,8 @@ export const updateTaskSchema = z.object({
   completed: z.boolean().optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
   dueDate: z.date().nullable().optional(),
+  organizationId: z.string().uuid().nullable().optional(), // NEW: Can reassign org
+  teamId: z.string().uuid().nullable().optional(), // NEW: Can reassign team
 });
 
 export const taskListFiltersSchema = z
@@ -27,6 +31,8 @@ export const taskListFiltersSchema = z
     completed: z.boolean().optional(),
     priority: z.enum(['low', 'medium', 'high']).optional(),
     searchQuery: z.string().optional(),
+    organizationId: z.string().uuid().nullable().optional(), // Can filter by org or null (personal)
+    teamId: z.string().uuid().nullable().optional(), // Can filter by team or null
   })
   .optional();
 

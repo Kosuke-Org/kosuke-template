@@ -31,12 +31,16 @@ import { useUser } from '@clerk/nextjs';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { useAuthActions } from '@/hooks/use-auth-actions';
 import { UserSkeleton } from '@/components/skeletons';
+import { getInitials } from '@/lib/utils';
 
 export function NavUser() {
   const { user, isSignedIn } = useUser();
   const { isMobile } = useSidebar();
-  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
+  const { profileImageUrl, displayName, primaryEmail } = useUserAvatar(user);
   const { handleSignOut } = useAuthActions();
+
+  // Generate initials from display name
+  const initials = getInitials(displayName);
 
   if (!isSignedIn || !user) {
     return (
@@ -61,7 +65,9 @@ export function NavUser() {
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={profileImageUrl} alt={displayName} />
-                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{displayName}</span>
@@ -80,7 +86,9 @@ export function NavUser() {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={profileImageUrl} alt={displayName} />
-                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                  <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{displayName}</span>

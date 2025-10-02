@@ -134,14 +134,14 @@ export interface AsyncOperationOptions {
   successMessage?: string;
   errorMessage?: string;
   onSuccess?: () => void;
-  onError?: (error: Error) => void;
+  onError?: (error: unknown) => void;
 }
 
 // Form submission configuration for hooks
 export interface FormSubmissionOptions<T> {
   onSubmit: (data: T) => Promise<void>;
   onSuccess?: (data: T) => void;
-  onError?: (error: Error, data: T) => void;
+  onError?: (error: unknown, data: T) => void;
   successMessage?: string;
   errorMessage?: string;
 }

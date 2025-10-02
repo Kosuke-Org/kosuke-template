@@ -964,10 +964,16 @@ const handleUpload = async (file: File) => {
 
 ### Type Management and Organization
 
+- **Type Creation Philosophy (MANDATORY)**:
+  - **ONLY create types that are ACTUALLY USED** - Never create types "just in case" or for completeness
+  - **Verify usage before creation** - Before defining any type, ensure it has at least one concrete usage
+  - **Remove unused types immediately** - If a type becomes unused, delete it rather than keeping it around
+  - **Prefer inference over manual definition** - Always try to infer types from existing sources first
+
 - **Type Inference Priority (MANDATORY)**:
   1. **tRPC Router Types** - ALWAYS infer from router using `inferRouterInputs` and `inferRouterOutputs`
   2. **Database Schema Types** - Import from `@/lib/db/schema` (includes pgEnum types)
-  3. **Domain Extension Types** - Only define in `lib/types/` when extending base types
+  3. **Domain Extension Types** - Only define in `lib/types/` when extending base types AND actively used
   4. **Infrastructure Types** - API utilities, errors, and configurations in `lib/api/`
 
 - **Centralized Types**: All shared types are organized by domain and functionality
@@ -1176,24 +1182,6 @@ import { tasks } from '@/lib/db/schema'; // OK in database queries
 
 - Never use new colors, always use the ones defined in `./app/globals.css` file (following shadcn/ui theme)
 - Use CSS variables for consistent theming across light/dark modes
-
-### Design Guidelines
-
-| Criteria                       | 3                                                                                                                              | 4                                                                                                     | 5                                                                                                                                       |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| UI/UX Design                   | Acceptable design with a basic layout; some minor usability issues may persist.                                                | Good design with clear visual hierarchy; most users find the experience intuitive.                    | Outstanding, user-centric UI/UX with an intuitive, attractive, and seamless interface that guides users effortlessly.                   |
-| Accessibility                  | Basic accessibility in place (e.g., alt text and acceptable contrast), though full compliance isn't achieved.                  | Mostly accessible; adheres to most accessibility standards with only minor issues.                    | Fully accessible design that meets or exceeds WCAG 2.1 AA standards, ensuring every user can navigate the app effortlessly.             |
-| Performance                    | Average load times; the app is usable but further optimizations could enhance user experience.                                 | Fast performance; most assets are optimized and pages load quickly on most connections.               | Exceptional performance with assets optimized to load in ~3 seconds or less, even on slower networks.                                   |
-| Responsiveness                 | Generally responsive; most components reflow correctly, though a few minor issues may appear on uncommon screen sizes.         | Highly responsive; the design adapts well to a variety of devices with very few issues.               | Completely responsive; the layout and content seamlessly adapt to any screen size, ensuring a consistent experience across all devices. |
-| Visual Consistency             | Moderately consistent; most design elements follow a common style guide with a few exceptions.                                 | Visually cohesive; nearly all UI elements align with a unified design language with minor deviations. | Total visual consistency; every component adheres to a unified design system, reinforcing the brand and improving user familiarity.     |
-| Navigation & Usability         | Acceptable navigation; users can complete tasks but may experience a brief learning curve.                                     | Well-structured navigation with clear menus and labels; users find it easy to locate content.         | Exceptional navigation; an intuitive and streamlined interface ensures that users can find information quickly and easily.              |
-| Mobile Optimization            | Mobile-friendly in most areas; the experience is acceptable though not fully polished for all mobile nuances.                  | Optimized for mobile; the design performs well on smartphones with only minor issues to address.      | Fully mobile-first; the app offers a smooth, fast, and engaging mobile experience with well-sized touch targets and rapid load times.   |
-| Code Quality & Maintainability | Reasonable code quality; standard practices are mostly followed but could benefit from improved organization or documentation. | Clean, well-commented code adhering to modern best practices; relatively easy to maintain and scale.  | Exemplary code quality; modular, semantic, and thoroughly documented code ensures excellent maintainability and scalability.            |
-
-When building new components or updating existing ones, act as a world class designer.
-Your job is to take this prototype and turn it into a impeccably designed web application.
-This application should be in the top applications and should be a winner of an Apple design award.
-Use the Rubric guidelines as a guide. You should ship only components that have 5 in each category.
 
 ### Contributing Guidelines - MUST FOLLOW
 

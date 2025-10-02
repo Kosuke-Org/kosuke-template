@@ -10,4 +10,4 @@
  */
 
 // Re-export types from schema - all task types come from the database schema
-export type { Task, TaskPriority } from '@/lib/db/schema';
+export type { Task, TaskPriority, NewTask } from '@/lib/db/schema';

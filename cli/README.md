@@ -2,6 +2,8 @@
 
 This interactive Python script guides you through setting up the kosuke template infrastructure step-by-step, with a perfect mix of educational manual steps and automated complex tasks.
 
+**Multi-Tenant SaaS Starter** with Clerk Organizations, Teams, and Role-based access control.
+
 ## 🎯 What This Script Does
 
 **Interactive Step-by-Step Setup:**
@@ -9,8 +11,8 @@ This interactive Python script guides you through setting up the kosuke template
 1. **🍴 GitHub Repository (Manual)** - Guided repository forking process
 2. **☁️ Vercel Project (Manual)** - Guided project + Blob storage creation
 3. **🔗 Neon Database (Manual)** - Guided database creation through Vercel dashboard
-4. **💳 Polar Billing (Manual)** - Guided organization + product creation in dashboard
-5. **🔐 Clerk Authentication (Manual)** - Guided app creation + configuration
+4. **💳 Polar Billing (Manual)** - Guided organization + product creation + webhooks
+5. **🔐 Clerk Authentication (Manual)** - Guided app creation + **organizations** + webhooks
 6. **📧 Resend Email Service (Manual)** - Guided API key setup for email functionality
 7. **🚨 Sentry Error Monitoring (Manual)** - Guided project creation for error tracking
 8. **⚙️ Vercel Environment Variables (Critical)** - Add all env vars to ensure deployment success
@@ -257,7 +259,7 @@ Moving Clerk from development to production:
 1. Go to **https://dashboard.clerk.com**
 2. Navigate to your application
 3. Go to **Settings > Plan & Billing**
-4. Upgrade to a production plan (required for custom domains)
+4. Upgrade to a production plan (required for custom domains and organizations)
 
 #### 2. Configure Production Domains
 
@@ -284,16 +286,36 @@ Moving Clerk from development to production:
    - Use production OAuth app credentials
 2. **Email/SMS**: Configure production email provider
 3. **Session Configuration**: Review session timeout settings
+4. **Organizations**: Enable organization features
+   - Go to **Settings > Organizations**
+   - Ensure organizations are enabled
+   - Configure organization settings (naming, roles, etc.)
+   - Review organization invitation settings
 
 #### 5. Update Webhook URLs
 
 1. In Clerk dashboard, go to **Webhooks**
 2. Update webhook endpoint to: `https://yourdomain.com/api/clerk/webhook`
 3. Ensure events are still selected:
-   - ☑️ `user.created`
-   - ☑️ `user.updated`
-   - ☑️ `user.deleted`
+   - **User Events:**
+     - ☑️ `user.created`
+     - ☑️ `user.updated`
+     - ☑️ `user.deleted`
+   - **Organization Events:**
+     - ☑️ `organization.created`
+     - ☑️ `organization.updated`
+     - ☑️ `organization.deleted`
+   - **Membership Events:**
+     - ☑️ `organizationMembership.created`
+     - ☑️ `organizationMembership.updated`
+     - ☑️ `organizationMembership.deleted`
+   - **Invitation Events (Optional - for logging/monitoring only):**
+     - ☑️ `organizationInvitation.created`
+     - ☑️ `organizationInvitation.accepted`
+     - ☑️ `organizationInvitation.revoked`
 4. Test webhook delivery in production
+
+> **Note:** Invitation events are logged but not used for business logic. When an invitation is accepted, the `organizationMembership.created` event handles the actual membership sync.
 
 ## 📄 License
 

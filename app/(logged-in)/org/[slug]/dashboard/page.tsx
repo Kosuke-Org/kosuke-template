@@ -325,7 +325,7 @@ export default function Page() {
                   <div key={user.id} className="flex items-center space-x-4">
                     <Avatar>
                       <AvatarImage src={user.avatar} alt={user.name} />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-primary text-primary-foreground">
                         {user.name
                           .split(' ')
                           .map((n) => n[0])
@@ -400,7 +400,7 @@ export default function Page() {
                         <div className="flex items-center space-x-2">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={user.avatar} />
-                            <AvatarFallback>
+                            <AvatarFallback className="bg-primary text-primary-foreground">
                               {user.name
                                 .split(' ')
                                 .map((n) => n[0])
@@ -626,7 +626,9 @@ export default function Page() {
                   <div className="flex justify-between space-x-4">
                     <Avatar>
                       <AvatarImage src="https://picsum.photos/seed/hover1/40/40" />
-                      <AvatarFallback>JD</AvatarFallback>
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        JD
+                      </AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
                       <h4 className="text-sm font-semibold">John Developer</h4>
@@ -736,7 +738,9 @@ export default function Page() {
                     <div key={i} className="flex items-center space-x-4">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={`https://picsum.photos/seed/activity${i}/32/32`} />
-                        <AvatarFallback>U{i}</AvatarFallback>
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          U{i}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="space-y-1">
                         <p className="text-sm font-medium">User {i + 1} performed an action</p>

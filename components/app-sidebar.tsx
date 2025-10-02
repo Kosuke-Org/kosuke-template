@@ -1,83 +1,110 @@
 'use client';
 
 import * as React from 'react';
-import { Blocks, Command, LifeBuoy, Send, SquareTerminal } from 'lucide-react';
-import Link from 'next/link';
+import { CheckSquare, FileText, LifeBuoy, Send, SquareTerminal } from 'lucide-react';
 
 import { NavMain } from '@/components/nav-main';
 import { NavSecondary } from '@/components/nav-secondary';
 import { NavUser } from '@/components/nav-user';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
+import { SidebarOrgSwitcher } from '@/components/sidebar-org-switcher';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const data = {
-  navMain: [
-    {
-      title: 'Dashboard',
-      url: '/dashboard',
-      icon: SquareTerminal,
-      isActive: true,
-    },
-    {
-      title: 'Modules',
-      url: '#',
-      icon: Blocks,
-      items: [
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { activeOrganization, isLoading } = useActiveOrganization();
+
+  // Generate org-aware navigation items
+  const navItems = React.useMemo(() => {
+    if (!activeOrganization) {
+      return {
+        navMain: [
+          {
+            title: 'Dashboard',
+            url: '/dashboard',
+            icon: SquareTerminal,
+            isActive: true,
+          },
+          {
+            title: 'Tasks',
+            url: '/tasks',
+            icon: CheckSquare,
+          },
+          {
+            title: 'Docs',
+            url: '/docs',
+            icon: FileText,
+          },
+        ],
+        navSecondary: [
+          {
+            title: 'Support',
+            url: '#',
+            icon: LifeBuoy,
+          },
+          {
+            title: 'Feedback',
+            url: '#',
+            icon: Send,
+          },
+        ],
+      };
+    }
+
+    const orgPrefix = `/org/${activeOrganization.slug}`;
+
+    return {
+      navMain: [
+        {
+          title: 'Dashboard',
+          url: `${orgPrefix}/dashboard`,
+          icon: SquareTerminal,
+          isActive: true,
+        },
         {
           title: 'Tasks',
-          url: '/tasks',
+          url: `${orgPrefix}/tasks`,
+          icon: CheckSquare,
         },
         {
           title: 'Docs',
-          url: '/docs',
+          url: `${orgPrefix}/docs`,
+          icon: FileText,
         },
       ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: 'Support',
-      url: '#',
-      icon: LifeBuoy,
-    },
-    {
-      title: 'Feedback',
-      url: '#',
-      icon: Send,
-    },
-  ],
-};
+      navSecondary: [
+        {
+          title: 'Support',
+          url: '#',
+          icon: LifeBuoy,
+        },
+        {
+          title: 'Feedback',
+          url: '#',
+          icon: Send,
+        },
+      ],
+    };
+  }, [activeOrganization]);
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Command className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Kosuke Template</span>
-                  <span className="truncate text-xs">Template</span>
-                </div>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <SidebarOrgSwitcher />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        {isLoading ? (
+          <div className="space-y-2 p-2">
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-full" />
+          </div>
+        ) : (
+          <>
+            <NavMain items={navItems.navMain} />
+            <NavSecondary items={navItems.navSecondary} className="mt-auto" />
+          </>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

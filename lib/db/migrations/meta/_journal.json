@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1752598818058,
-      "tag": "0000_ordinary_captain_marvel",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1753172626458,
-      "tag": "0001_public_ultimates",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1759246717896,
-      "tag": "0002_marvelous_nova",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1759306983625,
-      "tag": "0003_tiny_corsair",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1759316546422,
-      "tag": "0004_flashy_skreet",
+      "when": 1759328294606,
+      "tag": "0000_smart_kat_farrell",
       "breakpoints": true
     }
   ]

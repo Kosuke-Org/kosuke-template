@@ -94,9 +94,9 @@ export default function BillingSuccessPage() {
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </Link>
-            <Link href="/dashboard">
+            <Link href="/settings">
               <Button variant="outline" className="w-full">
-                Go to Dashboard
+                Go to Settings
               </Button>
             </Link>
           </div>

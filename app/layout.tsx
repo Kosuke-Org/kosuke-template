@@ -17,7 +17,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Kosuke Template',
-  description: 'Modern Next.js template with Clerk authentication',
+  description: 'Modern Next.js template with Clerk authentication and Shadcn UI',
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({

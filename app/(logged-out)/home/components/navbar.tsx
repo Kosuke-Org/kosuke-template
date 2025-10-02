@@ -54,7 +54,9 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                   <div className="cursor-pointer">
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarImage src={profileImageUrl} alt={displayName} />
-                      <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                      <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                        {initials}
+                      </AvatarFallback>
                     </Avatar>
                   </div>
                 </DropdownMenuTrigger>
@@ -68,7 +70,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard" className="cursor-pointer">
+                      <Link href="/" className="cursor-pointer">
                         <User className="mr-2 h-4 w-4" />
                         Dashboard
                       </Link>
@@ -126,7 +128,9 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                     <div className="flex items-center gap-3 p-2 border rounded-lg">
                       <Avatar className="h-10 w-10 rounded-lg">
                         <AvatarImage src={profileImageUrl} alt={displayName} />
-                        <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                        <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                          {initials}
+                        </AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="text-sm font-medium">{displayName}</div>
@@ -134,7 +138,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Link href="/dashboard">
+                      <Link href="/">
                         <Button variant="ghost" className="w-full justify-start">
                           <User className="mr-2 h-4 w-4" />
                           Dashboard

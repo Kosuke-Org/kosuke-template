@@ -11,32 +11,15 @@ export type {
 
   // Clerk integration
   ClerkUserType,
-  ClerkWebhookUser,
-  ClerkWebhookEvent,
-
-  // Extended user types
-  UserWithSubscription,
-  UserProfile,
-  UserListItem,
 
   // User operations
-  CreateUserData,
-  UpdateUserData,
-
-  // User sync
+  LocalUser,
   UserSyncResult,
   UserSyncOptions,
   UserSyncResponse,
 
   // Activity logs
   ActivityLogEntry,
-
-  // Local user types
-  LocalUser,
-
-  // User analytics
-  UserStats,
-  UserActivitySummary,
 
   // Auth state
   AuthState,
@@ -50,7 +33,40 @@ export type {
   // Base types
   Task,
   TaskPriority,
+  NewTask,
 } from './task';
+
+// Organization-related types
+export type {
+  // Base types
+  Organization,
+  NewOrganization,
+  OrgMembership,
+  NewOrgMembership,
+  Team,
+  NewTeam,
+  TeamMembership,
+  NewTeamMembership,
+
+  // Role types
+  OrgRoleValue,
+  TeamRoleValue,
+} from './organization';
+
+// Organization constants and helper functions
+export {
+  OrgRole,
+  TeamRole,
+  isOrgAdmin,
+  isOrgMember,
+  isTeamLead,
+  isTeamMember,
+  canManageOrganization,
+  canInviteMembers,
+  canManageTeams,
+  canManageBilling,
+  canManageTeam,
+} from './organization';
 
 // Billing and subscription types
 export type {
@@ -61,30 +77,14 @@ export type {
 
   // Enhanced types
   UserSubscriptionInfo,
-  SubscriptionWithUser,
-  SubscriptionSummary,
-
-  // Operations
-  CreateSubscriptionData,
-  UpdateSubscriptionData,
-
-  // State and eligibility
-  SubscriptionEligibility,
   SubscriptionUpdateParams,
   OperationResult,
 
+  // State and eligibility
+  SubscriptionEligibility,
+
   // Checkout and billing
   CheckoutSessionParams,
-  BillingOperationResult,
-
-  // Analytics
-  BillingStats,
-  SubscriptionMetrics,
-  RevenueSummary,
-
-  // Polar integration
-  PolarSubscriptionData,
-  PolarWebhookEvent,
 
   // Subscription actions
   UpgradeResponse,
@@ -93,6 +93,32 @@ export type {
 
 // Billing enums
 export { SubscriptionState } from './billing';
+
+// Webhook types
+export type {
+  ClerkWebhookUser,
+  ClerkOrganizationWebhook,
+  ClerkMembershipWebhook,
+  ClerkInvitationWebhook,
+  ClerkWebhookEvent,
+  ClerkWebhookEventType,
+  UserCreatedEvent,
+  UserUpdatedEvent,
+  UserDeletedEvent,
+  OrganizationCreatedEvent,
+  OrganizationUpdatedEvent,
+  OrganizationDeletedEvent,
+  MembershipCreatedEvent,
+  MembershipUpdatedEvent,
+  MembershipDeletedEvent,
+  InvitationCreatedEvent,
+  InvitationAcceptedEvent,
+  InvitationRevokedEvent,
+  AnyClerkWebhookEvent,
+} from './webhooks';
+
+// Webhook type guards
+export { isUserEvent, isOrganizationEvent, isMembershipEvent, isInvitationEvent } from './webhooks';
 
 // Note: API types are now handled by lib/api module
 // Import from '@/lib/api' for API-related types and utilities
