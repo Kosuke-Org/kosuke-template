@@ -27,6 +27,7 @@ export function useTasks(filters?: TaskListFilters) {
     refetch,
   } = trpc.tasks.list.useQuery(filters, {
     staleTime: 1000 * 60 * 2, // 2 minutes
+    placeholderData: (previousData) => previousData,
   });
 
   // Create task mutation

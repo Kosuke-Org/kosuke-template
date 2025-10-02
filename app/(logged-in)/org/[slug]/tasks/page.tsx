@@ -165,7 +165,7 @@ export default function OrgTasksPage() {
 
       {/* Tabs & Action Bar */}
       <Tabs value={filter} onValueChange={(v) => setFilter(v as TaskFilter)}>
-        <div className="flex items-center gap-4 overflow-x-auto">
+        <div className="flex items-center gap-4">
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="active">Active</TabsTrigger>
