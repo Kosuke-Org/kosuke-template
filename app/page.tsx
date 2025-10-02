@@ -1,14 +1,22 @@
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+'use client';
 
-export default async function Home() {
-  const { userId } = await auth();
+import { useUser } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
-  if (userId) {
-    redirect('/dashboard');
-  } else {
-    // Redirect to the home page in the logged-out route group
-    // This will be handled by the proper (logged-out)/home/page.tsx
-    redirect('/home');
-  }
+export default function Home() {
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoaded) {
+      if (user) {
+        router.replace('/dashboard');
+      } else {
+        router.replace('/home');
+      }
+    }
+  }, [user, isLoaded, router]);
+
+  return null;
 }
