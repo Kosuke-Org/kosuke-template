@@ -107,8 +107,26 @@ jobs:
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
           echo "value=$TIMESTAMP" >> $GITHUB_OUTPUT
 
-      - name: Create Pull Request
+      - name: Check for existing open PR
         if: steps.check-changes.outputs.has_changes == 'true'
+        id: check-pr
+        run: |
+          # Check if there's already an open PR with the shadcn-ui label
+          EXISTING_PR=$(gh pr list --label "shadcn-ui" --state open --json number --jq '.[0].number')
+          
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Found existing open PR #$EXISTING_PR with shadcn-ui updates"
+            echo "should_create=false" >> $GITHUB_OUTPUT
+            echo "existing_pr=$EXISTING_PR" >> $GITHUB_OUTPUT
+          else
+            echo "No existing open PR found, will create new one"
+            echo "should_create=true" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Pull Request
+        if: steps.check-changes.outputs.has_changes == 'true' && steps.check-pr.outputs.should_create == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -158,7 +176,12 @@ jobs:
           echo "- **File Changes**: ${{ steps.check-changes.outputs.has_changes }}" >> $GITHUB_STEP_SUMMARY
 
           if [[ "${{ steps.check-changes.outputs.has_changes }}" == "true" ]]; then
-            echo "- **Pull Request**: Created successfully" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ steps.check-pr.outputs.should_create }}" == "false" ]]; then
+              echo "- **Pull Request**: Skipped (existing open PR #${{ steps.check-pr.outputs.existing_pr }})" >> $GITHUB_STEP_SUMMARY
+              echo "- **Note**: Updates will be included in the existing PR when it's merged and a new update is needed" >> $GITHUB_STEP_SUMMARY
+            elif [[ "${{ steps.check-pr.outputs.should_create }}" == "true" ]]; then
+              echo "- **Pull Request**: Created successfully" >> $GITHUB_STEP_SUMMARY
+            fi
             if [ -f changed_files.txt ]; then
               FILE_COUNT=$(cat changed_files.txt | wc -l)
               echo "- **Files Changed**: $FILE_COUNT" >> $GITHUB_STEP_SUMMARY
