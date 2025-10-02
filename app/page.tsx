@@ -24,11 +24,9 @@ export default function RootPage() {
     if (isLoadingOrgs) return;
 
     if (organizations.length > 0) {
-      // Redirect to first organization's dashboard
       const firstOrg = organizations[0];
       router.replace(`/org/${firstOrg.slug}/dashboard`);
     } else {
-      // No organizations - redirect to onboarding
       router.replace('/onboarding');
     }
   }, [isLoaded, isSignedIn, organizations, isLoadingOrgs, router]);
