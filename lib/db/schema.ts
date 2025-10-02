@@ -1,7 +1,7 @@
 import { pgTable, text, timestamp, varchar, pgEnum, uuid } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { z } from 'zod';
 import { relations } from 'drizzle-orm';
+import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 
 // Enums
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);
@@ -271,23 +271,23 @@ export enum ActivityType {
   TEAM_MEMBER_REMOVED = 'team_member_removed',
 }
 
-// Types
-export type User = z.infer<typeof selectUserSchema>;
-export type NewUser = z.infer<typeof insertUserSchema>;
-export type UserSubscription = z.infer<typeof selectUserSubscriptionSchema>;
-export type NewUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
-export type ActivityLog = z.infer<typeof selectActivityLogSchema>;
-export type NewActivityLog = z.infer<typeof insertActivityLogSchema>;
-export type Task = z.infer<typeof selectTaskSchema>;
-export type NewTask = z.infer<typeof insertTaskSchema>;
-export type Organization = z.infer<typeof selectOrganizationSchema>;
-export type NewOrganization = z.infer<typeof insertOrganizationSchema>;
-export type OrgMembership = z.infer<typeof selectOrgMembershipSchema>;
-export type NewOrgMembership = z.infer<typeof insertOrgMembershipSchema>;
-export type Team = z.infer<typeof selectTeamSchema>;
-export type NewTeam = z.infer<typeof insertTeamSchema>;
-export type TeamMembership = z.infer<typeof selectTeamMembershipSchema>;
-export type NewTeamMembership = z.infer<typeof insertTeamMembershipSchema>;
+// Types (derive from Drizzle schema to avoid Zod instance mismatches)
+export type User = InferSelectModel<typeof users>;
+export type NewUser = InferInsertModel<typeof users>;
+export type UserSubscription = InferSelectModel<typeof userSubscriptions>;
+export type NewUserSubscription = InferInsertModel<typeof userSubscriptions>;
+export type ActivityLog = InferSelectModel<typeof activityLogs>;
+export type NewActivityLog = InferInsertModel<typeof activityLogs>;
+export type Task = InferSelectModel<typeof tasks>;
+export type NewTask = InferInsertModel<typeof tasks>;
+export type Organization = InferSelectModel<typeof organizations>;
+export type NewOrganization = InferInsertModel<typeof organizations>;
+export type OrgMembership = InferSelectModel<typeof orgMemberships>;
+export type NewOrgMembership = InferInsertModel<typeof orgMemberships>;
+export type Team = InferSelectModel<typeof teams>;
+export type NewTeam = InferInsertModel<typeof teams>;
+export type TeamMembership = InferSelectModel<typeof teamMemberships>;
+export type NewTeamMembership = InferInsertModel<typeof teamMemberships>;
 
 // Infer enum types from schema
 export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];
