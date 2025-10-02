@@ -628,7 +628,9 @@ class InteractiveSetup:
         print(f"2. Enable {Colors.BOLD}'Google'{Colors.ENDC} OAuth provider if desired")
         print(f"3. Configure other authentication methods as needed")
         print(f"4. Customize organization invitation emails in {Colors.BOLD}'Customization > Emails'{Colors.ENDC}")
-    
+        print(f"5. Disable First and last name in {Colors.BOLD}'User & Authentication > User Model'{Colors.ENDC}")
+        print(f"6. Enable Allow personal account in {Colors.BOLD}'Configure > Organization Management' > Settings{Colors.ENDC}")
+            
     def step_6_resend_manual(self):
         """Step 6: Manual Resend email service setup"""
         print_step(6, self.total_steps, "Resend Email Service (Manual)")
