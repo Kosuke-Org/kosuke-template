@@ -7,7 +7,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
-import { Loader2, Building2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -43,16 +43,16 @@ export default function OnboardingPage() {
     },
   });
 
+  const onSubmit = (data: OrganizationFormValues) => {
+    createOrganization(data);
+  };
+
   // Redirect if user already has organizations
   if (isLoaded && !isLoadingOrgs && organizations.length > 0) {
     const firstOrg = organizations[0];
     router.replace(`/org/${firstOrg.slug}/dashboard`);
     return null;
   }
-
-  const onSubmit = (data: OrganizationFormValues) => {
-    createOrganization(data);
-  };
 
   if (!isLoaded || isLoadingOrgs) {
     return (
@@ -63,17 +63,10 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl">Create your workspace</CardTitle>
-            </div>
-          </div>
+          <CardTitle className="text-2xl">Create your workspace</CardTitle>
           <CardDescription>
             Let&apos;s get started by creating your first workspace. You can invite team members
             later.
