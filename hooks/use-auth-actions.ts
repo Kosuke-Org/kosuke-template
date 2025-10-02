@@ -15,7 +15,7 @@ export function useAuthActions() {
       await signOut();
     },
     onSuccess: () => {
-      router.push('/');
+      router.replace('/home');
     },
     onError: (error) => {
       console.error('Error signing out:', error);
