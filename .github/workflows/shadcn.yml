@@ -66,7 +66,7 @@ jobs:
         run: |
           # Reset any workflow file changes (prevent permission issues)
           git checkout -- .github/workflows/ 2>/dev/null || true
-          
+
           if git diff --quiet; then
             echo "No file changes detected"
             echo "has_changes=false" >> $GITHUB_OUTPUT
@@ -113,7 +113,7 @@ jobs:
         run: |
           # Check if there's already an open PR with the shadcn-ui label
           EXISTING_PR=$(gh pr list --label "shadcn-ui" --state open --json number --jq '.[0].number')
-          
+
           if [ -n "$EXISTING_PR" ]; then
             echo "Found existing open PR #$EXISTING_PR with shadcn-ui updates"
             echo "should_create=false" >> $GITHUB_OUTPUT
