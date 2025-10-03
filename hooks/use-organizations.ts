@@ -6,7 +6,6 @@
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
-import { useToast } from '@/hooks/use-toast';
 import type { AppRouter } from '@/lib/trpc/router';
 import type { inferRouterOutputs } from '@trpc/server';
 
@@ -14,7 +13,6 @@ type RouterOutput = inferRouterOutputs<AppRouter>;
 type Organization = RouterOutput['organizations']['getUserOrganizations'][number];
 
 export function useOrganizations() {
-  const { toast } = useToast();
   const utils = trpc.useUtils();
 
   // Fetch user's organizations

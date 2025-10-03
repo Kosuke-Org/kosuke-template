@@ -113,7 +113,7 @@ jobs:
         run: |
           # Check if there's already an open PR with the shadcn-ui label
           EXISTING_PR=$(gh pr list --label "shadcn-ui" --state open --json number --jq '.[0].number')
-          
+
           if [ -n "$EXISTING_PR" ]; then
             echo "Found existing open PR #$EXISTING_PR with shadcn-ui updates"
             echo "should_create=false" >> $GITHUB_OUTPUT

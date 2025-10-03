@@ -18,15 +18,36 @@ export function useUpdateOrganization(organizationId: string) {
   const utils = trpc.useUtils();
 
   const updateMutation = trpc.organizations.updateOrganization.useMutation({
+    onMutate: (input) => {
+      // Optimistically update organization name and logo
+      const previousData = utils.organizations.getUserOrganizations.getData();
+
+      utils.organizations.getUserOrganizations.setData(undefined, (old) => {
+        if (!old) return old;
+        return old.map((org) => {
+          if (org.id !== organizationId) return org;
+          return {
+            ...org,
+            name: input?.name ?? org.name,
+            logoUrl: input?.logoUrl !== undefined ? input.logoUrl : org.logoUrl,
+          };
+        });
+      });
+
+      return { previousData };
+    },
     onSuccess: () => {
       toast({
         title: 'Success',
         description: 'Organization updated successfully',
       });
-      utils.organizations.getUserOrganizations.invalidate();
-      utils.organizations.getOrganization.invalidate({ organizationId });
     },
-    onError: (error) => {
+    onError: (error, _input, context) => {
+      // Rollback optimistic updates
+      if (context?.previousData !== undefined) {
+        utils.organizations.getUserOrganizations.setData(undefined, context.previousData);
+      }
+
       toast({
         title: 'Error',
         description: error.message,
