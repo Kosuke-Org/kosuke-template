@@ -148,7 +148,9 @@ export const organizationsRouter = router({
   updateOrganization: protectedProcedure
     .input(updateOrganizationSchema)
     .mutation(async ({ ctx, input }) => {
-      const org = await getOrgById(input.organizationId);
+      const { organizationId, ...data } = input;
+
+      const org = await getOrgById(organizationId);
 
       if (!org) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Organization not found' });
@@ -164,23 +166,8 @@ export const organizationsRouter = router({
       }
 
       const clerk = await clerkClient();
-
-      // Update in Clerk
-      const updateData: Parameters<typeof clerk.organizations.updateOrganization>[1] = {};
-      if (input.name) updateData.name = input.name;
-
+      const updateData = data as Parameters<typeof clerk.organizations.updateOrganization>[1];
       await clerk.organizations.updateOrganization(org.clerkOrgId, updateData);
-
-      // Update logo in local database if provided
-      if (input.logoUrl !== undefined) {
-        await db
-          .update(organizations)
-          .set({
-            logoUrl: input.logoUrl,
-            updatedAt: new Date(),
-          })
-          .where(eq(organizations.id, org.id));
-      }
 
       // The webhook will handle syncing name changes
       return {
