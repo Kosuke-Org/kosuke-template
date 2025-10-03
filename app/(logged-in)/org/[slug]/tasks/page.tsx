@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, LayoutGrid, List } from 'lucide-react';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -34,7 +34,9 @@ import { useTasks } from '@/hooks/use-tasks';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
 import { TaskItem } from '@/app/(logged-in)/org/[slug]/tasks/components/task-item';
 import { TaskDialog } from '@/app/(logged-in)/org/[slug]/tasks/components/task-dialog';
+import { KanbanBoard } from './components/kanban-board';
 import type { TaskPriority } from '@/lib/types';
+import { useViewModeStore } from '@/hooks/use-view-mode';
 import { createTaskSchema, updateTaskSchema } from '@/lib/trpc/schemas/tasks';
 
 type TaskFilter = 'all' | 'active' | 'completed';
@@ -82,6 +84,8 @@ export default function OrgTasksPage() {
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const { viewMode, setViewMode } = useViewModeStore();
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -94,11 +98,9 @@ export default function OrgTasksPage() {
     createTask,
     updateTask,
     deleteTask,
-    toggleComplete,
     isCreating,
     isUpdating,
     isDeleting,
-    isToggling,
   } = useTasks({
     completed: filter === 'all' ? undefined : filter === 'completed',
     priority: priorityFilter === 'all' ? undefined : priorityFilter,
@@ -196,8 +198,26 @@ export default function OrgTasksPage() {
             <Plus className="mr-2 h-4 w-4" />
             New Task
           </Button>
+          <div className="flex items-center gap-2 ml-auto">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'secondary'}
+              onClick={() => setViewMode('list')}
+              className="whitespace-nowrap"
+            >
+              <List className="mr-2 h-4 w-4" />
+              List
+            </Button>
+            <Button
+              variant={viewMode === 'kanban' ? 'default' : 'secondary'}
+              onClick={() => setViewMode('kanban')}
+              className="whitespace-nowrap"
+            >
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              Kanban
+            </Button>
+          </div>
         </div>
-        <TabsContent value={filter} className="mt-6 space-y-3">
+        <TabsContent value={filter} className="mt-6">
           {tasks.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12">
@@ -215,17 +235,26 @@ export default function OrgTasksPage() {
                 )}
               </CardContent>
             </Card>
+          ) : viewMode === 'list' ? (
+            <div className="space-y-3">
+              {tasks.map((task) => (
+                <TaskItem
+                  key={task.id}
+                  {...task}
+                  onToggleComplete={updateTask}
+                  onEdit={handleEditClick}
+                  onDelete={handleDeleteClick}
+                />
+              ))}
+            </div>
           ) : (
-            tasks.map((task) => (
-              <TaskItem
-                key={task.id}
-                {...task}
-                onToggleComplete={toggleComplete}
-                onEdit={handleEditClick}
-                onDelete={handleDeleteClick}
-                isToggling={isToggling}
-              />
-            ))
+            <KanbanBoard
+              tasks={tasks}
+              onToggleComplete={updateTask}
+              onEdit={handleEditClick}
+              onDelete={handleDeleteClick}
+              onPriorityChange={updateTask}
+            />
           )}
         </TabsContent>
       </Tabs>

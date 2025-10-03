@@ -18,6 +18,7 @@ type TaskListFilters = RouterInput['tasks']['list'];
 
 export function useTasks(filters?: TaskListFilters) {
   const { toast } = useToast();
+  const utils = trpc.useUtils();
 
   // Fetch tasks with server-side filtering (completed, priority, search)
   const {
@@ -50,6 +51,22 @@ export function useTasks(filters?: TaskListFilters) {
 
   // Update task mutation
   const updateTask = trpc.tasks.update.useMutation({
+    onMutate: (data) => {
+      const previousData = utils.tasks.list.getData(filters);
+
+      utils.tasks.list.setData(filters, (old) => {
+        if (!old) return old;
+        return old.map((task) => {
+          if (task.id !== data.id) return task;
+          return {
+            ...task,
+            ...data,
+          };
+        });
+      });
+
+      return { previousData };
+    },
     onSuccess: () => {
       toast({
         title: 'Success',
@@ -57,7 +74,11 @@ export function useTasks(filters?: TaskListFilters) {
       });
       refetch();
     },
-    onError: (error) => {
+    onError: (error, _data, context) => {
+      if (context?.previousData) {
+        utils.tasks.list.setData(filters, context.previousData);
+      }
+
       toast({
         title: 'Error',
         description: error.message || 'Failed to update task',
@@ -84,20 +105,6 @@ export function useTasks(filters?: TaskListFilters) {
     },
   });
 
-  // Toggle completion mutation
-  const toggleComplete = trpc.tasks.toggleComplete.useMutation({
-    onSuccess: () => {
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update task',
-        variant: 'destructive',
-      });
-    },
-  });
-
   return {
     tasks: tasks ?? [],
     isLoading,
@@ -105,10 +112,8 @@ export function useTasks(filters?: TaskListFilters) {
     createTask: (input: CreateTaskInput) => createTask.mutateAsync(input),
     updateTask: (input: UpdateTaskInput) => updateTask.mutateAsync(input),
     deleteTask: (id: string) => deleteTask.mutateAsync({ id }),
-    toggleComplete: (id: string) => toggleComplete.mutateAsync({ id }),
     isCreating: createTask.isPending,
     isUpdating: updateTask.isPending,
     isDeleting: deleteTask.isPending,
-    isToggling: toggleComplete.isPending,
   };
 }

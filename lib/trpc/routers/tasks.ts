@@ -13,7 +13,6 @@ import {
   updateTaskSchema,
   taskListFiltersSchema,
   deleteTaskSchema,
-  toggleTaskCompleteSchema,
 } from '../schemas/tasks';
 
 export const tasksRouter = router({
@@ -181,41 +180,4 @@ export const tasksRouter = router({
 
     return { success: true };
   }),
-
-  /**
-   * Toggle task completion status
-   */
-  toggleComplete: protectedProcedure
-    .input(toggleTaskCompleteSchema)
-    .mutation(async ({ ctx, input }) => {
-      // Get current task
-      const existingTask = await db
-        .select()
-        .from(tasks)
-        .where(and(eq(tasks.id, input.id), eq(tasks.clerkUserId, ctx.userId)))
-        .limit(1);
-
-      if (existingTask.length === 0) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Task not found',
-        });
-      }
-
-      const currentCompleted = existingTask[0].completed === 'true';
-
-      const [updatedTask] = await db
-        .update(tasks)
-        .set({
-          completed: currentCompleted ? 'false' : 'true',
-          updatedAt: new Date(),
-        })
-        .where(eq(tasks.id, input.id))
-        .returning();
-
-      return {
-        id: updatedTask.id,
-        completed: updatedTask.completed === 'true',
-      };
-    }),
 });

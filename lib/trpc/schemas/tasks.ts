@@ -39,7 +39,3 @@ export const taskListFiltersSchema = z
 export const deleteTaskSchema = z.object({
   id: z.string().uuid(),
 });
-
-export const toggleTaskCompleteSchema = z.object({
-  id: z.string().uuid(),
-});
