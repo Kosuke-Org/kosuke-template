@@ -38,6 +38,13 @@ vi.mock('@/lib/trpc/client', () => ({
         useMutation: vi.fn(),
       },
     },
+    useUtils: () => ({
+      tasks: {
+        list: vi.fn(),
+        setData: vi.fn(),
+        getData: vi.fn(),
+      },
+    }),
   },
 }));
 

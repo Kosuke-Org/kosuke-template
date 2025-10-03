@@ -18,6 +18,7 @@ type TaskListFilters = RouterInput['tasks']['list'];
 
 export function useTasks(filters?: TaskListFilters) {
   const { toast } = useToast();
+  const utils = trpc.useUtils();
 
   // Fetch tasks with server-side filtering (completed, priority, search)
   const {
@@ -50,6 +51,22 @@ export function useTasks(filters?: TaskListFilters) {
 
   // Update task mutation
   const updateTask = trpc.tasks.update.useMutation({
+    onMutate: (data) => {
+      const previousData = utils.tasks.list.getData(filters);
+
+      utils.tasks.list.setData(filters, (old) => {
+        if (!old) return old;
+        return old.map((task) => {
+          if (task.id !== data.id) return task;
+          return {
+            ...task,
+            ...data,
+          };
+        });
+      });
+
+      return { previousData };
+    },
     onSuccess: () => {
       toast({
         title: 'Success',
@@ -57,7 +74,11 @@ export function useTasks(filters?: TaskListFilters) {
       });
       refetch();
     },
-    onError: (error) => {
+    onError: (error, _data, context) => {
+      if (context?.previousData) {
+        utils.tasks.list.setData(filters, context.previousData);
+      }
+
       toast({
         title: 'Error',
         description: error.message || 'Failed to update task',
