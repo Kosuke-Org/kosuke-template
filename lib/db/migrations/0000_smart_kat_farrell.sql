@@ -1,6 +1,18 @@
-CREATE TYPE "public"."org_role" AS ENUM('org:admin', 'org:member');--> statement-breakpoint
-CREATE TYPE "public"."task_priority" AS ENUM('low', 'medium', 'high');--> statement-breakpoint
-CREATE TYPE "public"."team_role" AS ENUM('lead', 'member');--> statement-breakpoint
+DO $$ BEGIN
+ CREATE TYPE "public"."org_role" AS ENUM('org:admin', 'org:member');
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ CREATE TYPE "public"."task_priority" AS ENUM('low', 'medium', 'high');
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+ CREATE TYPE "public"."team_role" AS ENUM('lead', 'member');
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
 CREATE TABLE "activity_logs" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"clerk_user_id" text NOT NULL,
