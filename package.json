@@ -40,6 +40,9 @@
   "dependencies": {
     "@clerk/nextjs": "^6.33.1",
     "@clerk/types": "^4.90.0",
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.1.1",
     "@polar-sh/nextjs": "^0.4.9",
     "@polar-sh/sdk": "^0.35.4",
@@ -109,6 +112,7 @@
     "svix": "^1.69.0",
     "tailwind-merge": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",
+    "tunnel-rat": "^0.1.2",
     "vaul": "^1.1.2",
     "zod": "^3.25.76"
   },
