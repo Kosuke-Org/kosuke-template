@@ -36,10 +36,10 @@ import { TaskItem } from '@/app/(logged-in)/org/[slug]/tasks/components/task-ite
 import { TaskDialog } from '@/app/(logged-in)/org/[slug]/tasks/components/task-dialog';
 import { KanbanBoard } from './components/kanban-board';
 import type { TaskPriority } from '@/lib/types';
+import { useViewModeStore } from '@/hooks/use-view-mode';
 import { createTaskSchema, updateTaskSchema } from '@/lib/trpc/schemas/tasks';
 
 type TaskFilter = 'all' | 'active' | 'completed';
-type ViewMode = 'list' | 'kanban';
 
 // Skeleton components
 function TaskSkeleton() {
@@ -84,7 +84,8 @@ export default function OrgTasksPage() {
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const { viewMode, setViewMode } = useViewModeStore();
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
