@@ -97,11 +97,9 @@ export default function OrgTasksPage() {
     createTask,
     updateTask,
     deleteTask,
-    toggleComplete,
     isCreating,
     isUpdating,
     isDeleting,
-    isToggling,
   } = useTasks({
     completed: filter === 'all' ? undefined : filter === 'completed',
     priority: priorityFilter === 'all' ? undefined : priorityFilter,
@@ -242,21 +240,19 @@ export default function OrgTasksPage() {
                 <TaskItem
                   key={task.id}
                   {...task}
-                  onToggleComplete={toggleComplete}
+                  onToggleComplete={updateTask}
                   onEdit={handleEditClick}
                   onDelete={handleDeleteClick}
-                  isToggling={isToggling}
                 />
               ))}
             </div>
           ) : (
             <KanbanBoard
               tasks={tasks}
-              onToggleComplete={toggleComplete}
+              onToggleComplete={updateTask}
               onEdit={handleEditClick}
               onDelete={handleDeleteClick}
               onPriorityChange={updateTask}
-              isToggling={isToggling || isUpdating}
             />
           )}
         </TabsContent>

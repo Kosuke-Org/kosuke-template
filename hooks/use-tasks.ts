@@ -105,20 +105,6 @@ export function useTasks(filters?: TaskListFilters) {
     },
   });
 
-  // Toggle completion mutation
-  const toggleComplete = trpc.tasks.toggleComplete.useMutation({
-    onSuccess: () => {
-      refetch();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update task',
-        variant: 'destructive',
-      });
-    },
-  });
-
   return {
     tasks: tasks ?? [],
     isLoading,
@@ -126,10 +112,8 @@ export function useTasks(filters?: TaskListFilters) {
     createTask: (input: CreateTaskInput) => createTask.mutateAsync(input),
     updateTask: (input: UpdateTaskInput) => updateTask.mutateAsync(input),
     deleteTask: (id: string) => deleteTask.mutateAsync({ id }),
-    toggleComplete: (id: string) => toggleComplete.mutateAsync({ id }),
     isCreating: createTask.isPending,
     isUpdating: updateTask.isPending,
     isDeleting: deleteTask.isPending,
-    isToggling: toggleComplete.isPending,
   };
 }

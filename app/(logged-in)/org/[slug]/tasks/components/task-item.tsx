@@ -15,6 +15,11 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { TaskPriority } from '@/lib/types';
+import type { AppRouter } from '@/lib/trpc/router';
+import type { inferRouterInputs } from '@trpc/server';
+
+type RouterInput = inferRouterInputs<AppRouter>;
+type UpdateTaskInput = RouterInput['tasks']['update'];
 
 interface TaskItemProps {
   id: string;
@@ -24,10 +29,9 @@ interface TaskItemProps {
   priority: TaskPriority;
   dueDate: Date | null;
   isOverdue: boolean;
-  onToggleComplete: (id: string) => void;
+  onToggleComplete: (input: UpdateTaskInput) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-  isToggling?: boolean;
 }
 
 const priorityColors = {
@@ -47,7 +51,6 @@ export function TaskItem({
   onToggleComplete,
   onEdit,
   onDelete,
-  isToggling,
 }: TaskItemProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -64,8 +67,7 @@ export function TaskItem({
       <CardHeader className="flex flex-row items-start gap-4 space-y-0 px-6 py-0">
         <Checkbox
           checked={completed}
-          onCheckedChange={() => onToggleComplete(id)}
-          disabled={isToggling}
+          onCheckedChange={() => onToggleComplete({ id, completed: !completed })}
           className="mt-1"
         />
         <div className="flex-1 space-y-1">

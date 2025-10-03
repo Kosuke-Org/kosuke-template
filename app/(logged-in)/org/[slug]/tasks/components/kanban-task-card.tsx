@@ -19,27 +19,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import type { AppRouter } from '@/lib/trpc/router';
-import type { inferRouterOutputs } from '@trpc/server';
+import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import { Checkbox } from '@/components/ui/checkbox';
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
+type RouterInput = inferRouterInputs<AppRouter>;
 type Task = RouterOutput['tasks']['list'][number];
-
+type UpdateTaskInput = RouterInput['tasks']['update'];
 interface KanbanTaskCardProps {
   task: Task;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-  onToggleComplete: (id: string) => void;
-  isToggling: boolean;
+  onToggleComplete: (input: UpdateTaskInput) => void;
 }
 
-export function KanbanTaskCard({
-  task,
-  onEdit,
-  onDelete,
-  onToggleComplete,
-  isToggling,
-}: KanbanTaskCardProps) {
+export function KanbanTaskCard({ task, onEdit, onDelete, onToggleComplete }: KanbanTaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
   });
@@ -89,8 +83,7 @@ export function KanbanTaskCard({
         <div className="flex items-center gap-2">
           <Checkbox
             checked={task.completed}
-            onCheckedChange={() => onToggleComplete(task.id)}
-            disabled={isToggling}
+            onCheckedChange={() => onToggleComplete({ id: task.id, completed: !task.completed })}
           />
           <h4 className={cn('font-medium text-sm leading-tight')}>{task.title}</h4>
         </div>

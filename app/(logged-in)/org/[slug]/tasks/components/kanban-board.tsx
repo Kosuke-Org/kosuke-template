@@ -36,8 +36,7 @@ interface KanbanBoardProps {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onPriorityChange: (input: UpdateTaskInput) => void;
-  onToggleComplete: (id: string) => void;
-  isToggling: boolean;
+  onToggleComplete: (input: UpdateTaskInput) => void;
 }
 
 const PRIORITY_COLUMNS: { id: TaskPriority; title: string }[] = [
@@ -54,7 +53,6 @@ function DroppableColumn({
   onEdit,
   onDelete,
   onToggleComplete,
-  isToggling,
 }: {
   column: { id: TaskPriority; title: string };
   tasks: Task[];
@@ -62,8 +60,7 @@ function DroppableColumn({
   activeId: string | null;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
-  onToggleComplete: (id: string) => void;
-  isToggling: boolean;
+  onToggleComplete: (input: UpdateTaskInput) => void;
 }) {
   const { setNodeRef } = useDroppable({ id: column.id });
 
@@ -106,7 +103,6 @@ function DroppableColumn({
               onEdit={onEdit}
               onDelete={onDelete}
               onToggleComplete={onToggleComplete}
-              isToggling={isToggling}
             />
           ))
         )}
@@ -121,7 +117,6 @@ export function KanbanBoard({
   onDelete,
   onPriorityChange,
   onToggleComplete,
-  isToggling,
 }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
@@ -232,7 +227,6 @@ export function KanbanBoard({
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onToggleComplete={onToggleComplete}
-                isToggling={isToggling}
               />
             </SortableContext>
           );

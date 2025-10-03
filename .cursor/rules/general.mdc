@@ -908,6 +908,10 @@ const handleUpload = async (file: File) => {
 - **Type-safe mutations** - Form submissions, updates, deletes
 - **Protected endpoints** - Authenticated user actions
 
+### Mutation Design Guideline (MANDATORY)
+
+- Prefer a single, general `update` mutation per resource. If an `update` exists, do NOT add specialized mutations like `updatePriority`, `updateStatus`, `toggleComplete`, etc. Send only changed fields (partial input) to `update` and let the server handle patch semantics. This keeps the API surface small, maximizes type reuse, and simplifies caching/invalidations.
+
 ### File Upload & Storage (Vercel Blob)
 
 - **Configuration**: Use `./lib/storage.ts` utilities

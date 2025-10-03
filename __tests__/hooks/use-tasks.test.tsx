@@ -34,9 +34,6 @@ vi.mock('@/lib/trpc/client', () => ({
       delete: {
         useMutation: vi.fn(),
       },
-      toggleComplete: {
-        useMutation: vi.fn(),
-      },
     },
     useUtils: () => ({
       tasks: {
@@ -115,11 +112,6 @@ describe('useTasks', () => {
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
     const { result } = renderHook(() => useTasks(), { wrapper });
 
     await waitFor(() => {
@@ -147,11 +139,6 @@ describe('useTasks', () => {
     });
 
     (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     });
@@ -196,11 +183,6 @@ describe('useTasks', () => {
     });
 
     (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     });
@@ -256,21 +238,16 @@ describe('useTasks', () => {
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
     const { result } = renderHook(() => useTasks(), { wrapper });
 
     await result.current.updateTask({
-      id: 1,
+      id: '1',
       title: 'Updated Task',
       priority: 'low',
     });
 
     expect(mockMutateAsync).toHaveBeenCalledWith({
-      id: 1,
+      id: '1',
       title: 'Updated Task',
       priority: 'low',
     });
@@ -302,56 +279,9 @@ describe('useTasks', () => {
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
     const { result } = renderHook(() => useTasks(), { wrapper });
 
     await result.current.deleteTask(1);
-
-    expect(mockMutateAsync).toHaveBeenCalledWith({ id: 1 });
-  });
-
-  it('should toggle task completion', async () => {
-    const mockMutateAsync = vi.fn().mockResolvedValue({
-      id: 1,
-      completed: true,
-    });
-
-    const mockRefetch = vi.fn();
-
-    (trpc.tasks.list.useQuery as Mock).mockReturnValue({
-      data: mockTasks,
-      isLoading: false,
-      error: null,
-      refetch: mockRefetch,
-    });
-
-    (trpc.tasks.create.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    (trpc.tasks.update.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
-      mutateAsync: mockMutateAsync,
-      isPending: false,
-    });
-
-    const { result } = renderHook(() => useTasks(), { wrapper });
-
-    await result.current.toggleComplete(1);
 
     expect(mockMutateAsync).toHaveBeenCalledWith({ id: 1 });
   });
@@ -377,11 +307,6 @@ describe('useTasks', () => {
     });
 
     (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     });
@@ -412,11 +337,6 @@ describe('useTasks', () => {
     });
 
     (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     });
@@ -452,11 +372,6 @@ describe('useTasks', () => {
       isPending: false,
     });
 
-    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
     const { result } = renderHook(() => useTasks({ searchQuery }), { wrapper });
 
     expect(trpc.tasks.list.useQuery).toHaveBeenCalledWith({ searchQuery }, expect.any(Object));
@@ -487,11 +402,6 @@ describe('useTasks', () => {
     });
 
     (trpc.tasks.delete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    (trpc.tasks.toggleComplete.useMutation as Mock).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     });
