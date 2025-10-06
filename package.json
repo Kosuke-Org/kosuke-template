@@ -34,7 +34,7 @@
     "db:seed": "npx tsx -r dotenv/config lib/db/seed.ts",
     "email:dev": "email dev --dir emails --port 3001",
     "email:export": "email export --dir emails --out .react-email",
-    "shadcn:update": "npx shadcn@canary add -a -y -o",
+    "shadcn:update": "./scripts/update-shadcn.sh",
     "shadcn:check": "npx shadcn@canary diff"
   },
   "dependencies": {

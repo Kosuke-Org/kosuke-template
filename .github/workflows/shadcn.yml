@@ -47,9 +47,9 @@ jobs:
 
       - name: Update shadcn/ui components
         run: |
-          echo "🤖 Updating all shadcn/ui components..."
-          npx shadcn@canary add -a -y -o
-          echo "✅ All components updated successfully!"
+          echo "🤖 Updating existing shadcn/ui components..."
+          pnpm run shadcn:update
+          echo "✅ All existing components updated successfully!"
 
       - name: Format code with Prettier
         run: |
