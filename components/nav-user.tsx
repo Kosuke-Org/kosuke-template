@@ -5,10 +5,10 @@ import {
   Bell,
   ChevronsUpDown,
   CreditCard,
+  House,
   LogOut,
   Shield,
   Sparkles,
-  SquareTerminal,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -137,7 +137,7 @@ export function NavUser() {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/home" className="cursor-pointer flex w-full items-center">
-                <SquareTerminal className="mr-2 h-4 w-4" />
+                <House className="mr-2 h-4 w-4" />
                 Public Homepage
               </Link>
             </DropdownMenuItem>
