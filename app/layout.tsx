@@ -16,8 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Kosuke Template',
-  description: 'Modern Next.js template with Clerk authentication and Shadcn UI',
+  title: {
+    template: '%s | Kosuke Template',
+    default: 'Kosuke Template',
+  },
+  description:
+    'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
   icons: {
     icon: '/favicon.ico',
   },

@@ -18,6 +18,13 @@ const isPublicRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   // Get the current path
   const { pathname } = req.nextUrl;
+  const { userId } = await auth();
+
+  // Smart redirect for root route: logged-in users go to dashboard
+  // In the dashboard we redirect to the first organization's dashboard
+  if (pathname === '/' && userId) {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
 
   // Allow public routes
   if (isPublicRoute(req)) {
@@ -25,8 +32,6 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // For protected routes, check if user is authenticated
-  const { userId } = await auth();
-
   if (!userId) {
     // Redirect to sign-in for unauthenticated users
     const signInUrl = createSafeRedirectUrl(

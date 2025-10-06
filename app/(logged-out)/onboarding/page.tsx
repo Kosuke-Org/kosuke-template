@@ -5,7 +5,6 @@
 
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -24,16 +23,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useOrganizations } from '@/hooks/use-organizations';
 import { useCreateOrganization } from '@/hooks/use-create-organization';
 import { createOrgFormSchema } from '@/lib/trpc/schemas/organizations';
 
 type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 
 export default function OnboardingPage() {
-  const router = useRouter();
   const { isLoaded } = useUser();
-  const { organizations, isLoading: isLoadingOrgs } = useOrganizations();
   const { createOrganization, isCreating } = useCreateOrganization();
 
   const form = useForm<OrganizationFormValues>({
@@ -47,14 +43,7 @@ export default function OnboardingPage() {
     createOrganization(data);
   };
 
-  // Redirect if user already has organizations
-  if (isLoaded && !isLoadingOrgs && organizations.length > 0) {
-    const firstOrg = organizations[0];
-    router.replace(`/org/${firstOrg.slug}/dashboard`);
-    return null;
-  }
-
-  if (!isLoaded || isLoadingOrgs) {
+  if (!isLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
