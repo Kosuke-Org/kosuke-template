@@ -1189,15 +1189,17 @@ import { tasks } from '@/lib/db/schema'; // OK in database queries
 
 ### SEO Management - MANDATORY
 
-**ALWAYS update SEO files when adding new features or public pages:**
+**When adding new public pages, ALWAYS update:**
 
-- **Sitemap** (`app/sitemap.ts`) - Add all new public pages
-- **Robots.txt** (`app/robots.txt/route.ts`) - Allow/block new routes as needed
-- **Structured Data** (`components/structured-data.tsx`) - Update for major features (pricing, blog, etc.)
-- **Page Metadata** - Every new public page MUST have proper title, description, and OpenGraph tags
-- **Web Manifest** (`public/site.webmanifest`) - Update for branding changes
+- **Sitemap** (`app/sitemap.ts`) - Add new public pages with appropriate priority
+- **Page Metadata** - Add proper title, description, and OpenGraph tags
+- **Robots.txt** (`app/robots.ts`) - Allow/block routes as needed
 
-See `.cursor/rules/seo.mdc` for detailed guidelines and examples.
+**For major features (pricing, blog), CONSIDER adding:**
+
+- **Structured Data** (`components/structured-data.tsx`) - Enhances search results
+
+For detailed SEO guidelines and examples, use the `seo` rule only when needed.
 
 ### Contributing Guidelines - MUST FOLLOW
 
