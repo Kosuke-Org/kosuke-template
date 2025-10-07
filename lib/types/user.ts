@@ -31,15 +31,6 @@ export interface AuthState {
   isLoading: boolean;
 }
 
-// Activity Log Types
-export interface ActivityLogEntry {
-  clerkUserId: string;
-  action: import('@/lib/db/schema').ActivityType;
-  metadata?: Record<string, unknown>;
-  ipAddress?: string;
-  timestamp?: Date;
-}
-
 // Sync Types
 export interface UserSyncOptions {
   forceSync?: boolean;
