@@ -197,7 +197,7 @@ async function sendWelcomeEmail(userData: ClerkWebhookUser) {
       react: React.createElement(WelcomeEmail, {
         firstName,
         email,
-        dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard`,
+        dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`,
         settingsUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/settings`,
       }),
     });

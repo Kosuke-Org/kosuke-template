@@ -16,10 +16,81 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Kosuke Template',
-  description: 'Modern Next.js template with Clerk authentication and Shadcn UI',
-  icons: {
-    icon: '/favicon.ico',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://template.kosuke.ai/'),
+  title: {
+    template: '%s | Kosuke Template',
+    default: 'Kosuke Template',
+  },
+  description:
+    'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
+  keywords: [
+    'Next.js',
+    'React',
+    'TypeScript',
+    'Tailwind CSS',
+    'Clerk',
+    'PostgreSQL',
+    'Drizzle ORM',
+    'Vercel',
+    'Starter Template',
+    'Boilerplate',
+  ],
+  authors: [{ name: 'Kosuke Template' }],
+  creator: 'Kosuke Template',
+  publisher: 'Kosuke Template',
+  openGraph: {
+    title: 'Kosuke Template - Production-Ready Next.js Starter',
+    description:
+      'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
+    type: 'website',
+    images: ['/opengraph-image.png'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Kosuke Template - Production-Ready Next.js Starter',
+    description:
+      'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
+    images: ['/opengraph-image.png'],
+  },
+  icons: [
+    {
+      rel: 'icon',
+      type: 'image/png',
+      sizes: '96x96',
+      url: '/favicon-96x96.png',
+    },
+    {
+      rel: 'icon',
+      type: 'image/svg+xml',
+      url: '/favicon.svg',
+    },
+    {
+      rel: 'shortcut icon',
+      url: '/favicon.ico',
+    },
+    {
+      rel: 'apple-touch-icon',
+      sizes: '180x180',
+      url: '/apple-touch-icon.png',
+    },
+  ],
+  manifest: '/site.webmanifest',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    // Add when you have these set up:
+    // google: 'your-google-verification-code',
+    // yandex: 'your-yandex-verification-code',
+    // bing: 'your-bing-verification-code',
   },
 };
 

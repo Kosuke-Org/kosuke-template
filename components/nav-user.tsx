@@ -5,6 +5,7 @@ import {
   Bell,
   ChevronsUpDown,
   CreditCard,
+  House,
   LogOut,
   Shield,
   Sparkles,
@@ -133,6 +134,13 @@ export function NavUser() {
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/home" className="cursor-pointer flex w-full items-center">
+                <House className="mr-2 h-4 w-4" />
+                Public Homepage
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => handleSignOut()}>
               <LogOut className="mr-2 h-4 w-4" />

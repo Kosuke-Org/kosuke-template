@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { clerkMiddleware, createRouteMatcher, clerkClient } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { AUTH_ROUTES, createSafeRedirectUrl } from '@/lib/auth';
 
@@ -10,6 +10,15 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/privacy',
   '/terms',
+  // SEO and metadata routes
+  '/robots.txt',
+  '/sitemap.xml',
+  '/favicon.ico',
+  '/favicon.svg',
+  '/favicon-96x96.png',
+  '/apple-touch-icon.png',
+  '/opengraph-image.png',
+  // API routes
   '/api/billing/webhook',
   '/api/clerk/webhook',
   '/api/webhooks(.*)',
@@ -18,6 +27,38 @@ const isPublicRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req) => {
   // Get the current path
   const { pathname } = req.nextUrl;
+  const { userId } = await auth();
+
+  // Smart redirect for root route: logged-in users go to their org dashboard
+  if (pathname === '/' && userId) {
+    try {
+      const clerk = await clerkClient();
+
+      // Get user's organization memberships from Clerk
+      const { data: memberships } = await clerk.users.getOrganizationMembershipList({ userId });
+
+      // No organizations, go to onboarding to create first org
+      if (memberships.length === 0) {
+        return NextResponse.redirect(new URL('/onboarding', req.url));
+      }
+
+      // Get the first organization's slug
+      const org = await clerk.organizations.getOrganization({
+        organizationId: memberships[0].organization.id,
+      });
+
+      return NextResponse.redirect(new URL(`/org/${org.slug}/dashboard`, req.url));
+    } catch (error) {
+      console.error('Error in middleware org lookup:', error);
+      // Fallback to onboarding on error
+      return NextResponse.redirect(new URL('/onboarding', req.url));
+    }
+  }
+
+  // Redirect to dashboard if on onboarding page and user is logged in
+  if (pathname === '/onboarding' && userId) {
+    return NextResponse.redirect(new URL(`/`, req.url));
+  }
 
   // Allow public routes
   if (isPublicRoute(req)) {
@@ -25,8 +66,6 @@ export default clerkMiddleware(async (auth, req) => {
   }
 
   // For protected routes, check if user is authenticated
-  const { userId } = await auth();
-
   if (!userId) {
     // Redirect to sign-in for unauthenticated users
     const signInUrl = createSafeRedirectUrl(

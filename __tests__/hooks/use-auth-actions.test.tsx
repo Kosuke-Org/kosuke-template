@@ -52,7 +52,7 @@ describe('useAuthActions', () => {
     });
 
     expect(mockSignOut).toHaveBeenCalled();
-    expect(mockReplace).toHaveBeenCalledWith('/home');
+    expect(mockReplace).toHaveBeenCalledWith('/');
   });
 
   it('should handle multiple handleSignOut calls', async () => {

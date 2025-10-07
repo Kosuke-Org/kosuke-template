@@ -1187,6 +1187,20 @@ import { tasks } from '@/lib/db/schema'; // OK in database queries
 - Never use new colors, always use the ones defined in `./app/globals.css` file (following shadcn/ui theme)
 - Use CSS variables for consistent theming across light/dark modes
 
+### SEO Management - MANDATORY
+
+**When adding new public pages, ALWAYS update:**
+
+- **Sitemap** (`app/sitemap.ts`) - Add new public pages with appropriate priority
+- **Page Metadata** - Add proper title, description, and OpenGraph tags
+- **Robots.txt** (`app/robots.ts`) - Allow/block routes as needed
+
+**For major features (pricing, blog), CONSIDER adding:**
+
+- **Structured Data** (`components/structured-data.tsx`) - Enhances search results
+
+For detailed SEO guidelines and examples, use the `seo` rule only when needed.
+
 ### Contributing Guidelines - MUST FOLLOW
 
 - Always use inline CSS with Tailwind and Shadcn UI
