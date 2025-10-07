@@ -1,4 +1,5 @@
 import { Home } from '@/components/home';
+import { HomepageStructuredData } from '@/components/structured-data';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
     description:
       'Skip the boilerplate and ship features fast. Production-ready Next.js template with auth, billing, database, and deployment.',
     type: 'website',
-    url: 'https://kosuke-template.vercel.app',
+    url: process.env.NEXT_PUBLIC_APP_URL,
   },
   twitter: {
     card: 'summary_large_image',
@@ -32,5 +33,10 @@ export const metadata: Metadata = {
 };
 
 export default function RootPage() {
-  return <Home />;
+  return (
+    <>
+      <HomepageStructuredData />
+      <Home />
+    </>
+  );
 }

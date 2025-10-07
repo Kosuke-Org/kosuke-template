@@ -10,6 +10,15 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/privacy',
   '/terms',
+  // SEO and metadata routes
+  '/robots.txt',
+  '/sitemap.xml',
+  '/favicon.ico',
+  '/favicon.svg',
+  '/favicon-96x96.png',
+  '/apple-touch-icon.png',
+  '/opengraph-image.png',
+  // API routes
   '/api/billing/webhook',
   '/api/clerk/webhook',
   '/api/webhooks(.*)',
