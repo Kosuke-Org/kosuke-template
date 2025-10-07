@@ -18,9 +18,6 @@ export type {
   UserSyncOptions,
   UserSyncResponse,
 
-  // Activity logs
-  ActivityLogEntry,
-
   // Auth state
   AuthState,
 

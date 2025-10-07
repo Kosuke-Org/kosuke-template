@@ -6,7 +6,7 @@ import type { NotificationSettings } from '@/lib/types';
 
 export function useNotificationSettings() {
   const { toast } = useToast();
-  const utils = trpc.useContext();
+  const utils = trpc.useUtils();
 
   // Default settings
   const defaultSettings: NotificationSettings = {

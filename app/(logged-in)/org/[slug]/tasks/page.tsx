@@ -36,7 +36,7 @@ import { TaskItem } from '@/app/(logged-in)/org/[slug]/tasks/components/task-ite
 import { TaskDialog } from '@/app/(logged-in)/org/[slug]/tasks/components/task-dialog';
 import { KanbanBoard } from './components/kanban-board';
 import type { TaskPriority } from '@/lib/types';
-import { useViewModeStore } from '@/hooks/use-view-mode';
+import { useViewModeStore } from '@/store/use-view-mode';
 import { createTaskSchema, updateTaskSchema } from '@/lib/trpc/schemas/tasks';
 
 type TaskFilter = 'all' | 'active' | 'completed';
