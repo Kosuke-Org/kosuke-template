@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { useAuthActions } from '@/hooks/use-auth-actions';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
 
 interface NavbarProps {
   variant?: 'standard' | 'transparent';
@@ -30,6 +31,8 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
   const { user, isSignedIn } = useUser();
   const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
   const { handleSignOut } = useAuthActions();
+  const { activeOrganization } = useActiveOrganization();
+  const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
 
   return (
     <header
@@ -70,7 +73,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuItem asChild>
-                      <Link href="/" className="cursor-pointer">
+                      <Link href={dashboardUrl} className="cursor-pointer">
                         <User className="mr-2 h-4 w-4" />
                         Dashboard
                       </Link>

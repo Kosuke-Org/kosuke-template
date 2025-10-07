@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { TechLogo } from '@/app/(logged-out)/home/components/tech-card';
 import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
 
 const coreFeatures = [
   {
@@ -39,6 +40,9 @@ const coreFeatures = [
 
 export function Home() {
   const { user } = useUser();
+  const { activeOrganization } = useActiveOrganization();
+
+  const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
 
   return (
     <div className="w-full min-h-screen bg-background">
@@ -99,7 +103,7 @@ export function Home() {
             {user ? (
               // Logged-in user CTAs
               <Button size="lg" className="w-full sm:w-auto" asChild>
-                <Link href="/dashboard">
+                <Link href={dashboardUrl}>
                   <Rocket className="mr-2 h-4 w-4" />
                   Go to Dashboard
                 </Link>
@@ -372,7 +376,7 @@ export function Home() {
                 // Logged-in user final CTA
                 <>
                   <Button size="lg" className="w-full sm:w-auto" asChild>
-                    <Link href="/dashboard">
+                    <Link href={dashboardUrl}>
                       <Rocket className="mr-2 h-4 w-4" />
                       Go to Dashboard
                     </Link>
