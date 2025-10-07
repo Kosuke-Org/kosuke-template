@@ -101,7 +101,7 @@ jobs:
 
   deploy-engine:
     name: Deploy Python Engine to Fly.io
-    needs: [test-nextjs, test-engine]
+    needs: [test-nextjs, test-engine, migrate-database]
     runs-on: ubuntu-latest
     environment: production
 
