@@ -5,8 +5,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: Test and Lint
+  test-nextjs:
+    name: Test and Lint Next.js
     runs-on: ubuntu-latest
 
     steps:
@@ -38,9 +38,42 @@ jobs:
       - name: Build application
         run: pnpm run build
 
+  test-engine:
+    name: Test Python Engine
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: |
+          cd engine
+          uv sync
+
+      - name: Run Ruff linter
+        run: |
+          cd engine
+          uv run ruff check .
+
+      - name: Run Ruff formatter check
+        run: |
+          cd engine
+          uv run ruff format --check .
+
+      - name: Run pytest
+        run: |
+          cd engine
+          uv run pytest
+
   migrate-database:
     name: Run Database Migrations
-    needs: test
+    needs: test-nextjs
     runs-on: ubuntu-latest
     environment: production
 
@@ -65,3 +98,22 @@ jobs:
         run: pnpm run db:migrate
         env:
           POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
+
+  deploy-engine:
+    name: Deploy Python Engine to Fly.io
+    needs: [test-nextjs, test-engine]
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: |
+          cd engine
+          flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
