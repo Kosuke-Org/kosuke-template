@@ -47,7 +47,7 @@ jobs:
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
           prompt: >-
-            You are working in a Node.js monorepo with Jest tests and GitHub Actions. Read the repository,
+            You are working in a Next.js app with Vitest tests and GitHub Actions. Read the repository,
             run the test suite, identify the minimal change needed to make all tests pass, implement only that change,
             and stop. Do not refactor unrelated code or files. Keep changes small and surgical.
           codex_args: '["--config","sandbox_mode=\"workspace-write\""]'
