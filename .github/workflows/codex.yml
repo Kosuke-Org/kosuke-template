@@ -3,7 +3,7 @@ name: Codex Auto-Fix on Failure
 on:
   workflow_run:
     # Trigger this job after any run of the primary CI workflow completes
-    workflows: ["CI"]
+    workflows: ['CI']
     types: [completed]
 
 permissions:
@@ -57,10 +57,10 @@ jobs:
         if: success()
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "fix(ci): auto-fix failing tests via Codex"
+          commit-message: 'fix(ci): auto-fix failing tests via Codex'
           branch: codex/auto-fix-${{ github.event.workflow_run.run_id }}
           base: ${{ env.FAILED_HEAD_BRANCH }}
-          title: "Auto-fix failing CI via Codex"
+          title: 'Auto-fix failing CI via Codex'
           body: |
             Codex automatically generated this PR in response to a CI failure on workflow `${{ env.FAILED_WORKFLOW_NAME }}`.
             Failed run: ${{ env.FAILED_RUN_URL }}
