@@ -41,6 +41,9 @@ jobs:
   test-engine:
     name: Test Python Engine
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./engine
 
     steps:
       - uses: actions/checkout@v5
@@ -52,24 +55,16 @@ jobs:
         run: uv python install
 
       - name: Install dependencies
-        run: |
-          cd engine
-          uv sync
+        run: uv sync
 
       - name: Run Ruff linter
-        run: |
-          cd engine
-          uv run ruff check .
+        run: uv run ruff check .
 
       - name: Run Ruff formatter check
-        run: |
-          cd engine
-          uv run ruff format --check .
+        run: uv run ruff format --check .
 
       - name: Run pytest
-        run: |
-          cd engine
-          uv run pytest
+        run: uv run pytest
 
   migrate-database:
     name: Run Database Migrations
