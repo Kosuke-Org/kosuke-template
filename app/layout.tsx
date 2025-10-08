@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://template.kosuke.ai';
 const ogImage = `${baseUrl}/opengraph-image.png`;
+const ogImageSquare = `${baseUrl}/og-image-square.png`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -51,6 +52,12 @@ export const metadata: Metadata = {
         url: ogImage,
         width: 1200,
         height: 630,
+        alt: 'Kosuke Template - Production-Ready Next.js Starter',
+      },
+      {
+        url: ogImageSquare,
+        width: 500,
+        height: 500,
         alt: 'Kosuke Template - Production-Ready Next.js Starter',
       },
     ],
