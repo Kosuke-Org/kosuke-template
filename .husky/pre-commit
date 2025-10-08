@@ -62,6 +62,14 @@ if [ -n "$js_files" ]; then
     exit 1
   fi
 
+  # Run type checking
+  echo "🔎 Running TypeScript type checking..."
+  pnpm run typecheck
+  if [ $? -ne 0 ]; then
+    echo "❌ Type checking failed. Please fix the type errors before committing."
+    exit 1
+  fi
+
   # Run tests
   echo "🧪 Running tests..."
   pnpm test

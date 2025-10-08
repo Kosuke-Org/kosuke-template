@@ -214,6 +214,7 @@ pnpm run dev:email     # Start Next.js + React Email preview
 pnpm run build         # Build for production
 pnpm run start         # Start production server
 pnpm run lint          # Run ESLint
+pnpm run typecheck     # Run type checking
 pnpm run format        # Format code with Prettier
 pnpm run email:dev     # Start React Email preview server
 pnpm run email:export  # Export email templates to HTML
