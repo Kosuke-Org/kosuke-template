@@ -15,8 +15,11 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://template.kosuke.ai';
+const ogImage = `${baseUrl}/opengraph-image.png`;
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://template.kosuke.ai/'),
+  metadataBase: new URL(baseUrl),
   title: {
     template: '%s | Kosuke Template',
     default: 'Kosuke Template',
@@ -43,14 +46,28 @@ export const metadata: Metadata = {
     description:
       'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
     type: 'website',
-    images: ['/opengraph-image.png'],
+    images: [
+      {
+        url: ogImage,
+        width: 1200,
+        height: 630,
+        alt: 'Kosuke Template - Production-Ready Next.js Starter',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Kosuke Template - Production-Ready Next.js Starter',
     description:
       'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
-    images: ['/opengraph-image.png'],
+    images: [
+      {
+        url: ogImage,
+        width: 1200,
+        height: 630,
+        alt: 'Kosuke Template - Production-Ready Next.js Starter',
+      },
+    ],
   },
   icons: [
     {

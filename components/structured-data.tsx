@@ -2,7 +2,7 @@ import Script from 'next/script';
 
 // Simple structured data for the homepage
 export function HomepageStructuredData() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://template.kosuke.ai/';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://template.kosuke.ai';
 
   const websiteData = {
     '@context': 'https://schema.org',
