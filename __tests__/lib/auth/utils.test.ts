@@ -18,6 +18,7 @@ import { ActivityType } from '@/lib/db/schema';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { vi, type Mock } from 'vitest';
+import { createClerkWebhookUser } from '../../setup/factories';
 
 // Mock external dependencies
 vi.mock('@clerk/nextjs/server');
@@ -204,16 +205,25 @@ describe('Auth Utils', () => {
 
   describe('extractUserDataFromWebhook', () => {
     it('should extract user data from webhook user object with custom profile image', () => {
-      const webhookUser: ClerkWebhookUser = {
+      const webhookUser: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
-        email_addresses: [{ email_address: 'test@example.com', id: 'email_123' }],
         first_name: 'John',
         last_name: 'Doe',
         image_url: 'https://example.com/avatar.jpg',
+        email_addresses: [
+          {
+            id: 'email_123',
+            object: 'email_address',
+            email_address: 'test@example.com',
+            verification: null,
+            linked_to: [],
+            matches_sso_connection: false,
+          },
+        ],
         public_metadata: {
           customProfileImageUrl: 'https://example.com/custom-avatar.jpg',
         },
-      };
+      });
 
       const result = extractUserDataFromWebhook(webhookUser);
 
@@ -228,13 +238,22 @@ describe('Auth Utils', () => {
     });
 
     it('should extract user data from webhook user object without custom profile image', () => {
-      const webhookUser: ClerkWebhookUser = {
+      const webhookUser: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
-        email_addresses: [{ email_address: 'test@example.com', id: 'email_123' }],
         first_name: 'John',
         last_name: 'Doe',
         image_url: 'https://example.com/avatar.jpg',
-      };
+        email_addresses: [
+          {
+            id: 'email_123',
+            object: 'email_address',
+            email_address: 'test@example.com',
+            verification: null,
+            linked_to: [],
+            matches_sso_connection: false,
+          },
+        ],
+      });
 
       const result = extractUserDataFromWebhook(webhookUser);
 
@@ -249,13 +268,22 @@ describe('Auth Utils', () => {
     });
 
     it('should handle webhook user with only first name', () => {
-      const webhookUser: ClerkWebhookUser = {
+      const webhookUser: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
-        email_addresses: [{ email_address: 'test@example.com', id: 'email_123' }],
         first_name: 'John',
-        last_name: undefined,
-        image_url: undefined,
-      };
+        last_name: null,
+        image_url: '',
+        email_addresses: [
+          {
+            id: 'email_123',
+            object: 'email_address',
+            email_address: 'test@example.com',
+            verification: null,
+            linked_to: [],
+            matches_sso_connection: false,
+          },
+        ],
+      });
 
       const result = extractUserDataFromWebhook(webhookUser);
 
@@ -263,13 +291,22 @@ describe('Auth Utils', () => {
     });
 
     it('should handle webhook user with no names', () => {
-      const webhookUser: ClerkWebhookUser = {
+      const webhookUser: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
-        email_addresses: [{ email_address: 'test@example.com', id: 'email_123' }],
-        first_name: undefined,
-        last_name: undefined,
-        image_url: undefined,
-      };
+        first_name: null,
+        last_name: null,
+        image_url: '',
+        email_addresses: [
+          {
+            id: 'email_123',
+            object: 'email_address',
+            email_address: 'test@example.com',
+            verification: null,
+            linked_to: [],
+            matches_sso_connection: false,
+          },
+        ],
+      });
 
       const result = extractUserDataFromWebhook(webhookUser);
 
@@ -277,13 +314,13 @@ describe('Auth Utils', () => {
     });
 
     it('should handle webhook user with no email addresses', () => {
-      const webhookUser: ClerkWebhookUser = {
+      const webhookUser: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
         email_addresses: [],
         first_name: 'John',
         last_name: 'Doe',
-        image_url: undefined,
-      };
+        image_url: '',
+      });
 
       const result = extractUserDataFromWebhook(webhookUser);
 
@@ -447,31 +484,31 @@ describe('Auth Utils', () => {
     });
 
     it('should return combined name for webhook user', () => {
-      const user: ClerkWebhookUser = {
+      const user: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
         first_name: 'John',
         last_name: 'Doe',
-      };
+      });
 
       expect(getDisplayName(user)).toBe('John Doe');
     });
 
     it('should return first name only for webhook user', () => {
-      const user: ClerkWebhookUser = {
+      const user: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
         first_name: 'John',
-        last_name: undefined,
-      };
+        last_name: null,
+      });
 
       expect(getDisplayName(user)).toBe('John');
     });
 
     it('should return "User" for webhook user with no names', () => {
-      const user: ClerkWebhookUser = {
+      const user: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
-        first_name: undefined,
-        last_name: undefined,
-      };
+        first_name: null,
+        last_name: null,
+      });
 
       expect(getDisplayName(user)).toBe('User');
     });
@@ -487,28 +524,37 @@ describe('Auth Utils', () => {
     });
 
     it('should return empty string when no email addresses for Clerk user', () => {
-      const user: ClerkWebhookUser = {
+      const user: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
         email_addresses: [],
-      };
+      });
 
       expect(getUserEmail(user)).toBe('');
     });
 
     it('should return email from webhook user', () => {
-      const user: ClerkWebhookUser = {
+      const user: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
-        email_addresses: [{ email_address: 'test@example.com', id: 'email_123' }],
-      };
+        email_addresses: [
+          {
+            id: 'email_123',
+            object: 'email_address',
+            email_address: 'test@example.com',
+            verification: null,
+            linked_to: [],
+            matches_sso_connection: false,
+          },
+        ],
+      });
 
       expect(getUserEmail(user)).toBe('test@example.com');
     });
 
     it('should return empty string when no email addresses for webhook user', () => {
-      const user: ClerkWebhookUser = {
+      const user: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
         email_addresses: [],
-      };
+      });
 
       expect(getUserEmail(user)).toBe('');
     });

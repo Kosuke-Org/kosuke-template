@@ -14,8 +14,9 @@ import {
   removeOrgMembership,
   softDeleteOrganization,
 } from '@/lib/organizations';
+
 import type {
-  AnyClerkWebhookEvent,
+  ClerkWebhookEvent,
   ClerkOrganizationWebhook,
   ClerkMembershipWebhook,
   ClerkWebhookUser,
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Get the body
-  let payload: AnyClerkWebhookEvent;
+  let payload: ClerkWebhookEvent;
   let body: string;
 
   try {
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
   // Create a new Svix instance with your secret
   const wh = new Webhook(WEBHOOK_SECRET);
 
-  let evt: AnyClerkWebhookEvent;
+  let evt: ClerkWebhookEvent;
 
   // Verify the payload with the headers
   try {
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
       'svix-id': svix_id,
       'svix-timestamp': svix_timestamp,
       'svix-signature': svix_signature,
-    }) as AnyClerkWebhookEvent;
+    }) as ClerkWebhookEvent;
   } catch (err) {
     console.error('❌ Error verifying webhook signature:', err);
     return NextResponse.json({ error: 'Invalid webhook signature' }, { status: 401 });
@@ -82,41 +83,41 @@ export async function POST(req: NextRequest) {
     switch (eventType) {
       // User events
       case 'user.created':
-        await handleUserCreated(eventData as ClerkWebhookUser);
+        await handleUserCreated(eventData as unknown as ClerkWebhookUser);
         break;
 
       case 'user.updated':
-        await handleUserUpdated(eventData as ClerkWebhookUser);
+        await handleUserUpdated(eventData as unknown as ClerkWebhookUser);
         break;
 
       case 'user.deleted':
-        await handleUserDeleted(eventData as ClerkWebhookUser);
+        await handleUserDeleted(eventData as unknown as ClerkWebhookUser);
         break;
 
       // Organization events
       case 'organization.created':
-        await handleOrganizationCreated(eventData as ClerkOrganizationWebhook);
+        await handleOrganizationCreated(eventData as unknown as ClerkOrganizationWebhook);
         break;
 
       case 'organization.updated':
-        await handleOrganizationUpdated(eventData as ClerkOrganizationWebhook);
+        await handleOrganizationUpdated(eventData as unknown as ClerkOrganizationWebhook);
         break;
 
       case 'organization.deleted':
-        await handleOrganizationDeleted(eventData as ClerkOrganizationWebhook);
+        await handleOrganizationDeleted(eventData as unknown as ClerkOrganizationWebhook);
         break;
 
       // Membership events
       case 'organizationMembership.created':
-        await handleMembershipCreated(eventData as ClerkMembershipWebhook);
+        await handleMembershipCreated(eventData as unknown as ClerkMembershipWebhook);
         break;
 
       case 'organizationMembership.updated':
-        await handleMembershipUpdated(eventData as ClerkMembershipWebhook);
+        await handleMembershipUpdated(eventData as unknown as ClerkMembershipWebhook);
         break;
 
       case 'organizationMembership.deleted':
-        await handleMembershipDeleted(eventData as ClerkMembershipWebhook);
+        await handleMembershipDeleted(eventData as unknown as ClerkMembershipWebhook);
         break;
 
       // Invitation events (logged only)

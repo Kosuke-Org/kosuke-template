@@ -30,7 +30,6 @@ export {
 export type {
   ClerkUserType,
   ClerkWebhookUser,
-  ClerkWebhookEvent,
   LocalUser,
   UserSyncResult,
   AuthState,

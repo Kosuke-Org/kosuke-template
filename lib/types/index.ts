@@ -98,20 +98,6 @@ export type {
   ClerkMembershipWebhook,
   ClerkInvitationWebhook,
   ClerkWebhookEvent,
-  ClerkWebhookEventType,
-  UserCreatedEvent,
-  UserUpdatedEvent,
-  UserDeletedEvent,
-  OrganizationCreatedEvent,
-  OrganizationUpdatedEvent,
-  OrganizationDeletedEvent,
-  MembershipCreatedEvent,
-  MembershipUpdatedEvent,
-  MembershipDeletedEvent,
-  InvitationCreatedEvent,
-  InvitationAcceptedEvent,
-  InvitationRevokedEvent,
-  AnyClerkWebhookEvent,
 } from './webhooks';
 
 // Webhook type guards

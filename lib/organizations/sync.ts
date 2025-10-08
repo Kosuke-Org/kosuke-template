@@ -13,41 +13,17 @@ import {
   getOrgById,
   getMembershipByClerkId,
 } from './utils';
-import type { Organization, OrgMembership, NewOrganization, NewOrgMembership } from '@/lib/types';
+
+import type {
+  Organization,
+  OrgMembership,
+  NewOrganization,
+  NewOrgMembership,
+  ClerkOrganizationWebhook,
+  ClerkMembershipWebhook,
+} from '@/lib/types';
+
 import { ActivityType } from '@/lib/db/schema';
-
-/**
- * Webhook payload types
- */
-export interface ClerkOrgWebhook {
-  id: string;
-  name: string;
-  slug: string;
-  image_url?: string;
-  created_at: number;
-  updated_at: number;
-  public_metadata?: Record<string, unknown>;
-  private_metadata?: Record<string, unknown>;
-}
-
-export interface ClerkMembershipWebhook {
-  id: string;
-  organization: {
-    id: string;
-    name: string;
-    slug: string;
-  };
-  public_user_data: {
-    user_id: string;
-    first_name?: string;
-    last_name?: string;
-    profile_image_url?: string;
-    identifier: string;
-  };
-  role: string;
-  created_at: number;
-  updated_at: number;
-}
 
 /**
  * Sync organization from Clerk API
@@ -114,7 +90,7 @@ export async function syncOrganizationFromClerk(clerkOrgId: string): Promise<Org
  * Sync organization from webhook data
  * Syncs organization using webhook payload (different structure than API)
  */
-export async function syncOrgFromWebhook(data: ClerkOrgWebhook): Promise<Organization> {
+export async function syncOrgFromWebhook(data: ClerkOrganizationWebhook): Promise<Organization> {
   try {
     console.log('🔄 Syncing organization from webhook:', data.id);
 
@@ -202,6 +178,10 @@ export async function syncMembershipFromClerk(clerkMembershipId: string): Promis
     // Ensure organization data is up-to-date
     const org = await syncOrganizationFromClerk(clerkMembership.organization.id);
 
+    if (!clerkMembership.publicUserData) {
+      throw new Error(`Membership ${clerkMembershipId} is missing publicUserData`);
+    }
+
     const membershipData: Partial<NewOrgMembership> = {
       clerkMembershipId: clerkMembership.id,
       organizationId: org.id,
@@ -244,12 +224,23 @@ export async function syncMembershipFromWebhook(
       throw new Error(`Organization not found: ${data.organization.id}`);
     }
 
+    // Ensure public_user_data is present
+    if (!data.public_user_data) {
+      throw new Error(`Membership ${data.id} is missing public_user_data`);
+    }
+
+    // Store user_id for type safety (ensure it's defined)
+    const userId = data.public_user_data.user_id;
+    if (!userId) {
+      throw new Error(`Membership ${data.id} is missing user_id in public_user_data`);
+    }
+
     const existingMembership = await getMembershipByClerkId(data.id);
 
     const membershipData: Partial<NewOrgMembership> = {
       clerkMembershipId: data.id,
       organizationId: org.id,
-      clerkUserId: data.public_user_data.user_id,
+      clerkUserId: userId,
       role: data.role as 'org:admin' | 'org:member',
       invitedBy: null, // Can be extracted from webhook metadata if needed
     };
@@ -268,12 +259,9 @@ export async function syncMembershipFromWebhook(
         .limit(1);
 
       // Log activity
-      await logOrgActivity(
-        data.public_user_data.user_id,
-        ActivityType.ORG_MEMBER_ROLE_UPDATED,
-        org.id,
-        { role: data.role }
-      );
+      await logOrgActivity(userId, ActivityType.ORG_MEMBER_ROLE_UPDATED, org.id, {
+        role: data.role,
+      });
 
       return updated;
     } else {
@@ -287,7 +275,7 @@ export async function syncMembershipFromWebhook(
         .returning();
 
       // Log activity
-      await logOrgActivity(data.public_user_data.user_id, ActivityType.ORG_MEMBER_ADDED, org.id);
+      await logOrgActivity(userId, ActivityType.ORG_MEMBER_ADDED, org.id);
 
       return newMembership;
     }
