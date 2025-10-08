@@ -92,17 +92,6 @@ export const metadata: Metadata = {
     },
   ],
   manifest: '/site.webmanifest',
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
   verification: {
     // Add when you have these set up:
     // google: 'your-google-verification-code',
