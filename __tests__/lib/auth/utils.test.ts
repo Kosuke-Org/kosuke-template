@@ -23,8 +23,8 @@ import { vi, type Mock } from 'vitest';
 vi.mock('@clerk/nextjs/server');
 vi.mock('next/navigation');
 
-const mockAuth = auth as Mock;
-const mockRedirect = redirect as Mock;
+const mockAuth = auth as unknown as Mock;
+const mockRedirect = redirect as unknown as Mock;
 
 describe('Auth Utils', () => {
   beforeEach(() => {
@@ -206,7 +206,7 @@ describe('Auth Utils', () => {
     it('should extract user data from webhook user object with custom profile image', () => {
       const webhookUser: ClerkWebhookUser = {
         id: 'user_123',
-        email_addresses: [{ email_address: 'test@example.com' }],
+        email_addresses: [{ email_address: 'test@example.com', id: 'email_123' }],
         first_name: 'John',
         last_name: 'Doe',
         image_url: 'https://example.com/avatar.jpg',
@@ -230,7 +230,7 @@ describe('Auth Utils', () => {
     it('should extract user data from webhook user object without custom profile image', () => {
       const webhookUser: ClerkWebhookUser = {
         id: 'user_123',
-        email_addresses: [{ email_address: 'test@example.com' }],
+        email_addresses: [{ email_address: 'test@example.com', id: 'email_123' }],
         first_name: 'John',
         last_name: 'Doe',
         image_url: 'https://example.com/avatar.jpg',
@@ -251,7 +251,7 @@ describe('Auth Utils', () => {
     it('should handle webhook user with only first name', () => {
       const webhookUser: ClerkWebhookUser = {
         id: 'user_123',
-        email_addresses: [{ email_address: 'test@example.com' }],
+        email_addresses: [{ email_address: 'test@example.com', id: 'email_123' }],
         first_name: 'John',
         last_name: undefined,
         image_url: undefined,
@@ -265,7 +265,7 @@ describe('Auth Utils', () => {
     it('should handle webhook user with no names', () => {
       const webhookUser: ClerkWebhookUser = {
         id: 'user_123',
-        email_addresses: [{ email_address: 'test@example.com' }],
+        email_addresses: [{ email_address: 'test@example.com', id: 'email_123' }],
         first_name: undefined,
         last_name: undefined,
         image_url: undefined,
@@ -487,9 +487,10 @@ describe('Auth Utils', () => {
     });
 
     it('should return empty string when no email addresses for Clerk user', () => {
-      const user = {
-        emailAddresses: [],
-      } as ClerkUserType;
+      const user: ClerkWebhookUser = {
+        id: 'user_123',
+        email_addresses: [],
+      };
 
       expect(getUserEmail(user)).toBe('');
     });
@@ -497,7 +498,7 @@ describe('Auth Utils', () => {
     it('should return email from webhook user', () => {
       const user: ClerkWebhookUser = {
         id: 'user_123',
-        email_addresses: [{ email_address: 'test@example.com' }],
+        email_addresses: [{ email_address: 'test@example.com', id: 'email_123' }],
       };
 
       expect(getUserEmail(user)).toBe('test@example.com');
@@ -550,8 +551,9 @@ describe('Auth Utils', () => {
       const authState: AuthState = {
         isAuthenticated: true,
         user: { id: 'user_123' } as ClerkUserType,
+        isLoading: false,
         localUser: {
-          id: 1,
+          id: '1',
           clerkUserId: 'user_123',
           email: 'test@example.com',
           displayName: 'Test User',
@@ -570,6 +572,7 @@ describe('Auth Utils', () => {
         isAuthenticated: false,
         user: null,
         localUser: null,
+        isLoading: false,
       };
 
       expect(isAuthenticated(authState)).toBe(false);
@@ -579,8 +582,9 @@ describe('Auth Utils', () => {
       const authState: AuthState = {
         isAuthenticated: true,
         user: null,
+        isLoading: false,
         localUser: {
-          id: 1,
+          id: '1',
           clerkUserId: 'user_123',
           email: 'test@example.com',
           displayName: 'Test User',
@@ -599,6 +603,7 @@ describe('Auth Utils', () => {
         isAuthenticated: true,
         user: { id: 'user_123' } as ClerkUserType,
         localUser: null,
+        isLoading: false,
       };
 
       expect(isAuthenticated(authState)).toBe(false);

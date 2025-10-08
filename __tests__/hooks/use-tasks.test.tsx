@@ -281,9 +281,9 @@ describe('useTasks', () => {
 
     const { result } = renderHook(() => useTasks(), { wrapper });
 
-    await result.current.deleteTask(1);
+    await result.current.deleteTask('1');
 
-    expect(mockMutateAsync).toHaveBeenCalledWith({ id: 1 });
+    expect(mockMutateAsync).toHaveBeenCalledWith({ id: '1' });
   });
 
   it('should filter tasks by completion status', () => {
