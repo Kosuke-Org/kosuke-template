@@ -311,7 +311,7 @@ describe('useTasks', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useTasks({ completed: true }), { wrapper });
+    renderHook(() => useTasks({ completed: true }), { wrapper });
 
     expect(trpc.tasks.list.useQuery).toHaveBeenCalledWith({ completed: true }, expect.any(Object));
   });
@@ -341,7 +341,7 @@ describe('useTasks', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useTasks({ priority: 'high' }), { wrapper });
+    renderHook(() => useTasks({ priority: 'high' }), { wrapper });
 
     expect(trpc.tasks.list.useQuery).toHaveBeenCalledWith({ priority: 'high' }, expect.any(Object));
   });
@@ -406,7 +406,7 @@ describe('useTasks', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(
+    renderHook(
       () =>
         useTasks({
           completed: true,

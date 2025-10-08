@@ -65,16 +65,16 @@ export function useActiveOrganization() {
     }
   };
 
-  // Get organization slug from URL
-  const getOrgSlugFromUrl = (): string | null => {
-    if (!pathname.startsWith('/org/')) return null;
-    const pathParts = pathname.split('/');
-    return pathParts[2] || null;
-  };
-
   // Sync active organization with URL slug
   useEffect(() => {
     if (!activeOrganization || isLoading) return;
+
+    // Get organization slug from URL
+    const getOrgSlugFromUrl = (): string | null => {
+      if (!pathname.startsWith('/org/')) return null;
+      const pathParts = pathname.split('/');
+      return pathParts[2] || null;
+    };
 
     const urlSlug = getOrgSlugFromUrl();
     if (urlSlug && urlSlug !== activeOrganization.slug) {
