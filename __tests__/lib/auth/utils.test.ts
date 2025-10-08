@@ -19,6 +19,7 @@ import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { vi, type Mock } from 'vitest';
 import { createClerkWebhookUser } from '../../setup/factories';
+import { EmailAddressJSON } from '@clerk/types';
 
 // Mock external dependencies
 vi.mock('@clerk/nextjs/server');
@@ -26,6 +27,17 @@ vi.mock('next/navigation');
 
 const mockAuth = auth as unknown as Mock;
 const mockRedirect = redirect as unknown as Mock;
+
+const defaultEmailAddresses: EmailAddressJSON[] = [
+  {
+    id: 'email_123',
+    object: 'email_address',
+    email_address: 'test@example.com',
+    verification: null,
+    linked_to: [],
+    matches_sso_connection: false,
+  },
+];
 
 describe('Auth Utils', () => {
   beforeEach(() => {
@@ -210,16 +222,7 @@ describe('Auth Utils', () => {
         first_name: 'John',
         last_name: 'Doe',
         image_url: 'https://example.com/avatar.jpg',
-        email_addresses: [
-          {
-            id: 'email_123',
-            object: 'email_address',
-            email_address: 'test@example.com',
-            verification: null,
-            linked_to: [],
-            matches_sso_connection: false,
-          },
-        ],
+        email_addresses: defaultEmailAddresses,
         public_metadata: {
           customProfileImageUrl: 'https://example.com/custom-avatar.jpg',
         },
@@ -243,16 +246,7 @@ describe('Auth Utils', () => {
         first_name: 'John',
         last_name: 'Doe',
         image_url: 'https://example.com/avatar.jpg',
-        email_addresses: [
-          {
-            id: 'email_123',
-            object: 'email_address',
-            email_address: 'test@example.com',
-            verification: null,
-            linked_to: [],
-            matches_sso_connection: false,
-          },
-        ],
+        email_addresses: defaultEmailAddresses,
       });
 
       const result = extractUserDataFromWebhook(webhookUser);
@@ -273,16 +267,7 @@ describe('Auth Utils', () => {
         first_name: 'John',
         last_name: null,
         image_url: '',
-        email_addresses: [
-          {
-            id: 'email_123',
-            object: 'email_address',
-            email_address: 'test@example.com',
-            verification: null,
-            linked_to: [],
-            matches_sso_connection: false,
-          },
-        ],
+        email_addresses: defaultEmailAddresses,
       });
 
       const result = extractUserDataFromWebhook(webhookUser);
@@ -296,16 +281,7 @@ describe('Auth Utils', () => {
         first_name: null,
         last_name: null,
         image_url: '',
-        email_addresses: [
-          {
-            id: 'email_123',
-            object: 'email_address',
-            email_address: 'test@example.com',
-            verification: null,
-            linked_to: [],
-            matches_sso_connection: false,
-          },
-        ],
+        email_addresses: defaultEmailAddresses,
       });
 
       const result = extractUserDataFromWebhook(webhookUser);
@@ -535,16 +511,7 @@ describe('Auth Utils', () => {
     it('should return email from webhook user', () => {
       const user: ClerkWebhookUser = createClerkWebhookUser({
         id: 'user_123',
-        email_addresses: [
-          {
-            id: 'email_123',
-            object: 'email_address',
-            email_address: 'test@example.com',
-            verification: null,
-            linked_to: [],
-            matches_sso_connection: false,
-          },
-        ],
+        email_addresses: defaultEmailAddresses,
       });
 
       expect(getUserEmail(user)).toBe('test@example.com');
