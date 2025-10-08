@@ -58,6 +58,7 @@ pnpm run test:coverage   # Generate test coverage report
 
 # Code Quality
 pnpm run lint            # Run ESLint
+pnpm run typecheck       # Run TypeScript type checking
 pnpm run format          # Format code with Prettier
 pnpm run format:check    # Check code formatting
 
@@ -65,6 +66,20 @@ pnpm run format:check    # Check code formatting
 pnpm run shadcn:update   # Update all shadcn components
 pnpm run shadcn:check    # Check for available component updates
 ```
+
+### Code Quality Checks
+
+- **ESLint**: Catches unused variables, imports, style issues
+- **TypeScript**: Validates types across entire codebase
+- **Tests**: Ensures functionality works as expected
+
+```bash
+pnpm run lint      # Must pass with 0 errors
+pnpm run typecheck # Must pass with 0 errors
+pnpm test          # All tests must pass
+```
+
+These checks run in pre-commit hooks and CI/CD. Fix all issues before marking work complete.
 
 ### Database & Drizzle ORM Best Practices
 

@@ -350,7 +350,7 @@ describe('Auth Utils', () => {
 
   describe('requireAuth', () => {
     it('should return user ID when authenticated', async () => {
-      mockAuth.mockResolvedValue({ userId: 'user_123' } as any);
+      mockAuth.mockResolvedValue({ userId: 'user_123' });
 
       const userId = await requireAuth();
 
@@ -359,7 +359,7 @@ describe('Auth Utils', () => {
     });
 
     it('should redirect when not authenticated', async () => {
-      mockAuth.mockResolvedValue({ userId: null } as any);
+      mockAuth.mockResolvedValue({ userId: null });
 
       await requireAuth();
 
@@ -369,7 +369,7 @@ describe('Auth Utils', () => {
 
   describe('getAuthUser', () => {
     it('should return user ID when authenticated', async () => {
-      mockAuth.mockResolvedValue({ userId: 'user_123' } as any);
+      mockAuth.mockResolvedValue({ userId: 'user_123' });
 
       const userId = await getAuthUser();
 
@@ -377,7 +377,7 @@ describe('Auth Utils', () => {
     });
 
     it('should return null when not authenticated', async () => {
-      mockAuth.mockResolvedValue({ userId: null } as any);
+      mockAuth.mockResolvedValue({ userId: null });
 
       const userId = await getAuthUser();
 
