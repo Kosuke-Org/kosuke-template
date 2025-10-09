@@ -55,11 +55,6 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  // Redirect to dashboard if on onboarding page and user is logged in
-  if (pathname === '/onboarding' && userId) {
-    return NextResponse.redirect(new URL(`/`, req.url));
-  }
-
   // Allow public routes
   if (isPublicRoute(req)) {
     return NextResponse.next();
