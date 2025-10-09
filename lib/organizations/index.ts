@@ -47,6 +47,3 @@ export {
   removeOrgMembership,
   softDeleteOrganization,
 } from './sync';
-
-// Types
-export type { ClerkOrgWebhook, ClerkMembershipWebhook } from './sync';

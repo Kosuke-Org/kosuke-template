@@ -33,6 +33,8 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
   const { handleSignOut } = useAuthActions();
   const { activeOrganization } = useActiveOrganization();
   const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
+  const settingsUrl = activeOrganization ? `/org/${activeOrganization.slug}/settings` : '/';
+  const billingUrl = activeOrganization ? `/org/${activeOrganization.slug}/billing` : '/';
 
   return (
     <header
@@ -79,13 +81,13 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/settings" className="cursor-pointer">
+                      <Link href={settingsUrl} className="cursor-pointer">
                         <Settings className="mr-2 h-4 w-4" />
                         Settings
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/settings/billing" className="cursor-pointer">
+                      <Link href={billingUrl} className="cursor-pointer">
                         <CreditCard className="mr-2 h-4 w-4" />
                         Billing
                       </Link>
@@ -141,19 +143,19 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Link href="/">
+                      <Link href={dashboardUrl}>
                         <Button variant="ghost" className="w-full justify-start">
                           <User className="mr-2 h-4 w-4" />
                           Dashboard
                         </Button>
                       </Link>
-                      <Link href="/settings">
+                      <Link href={settingsUrl}>
                         <Button variant="ghost" className="w-full justify-start">
                           <Settings className="mr-2 h-4 w-4" />
                           Settings
                         </Button>
                       </Link>
-                      <Link href="/settings/billing">
+                      <Link href={billingUrl}>
                         <Button variant="ghost" className="w-full justify-start">
                           <CreditCard className="mr-2 h-4 w-4" />
                           Billing
