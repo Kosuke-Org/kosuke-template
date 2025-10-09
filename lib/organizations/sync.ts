@@ -178,10 +178,6 @@ export async function syncMembershipFromClerk(clerkMembershipId: string): Promis
     // Ensure organization data is up-to-date
     const org = await syncOrganizationFromClerk(clerkMembership.organization.id);
 
-    if (!clerkMembership.publicUserData) {
-      throw new Error(`Membership ${clerkMembershipId} is missing publicUserData`);
-    }
-
     const membershipData: Partial<NewOrgMembership> = {
       clerkMembershipId: clerkMembership.id,
       organizationId: org.id,
@@ -225,16 +221,11 @@ export async function syncMembershipFromWebhook(
     }
 
     // Ensure public_user_data is present
-    if (!data.public_user_data) {
+    if (!data.public_user_data?.user_id) {
       throw new Error(`Membership ${data.id} is missing public_user_data`);
     }
 
-    // Store user_id for type safety (ensure it's defined)
     const userId = data.public_user_data.user_id;
-    if (!userId) {
-      throw new Error(`Membership ${data.id} is missing user_id in public_user_data`);
-    }
-
     const existingMembership = await getMembershipByClerkId(data.id);
 
     const membershipData: Partial<NewOrgMembership> = {
