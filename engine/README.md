@@ -21,6 +21,8 @@ This service provides a simple health check endpoint and can be extended with ad
 engine/
 ├── main.py              # FastAPI application with endpoints
 ├── models.py            # Pydantic models for request/response validation
+├── src/
+│   └── arithmetic_example.py  # Example algorithm module used by /calculate
 ├── pyproject.toml       # UV project configuration and dependencies
 ├── Dockerfile           # Container configuration for Fly.io
 ├── fly.toml            # Fly.io deployment configuration
@@ -61,6 +63,29 @@ Root endpoint with API information.
 ```
 
 ### GET /docs
+### POST /calculate
+
+Performs a basic arithmetic operation. This endpoint is purely an example to illustrate how the engine can expose algorithmic functionality. Replace `src/arithmetic_example.py` with your real logic.
+
+Request body:
+
+```json
+{
+  "a": 1,
+  "b": 2,
+  "operation": "add" | "subtract" | "multiply" | "divide"
+}
+```
+
+Response body:
+
+```json
+{
+  "result": 3,
+  "operation": "add"
+}
+```
+
 
 Interactive API documentation (Swagger UI).
 
@@ -114,6 +139,15 @@ This project uses several tools to maintain code quality:
 - **MyPy**: Static type checking
 - **Pytest**: Testing framework with coverage
 
+Ruff is enforced in CI and should be used to format any generated code. If you generate Python modules (e.g., clients, models), run:
+
+```bash
+ruff format .
+ruff check . --fix
+```
+
+Please ensure any codegen pipeline includes a formatting step with Ruff.
+
 #### Manual Code Quality Checks
 
 ```bash
@@ -145,6 +179,10 @@ git commit -m "message" --no-verify
 curl http://localhost:8000/health
 
 curl http://localhost:8000/
+
+curl -X POST http://localhost:8000/calculate \
+  -H "Content-Type: application/json" \
+  -d '{"a": 10, "b": 5, "operation": "divide"}'
 ```
 
 ## Docker Development
