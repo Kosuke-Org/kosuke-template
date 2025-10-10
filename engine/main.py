@@ -70,7 +70,7 @@ async def calculate_endpoint(payload: CalculateRequest) -> CalculateResponse:
     except ZeroDivisionError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return CalculateResponse(result=result.value, operation=op.value)
+    return CalculateResponse(result=result, operation=op.value)
 
 
 if __name__ == "__main__":
