@@ -1,6 +1,5 @@
-import { clerkMiddleware, createRouteMatcher, clerkClient } from '@clerk/nextjs/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import { AUTH_ROUTES, createSafeRedirectUrl } from '@/lib/auth';
 
 // Define public routes that don't require authentication
 const isPublicRoute = createRouteMatcher([
@@ -24,53 +23,33 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)',
 ]);
 
+const isOnboardingRoute = createRouteMatcher(['/onboarding']);
+const isRootRoute = createRouteMatcher(['/']);
+
 export default clerkMiddleware(async (auth, req) => {
-  // Get the current path
-  const { pathname } = req.nextUrl;
-  const { userId } = await auth();
+  const { isAuthenticated, redirectToSignIn, sessionClaims, orgSlug } = await auth();
+  const { url: reqUrl } = req;
 
-  // Smart redirect for root route: logged-in users go to their org dashboard
-  if (pathname === '/' && userId) {
-    try {
-      const clerk = await clerkClient();
+  if (isAuthenticated && isOnboardingRoute(req)) return NextResponse.next();
 
-      // Get user's organization memberships from Clerk
-      const { data: memberships } = await clerk.users.getOrganizationMembershipList({ userId });
+  if (!isAuthenticated && !isPublicRoute(req)) return redirectToSignIn({ returnBackUrl: reqUrl });
 
-      // No organizations, go to onboarding to create first org
-      if (memberships.length === 0) {
-        return NextResponse.redirect(new URL('/onboarding', req.url));
-      }
-
-      // Get the first organization's slug
-      const org = await clerk.organizations.getOrganization({
-        organizationId: memberships[0].organization.id,
-      });
-
-      return NextResponse.redirect(new URL(`/org/${org.slug}/dashboard`, req.url));
-    } catch (error) {
-      console.error('Error in middleware org lookup:', error);
-      // Fallback to onboarding on error
-      return NextResponse.redirect(new URL('/onboarding', req.url));
-    }
-  }
-
-  // Allow public routes
-  if (isPublicRoute(req)) {
+  if (isAuthenticated && !sessionClaims?.publicMetadata?.onboardingComplete) {
+    // Prevent redirect loop - only redirect if not already on onboarding
+    if (!isOnboardingRoute(req)) return NextResponse.redirect(new URL('/onboarding', reqUrl));
     return NextResponse.next();
   }
 
-  // For protected routes, check if user is authenticated
-  if (!userId) {
-    // Redirect to sign-in for unauthenticated users
-    const signInUrl = createSafeRedirectUrl(
-      new URL(AUTH_ROUTES.SIGN_IN, req.url).toString(),
-      pathname
-    );
-    return NextResponse.redirect(new URL(signInUrl));
+  if (isAuthenticated && isRootRoute(req)) {
+    if (orgSlug) return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, reqUrl));
+
+    // If no active org but onboarding complete, let them see the root page
+    // (they can create/join orgs from there)
+    return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // Allow all other requests for authenticated users
+  if (isAuthenticated) return NextResponse.next();
 });
 
 export const config = {

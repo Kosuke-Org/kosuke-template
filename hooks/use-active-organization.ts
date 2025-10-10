@@ -1,44 +1,53 @@
 /**
  * Hook for managing the active organization
- * Handles organization selection, persistence, and URL slug
+ * Uses Clerk's orgSlug from session as source of truth
  */
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useAuth, useOrganizationList } from '@clerk/nextjs';
 import { usePathname, useRouter } from 'next/navigation';
 import { useOrganizations } from './use-organizations';
 import type { Organization } from './use-organizations';
 
-const STORAGE_KEY = 'activeOrganizationId';
-
 export function useActiveOrganization() {
+  const { orgSlug } = useAuth();
+  const { setActive } = useOrganizationList();
   const { organizations, isLoading } = useOrganizations();
-  const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
 
-  // Initialize active organization from localStorage or default to first
+  // Get active organization from Clerk's orgSlug (source of truth)
+  const activeOrganization: Organization | null =
+    organizations.find((org) => org.slug === orgSlug) ?? null;
+
+  // Initialize: if user has orgs but no active org set, default to first
   useEffect(() => {
     if (isLoading || organizations.length === 0) return;
 
-    // Check if there's a stored active organization
-    const storedOrgId = localStorage.getItem(STORAGE_KEY);
-
-    if (storedOrgId && organizations.some((org) => org.id === storedOrgId)) {
-      // Use stored organization if it exists in the user's organizations
-      setActiveOrgId(storedOrgId);
-    } else {
-      // Default to the first organization
+    // If no active org in Clerk session, set the first one
+    if (!orgSlug) {
       const firstOrg = organizations[0];
-      setActiveOrgId(firstOrg.id);
-      localStorage.setItem(STORAGE_KEY, firstOrg.id);
+      setActive?.({ organization: firstOrg.slug });
     }
-  }, [organizations, isLoading]);
+  }, [orgSlug, organizations, isLoading, setActive]);
 
-  // Get the active organization object
-  const activeOrganization: Organization | null =
-    organizations.find((org) => org.id === activeOrgId) ?? null;
+  // Sync Clerk's active org with URL slug
+  useEffect(() => {
+    if (isLoading || organizations.length === 0) return;
+
+    // Extract org slug from URL
+    const urlSlug = pathname.startsWith('/org/') ? pathname.split('/')[2] : null;
+
+    // If URL has a different org than Clerk's active org, update Clerk
+    if (urlSlug && urlSlug !== orgSlug) {
+      const orgBySlug = organizations.find((org) => org.slug === urlSlug);
+      if (orgBySlug) {
+        setActive?.({ organization: orgBySlug.slug });
+      }
+    }
+  }, [pathname, orgSlug, organizations, isLoading, setActive]);
 
   // Switch to a different organization
   const switchOrganization = (organizationId: string) => {
@@ -49,9 +58,8 @@ export function useActiveOrganization() {
       return;
     }
 
-    // Update state and localStorage
-    setActiveOrgId(organizationId);
-    localStorage.setItem(STORAGE_KEY, organizationId);
+    // Update Clerk session (this is the source of truth)
+    setActive?.({ organization: targetOrg.slug });
 
     // Update URL to include organization slug
     // If current path starts with /org/, replace the slug
@@ -65,33 +73,10 @@ export function useActiveOrganization() {
     }
   };
 
-  // Sync active organization with URL slug
-  useEffect(() => {
-    if (!activeOrganization || isLoading) return;
-
-    // Get organization slug from URL
-    const getOrgSlugFromUrl = (): string | null => {
-      if (!pathname.startsWith('/org/')) return null;
-      const pathParts = pathname.split('/');
-      return pathParts[2] || null;
-    };
-
-    const urlSlug = getOrgSlugFromUrl();
-    if (urlSlug && urlSlug !== activeOrganization.slug) {
-      // Find organization by slug in URL
-      const orgBySlug = organizations.find((org) => org.slug === urlSlug);
-      if (orgBySlug && orgBySlug.id !== activeOrgId) {
-        // Switch to the organization from URL
-        setActiveOrgId(orgBySlug.id);
-        localStorage.setItem(STORAGE_KEY, orgBySlug.id);
-      }
-    }
-  }, [pathname, activeOrganization, organizations, activeOrgId, isLoading]);
-
   return {
     activeOrganization,
-    activeOrgId,
+    activeOrgId: activeOrganization?.id ?? null,
     switchOrganization,
-    isLoading: isLoading || !activeOrgId,
+    isLoading: isLoading || (!activeOrganization && organizations.length > 0),
   };
 }

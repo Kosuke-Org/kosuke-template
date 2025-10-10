@@ -16,14 +16,11 @@ export {
   extractUserData,
   extractUserDataFromWebhook,
   hasUserChanges,
-  requireAuth,
-  getAuthUser,
   isValidEmail,
   getDisplayName,
   getUserEmail,
   createActivityLogData,
   isAuthenticated,
-  createSafeRedirectUrl,
 } from './utils';
 
 // Types - Re-export from centralized types
@@ -40,11 +37,4 @@ export type {
 export { ActivityType } from '@/lib/db/schema';
 
 // Constants
-export {
-  SYNC_INTERVALS,
-  AUTH_ROUTES,
-  PUBLIC_ROUTES,
-  AUTH_ERRORS,
-  ACTIVITY_TYPES,
-  EMAIL_SUBJECTS,
-} from './constants';
+export { SYNC_INTERVALS, AUTH_ROUTES, AUTH_ERRORS } from './constants';

@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useOrganizationList } from '@clerk/nextjs';
 import { useOrganizations } from '@/hooks/use-organizations';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,6 +20,7 @@ interface CreateOrganizationOptions {
 export function useCreateOrganization() {
   const router = useRouter();
   const { toast } = useToast();
+  const { setActive } = useOrganizationList();
   const { createOrganizationAsync } = useOrganizations();
   const [isCreating, setIsCreating] = useState(false);
 
@@ -32,6 +34,9 @@ export function useCreateOrganization() {
       const result = await createOrganizationAsync({
         name: data.name,
       });
+
+      // Set the new org as active in Clerk session
+      setActive?.({ organization: result.slug });
 
       toast({
         title: 'Success!',

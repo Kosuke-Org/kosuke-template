@@ -1,8 +1,6 @@
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
 import { ClerkUserType, ClerkWebhookUser, AuthState } from '@/lib/types';
 import { ActivityType } from '@/lib/db/schema';
-import { AUTH_ROUTES, SYNC_INTERVALS } from './constants';
+import { SYNC_INTERVALS } from './constants';
 
 /**
  * Check if user sync is stale (older than 24 hours)
@@ -79,27 +77,6 @@ export function hasUserChanges(
 }
 
 /**
- * Server-side auth guard that redirects unauthenticated users
- */
-export async function requireAuth() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    redirect(AUTH_ROUTES.SIGN_IN);
-  }
-
-  return userId;
-}
-
-/**
- * Server-side auth check that returns user ID or null
- */
-export async function getAuthUser() {
-  const { userId } = await auth();
-  return userId;
-}
-
-/**
  * Validate email address format
  */
 export function isValidEmail(email: string): boolean {
@@ -164,19 +141,4 @@ export function isAuthenticated(authState: AuthState): authState is AuthState & 
   localUser: NonNullable<AuthState['localUser']>;
 } {
   return authState.isAuthenticated && authState.user !== null && authState.localUser !== null;
-}
-
-/**
- * Generate a safe redirect URL
- */
-export function createSafeRedirectUrl(baseUrl: string, redirectPath?: string): string {
-  try {
-    const url = new URL(baseUrl);
-    if (redirectPath && redirectPath.startsWith('/')) {
-      url.searchParams.set('redirect_url', redirectPath);
-    }
-    return url.toString();
-  } catch {
-    return baseUrl;
-  }
 }

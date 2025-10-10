@@ -25,12 +25,14 @@ import {
 } from '@/components/ui/form';
 import { useCreateOrganization } from '@/hooks/use-create-organization';
 import { createOrgFormSchema } from '@/lib/trpc/schemas/organizations';
+import { trpc } from '@/lib/trpc/client';
 
 type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 
 export default function OnboardingPage() {
   const { isLoaded } = useUser();
   const { createOrganization, isCreating } = useCreateOrganization();
+  const { mutate: updateUserPublicMetadata } = trpc.user.updateUserPublicMetadata.useMutation();
 
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(createOrgFormSchema),
@@ -40,7 +42,9 @@ export default function OnboardingPage() {
   });
 
   const onSubmit = (data: OrganizationFormValues) => {
-    createOrganization(data);
+    createOrganization(data, {
+      onSuccess: () => updateUserPublicMetadata({ publicMetadata: { onboardingComplete: true } }),
+    });
   };
 
   if (!isLoaded) {

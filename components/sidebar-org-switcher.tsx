@@ -43,20 +43,13 @@ export function SidebarOrgSwitcher() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
 
   // Handle organization creation from sidebar
-  // We need to refetch orgs, update localStorage, and redirect to the new org's dashboard
   const handleOrganizationCreated = async (slug: string) => {
     // Wait for organizations list to be refreshed
-    const result = await refetch();
+    await refetch();
 
-    // Find the new org by slug from the refetched data
-    const newOrg = result.data?.find((org) => org.slug === slug);
-    if (newOrg) {
-      // Update localStorage to set the new org as active
-      localStorage.setItem('activeOrganizationId', newOrg.id);
-
-      // Redirect to the new organization's dashboard
-      router.push(`/org/${newOrg.slug}/dashboard`);
-    }
+    // Redirect to the new organization's dashboard
+    // (setActive is called by useCreateOrganization)
+    router.push(`/org/${slug}/dashboard`);
   };
 
   // Loading state
