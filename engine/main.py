@@ -8,11 +8,12 @@ from fastapi import FastAPI
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from fastapi import HTTPException
 
-from models import CalculateRequest
-from models import CalculateResponse
+from models import ConvertRequest
+from models import ConvertResponse
 from models import HealthResponse
-from src.arithmetic_example import Operation
-from src.arithmetic_example import calculate
+from src.currency_converter import Currency
+from src.currency_converter import EXCHANGE_RATES
+from src.currency_converter import convert_currency
 
 load_dotenv()
 
@@ -51,26 +52,35 @@ async def root() -> dict[str, str | dict[str, str]]:
     return {
         "message": "Engine Service API",
         "version": "1.0.0",
-        "endpoints": {"health": "/health", "docs": "/docs"},
+        "endpoints": {"health": "/health", "convert": "/convert", "docs": "/docs"},
     }
 
 
-@app.post("/calculate", response_model=CalculateResponse)
-async def calculate_endpoint(payload: CalculateRequest) -> CalculateResponse:
-    """Perform a simple arithmetic operation using the engine module.
+@app.post("/convert", response_model=ConvertResponse)
+async def convert_endpoint(payload: ConvertRequest) -> ConvertResponse:
+    """Convert currency from one to another using the engine module.
 
     This is an example to illustrate how the engine can handle more complex operations"""
     try:
-        op = Operation(payload.operation)
+        from_curr = Currency(payload.from_currency.upper())
+        to_curr = Currency(payload.to_currency.upper())
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail="Invalid operation") from exc
+        raise HTTPException(status_code=400, detail="Invalid currency code") from exc
 
     try:
-        result = calculate(payload.a, payload.b, op)
-    except ZeroDivisionError as exc:
+        converted_amount = convert_currency(payload.amount, from_curr, to_curr)
+    except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    return CalculateResponse(result=result, operation=op.value)
+    # Calculate exchange rate for display
+    exchange_rate = EXCHANGE_RATES[to_curr.value] / EXCHANGE_RATES[from_curr.value]
+    
+    return ConvertResponse(
+        converted_amount=converted_amount,
+        from_currency=from_curr.value,
+        to_currency=to_curr.value,
+        exchange_rate=round(exchange_rate, 4)
+    )
 
 
 if __name__ == "__main__":

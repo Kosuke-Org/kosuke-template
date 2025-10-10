@@ -63,17 +63,17 @@ Root endpoint with API information.
 ```
 
 ### GET /docs
-### POST /calculate
+### POST /convert
 
-Performs a basic arithmetic operation. This endpoint is purely an example to illustrate how the engine can expose algorithmic functionality. Replace `src/arithmetic_example.py` with your real logic.
+Converts currency from one to another. This endpoint is purely an example to illustrate how the engine can expose algorithmic functionality. Replace `src/currency_converter.py` with your real logic.
 
 Request body:
 
 ```json
 {
-  "a": 1,
-  "b": 2,
-  "operation": "add" | "subtract" | "multiply" | "divide"
+  "amount": 100,
+  "from_currency": "USD",
+  "to_currency": "EUR"
 }
 ```
 
@@ -81,8 +81,10 @@ Response body:
 
 ```json
 {
-  "result": 3,
-  "operation": "add"
+  "converted_amount": 85.0,
+  "from_currency": "USD",
+  "to_currency": "EUR",
+  "exchange_rate": 0.85
 }
 ```
 
@@ -180,9 +182,9 @@ curl http://localhost:8000/health
 
 curl http://localhost:8000/
 
-curl -X POST http://localhost:8000/calculate \
+curl -X POST http://localhost:8000/convert \
   -H "Content-Type: application/json" \
-  -d '{"a": 10, "b": 5, "operation": "divide"}'
+  -d '{"amount": 100, "from_currency": "USD", "to_currency": "EUR"}'
 ```
 
 ## Docker Development
