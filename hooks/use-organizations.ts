@@ -13,9 +13,6 @@ type RouterOutput = inferRouterOutputs<AppRouter>;
 type Organization = RouterOutput['organizations']['getUserOrganizations'][number];
 
 export function useOrganizations() {
-  const utils = trpc.useUtils();
-
-  // Fetch user's organizations
   const {
     data: organizations,
     isLoading,
@@ -26,23 +23,11 @@ export function useOrganizations() {
     retry: 1,
   });
 
-  // Create organization mutation
-  const createOrganization = trpc.organizations.createOrganization.useMutation({
-    onSuccess: async () => {
-      // Refetch organizations list immediately to ensure new org appears in the sidebar
-      // Use refetch() instead of invalidate() to wait for completion
-      await utils.organizations.getUserOrganizations.refetch();
-    },
-  });
-
   return {
     organizations: organizations ?? [],
     isLoading,
     error,
     refetch,
-    createOrganization: createOrganization.mutate,
-    createOrganizationAsync: createOrganization.mutateAsync,
-    isCreating: createOrganization.isPending,
   };
 }
 

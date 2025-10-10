@@ -34,7 +34,7 @@ import { CreateOrgDialog } from '@/components/create-org-dialog';
 export function SidebarOrgSwitcher() {
   const router = useRouter();
   const { isMobile } = useSidebar();
-  const { organizations, isLoading, refetch } = useOrganizations();
+  const { organizations, isLoading } = useOrganizations();
   const {
     activeOrganization,
     switchOrganization,
@@ -44,11 +44,6 @@ export function SidebarOrgSwitcher() {
 
   // Handle organization creation from sidebar
   const handleOrganizationCreated = async (slug: string) => {
-    // Wait for organizations list to be refreshed
-    await refetch();
-
-    // Redirect to the new organization's dashboard
-    // (setActive is called by useCreateOrganization)
     router.push(`/org/${slug}/dashboard`);
   };
 

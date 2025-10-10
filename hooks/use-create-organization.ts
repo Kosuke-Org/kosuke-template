@@ -5,11 +5,9 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useOrganizationList } from '@clerk/nextjs';
-import { useOrganizations } from '@/hooks/use-organizations';
 import { useToast } from '@/hooks/use-toast';
+import { trpc } from '@/lib/trpc/client';
 
 interface CreateOrganizationOptions {
   onSuccess?: (slug: string) => void;
@@ -18,53 +16,43 @@ interface CreateOrganizationOptions {
 }
 
 export function useCreateOrganization() {
-  const router = useRouter();
   const { toast } = useToast();
   const { setActive } = useOrganizationList();
-  const { createOrganizationAsync } = useOrganizations();
-  const [isCreating, setIsCreating] = useState(false);
+  const utils = trpc.useUtils();
 
-  const createOrganization = async (
-    data: { name: string },
-    options?: CreateOrganizationOptions
-  ) => {
-    setIsCreating(true);
-
-    try {
-      const result = await createOrganizationAsync({
-        name: data.name,
-      });
-
-      // Set the new org as active in Clerk session
-      setActive?.({ organization: result.slug });
-
+  const mutation = trpc.organizations.createOrganization.useMutation({
+    onSuccess: (data) => {
       toast({
         title: 'Success!',
         description: 'Your workspace has been created.',
       });
-
-      // Organization is now immediately synced to local database
-      // No need to wait for webhook
-      if (options?.redirectAfterCreate !== false) {
-        router.push(`/org/${result.slug}/dashboard`);
-      }
-
-      options?.onSuccess?.(result.slug);
-      setIsCreating(false);
-    } catch (error) {
-      console.error('Error creating organization:', error);
+      setActive?.({ organization: data.slug });
+      utils.organizations.getUserOrganizations.refetch();
+    },
+    onError: (error) => {
+      console.error('Failed to create workspace', error);
       toast({
         title: 'Error',
         description: 'Failed to create workspace. Please try again.',
         variant: 'destructive',
       });
-      setIsCreating(false);
+    },
+  });
+
+  const handleCreateOrganization = async (
+    data: { name: string },
+    options?: CreateOrganizationOptions
+  ) => {
+    try {
+      const result = await mutation.mutateAsync(data);
+      options?.onSuccess?.(result.slug);
+    } catch (error) {
       options?.onError?.(error);
     }
   };
 
   return {
-    createOrganization,
-    isCreating,
+    createOrganization: handleCreateOrganization,
+    isCreating: mutation.isPending,
   };
 }

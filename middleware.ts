@@ -17,24 +17,31 @@ const isPublicRoute = createRouteMatcher([
   '/favicon-96x96.png',
   '/apple-touch-icon.png',
   '/opengraph-image.png',
-  // API routes
-  '/api/billing/webhook',
-  '/api/clerk/webhook',
-  '/api/webhooks(.*)',
 ]);
 
 const isOnboardingRoute = createRouteMatcher(['/onboarding']);
 const isRootRoute = createRouteMatcher(['/']);
+const isApiRoute = createRouteMatcher(['/api(.*)']);
 
 export default clerkMiddleware(async (auth, req) => {
+  // API routes handle their own authentication via protectedProcedures
+  if (isApiRoute(req)) return NextResponse.next();
+
   const { isAuthenticated, redirectToSignIn, sessionClaims, orgSlug } = await auth();
   const { url: reqUrl } = req;
+  const isOnboardingComplete = sessionClaims?.publicMetadata?.onboardingComplete;
 
-  if (isAuthenticated && isOnboardingRoute(req)) return NextResponse.next();
+  if (isAuthenticated && isOnboardingRoute(req)) {
+    // If onboarding is complete and orgSlug is set, redirect to dashboard
+    if (isOnboardingComplete && orgSlug) {
+      return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, reqUrl));
+    }
+    return NextResponse.next();
+  }
 
   if (!isAuthenticated && !isPublicRoute(req)) return redirectToSignIn({ returnBackUrl: reqUrl });
 
-  if (isAuthenticated && !sessionClaims?.publicMetadata?.onboardingComplete) {
+  if (isAuthenticated && !isOnboardingComplete) {
     // Prevent redirect loop - only redirect if not already on onboarding
     if (!isOnboardingRoute(req)) return NextResponse.redirect(new URL('/onboarding', reqUrl));
     return NextResponse.next();

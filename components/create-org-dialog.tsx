@@ -59,13 +59,10 @@ export function CreateOrgDialog({
 
   const onSubmit = (data: OrganizationFormValues) => {
     createOrganization(data, {
-      redirectAfterCreate: !onOrganizationCreated, // Disable redirect if custom handler provided
       onSuccess: (slug) => {
-        // Close dialog and reset form
         onOpenChange(false);
         form.reset();
 
-        // Call custom handler if provided
         onOrganizationCreated?.(slug);
       },
     });
