@@ -19,14 +19,14 @@ This service provides a simple health check endpoint and can be extended with ad
 
 ```
 engine/
-├── main.py              # FastAPI application with endpoints
-├── models.py            # Pydantic models for request/response validation
-├── src/
-│   └── arithmetic_example.py  # Example algorithm module used by /calculate
-├── pyproject.toml       # UV project configuration and dependencies
-├── Dockerfile           # Container configuration for Fly.io
-├── fly.toml            # Fly.io deployment configuration
-└── README.md           # This file
+├── main.py                    # FastAPI application with endpoints
+├── models.py                  # Pydantic models for request/response validation
+├── src/                       # Source code
+│   └── currency_converter.py  # Example algorithm module
+├── pyproject.toml             # UV project configuration and dependencies
+├── Dockerfile                 # Container configuration for Fly.io
+├── fly.toml                   # Fly.io deployment configuration
+└── README.md                  # This file
 ```
 
 ## API Endpoints
