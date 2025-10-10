@@ -6,8 +6,13 @@ import sentry_sdk
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from sentry_sdk.integrations.fastapi import FastApiIntegration
+from fastapi import HTTPException
 
+from models import CalculateRequest
+from models import CalculateResponse
 from models import HealthResponse
+from src.arithmetic_example import Operation
+from src.arithmetic_example import calculate
 
 load_dotenv()
 
@@ -48,6 +53,24 @@ async def root() -> dict[str, str | dict[str, str]]:
         "version": "1.0.0",
         "endpoints": {"health": "/health", "docs": "/docs"},
     }
+
+
+@app.post("/calculate", response_model=CalculateResponse)
+async def calculate_endpoint(payload: CalculateRequest) -> CalculateResponse:
+    """Perform a simple arithmetic operation using the engine module.
+
+    This is an example to illustrate how the engine can handle more complex operations"""
+    try:
+        op = Operation(payload.operation)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid operation") from exc
+
+    try:
+        result = calculate(payload.a, payload.b, op)
+    except ZeroDivisionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return CalculateResponse(result=result.value, operation=op.value)
 
 
 if __name__ == "__main__":
