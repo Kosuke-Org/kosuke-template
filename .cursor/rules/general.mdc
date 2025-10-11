@@ -942,6 +942,46 @@ You can use the existing currency_converter example as a reference guide.
 - **Authentication**: All engine calls require user authentication via Clerk
 - **Error Handling**: Comprehensive error handling with user-friendly messages
 
+**Engine Client Integration (MANDATORY):**
+- **ALWAYS use `lib/engine/client.ts`** for all engine microservice communication
+- **NEVER make direct HTTP calls** to the engine service from routers or API routes
+- **Decouple logic**: Engine client handles HTTP communication, business logic stays in routers
+- **Error Handling**: Use `EngineError`, `EngineTimeoutError`, `EngineNetworkError` for proper error handling
+- **Retry Logic**: Built-in exponential backoff and timeout handling
+- **Health Checks**: Use `checkEngineHealth()` and `getEngineVersion()` for monitoring
+
+```typescript
+// ✅ CORRECT - Use engine client
+import { convertCurrency, EngineError } from '@/lib/engine/client';
+
+export const engineRouter = router({
+  convert: protectedProcedure
+    .input(currencyConvertRequestSchema)
+    .mutation(async ({ input }) => {
+      try {
+        return await convertCurrency(input);
+      } catch (error) {
+        if (error instanceof EngineError) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Engine error: ${error.message}`,
+          });
+        }
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Currency conversion failed',
+        });
+      }
+    }),
+});
+
+// ❌ WRONG - Direct HTTP calls
+async function proxyToEngine<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${ENGINE_URL}${endpoint}`, options);
+  return response.json();
+}
+```
+
 ### Mutation Design Guideline (MANDATORY)
 
 - Prefer a single, general `update` mutation per resource. If an `update` exists, do NOT add specialized mutations like `updatePriority`, `updateStatus`, `toggleComplete`, etc. Send only changed fields (partial input) to `update` and let the server handle patch semantics. This keeps the API surface small, maximizes type reuse, and simplifies caching/invalidations.
