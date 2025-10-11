@@ -27,18 +27,19 @@ EXCHANGE_RATES = {
 
 def convert_currency(amount: float, from_currency: Currency, to_currency: Currency) -> float:
     """Convert currency amount from one currency to another.
-    
+
     This is a mock implementation using hardcoded rates.
     In production, you'd fetch real-time rates from a financial API.
     """
     if amount < 0:
-        raise ValueError("Amount cannot be negative")
-    
+        msg = "Amount cannot be negative"
+        raise ValueError(msg)
+
     if from_currency == to_currency:
         return amount
-    
+
     # Convert to USD first, then to target currency
     usd_amount = amount / EXCHANGE_RATES[from_currency.value]
     converted_amount = usd_amount * EXCHANGE_RATES[to_currency.value]
-    
+
     return round(converted_amount, 2)

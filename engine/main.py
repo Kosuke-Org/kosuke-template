@@ -11,8 +11,8 @@ from fastapi import HTTPException
 from models import ConvertRequest
 from models import ConvertResponse
 from models import HealthResponse
-from src.currency_converter import Currency
 from src.currency_converter import EXCHANGE_RATES
+from src.currency_converter import Currency
 from src.currency_converter import convert_currency
 
 load_dotenv()
@@ -74,7 +74,7 @@ async def convert_endpoint(payload: ConvertRequest) -> ConvertResponse:
 
     # Calculate exchange rate for display
     exchange_rate = EXCHANGE_RATES[to_curr.value] / EXCHANGE_RATES[from_curr.value]
-    
+
     return ConvertResponse(
         converted_amount=converted_amount,
         from_currency=from_curr.value,
