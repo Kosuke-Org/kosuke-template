@@ -4,10 +4,8 @@
 # Check if we have Python files in the commit
 python_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(py)$' | grep '^engine/' || true)
 
-# Run Python checks if there are Python files in engine/
-if [ -n "$python_files" ]; then
-  echo "🐍 Running Python code quality checks for engine/..."
-
+# Always check if UV and venv are available for Python checks
+if [ -d "./engine" ]; then
   # Check if UV is installed
   if ! command -v uv &> /dev/null; then
     echo "❌ UV is not installed. Please install it first:"
@@ -16,35 +14,47 @@ if [ -n "$python_files" ]; then
   fi
 
   # Check if virtual environment exists
-  if [ -f "./engine/.venv/bin/activate" ]; then
-    cd engine
-
-    echo "  → Running ruff linting..."
-    uv run ruff check . --fix
-    if [ $? -ne 0 ]; then
-      echo "❌ Python linting failed. Please fix the errors before committing."
-      cd ..
-      exit 1
-    fi
-
-    echo "  → Running ruff formatting..."
-    uv run ruff format .
-
-    echo "  → Running mypy type checking..."
-    uv run mypy .
-    if [ $? -ne 0 ]; then
-      echo "❌ Python type checking failed. Please fix the errors before committing."
-      cd ..
-      exit 1
-    fi
-
-    cd ..
-    echo "✅ Python checks passed!"
-  else
+  if [ ! -f "./engine/.venv/bin/activate" ]; then
     echo "⚠️  Python virtual environment not found at engine/.venv"
     echo "   Run: cd engine && uv sync && uv pip install -e \".[dev]\""
     exit 1
   fi
+fi
+
+# Run Python linting/formatting only if Python files are being committed
+if [ -n "$python_files" ]; then
+  echo "🐍 Running Python linting and formatting for engine/..."
+  cd engine
+
+  echo "  → Running ruff linting..."
+  uv run ruff check . --fix
+  if [ $? -ne 0 ]; then
+    echo "❌ Python linting failed. Please fix the errors before committing."
+    cd ..
+    exit 1
+  fi
+
+  echo "  → Running ruff formatting..."
+  uv run ruff format .
+
+  cd ..
+  echo "✅ Python linting and formatting passed!"
+fi
+
+# ALWAYS run MyPy type checking (catches pre-existing type errors)
+if [ -d "./engine" ] && [ -f "./engine/.venv/bin/activate" ]; then
+  echo "🔍 Running MyPy type checking for engine/..."
+  cd engine
+
+  uv run mypy .
+  if [ $? -ne 0 ]; then
+    echo "❌ Python type checking failed. Please fix the errors before committing."
+    cd ..
+    exit 1
+  fi
+
+  cd ..
+  echo "✅ Python type checking passed!"
 fi
 
 # Check if we have TypeScript/JavaScript files in the commit
@@ -92,3 +102,4 @@ if [ -n "$js_files" ]; then
 fi
 
 echo "✅ All pre-commit checks passed!"
+
