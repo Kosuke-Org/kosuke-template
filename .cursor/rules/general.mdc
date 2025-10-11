@@ -35,6 +35,7 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
   - `./lib/storage`: Vercel Blob storage utilities
 - `./public`: Static assets
 - `./cli`: Interactive setup guide for project configuration
+- `./engine`: Python FastAPI microservice for advanced calculations and algorithms
 
 ### Essential Commands & Database Operations
 
@@ -922,6 +923,24 @@ const handleUpload = async (file: File) => {
 - **Internal APIs** - Any communication between frontend and backend
 - **Type-safe mutations** - Form submissions, updates, deletes
 - **Protected endpoints** - Authenticated user actions
+
+### Engine System Integration - Advanced Calculations
+
+You can use the existing currency_converter example as a reference guide.
+
+**When to Use the Engine Service:**
+- **Advanced Calculations**: Complex mathematical operations, financial calculations, data processing
+- **Algorithm Implementation**: Machine learning, optimization, data analysis  
+- **External API Integration**: Third-party services that require server-side processing
+- **Heavy Computation**: CPU-intensive tasks that shouldn't block the main application
+- **Specialized Libraries**: Python libraries not available in Node.js ecosystem
+
+**Engine Service Architecture:**
+- **FastAPI Backend**: Python microservice running on port 8000 (configurable)
+- **Docker Support**: Containerized for easy deployment and scaling
+- **Type-Safe Integration**: tRPC routers provide end-to-end type safety
+- **Authentication**: All engine calls require user authentication via Clerk
+- **Error Handling**: Comprehensive error handling with user-friendly messages
 
 ### Mutation Design Guideline (MANDATORY)
 
