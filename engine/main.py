@@ -1,12 +1,25 @@
+import os
 from datetime import UTC
 from datetime import datetime
 
+import sentry_sdk
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from models import HealthResponse
 
 load_dotenv()
+
+# Initialize Sentry
+sentry_dsn = os.getenv("SENTRY_DSN")
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        environment=os.getenv("ENVIRONMENT", "development"),
+        traces_sample_rate=1.0 if os.getenv("ENVIRONMENT") == "development" else 0.1,
+        profiles_sample_rate=1.0 if os.getenv("ENVIRONMENT") == "development" else 0.1,
+        enable_tracing=True,
+    )
 
 app = FastAPI(
     title="Engine Service", description="Core engine service for Kosuke Template", version="1.0.0"

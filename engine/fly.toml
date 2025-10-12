@@ -10,6 +10,7 @@ primary_region = 'fra'
 
 [env]
   PORT = '8000'
+  ENVIRONMENT = 'production'
 
 [http_service]
   internal_port = 8000
