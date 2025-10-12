@@ -13,7 +13,7 @@ This service provides a simple health check endpoint and can be extended with ad
 - **UV Dependency Management**: Fast, reliable Python package management
 - **Auto Scaling**: Scales to zero when not in use on Fly.io
 - **Docker Support**: Containerized for easy deployment
-- **Sentry Integration**: Error tracking and performance monitoring
+- **Sentry Integration**: Error tracking and performance monitoring with FastAPI integration
 
 ## File Structure
 
@@ -197,7 +197,7 @@ fly deploy
 
 ```bash
 PORT=8000                    # Optional, defaults to 8000
-SENTRY_DSN=<your-dsn>        # Required for error tracking
+SENTRY_DSN=<your-dsn>        # Optional, enables error tracking when set
 ENVIRONMENT=development      # development, staging, or production
 ```
 

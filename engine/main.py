@@ -5,20 +5,26 @@ from datetime import datetime
 import sentry_sdk
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from sentry_sdk.integrations.fastapi import FastApiIntegration
 
 from models import HealthResponse
 
 load_dotenv()
 
-# Initialize Sentry
+# Initialize Sentry with FastAPI integration
 sentry_dsn = os.getenv("SENTRY_DSN")
 if sentry_dsn:
     sentry_sdk.init(
         dsn=sentry_dsn,
         environment=os.getenv("ENVIRONMENT", "development"),
-        traces_sample_rate=1.0 if os.getenv("ENVIRONMENT") == "development" else 0.1,
-        profiles_sample_rate=1.0 if os.getenv("ENVIRONMENT") == "development" else 0.1,
+        traces_sample_rate=0.1,
+        profiles_sample_rate=0.1,
         enable_tracing=True,
+        integrations=[
+            FastApiIntegration(
+                transaction_style="endpoint",
+            ),
+        ],
     )
 
 app = FastAPI(
