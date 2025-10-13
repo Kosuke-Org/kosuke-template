@@ -117,6 +117,25 @@ NEXT_PUBLIC_PLAUSIBLE_HOST=https://plausible.io
 
 For detailed instructions on obtaining these keys and setting up each service, see the [CLI Setup Guide](./cli/README.md).
 
+## 🌿 Neon Preview Branches (Zero-Config)
+
+This template includes automatic database branching for pull request previews using Neon + Vercel Integration:
+
+- **🔄 Auto-Create**: Each PR gets its own isolated database branch
+- **📦 Auto-Migrate**: Migrations run via `prebuild` script (before every deploy)
+- **🧹 Auto-Cleanup**: Preview branches deleted when PRs close
+- **💰 Cost-Effective**: Neon branches use copy-on-write storage
+
+**Setup (One-Time)**:
+1. Install [Neon Vercel Integration](https://vercel.com/integrations/neon)
+2. Enable "Create a database branch for each preview deployment"
+3. Add cleanup workflow secrets (optional): `NEON_PROJECT_ID`, `NEON_API_KEY`
+
+**How It Works**:
+- Vercel automatically creates Neon branch for each PR
+- `prebuild` script runs migrations before build
+- Works for both preview and production deployments
+
 ## 🧪 Testing
 
 Run tests with:
