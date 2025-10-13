@@ -80,37 +80,9 @@ jobs:
       - name: Run tests
         run: uv run pytest -v --cov=. --cov-report=term-missing
 
-  migrate-database:
-    name: Run Database Migrations
-    needs: test-nextjs
-    runs-on: ubuntu-latest
-    environment: production
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Run database migrations
-        run: pnpm run db:migrate
-        env:
-          POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
-
   deploy-engine:
     name: Deploy Python Engine to Fly.io
-    needs: [test-nextjs, test-engine, migrate-database]
+    needs: [test-nextjs, test-engine]
     runs-on: ubuntu-latest
     environment: production
 

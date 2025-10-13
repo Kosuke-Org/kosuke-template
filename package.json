@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:email": "concurrently \"pnpm run dev\" \"pnpm run email:dev\"",
+    "prebuild": "pnpm run db:push",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 0",
