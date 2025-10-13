@@ -39,16 +39,14 @@ export function useCreateOrganization() {
     },
   });
 
-  const handleCreateOrganization = async (
+  const handleCreateOrganization = (
     data: { name: string },
     options?: CreateOrganizationOptions
   ) => {
-    try {
-      const result = await mutation.mutateAsync(data);
-      options?.onSuccess?.(result.slug);
-    } catch (error) {
-      options?.onError?.(error);
-    }
+    mutation.mutate(data, {
+      onSuccess: (result) => options?.onSuccess?.(result.slug),
+      onError: (error) => options?.onError?.(error),
+    });
   };
 
   return {

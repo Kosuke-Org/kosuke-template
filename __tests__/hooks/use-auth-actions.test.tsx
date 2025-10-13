@@ -52,7 +52,7 @@ describe('useAuthActions', () => {
     });
 
     expect(mockSignOut).toHaveBeenCalled();
-    expect(mockReplace).toHaveBeenCalledWith('/');
+    expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: '/' });
   });
 
   it('should handle multiple handleSignOut calls', async () => {
@@ -67,6 +67,5 @@ describe('useAuthActions', () => {
     });
 
     expect(mockSignOut).toHaveBeenCalledTimes(2);
-    expect(mockReplace).toHaveBeenCalledTimes(2);
   });
 });

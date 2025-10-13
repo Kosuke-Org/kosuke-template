@@ -32,7 +32,7 @@ type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { isLoaded } = useUser();
+  const { isLoaded, user } = useUser();
   const { createOrganization, isCreating } = useCreateOrganization();
   const { mutateAsync: updateUserPublicMetadata, isPending } =
     trpc.user.updateUserPublicMetadata.useMutation();
@@ -50,6 +50,7 @@ export default function OnboardingPage() {
     createOrganization(data, {
       onSuccess: async (slug) => {
         await updateUserPublicMetadata({ publicMetadata: { onboardingComplete: true } });
+        await user?.reload(); // Reload user to refresh session with updated metadata
         router.push(`/org/${slug}/dashboard`);
       },
     });

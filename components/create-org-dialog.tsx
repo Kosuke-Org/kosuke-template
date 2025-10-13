@@ -36,10 +36,6 @@ type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 interface CreateOrgDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /**
-   * Custom success handler. If provided, automatic redirect is disabled.
-   * Use this when you want to handle navigation differently (e.g., in sidebar switcher)
-   */
   onOrganizationCreated?: (slug: string) => void;
 }
 
