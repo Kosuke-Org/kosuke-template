@@ -22,61 +22,40 @@ export function useActiveOrganization() {
   const activeOrganization: Organization | null =
     organizations.find((org) => org.slug === orgSlug) ?? null;
 
-  // Initialize: if user has orgs but no active org set, default to first
+  // Initialize active org and sync with URL changes
   useEffect(() => {
-    if (isLoading || organizations.length === 0) return;
+    if (isLoading) return;
 
-    // If no active org in Clerk session, set the first one
+    // If no organizations available, nothing to do
+    if (organizations.length === 0) return;
+
+    // Extract org slug from URL (if on org route)
+    const urlSlug = pathname.startsWith('/org/') ? pathname.split('/')[2] : null;
+
+    // No active org in session → set first org as default
     if (!orgSlug) {
       const firstOrg = organizations[0];
       setActive?.({ organization: firstOrg.slug });
-    }
-  }, [orgSlug, organizations, isLoading, setActive]);
-
-  // Sync Clerk's active org with URL slug
-  useEffect(() => {
-    if (isLoading || organizations.length === 0) return;
-
-    // Extract org slug from URL
-    const urlSlug = pathname.startsWith('/org/') ? pathname.split('/')[2] : null;
-
-    // If URL has a different org than Clerk's active org, update Clerk
-    if (urlSlug && urlSlug !== orgSlug) {
-      const orgBySlug = organizations.find((org) => org.slug === urlSlug);
-      if (orgBySlug) {
-        setActive?.({ organization: orgBySlug.slug });
-      }
-    }
-  }, [pathname, orgSlug, organizations, isLoading, setActive]);
-
-  // Switch to a different organization
-  const switchOrganization = (organizationId: string) => {
-    const targetOrg = organizations.find((org) => org.id === organizationId);
-
-    if (!targetOrg) {
-      console.error('Organization not found:', organizationId);
       return;
     }
 
-    // Update Clerk session (this is the source of truth)
-    setActive?.({ organization: targetOrg.slug });
-
-    // Update URL to include organization slug
-    // If current path starts with /org/, replace the slug
-    if (pathname.startsWith('/org/')) {
-      const pathParts = pathname.split('/');
-      pathParts[2] = targetOrg.slug; // Replace slug in /org/[slug]/...
-      router.push(pathParts.join('/'));
-    } else {
-      // If not in an org-scoped path, navigate to the org dashboard
-      router.push(`/org/${targetOrg.slug}/dashboard`);
+    // URL has org slug that differs from session → sync session to URL
+    // This handles direct navigation (user clicks link, types URL, or uses back/forward)
+    if (urlSlug && urlSlug !== orgSlug) {
+      const orgBySlug = organizations.find((org) => org.slug === urlSlug);
+      if (orgBySlug) {
+        // Valid org in URL → switch to it
+        setActive?.({ organization: orgBySlug.slug });
+      } else {
+        // Invalid org slug in URL → redirect to active org's dashboard
+        router.replace(`/org/${orgSlug}/dashboard`);
+      }
     }
-  };
+  }, [pathname, orgSlug, organizations, isLoading, setActive, router]);
 
   return {
     activeOrganization,
     activeOrgId: activeOrganization?.id ?? null,
-    switchOrganization,
-    isLoading: isLoading || (!activeOrganization && organizations.length > 0),
+    isLoading,
   };
 }

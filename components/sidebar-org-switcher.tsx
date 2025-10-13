@@ -8,7 +8,6 @@
 import * as React from 'react';
 import { ChevronsUpDown, Plus, Settings } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -30,20 +29,16 @@ import { useOrganizations } from '@/hooks/use-organizations';
 import { getInitials } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CreateOrgDialog } from '@/components/create-org-dialog';
+import { useRouter } from 'next/navigation';
 
 export function SidebarOrgSwitcher() {
   const router = useRouter();
   const { isMobile } = useSidebar();
   const { organizations, isLoading } = useOrganizations();
-  const {
-    activeOrganization,
-    switchOrganization,
-    isLoading: isActivating,
-  } = useActiveOrganization();
+  const { activeOrganization, isLoading: isActivating } = useActiveOrganization();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
 
-  // Handle organization creation from sidebar
-  const handleOrganizationCreated = async (slug: string) => {
+  const handleOrganizationCreated = (slug: string) => {
     router.push(`/org/${slug}/dashboard`);
   };
 
@@ -106,26 +101,27 @@ export function SidebarOrgSwitcher() {
               const isActive = org.id === activeOrganization.id;
 
               return (
-                <DropdownMenuItem
-                  key={org.id}
-                  onClick={() => switchOrganization(org.id)}
-                  className="gap-2 p-2 cursor-pointer"
-                >
-                  <Avatar className="h-6 w-6 rounded-md">
-                    {org.logoUrl && <AvatarImage src={org.logoUrl} alt={org.name} />}
-                    <AvatarFallback className="rounded-md bg-primary text-primary-foreground text-xs">
-                      {orgInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{org.name}</div>
-                  </div>
-                  {isActive && (
-                    <div
-                      className="h-2 w-2 rounded-full bg-primary"
-                      aria-label="Active workspace"
-                    />
-                  )}
+                <DropdownMenuItem key={org.id} asChild>
+                  <Link
+                    href={`/org/${org.slug}/dashboard`}
+                    className="gap-2 p-2 cursor-pointer flex items-center"
+                  >
+                    <Avatar className="h-6 w-6 rounded-md">
+                      {org.logoUrl && <AvatarImage src={org.logoUrl} alt={org.name} />}
+                      <AvatarFallback className="rounded-md bg-primary text-primary-foreground text-xs">
+                        {orgInitials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{org.name}</div>
+                    </div>
+                    {isActive && (
+                      <div
+                        className="h-2 w-2 rounded-full bg-primary"
+                        aria-label="Active workspace"
+                      />
+                    )}
+                  </Link>
                 </DropdownMenuItem>
               );
             })}
