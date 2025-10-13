@@ -117,6 +117,20 @@ NEXT_PUBLIC_PLAUSIBLE_HOST=https://plausible.io
 
 For detailed instructions on obtaining these keys and setting up each service, see the [CLI Setup Guide](./cli/README.md).
 
+## 🌿 Neon Preview Branches (CI/CD)
+
+This template includes automatic database branching for pull request previews using Neon:
+
+- **🔄 Automatic Branch Creation**: Each PR gets its own isolated database branch
+- **📦 Auto-Migrations**: Migrations run automatically on preview branches
+- **🧹 Auto-Cleanup**: Preview branches are deleted when PRs close
+- **💰 Cost-Effective**: Neon branches use copy-on-write storage
+
+**Setup Required**: Add Neon credentials to GitHub Secrets:
+- `NEON_PROJECT_ID`
+- `NEON_API_KEY`
+- `NEON_DATABASE_USERNAME`
+
 ## 🧪 Testing
 
 Run tests with:

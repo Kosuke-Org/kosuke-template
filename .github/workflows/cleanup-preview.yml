@@ -1,0 +1,28 @@
+name: Cleanup Preview Branch
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  delete-neon-branch:
+    name: Delete Neon Preview Branch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete Neon Branch
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          branch: preview/pr-${{ github.event.pull_request.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            🧹 **Neon Preview Branch Cleaned Up**
+            
+            Branch `preview/pr-${{ github.event.pull_request.number }}` has been deleted.
+          comment_tag: neon-preview-cleanup
+
