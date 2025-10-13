@@ -4,10 +4,10 @@ import { createQueryWrapper } from '../setup/mocks';
 import { vi } from 'vitest';
 
 // Mock useRouter
-const mockReplace = vi.fn();
+const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    replace: mockReplace,
+    push: mockPush,
   }),
 }));
 
@@ -51,8 +51,8 @@ describe('useAuthActions', () => {
       result.current.handleSignOut();
     });
 
+    expect(mockPush).toHaveBeenCalledWith('/');
     expect(mockSignOut).toHaveBeenCalled();
-    expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: '/' });
   });
 
   it('should handle multiple handleSignOut calls', async () => {
@@ -66,6 +66,7 @@ describe('useAuthActions', () => {
       result.current.handleSignOut();
     });
 
+    expect(mockPush).toHaveBeenCalledTimes(2);
     expect(mockSignOut).toHaveBeenCalledTimes(2);
   });
 });

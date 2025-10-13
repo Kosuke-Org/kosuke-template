@@ -2,17 +2,18 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { useClerk } from '@clerk/nextjs';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
 export function useAuthActions() {
   const { signOut } = useClerk();
+  const router = useRouter();
   const { toast } = useToast();
 
   const signOutMutation = useMutation({
-    mutationFn: () => {
-      // Sign out and redirect to home page
-      // Clerk automatically clears entire session including orgSlug
-      return signOut({ redirectUrl: '/' });
+    mutationFn: async () => {
+      router.push('/');
+      await signOut();
     },
     onError: (error) => {
       console.error('Error signing out:', error);
