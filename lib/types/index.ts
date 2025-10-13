@@ -151,3 +151,12 @@ export interface ActionResult<T = unknown> {
   error?: string;
   message?: string;
 }
+
+// Custom Jwt Session Claims for Clerk
+declare global {
+  interface CustomJwtSessionClaims {
+    publicMetadata?: {
+      onboardingComplete?: boolean;
+    };
+  }
+}

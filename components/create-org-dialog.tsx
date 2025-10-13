@@ -36,10 +36,6 @@ type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 interface CreateOrgDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /**
-   * Custom success handler. If provided, automatic redirect is disabled.
-   * Use this when you want to handle navigation differently (e.g., in sidebar switcher)
-   */
   onOrganizationCreated?: (slug: string) => void;
 }
 
@@ -59,13 +55,10 @@ export function CreateOrgDialog({
 
   const onSubmit = (data: OrganizationFormValues) => {
     createOrganization(data, {
-      redirectAfterCreate: !onOrganizationCreated, // Disable redirect if custom handler provided
       onSuccess: (slug) => {
-        // Close dialog and reset form
         onOpenChange(false);
         form.reset();
 
-        // Call custom handler if provided
         onOrganizationCreated?.(slug);
       },
     });

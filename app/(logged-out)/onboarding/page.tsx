@@ -25,12 +25,19 @@ import {
 } from '@/components/ui/form';
 import { useCreateOrganization } from '@/hooks/use-create-organization';
 import { createOrgFormSchema } from '@/lib/trpc/schemas/organizations';
+import { trpc } from '@/lib/trpc/client';
+import { useRouter } from 'next/navigation';
 
 type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 
 export default function OnboardingPage() {
-  const { isLoaded } = useUser();
+  const router = useRouter();
+  const { isLoaded, user } = useUser();
   const { createOrganization, isCreating } = useCreateOrganization();
+  const { mutateAsync: updateUserPublicMetadata, isPending } =
+    trpc.user.updateUserPublicMetadata.useMutation();
+
+  const isSubmitting = isCreating || isPending;
 
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(createOrgFormSchema),
@@ -40,7 +47,13 @@ export default function OnboardingPage() {
   });
 
   const onSubmit = (data: OrganizationFormValues) => {
-    createOrganization(data);
+    createOrganization(data, {
+      onSuccess: async (slug) => {
+        await updateUserPublicMetadata({ publicMetadata: { onboardingComplete: true } });
+        await user?.reload(); // Reload user to refresh session with updated metadata
+        router.push(`/org/${slug}/dashboard`);
+      },
+    });
   };
 
   if (!isLoaded) {
@@ -71,7 +84,7 @@ export default function OnboardingPage() {
                   <FormItem>
                     <FormLabel>Workspace Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Acme Inc." {...field} disabled={isCreating} autoFocus />
+                      <Input placeholder="Acme Inc." {...field} disabled={isSubmitting} autoFocus />
                     </FormControl>
                     <FormDescription>
                       This is your organization&apos;s visible name. You can change it later.
@@ -81,8 +94,8 @@ export default function OnboardingPage() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={isCreating}>
-                {isCreating ? (
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Creating workspace...

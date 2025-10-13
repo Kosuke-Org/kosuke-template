@@ -15,6 +15,7 @@ import {
   notificationSettingsSchema,
   uploadProfileImageSchema,
   updateDisplayNameSchema,
+  updateUserPublicMetadataSchema,
 } from '../schemas/user';
 
 export const userRouter = router({
@@ -172,6 +173,21 @@ export const userRouter = router({
         success: true,
         displayName: input.displayName,
         message: 'Display name updated successfully',
+      };
+    }),
+
+  updateUserPublicMetadata: protectedProcedure
+    .input(updateUserPublicMetadataSchema)
+    .mutation(async ({ input, ctx }) => {
+      const clerk = await clerkClient();
+      await clerk.users.updateUser(ctx.userId, input);
+
+      const updatedUser = await clerk.users.getUser(ctx.userId);
+      await syncUserFromClerk(updatedUser);
+
+      return {
+        success: true,
+        message: 'User public metadata updated successfully',
       };
     }),
 });

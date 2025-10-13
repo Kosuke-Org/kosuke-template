@@ -21,3 +21,9 @@ export const uploadProfileImageSchema = z.object({
 export const updateDisplayNameSchema = z.object({
   displayName: z.string().min(1, 'Display name is required').max(100),
 });
+
+export const updateUserPublicMetadataSchema = z.object({
+  publicMetadata: z.object({
+    onboardingComplete: z.boolean().optional().default(false),
+  }),
+});

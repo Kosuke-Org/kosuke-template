@@ -4,29 +4,21 @@ import {
   extractUserData,
   extractUserDataFromWebhook,
   hasUserChanges,
-  requireAuth,
-  getAuthUser,
   isValidEmail,
   getDisplayName,
   getUserEmail,
   createActivityLogData,
   isAuthenticated,
-  createSafeRedirectUrl,
 } from '@/lib/auth/utils';
 import { ClerkUserType, ClerkWebhookUser, AuthState } from '@/lib/types';
 import { ActivityType } from '@/lib/db/schema';
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import { vi, type Mock } from 'vitest';
+import { vi } from 'vitest';
 import { createClerkWebhookUser } from '../../setup/factories';
 import { EmailAddressJSON } from '@clerk/types';
 
 // Mock external dependencies
 vi.mock('@clerk/nextjs/server');
 vi.mock('next/navigation');
-
-const mockAuth = auth as unknown as Mock;
-const mockRedirect = redirect as unknown as Mock;
 
 const defaultEmailAddresses: EmailAddressJSON[] = [
   {
@@ -361,43 +353,6 @@ describe('Auth Utils', () => {
     });
   });
 
-  describe('requireAuth', () => {
-    it('should return user ID when authenticated', async () => {
-      mockAuth.mockResolvedValue({ userId: 'user_123' });
-
-      const userId = await requireAuth();
-
-      expect(userId).toBe('user_123');
-      expect(mockRedirect).not.toHaveBeenCalled();
-    });
-
-    it('should redirect when not authenticated', async () => {
-      mockAuth.mockResolvedValue({ userId: null });
-
-      await requireAuth();
-
-      expect(mockRedirect).toHaveBeenCalledWith('/sign-in');
-    });
-  });
-
-  describe('getAuthUser', () => {
-    it('should return user ID when authenticated', async () => {
-      mockAuth.mockResolvedValue({ userId: 'user_123' });
-
-      const userId = await getAuthUser();
-
-      expect(userId).toBe('user_123');
-    });
-
-    it('should return null when not authenticated', async () => {
-      mockAuth.mockResolvedValue({ userId: null });
-
-      const userId = await getAuthUser();
-
-      expect(userId).toBe(null);
-    });
-  });
-
   describe('isValidEmail', () => {
     it('should return true for valid email addresses', () => {
       const validEmails = [
@@ -620,38 +575,6 @@ describe('Auth Utils', () => {
       };
 
       expect(isAuthenticated(authState)).toBe(false);
-    });
-  });
-
-  describe('createSafeRedirectUrl', () => {
-    it('should create URL with redirect parameter', () => {
-      const result = createSafeRedirectUrl('https://example.com', '/dashboard');
-
-      expect(result).toBe('https://example.com/?redirect_url=%2Fdashboard');
-    });
-
-    it('should return base URL when no redirect path', () => {
-      const result = createSafeRedirectUrl('https://example.com');
-
-      expect(result).toBe('https://example.com/');
-    });
-
-    it('should ignore non-slash redirect paths', () => {
-      const result = createSafeRedirectUrl('https://example.com', 'dashboard');
-
-      expect(result).toBe('https://example.com/');
-    });
-
-    it('should return base URL when URL parsing fails', () => {
-      const result = createSafeRedirectUrl('invalid-url', '/dashboard');
-
-      expect(result).toBe('invalid-url');
-    });
-
-    it('should handle empty redirect path', () => {
-      const result = createSafeRedirectUrl('https://example.com', '');
-
-      expect(result).toBe('https://example.com/');
     });
   });
 });

@@ -12,10 +12,8 @@ export function useAuthActions() {
 
   const signOutMutation = useMutation({
     mutationFn: async () => {
+      router.push('/');
       await signOut();
-    },
-    onSuccess: () => {
-      router.replace('/');
     },
     onError: (error) => {
       console.error('Error signing out:', error);

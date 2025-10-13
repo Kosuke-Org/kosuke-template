@@ -5,10 +5,9 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useOrganizations } from '@/hooks/use-organizations';
+import { useOrganizationList } from '@clerk/nextjs';
 import { useToast } from '@/hooks/use-toast';
+import { trpc } from '@/lib/trpc/client';
 
 interface CreateOrganizationOptions {
   onSuccess?: (slug: string) => void;
@@ -17,49 +16,41 @@ interface CreateOrganizationOptions {
 }
 
 export function useCreateOrganization() {
-  const router = useRouter();
   const { toast } = useToast();
-  const { createOrganizationAsync } = useOrganizations();
-  const [isCreating, setIsCreating] = useState(false);
+  const { setActive } = useOrganizationList();
+  const utils = trpc.useUtils();
 
-  const createOrganization = async (
-    data: { name: string },
-    options?: CreateOrganizationOptions
-  ) => {
-    setIsCreating(true);
-
-    try {
-      const result = await createOrganizationAsync({
-        name: data.name,
-      });
-
+  const mutation = trpc.organizations.createOrganization.useMutation({
+    onSuccess: (data) => {
       toast({
         title: 'Success!',
         description: 'Your workspace has been created.',
       });
-
-      // Organization is now immediately synced to local database
-      // No need to wait for webhook
-      if (options?.redirectAfterCreate !== false) {
-        router.push(`/org/${result.slug}/dashboard`);
-      }
-
-      options?.onSuccess?.(result.slug);
-      setIsCreating(false);
-    } catch (error) {
-      console.error('Error creating organization:', error);
+      setActive?.({ organization: data.slug });
+      utils.organizations.getUserOrganizations.refetch();
+    },
+    onError: (error) => {
+      console.error('Failed to create workspace', error);
       toast({
         title: 'Error',
         description: 'Failed to create workspace. Please try again.',
         variant: 'destructive',
       });
-      setIsCreating(false);
-      options?.onError?.(error);
-    }
+    },
+  });
+
+  const handleCreateOrganization = (
+    data: { name: string },
+    options?: CreateOrganizationOptions
+  ) => {
+    mutation.mutate(data, {
+      onSuccess: (result) => options?.onSuccess?.(result.slug),
+      onError: (error) => options?.onError?.(error),
+    });
   };
 
   return {
-    createOrganization,
-    isCreating,
+    createOrganization: handleCreateOrganization,
+    isCreating: mutation.isPending,
   };
 }

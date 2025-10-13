@@ -55,12 +55,6 @@ export async function sendEmail({
   }
 }
 
-// Utility function to validate email address
-export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
 // Utility function to render React Email component to HTML for preview
 export async function renderEmailToHtml(component: React.ReactElement): Promise<string> {
   return await render(component);
