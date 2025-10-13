@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { clerkMiddleware, ClerkMiddlewareAuth, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Define public routes that don't require authentication
@@ -23,8 +23,7 @@ const isOnboardingRoute = createRouteMatcher(['/onboarding']);
 const isRootRoute = createRouteMatcher(['/']);
 const isApiRoute = createRouteMatcher(['/api(.*)']);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const baseMiddleware = async (auth: any, req: NextRequest) => {
+export const baseMiddleware = async (auth: ClerkMiddlewareAuth, req: NextRequest) => {
   // API routes handle their own authentication via protectedProcedures
   if (isApiRoute(req)) return NextResponse.next();
 

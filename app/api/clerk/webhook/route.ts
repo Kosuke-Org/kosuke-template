@@ -21,6 +21,7 @@ import type {
   ClerkMembershipWebhook,
   ClerkWebhookUser,
 } from '@/lib/types';
+import { clerkClient } from '@clerk/nextjs/server';
 
 export async function POST(req: NextRequest) {
   console.log('🔔 Clerk webhook received');
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
         await handleMembershipDeleted(eventData as unknown as ClerkMembershipWebhook);
         break;
 
-      // Invitation events (logged only)
+      // Invitation events
       case 'organizationInvitation.created':
         console.log('📧 Organization invitation created');
         break;
@@ -343,6 +344,30 @@ async function handleMembershipCreated(membershipData: ClerkMembershipWebhook) {
 
   try {
     await syncMembershipFromWebhook(membershipData);
+
+    // Check if this membership was created via invitation acceptance
+    // If so, ensure the user has onboardingComplete set in their metadata
+    // NOTE: This is a fallback in case Clerk's automatic metadata transfer didn't work
+    if (membershipData.public_user_data?.user_id) {
+      const userId = membershipData.public_user_data.user_id;
+      const clerk = await clerkClient();
+
+      try {
+        const user = await clerk.users.getUser(userId);
+
+        // If the user doesn't have onboardingComplete set yet,
+        // and they joined an organization (likely via invitation),
+        // set it now to skip the onboarding flow
+        if (!user.publicMetadata?.onboardingComplete) {
+          await clerk.users.updateUserMetadata(userId, {
+            publicMetadata: { ...user.publicMetadata, onboardingComplete: true },
+          });
+        }
+      } catch (error) {
+        console.error('Error updating user metadata:', error);
+      }
+    }
+
     console.log(`✅ Membership created: ${membershipData.id}`);
   } catch (error) {
     console.error('💥 Error in handleMembershipCreated:', error);

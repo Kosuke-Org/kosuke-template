@@ -180,7 +180,7 @@ export const userRouter = router({
     .input(updateUserPublicMetadataSchema)
     .mutation(async ({ input, ctx }) => {
       const clerk = await clerkClient();
-      await clerk.users.updateUser(ctx.userId, input);
+      await clerk.users.updateUserMetadata(ctx.userId, input);
 
       const updatedUser = await clerk.users.getUser(ctx.userId);
       await syncUserFromClerk(updatedUser);

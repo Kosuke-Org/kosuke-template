@@ -9,6 +9,7 @@ export const SYNC_INTERVALS = {
 export const AUTH_ROUTES = {
   SIGN_IN: '/sign-in',
   SIGN_UP: '/sign-up',
+  ONBOARDING: '/onboarding',
   HOME: '/home',
   SETTINGS: '/settings',
 } as const;

@@ -396,7 +396,10 @@ export const organizationsRouter = router({
       emailAddress: input.email,
       role: input.role,
       inviterUserId: ctx.userId,
-      redirectUrl: `${appUrl}/org/${org.slug}/dashboard`,
+      redirectUrl: `${appUrl}/sign-in`,
+      publicMetadata: {
+        onboardingComplete: true,
+      },
     });
 
     return {

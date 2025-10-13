@@ -127,6 +127,7 @@ This template includes automatic database branching for pull request previews us
 - **💰 Cost-Effective**: Neon branches use copy-on-write storage
 
 **How It Works**:
+
 - Vercel automatically creates Neon branch for each PR
 - `prebuild` script runs migrations before build
 - Works for both preview and production deployments
