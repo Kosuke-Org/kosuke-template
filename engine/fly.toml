@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for engine-service-thrumming-meadow-7066 on 2025-10-08T00:54:42+02:00
+# fly.toml app configuration file generated for engine-service-thrumming-meadow-7066 on 2025-10-13T18:50:05+02:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -9,8 +9,8 @@ primary_region = 'fra'
 [build]
 
 [env]
-  PORT = '8000'
   ENVIRONMENT = 'production'
+  PORT = '8000'
 
 [http_service]
   internal_port = 8000
