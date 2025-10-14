@@ -83,6 +83,8 @@ strict_optional = true
 disallow_untyped_calls = false
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+namespace_packages = false
+explicit_package_bases = false
 
 # ==== ruff ====
 [tool.ruff]
