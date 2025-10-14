@@ -31,11 +31,15 @@ export const baseMiddleware = async (auth: ClerkMiddlewareAuth, req: NextRequest
   const { url: reqUrl } = req;
   const isOnboardingComplete = sessionClaims?.publicMetadata?.onboardingComplete;
 
+  // If user has an organization, redirect to dashboard (regardless of onboarding status)
+  if (isAuthenticated && orgSlug) {
+    if (reqUrl.includes(`/org/${orgSlug}/`)) return NextResponse.next();
+
+    if (isPublicRoute(req) && !isRootRoute(req)) return NextResponse.next();
+    return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, reqUrl));
+  }
+
   if (isAuthenticated && isOnboardingRoute(req)) {
-    // If onboarding is complete and orgSlug is set, redirect to dashboard
-    if (isOnboardingComplete && orgSlug) {
-      return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, reqUrl));
-    }
     return NextResponse.next();
   }
 
@@ -48,10 +52,8 @@ export const baseMiddleware = async (auth: ClerkMiddlewareAuth, req: NextRequest
   }
 
   if (isAuthenticated && isRootRoute(req)) {
-    if (orgSlug) return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, reqUrl));
-
-    // If no active org but onboarding complete, let them see the root page
-    // (they can create/join orgs from there)
+    // User is authenticated and onboarding complete, but no org
+    // Let them see the root page (they can create/join orgs from there)
     return NextResponse.next();
   }
 

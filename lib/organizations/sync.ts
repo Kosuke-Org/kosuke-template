@@ -4,7 +4,7 @@
  */
 
 import { db } from '@/lib/db';
-import { organizations, orgMemberships, activityLogs } from '@/lib/db/schema';
+import { organizations, orgMemberships, activityLogs, users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { clerkClient } from '@clerk/nextjs/server';
 import {
@@ -24,6 +24,7 @@ import type {
 } from '@/lib/types';
 
 import { ActivityType } from '@/lib/db/schema';
+import { syncUserFromClerk } from '@/lib/auth';
 
 /**
  * Sync organization from Clerk API
@@ -226,6 +227,20 @@ export async function syncMembershipFromWebhook(
     }
 
     const userId = data.public_user_data.user_id;
+
+    // CRITICAL: Ensure user exists in our database before creating membership
+    // This handles webhook race condition where organizationMembership.created
+    // fires before user.created webhook
+    const userExists = await db.query.users.findFirst({ where: eq(users.clerkUserId, userId) });
+
+    if (!userExists) {
+      console.log('User not found in database, fetching from Clerk...');
+      const clerk = await clerkClient();
+      const clerkUser = await clerk.users.getUser(userId);
+      await syncUserFromClerk(clerkUser);
+      console.log('User synced, proceeding with membership creation');
+    }
+
     const existingMembership = await getMembershipByClerkId(data.id);
 
     const membershipData: Partial<NewOrgMembership> = {
