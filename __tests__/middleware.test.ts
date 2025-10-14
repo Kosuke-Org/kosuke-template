@@ -88,6 +88,18 @@ describe('middleware', () => {
     expect(res?.url).toContain('/org/test-org/dashboard');
   });
 
+  it('redirects authenticated invited users without onboarding but with an org to the org dashboard', async () => {
+    const mockAuth = vi.fn().mockResolvedValue({
+      isAuthenticated: true,
+      sessionClaims: { publicMetadata: { onboardingComplete: false } },
+      orgSlug: 'test-org',
+    }) as unknown as ClerkMiddlewareAuth;
+
+    const res = await middleware(mockAuth, makeReq('/dashboard'));
+    expect(res?.type).toBe('redirect');
+    expect(res?.url).toContain('/org/test-org/dashboard');
+  });
+
   it('calls NextResponse.next() for API routes', async () => {
     const mockAuth = vi.fn().mockResolvedValue({}) as unknown as ClerkMiddlewareAuth;
     const res = await middleware(mockAuth, makeReq('/api/user'));
