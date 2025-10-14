@@ -33,8 +33,7 @@ export const baseMiddleware = async (auth: ClerkMiddlewareAuth, req: NextRequest
 
   // If user has an organization, redirect to dashboard (regardless of onboarding status)
   if (isAuthenticated && orgSlug) {
-    if (reqUrl.includes(`/org/${orgSlug}/`)) return NextResponse.next();
-
+    if (reqUrl.includes(`/org`)) return NextResponse.next();
     if (isPublicRoute(req) && !isRootRoute(req)) return NextResponse.next();
     return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, reqUrl));
   }
