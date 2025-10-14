@@ -17,6 +17,7 @@ Create accounts with these services (all have free tiers):
 | **GitHub** | Source code hosting     | Yes             | [github.com](https://github.com) |
 | **Vercel** | Application hosting     | Yes (Hobby)     | [vercel.com](https://vercel.com) |
 | **Neon**   | PostgreSQL database     | Yes (3 GB)      | Via Vercel integration           |
+| **Fly.io** | Microservice hosting    | Yes (3 VMs)     | [fly.io](https://fly.io)         |
 | **Polar**  | Billing & subscriptions | Sandbox mode    | [polar.sh](https://polar.sh)     |
 | **Clerk**  | Authentication          | Yes (10k MAUs)  | [clerk.com](https://clerk.com)   |
 | **Resend** | Email delivery          | Yes (100/day)   | [resend.com](https://resend.com) |
@@ -314,7 +315,144 @@ The template includes Sentry configuration with:
 
 Adjust sample rates in `sentry.*.config.ts` if needed.
 
-## Step 8: Add Environment Variables
+## Step 8: Deploy Engine Microservice (Fly.io)
+
+The template includes a Python FastAPI microservice that runs on Fly.io. This service provides additional backend functionality and can be extended with custom business logic.
+
+### Install Fly CLI
+
+**macOS:**
+
+```bash
+curl -L https://fly.io/install.sh | sh
+```
+
+**Windows (PowerShell):**
+
+```powershell
+pwsh -Command "iwr https://fly.io/install.ps1 -useb | iex"
+```
+
+**Linux:**
+
+```bash
+curl -L https://fly.io/install.sh | sh
+```
+
+Verify installation:
+
+```bash
+fly version
+```
+
+### Create Fly.io Account
+
+1. Sign up at [fly.io](https://fly.io/app/sign-up)
+2. Log in via CLI:
+
+```bash
+fly auth login
+```
+
+### Deploy Engine Service
+
+1. Navigate to engine directory:
+
+```bash
+cd engine
+```
+
+2. Launch application:
+
+```bash
+fly launch
+```
+
+3. Configure deployment:
+   - **App name**: `your-project-engine` (or use auto-generated)
+   - **Region**: Choose closest to users (same as Neon database)
+   - **PostgreSQL**: No (we use Neon)
+   - **Redis**: No (unless needed)
+   - **Deploy now**: No (set secrets first)
+
+4. Copy your app URL: `https://your-project-engine.fly.dev`
+
+### Set Environment Variables
+
+Set secrets for the engine service via CLI:
+
+```bash
+# Sentry monitoring (use same DSN as main app)
+fly secrets set SENTRY_DSN=https://hash@region.ingest.sentry.io/project-id
+
+# Frontend URL for CORS configuration
+fly secrets set FRONTEND_URL=https://your-project-name.vercel.app
+
+# API secret key for authentication (generate with: openssl rand -base64 32)
+fly secrets set API_SECRET_KEY=<random-secure-token>
+```
+
+**Generate secure API key:**
+
+```bash
+openssl rand -base64 32
+```
+
+**Alternative: Set via Fly.io Dashboard:**
+
+You can also manage secrets through the web UI:
+
+1. Go to [fly.io/dashboard](https://fly.io/dashboard)
+2. Select your app → **Secrets**
+3. Click **Add Secret** for each variable
+4. Enter **Name** and **Value**
+5. Click **Set Secret**
+
+:::tip
+CLI secrets automatically trigger a deployment. Dashboard secrets require manual deployment via `fly deploy` or the UI.
+:::
+
+### Deploy
+
+```bash
+fly deploy
+```
+
+Wait for deployment to complete (~2-3 minutes).
+
+### Verify Deployment
+
+Test health endpoint:
+
+```bash
+curl https://your-project-engine.fly.dev/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "healthy",
+  "service": "engine-service",
+  "timestamp": "2025-10-14T10:00:00.000000"
+}
+```
+
+Visit API docs: `https://your-project-engine.fly.dev/docs`
+
+### Fly.io Configuration
+
+The engine is configured to:
+
+- **Auto-scale**: Scales to 0 when idle (free tier friendly)
+- **Auto-start**: Starts on first request (2-3s cold start)
+- **Health checks**: Monitors `/health` endpoint every 30s
+- **HTTPS**: Forced HTTPS with automatic certificates
+- **Region**: Deploys to your selected region
+
+**Cost**: Free tier includes 3 shared-cpu VMs with 256MB RAM each.
+
+## Step 9: Add Environment Variables
 
 ### Navigate to Vercel
 
@@ -356,6 +494,9 @@ NEXT_PUBLIC_SENTRY_DSN=https://...@....ingest.sentry.io/...
 RESEND_API_KEY=re_...
 RESEND_FROM_EMAIL=onboarding@resend.dev
 RESEND_FROM_NAME=Your Project Name
+
+# Engine Microservice
+ENGINE_BASE_URL=https://your-project-engine.fly.dev
 
 # Application
 NEXT_PUBLIC_APP_URL=https://your-project-name.vercel.app
@@ -440,8 +581,17 @@ Value: cname.vercel-dns.com
 
 #### Update Environment Variables
 
+**Vercel:**
+
 ```bash
 NEXT_PUBLIC_APP_URL=https://yourdomain.com
+# ENGINE_BASE_URL remains the same (Fly.io subdomain)
+```
+
+**Fly.io Engine:**
+
+```bash
+fly secrets set FRONTEND_URL=https://yourdomain.com
 ```
 
 #### Update Service Webhooks

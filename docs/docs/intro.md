@@ -10,6 +10,7 @@ slug: /
 ## 🚀 Tech Stack
 
 - **Next.js 15** (App Router) + **React 19** + **TypeScript**
+- **FastAPI** (Python) - Microservice backend on Fly.io for extensible business logic
 - **Clerk** - Authentication with Organizations, teams, and roles
 - **PostgreSQL** (Neon) + **Drizzle ORM** - Type-safe database with auto migrations
 - **Polar** - Subscription billing with sandbox testing
@@ -36,6 +37,7 @@ Quick reference for all integrated services:
 | **Polar**  | Billing & Subscriptions | Sandbox mode | [polar.sh/dashboard](https://polar.sh/dashboard)   |
 | **Neon**   | PostgreSQL Database     | 3 GB         | [console.neon.tech](https://console.neon.tech)     |
 | **Vercel** | Application Hosting     | Unlimited    | [vercel.com](https://vercel.com)                   |
+| **Fly.io** | Microservice Hosting    | 3 VMs        | [fly.io/dashboard](https://fly.io/dashboard)       |
 | **Resend** | Email Delivery          | 3k emails/mo | [resend.com](https://resend.com)                   |
 | **Sentry** | Error Monitoring        | 5k events/mo | [sentry.io](https://sentry.io)                     |
 
@@ -45,6 +47,7 @@ Quick reference for all integrated services:
 - **Polar**: Ready for real payments (switch to production)
 - **Neon**: > 3 GB storage or need dedicated compute
 - **Vercel**: > 100 GB bandwidth or need team features
+- **Fly.io**: Need more than 3 VMs or dedicated compute
 - **Resend**: > 3,000 emails/month
 - **Sentry**: Exceeding error or performance event limits
 
@@ -90,11 +93,22 @@ Vercel Blob storage for user content:
 - Admin-only access control for organization logos
 - Base64 upload via tRPC for seamless integration
 
+### Microservice Architecture
+
+Python FastAPI engine service on Fly.io:
+
+- Auto-scaling microservice (scales to zero when idle)
+- FastAPI with Pydantic validation and auto-generated docs
+- Sentry integration for error tracking and monitoring
+- UV for fast dependency management
+- Health checks and observability built-in
+- Extend with custom business logic as needed
+
 ### Error Monitoring
 
 Sentry integration for production confidence:
 
-- Automatic error tracking (client, server, API)
+- Automatic error tracking (client, server, API, microservices)
 - Performance monitoring with transaction tracking
 - Session replay for debugging (10% sample, 100% on errors)
 - Source maps for readable TypeScript stack traces
