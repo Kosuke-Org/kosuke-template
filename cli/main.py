@@ -812,10 +812,6 @@ class InteractiveSetup:
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY={self.progress.api_keys.get('clerk_publishable_key', 'pk_test_your_clerk_publishable_key_here')}
 CLERK_SECRET_KEY={self.progress.api_keys.get('clerk_secret_key', 'sk_test_your_clerk_secret_key_here')}
 CLERK_WEBHOOK_SECRET={self.progress.api_keys.get('clerk_webhook_secret', 'whsec_your_clerk_webhook_secret_here')}
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
 
 # ===================================
 # POLAR BILLING
@@ -882,10 +878,6 @@ POSTGRES_PASSWORD=postgres
 
 # Clerk
 # ------------------------------------------------------------------------------------
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY={self.progress.api_keys.get('clerk_publishable_key', 'pk_test_your_clerk_publishable_key_here')}
 CLERK_SECRET_KEY={self.progress.api_keys.get('clerk_secret_key', 'sk_test_your_clerk_secret_key_here')}
 CLERK_WEBHOOK_SECRET={self.progress.api_keys.get('clerk_webhook_secret', 'whsec_your_clerk_webhook_secret_here')}
