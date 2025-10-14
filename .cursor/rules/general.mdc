@@ -982,6 +982,140 @@ async function proxyToEngine<T>(endpoint: string, options: RequestInit = {}): Pr
 }
 ```
 
+### Python Pydantic Model Organization - MANDATORY
+
+**ALWAYS colocate Pydantic models with their corresponding API endpoint files. NEVER create a centralized models.py file.**
+
+#### **📁 Model Colocation Structure**
+
+```plaintext
+engine/
+├── main.py                    # FastAPI app + HealthResponse model (general)
+└── src/
+    └── api/
+        ├── markets.py         # LMSR endpoints + LMSR models
+        ├── modeling.py        # BTL endpoints + BTL models
+        ├── experiments.py     # Experiments endpoints + Experiments models
+        └── belief.py          # Belief endpoints + Belief models
+```
+
+**✅ CORRECT - Models colocated with endpoints:**
+
+```python
+# engine/src/api/markets.py
+"""LMSR market API endpoints."""
+
+from fastapi import APIRouter
+from pydantic import BaseModel, Field
+
+# ==== LMSR Models ====
+
+class LMSRState(BaseModel):
+    """LMSR market state."""
+    b: float = Field(..., gt=0, description="Liquidity parameter")
+    s: float = Field(..., description="State variable")
+
+class LMSRInitializeRequest(BaseModel):
+    """Request to initialize LMSR market."""
+    b: float = Field(..., gt=0, description="Liquidity parameter")
+
+class LMSRInitializeResponse(BaseModel):
+    """Response with initial LMSR state."""
+    lmsr_state: LMSRState
+    price: float
+
+# ==== API Routes ====
+
+router = APIRouter()
+
+@router.post("/lmsr/initialize", response_model=LMSRInitializeResponse)
+async def initialize_lmsr(request: LMSRInitializeRequest):
+    # Implementation
+    pass
+```
+
+**❌ WRONG - Centralized models.py:**
+
+```python
+# ❌ NO! Don't create a centralized models.py
+# engine/models.py
+class LMSRState(BaseModel):
+    pass
+
+class BTLParams(BaseModel):
+    pass
+
+class ExperimentRequest(BaseModel):
+    pass
+
+# ❌ NO! Don't import models from centralized file
+# engine/src/api/markets.py
+from models import LMSRState, LMSRInitializeRequest
+```
+
+#### **🔧 Organization Principles**
+
+**Model Placement:**
+- **API-specific models** → Colocate with their API endpoint file
+- **General utility models** → Define in main.py (e.g., HealthResponse)
+- **Never create separate model files** → Models live with their endpoints
+
+**Benefits:**
+- ✅ Better discoverability - Models are next to their usage
+- ✅ Clear ownership - Each endpoint owns its models
+- ✅ Easier refactoring - Change endpoint and models together
+- ✅ Reduced coupling - No central dependency file
+- ✅ Improved maintainability - Related code stays together
+
+**Import Organization:**
+
+```python
+# Always import from the API module that owns the models
+from src.api.markets import LMSRState, LMSRInitializeRequest
+from src.api.modeling import BTLParams, BTLRunRequest
+from src.api.experiments import ExperimentBTLRequest, RiskRank
+```
+
+**Model Sections:**
+- Use clear section headers: `# ==== LMSR Models ====`
+- Group related models together (requests, responses, shared types)
+- Place models at the top of the file, before route definitions
+- Keep models in logical order (state → request → response)
+
+**File Structure:**
+
+```python
+"""Module docstring."""
+
+# Standard library imports
+import logging
+
+# Third-party imports
+from fastapi import APIRouter
+from pydantic import BaseModel, Field
+
+# Local imports
+from src.some_module import SomeClass
+
+
+# ==== Models ====
+
+class RequestModel(BaseModel):
+    pass
+
+class ResponseModel(BaseModel):
+    pass
+
+
+# ==== API Routes ====
+
+router = APIRouter()
+
+@router.post("/endpoint")
+async def endpoint_handler(request: RequestModel) -> ResponseModel:
+    pass
+```
+
 ### Mutation Design Guideline (MANDATORY)
 
 - Prefer a single, general `update` mutation per resource. If an `update` exists, do NOT add specialized mutations like `updatePriority`, `updateStatus`, `toggleComplete`, etc. Send only changed fields (partial input) to `update` and let the server handle patch semantics. This keeps the API surface small, maximizes type reuse, and simplifies caching/invalidations.

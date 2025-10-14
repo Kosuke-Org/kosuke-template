@@ -22,7 +22,8 @@ engine/
 ├── main.py                    # FastAPI application with endpoints
 ├── models.py                  # Pydantic models for request/response validation
 ├── src/                       # Source code
-│   └── currency_converter.py  # Example algorithm module
+│   └── api                    # Example API endpoint
+         └── currency.py       # Example algorithm module
 ├── pyproject.toml             # UV project configuration and dependencies
 ├── Dockerfile                 # Container configuration for Fly.io
 ├── fly.toml                   # Fly.io deployment configuration

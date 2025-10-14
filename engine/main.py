@@ -5,15 +5,20 @@ from datetime import datetime
 import sentry_sdk
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from pydantic import BaseModel
+from pydantic import Field
 from sentry_sdk.integrations.fastapi import FastApiIntegration
-from fastapi import HTTPException
 
-from models import ConvertRequest
-from models import ConvertResponse
-from models import HealthResponse
-from src.currency_converter import EXCHANGE_RATES
-from src.currency_converter import Currency
-from src.currency_converter import convert_currency
+from src.api.currency import router as currency_router
+
+
+class HealthResponse(BaseModel):
+    """Health check response model."""
+
+    status: str = Field(..., description="Service health status")
+    service: str = Field(..., description="Service name")
+    timestamp: str = Field(..., description="Response timestamp")
+
 
 load_dotenv()
 
@@ -37,6 +42,8 @@ app = FastAPI(
     title="Engine Service", description="Core engine service for Kosuke Template", version="1.0.0"
 )
 
+app.include_router(currency_router)
+
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
@@ -54,33 +61,6 @@ async def root() -> dict[str, str | dict[str, str]]:
         "version": "1.0.0",
         "endpoints": {"health": "/health", "convert": "/convert", "docs": "/docs"},
     }
-
-
-@app.post("/convert", response_model=ConvertResponse)
-async def convert_endpoint(payload: ConvertRequest) -> ConvertResponse:
-    """Convert currency from one to another using the engine module.
-
-    This is an example to illustrate how the engine can handle more complex operations"""
-    try:
-        from_curr = Currency(payload.from_currency.upper())
-        to_curr = Currency(payload.to_currency.upper())
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="Invalid currency code") from exc
-
-    try:
-        converted_amount = convert_currency(payload.amount, from_curr, to_curr)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    # Calculate exchange rate for display
-    exchange_rate = EXCHANGE_RATES[to_curr.value] / EXCHANGE_RATES[from_curr.value]
-
-    return ConvertResponse(
-        converted_amount=converted_amount,
-        from_currency=from_curr.value,
-        to_currency=to_curr.value,
-        exchange_rate=round(exchange_rate, 4),
-    )
 
 
 if __name__ == "__main__":
