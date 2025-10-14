@@ -26,10 +26,10 @@ function HomepageHeader() {
           </Link>
           <Link
             className="button button--outline button--secondary button--lg"
-            to="/docs/architecture/tech-stack"
+            to="/docs/getting-started/architecture"
             style={{ marginLeft: '1rem' }}
           >
-            View Architecture 📖
+            Learn More 📖
           </Link>
         </div>
       </div>

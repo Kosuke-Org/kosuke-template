@@ -66,25 +66,17 @@ Kosuke Template is perfect for:
 
 This documentation is organized to guide you from understanding to deployment:
 
-### 🏗️ [Architecture](architecture/tech-stack)
+### 🏁 [Getting Started](getting-started/architecture)
 
-Understand the technical stack, project structure, database schema, and authentication flow.
-
-### ✨ [Features](features/organizations)
-
-Deep dive into organizations, billing, email system, file uploads, and error monitoring.
+Understand Kosuke Template's architecture, features, and the services that power it. No code, just concepts.
 
 ### 🚀 [Deployment](deployment/full-deployment-guide)
 
-Complete deployment guide from forking to production, including all service configuration.
-
-### 📖 [Services Reference](services)
-
-Quick reference for Clerk, Polar, Neon, Vercel, Resend, and Sentry with common operations.
+Complete step-by-step deployment guide from forking to production, with all service configuration details.
 
 ### 📋 [Reference](reference/commands)
 
-Commands, environment variables, and troubleshooting guide.
+Technical reference with commands, environment variables, and troubleshooting.
 
 ## 🌟 Key Features
 
@@ -111,13 +103,10 @@ Error monitoring with Sentry, automated testing with Vitest, and comprehensive l
 ## 🚦 Quick Start
 
 **Want to use Kosuke Template for your SaaS?**  
-→ Follow the [Complete Deployment Guide](deployment/full-deployment-guide) to deploy in 60-90 minutes.
+→ Start with [Getting Started](getting-started/architecture) to understand what's included, then follow the [Deployment Guide](deployment/full-deployment-guide) to deploy in 60-90 minutes.
 
 **Want to contribute to Kosuke Template?**  
-→ See the [Contributing Guide](https://github.com/filopedraz/kosuke-template#-contributing) in the README.
-
-**Want to understand the architecture?**  
-→ Explore [Architecture](architecture/tech-stack) and [Features](features/organizations) sections.
+→ See the [Contributing Guide](https://github.com/filopedraz/kosuke-template#-contributing) in the README for local development setup.
 
 ## 🤝 Community & Support
 

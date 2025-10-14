@@ -107,4 +107,4 @@ Learn about subscription management:
 
 ---
 
-**Questions?** Check the [Reference](../reference/commands) section.
+**Questions?** Check the [Reference](../../reference/commands) section.

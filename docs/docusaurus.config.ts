@@ -101,16 +101,16 @@ const config: Config = {
           title: 'Documentation',
           items: [
             {
-              label: 'Architecture',
-              to: '/docs/architecture/tech-stack',
-            },
-            {
-              label: 'Features',
-              to: '/docs/features/organizations',
+              label: 'Getting Started',
+              to: '/docs/getting-started/architecture',
             },
             {
               label: 'Deployment',
               to: '/docs/deployment/full-deployment-guide',
+            },
+            {
+              label: 'Reference',
+              to: '/docs/reference/commands',
             },
           ],
         },
@@ -118,25 +118,12 @@ const config: Config = {
           title: 'Resources',
           items: [
             {
-              label: 'Services Reference',
-              to: '/docs/services',
-            },
-            {
-              label: 'Commands',
-              to: '/docs/reference/commands',
-            },
-            {
-              label: 'Troubleshooting',
-              to: '/docs/reference/troubleshooting',
-            },
-          ],
-        },
-        {
-          title: 'Community',
-          items: [
-            {
               label: 'GitHub',
               href: 'https://github.com/filopedraz/kosuke-template',
+            },
+            {
+              label: 'Contributing',
+              href: 'https://github.com/filopedraz/kosuke-template#-contributing',
             },
             {
               label: 'Blog',

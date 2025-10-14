@@ -239,4 +239,4 @@ If you exceed free tier:
 
 Explore service reference documentation:
 
-👉 **[Services](../services/clerk)**
+👉 **[Services Reference](../getting-started/services)**
