@@ -215,12 +215,12 @@ CLERK_SECRET_KEY=sk_test_...
    - **Organization naming**: ✅ Allow custom names
    - **Default roles**: admin, member (recommended)
    - **Allow Personal Accounts**: ON
-   - **Sessions Claims __session**:
-      ```json
-      {
-         "publicMetadata": "{{user.public_metadata}}"
-      }
-      ```
+   - **Sessions Claims \_\_session**:
+     ```json
+     {
+       "publicMetadata": "{{user.public_metadata}}"
+     }
+     ```
    - **Enable Organization Slugs**: ON
 4. Click **Save**
 
@@ -482,6 +482,7 @@ Enables AI-powered PR reviews and issue assistance via Claude.
 - **Secret**: `sk-ant-api03-...`
 
 **Usage:**
+
 - Mention `@claude` in pull requests for code reviews
 - Mention `@claude` in issues for assistance
 - Automated PR analysis and suggestions
@@ -509,6 +510,7 @@ Or via dashboard:
 - **Secret**: `fo1_...`
 
 **Usage:**
+
 - Automatic engine deployment on main branch pushes
 - Preview deployments for pull requests
 
@@ -530,6 +532,7 @@ Optional: Enables additional AI-powered code review features.
 - **Secret**: `sk-...`
 
 **Usage:**
+
 - Enhanced PR review with Codex analysis
 - Code quality suggestions
 - Security vulnerability detection

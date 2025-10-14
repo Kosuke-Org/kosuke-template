@@ -45,6 +45,15 @@ const config: Config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl: 'https://github.com/filopedraz/kosuke-template/tree/main/docs/',
+          // Versioning configuration
+          lastVersion: 'current',
+          versions: {
+            current: {
+              label: 'Next 🚧',
+              path: 'next',
+              banner: 'unreleased',
+            },
+          },
         },
         blog: {
           showReadingTime: true,
@@ -88,6 +97,16 @@ const config: Config = {
         },
         { to: '/blog', label: 'Blog', position: 'left' },
         {
+          href: 'https://github.com/filopedraz/kosuke-template/releases',
+          label: 'Changelog',
+          position: 'left',
+        },
+        {
+          type: 'docsVersionDropdown',
+          position: 'right',
+          dropdownActiveClassDisabled: true,
+        },
+        {
           href: 'https://github.com/filopedraz/kosuke-template',
           label: 'GitHub',
           position: 'right',
@@ -124,6 +143,23 @@ const config: Config = {
             {
               label: 'Blog',
               to: '/blog',
+            },
+            {
+              label: 'Changelog',
+              href: 'https://github.com/filopedraz/kosuke-template/releases',
+            },
+          ],
+        },
+        {
+          title: 'More',
+          items: [
+            {
+              label: 'Releases',
+              href: 'https://github.com/filopedraz/kosuke-template/releases',
+            },
+            {
+              label: 'License',
+              href: 'https://github.com/filopedraz/kosuke-template/blob/main/LICENSE',
             },
           ],
         },

@@ -86,3 +86,23 @@ jobs:
           name: Release ${{ env.VERSION }}
           generate_release_notes: true
           token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            ## What's Changed
+
+            This release includes changes automatically categorized from merged pull requests.
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ env.VERSION }}
+
+            ### PR Label Categories:
+            - 🚀 **feature**: New features and enhancements
+            - 🐛 **bug**: Bug fixes and patches
+            - 📚 **documentation**: Documentation updates
+            - 🔧 **enhancement**: Improvements to existing features
+            - ⚡ **performance**: Performance improvements
+            - 🔒 **security**: Security fixes
+            - 💥 **breaking**: Breaking changes (requires migration)
+            - 🧹 **chore**: Maintenance and internal changes
+
+            ---
+
+            ${{ github.event.release.body }}

@@ -1,5 +1,9 @@
 # Kosuke Template
 
+[![GitHub Release](https://img.shields.io/github/v/release/filopedraz/kosuke-template?style=flat-square&logo=github&color=blue)](https://github.com/filopedraz/kosuke-template/releases)
+[![License](https://img.shields.io/github/license/filopedraz/kosuke-template?style=flat-square&color=green)](LICENSE)
+[![Documentation](https://img.shields.io/badge/docs-docs--template.kosuke.ai-blue?style=flat-square&logo=docusaurus)](https://docs-template.kosuke.ai)
+
 Production-ready Next.js 15 SaaS starter with Clerk Organizations, Polar Billing, and complete multi-tenant functionality.
 
 ## 📚 Documentation
