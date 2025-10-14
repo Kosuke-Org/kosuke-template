@@ -396,7 +396,12 @@ export const organizationsRouter = router({
       emailAddress: input.email,
       role: input.role,
       inviterUserId: ctx.userId,
-      redirectUrl: `${appUrl}/org/${org.slug}/dashboard`,
+      // we redirect to sign-in because Clerk's components handle the sign-in and sign-up for new users
+      redirectUrl: `${appUrl}/sign-in`,
+      publicMetadata: {
+        // this should be added to the user's metadata when they sign in
+        onboardingComplete: true,
+      },
     });
 
     return {

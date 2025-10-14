@@ -1,4 +1,4 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { clerkMiddleware, ClerkMiddlewareAuth, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Define public routes that don't require authentication
@@ -23,8 +23,7 @@ const isOnboardingRoute = createRouteMatcher(['/onboarding']);
 const isRootRoute = createRouteMatcher(['/']);
 const isApiRoute = createRouteMatcher(['/api(.*)']);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const baseMiddleware = async (auth: any, req: NextRequest) => {
+export const baseMiddleware = async (auth: ClerkMiddlewareAuth, req: NextRequest) => {
   // API routes handle their own authentication via protectedProcedures
   if (isApiRoute(req)) return NextResponse.next();
 
@@ -32,11 +31,14 @@ export const baseMiddleware = async (auth: any, req: NextRequest) => {
   const { url: reqUrl } = req;
   const isOnboardingComplete = sessionClaims?.publicMetadata?.onboardingComplete;
 
+  // If user has an organization, redirect to dashboard (regardless of onboarding status)
+  if (isAuthenticated && orgSlug) {
+    if (reqUrl.includes(`/org`)) return NextResponse.next();
+    if (isPublicRoute(req) && !isRootRoute(req)) return NextResponse.next();
+    return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, reqUrl));
+  }
+
   if (isAuthenticated && isOnboardingRoute(req)) {
-    // If onboarding is complete and orgSlug is set, redirect to dashboard
-    if (isOnboardingComplete && orgSlug) {
-      return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, reqUrl));
-    }
     return NextResponse.next();
   }
 
@@ -45,14 +47,6 @@ export const baseMiddleware = async (auth: any, req: NextRequest) => {
   if (isAuthenticated && !isOnboardingComplete) {
     // Prevent redirect loop - only redirect if not already on onboarding
     if (!isOnboardingRoute(req)) return NextResponse.redirect(new URL('/onboarding', reqUrl));
-    return NextResponse.next();
-  }
-
-  if (isAuthenticated && isRootRoute(req)) {
-    if (orgSlug) return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, reqUrl));
-
-    // If no active org but onboarding complete, let them see the root page
-    // (they can create/join orgs from there)
     return NextResponse.next();
   }
 

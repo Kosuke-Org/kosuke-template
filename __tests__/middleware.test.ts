@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { baseMiddleware as middleware } from '../middleware';
+import { ClerkMiddlewareAuth } from '@clerk/nextjs/server';
 
 vi.mock('next/server', async () => {
   const actual = await vi.importActual<typeof import('next/server')>('next/server');
@@ -40,7 +41,9 @@ describe('middleware', () => {
   const makeReq = (url: string) => new NextRequest(`http://localhost:3000${url}`);
 
   it('allows public routes for unauthenticated users', async () => {
-    const mockAuth = vi.fn().mockResolvedValue({ isAuthenticated: false });
+    const mockAuth = vi
+      .fn()
+      .mockResolvedValue({ isAuthenticated: false }) as unknown as ClerkMiddlewareAuth;
     const res = await middleware(mockAuth, makeReq('/terms'));
     expect(res).toEqual({ type: 'next' });
   });
@@ -54,7 +57,7 @@ describe('middleware', () => {
     const mockAuth = vi.fn().mockResolvedValue({
       isAuthenticated: false,
       redirectToSignIn,
-    });
+    }) as unknown as ClerkMiddlewareAuth;
 
     const res = await middleware(mockAuth, makeReq('/dashboard'));
     expect(redirectToSignIn).toHaveBeenCalled();
@@ -66,7 +69,7 @@ describe('middleware', () => {
     const mockAuth = vi.fn().mockResolvedValue({
       isAuthenticated: true,
       sessionClaims: { publicMetadata: { onboardingComplete: false } },
-    });
+    }) as unknown as ClerkMiddlewareAuth;
 
     const res = await middleware(mockAuth, makeReq('/dashboard'));
     expect(res?.type).toBe('redirect');
@@ -78,15 +81,27 @@ describe('middleware', () => {
       isAuthenticated: true,
       sessionClaims: { publicMetadata: { onboardingComplete: true } },
       orgSlug: 'test-org',
-    });
+    }) as unknown as ClerkMiddlewareAuth;
 
     const res = await middleware(mockAuth, makeReq('/'));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/org/test-org/dashboard');
   });
 
+  it('redirects authenticated invited users without onboarding but with an org to the org dashboard', async () => {
+    const mockAuth = vi.fn().mockResolvedValue({
+      isAuthenticated: true,
+      sessionClaims: { publicMetadata: { onboardingComplete: false } },
+      orgSlug: 'test-org',
+    }) as unknown as ClerkMiddlewareAuth;
+
+    const res = await middleware(mockAuth, makeReq('/dashboard'));
+    expect(res?.type).toBe('redirect');
+    expect(res?.url).toContain('/org/test-org/dashboard');
+  });
+
   it('calls NextResponse.next() for API routes', async () => {
-    const mockAuth = vi.fn().mockResolvedValue({});
+    const mockAuth = vi.fn().mockResolvedValue({}) as unknown as ClerkMiddlewareAuth;
     const res = await middleware(mockAuth, makeReq('/api/user'));
     expect(res).toEqual({ type: 'next' });
   });

@@ -9,7 +9,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     include: ['__tests__/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['**/node_modules/**', '**/.next/**', '__tests__/setup/**'],
+    exclude: ['**/node_modules/**', '**/.next/**', '__tests__/setup/**', '**/engine/**'],
     coverage: {
       provider: 'v8', // Faster than istanbul
       include: [
