@@ -59,7 +59,7 @@ describe('middleware', () => {
       redirectToSignIn,
     }) as unknown as ClerkMiddlewareAuth;
 
-    const res = await middleware(mockAuth, makeReq('/dashboard'));
+    const res = await middleware(mockAuth, makeReq('/settings'));
     expect(redirectToSignIn).toHaveBeenCalled();
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/sign-in');
@@ -71,7 +71,7 @@ describe('middleware', () => {
       sessionClaims: { publicMetadata: { onboardingComplete: false } },
     }) as unknown as ClerkMiddlewareAuth;
 
-    const res = await middleware(mockAuth, makeReq('/dashboard'));
+    const res = await middleware(mockAuth, makeReq('/settings'));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/onboarding');
   });
@@ -95,7 +95,7 @@ describe('middleware', () => {
       orgSlug: 'test-org',
     }) as unknown as ClerkMiddlewareAuth;
 
-    const res = await middleware(mockAuth, makeReq('/dashboard'));
+    const res = await middleware(mockAuth, makeReq('/'));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/org/test-org/dashboard');
   });

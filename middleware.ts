@@ -21,6 +21,7 @@ const isPublicRoute = createRouteMatcher([
 
 const isOnboardingRoute = createRouteMatcher(['/onboarding']);
 const isRootRoute = createRouteMatcher(['/']);
+const isProtectedRoute = createRouteMatcher(['/org(.*)', '/settings(.*)']);
 const isApiRoute = createRouteMatcher(['/api(.*)']);
 
 export const baseMiddleware = async (auth: ClerkMiddlewareAuth, req: NextRequest) => {
@@ -33,7 +34,7 @@ export const baseMiddleware = async (auth: ClerkMiddlewareAuth, req: NextRequest
 
   // If user has an organization, redirect to dashboard (regardless of onboarding status)
   if (isAuthenticated && orgSlug) {
-    if (reqUrl.includes(`/org`)) return NextResponse.next();
+    if (isProtectedRoute(req)) return NextResponse.next();
     if (isPublicRoute(req) && !isRootRoute(req)) return NextResponse.next();
     return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, reqUrl));
   }
