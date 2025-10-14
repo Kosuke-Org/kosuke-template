@@ -19,11 +19,7 @@
 
 <!-- Describe how you tested your changes -->
 
-- [ ] Tests pass locally (`pnpm run test`)
-- [ ] Linting passes (`pnpm run lint`)
-- [ ] Type checking passes (`pnpm run typecheck`)
 - [ ] Added new tests for changes (if applicable)
-- [ ] Manual testing completed
 
 ## Screenshots (if applicable)
 
