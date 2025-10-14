@@ -221,6 +221,24 @@ pnpm run test:coverage
 - **GitHub Issues**: [github.com/filopedraz/kosuke-template/issues](https://github.com/filopedraz/kosuke-template/issues)
 - **Discussions**: Use GitHub Discussions for questions
 
+## 🚀 Releasing (Maintainers)
+
+Creating a new release is simple:
+
+```bash
+# Create and push a tag
+git tag -a v1.2.0 -m "Release version 1.2.0"
+git push origin v1.2.0
+```
+
+GitHub Actions will automatically:
+- Update all version files (package.json, pyproject.toml, .version)
+- Build and push Docker images
+- Create GitHub Release with changelog
+- Generate documentation version snapshot
+
+See [Contributing Guide](https://docs-template.kosuke.ai/docs/contributing) for full release process.
+
 ## 📝 License
 
 MIT License - see [LICENSE](./LICENSE) file for details.

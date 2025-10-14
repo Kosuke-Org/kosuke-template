@@ -36,7 +36,3 @@
 ## Related Issues
 
 <!-- Link related issues: Closes #123 -->
-
----
-
-**Note**: Please add at least one label to this PR (see checkboxes above) so it appears in the changelog correctly. See [Contributing Guide](https://docs-template.kosuke.ai/docs/contributing) for details.
