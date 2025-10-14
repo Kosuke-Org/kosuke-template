@@ -20,26 +20,11 @@ Sentry automatically monitors:
 
 ### JavaScript Errors
 
-```typescript
-// Unhandled exceptions
-throw new Error('Something went wrong');
-
-// Promise rejections
-Promise.reject('Failed');
-
-// React component errors
-// Caught by error boundaries
-```
+Automatically captures unhandled exceptions, promise rejections, and React component errors caught by error boundaries.
 
 ### API Errors
 
-```typescript
-// Server errors
-export async function GET() {
-  throw new Error('Database error');
-  // Automatically captured
-}
-```
+Server-side errors in API routes are automatically captured and reported to Sentry with full context.
 
 ### Performance Issues
 
@@ -63,35 +48,7 @@ Sentry captures:
 
 ### Custom Context
 
-Add your own context:
-
-```typescript
-import * as Sentry from '@sentry/nextjs';
-
-// Set user context
-Sentry.setUser({
-  id: userId,
-  email: user.email,
-  username: user.username,
-});
-
-// Add tags
-Sentry.setTag('feature', 'billing');
-Sentry.setTag('organization', orgId);
-
-// Add custom context
-Sentry.setContext('subscription', {
-  tier: 'pro',
-  status: 'active',
-});
-
-// Add breadcrumbs (user actions)
-Sentry.addBreadcrumb({
-  category: 'navigation',
-  message: 'User navigated to billing',
-  level: 'info',
-});
-```
+You can add custom context like user information, feature tags, subscription details, and breadcrumbs tracking user actions. This helps identify patterns and reproduce errors.
 
 ## Session Replay
 
@@ -105,15 +62,7 @@ Sentry.addBreadcrumb({
 
 ### Sample Rates
 
-Configured in Sentry config:
-
-```typescript
-// 10% of normal sessions
-replaysSessionSampleRate: 0.1,
-
-// 100% of sessions with errors
-replaysOnErrorSampleRate: 1.0,
-```
+Session replays are recorded for 10% of normal sessions and 100% of sessions with errors. This balances debugging capability with quota usage.
 
 ### Privacy
 
@@ -131,29 +80,11 @@ Sensitive data is masked:
 2. Click **Alerts**
 3. Create alert rule:
 
-**Example: High Error Rate**
+**Example Alert Rules:**
 
-```
-Alert when:
-  Error rate is above 5%
-  For at least 5 minutes
-  In production environment
-
-Notify via:
-  Email to team@example.com
-```
-
-**Example: New Error Type**
-
-```
-Alert when:
-  A new issue is created
-  In production
-  With level: error or fatal
-
-Notify via:
-  Slack #alerts channel
-```
+- Notify when error rate exceeds 5% for 5+ minutes in production
+- Alert when new critical errors appear
+- Notify on deployment failures or performance degradation
 
 ### Alert Channels
 
@@ -186,14 +117,7 @@ Sentry automatically uploads source maps:
 
 ### Finding Root Cause
 
-Use breadcrumbs to trace:
-
-```
-1. User loaded page →
-2. Clicked "Upgrade" button →
-3. API call to /api/billing →
-4. Error: "Product ID not found"
-```
+Breadcrumbs show the sequence of user actions leading to an error, making it easy to trace the root cause and reproduce issues.
 
 ## Performance Monitoring
 
@@ -228,11 +152,7 @@ Identify bottlenecks:
 
 ### Automatic Releases
 
-Each deployment creates a release:
-
-```
-git push → Vercel deploy → Sentry release created
-```
+Each deployment to Vercel automatically creates a release in Sentry, tracking which code version is running.
 
 ### Release Health
 
@@ -284,38 +204,14 @@ Track daily/weekly:
 
 ### Error Boundaries
 
-```typescript
-// app/error.tsx
-'use client';
-
-import * as Sentry from '@sentry/nextjs';
-import { useEffect } from 'react';
-
-export default function Error({ error }: { error: Error }) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
-
-  return <div>Something went wrong!</div>;
-}
-```
+Error boundaries catch React component errors and automatically report them to Sentry. Both page-level and global error handlers are configured to capture and log all errors.
 
 ### Global Error Handler
 
-```typescript
-// app/global-error.tsx
-'use client';
+The global error handler ensures that even critical errors that crash the entire application are captured and reported for debugging.
 
-import * as Sentry from '@sentry/nextjs';
+## Next Steps
 
-export default function GlobalError({ error }: { error: Error }) {
-  Sentry.captureException(error);
-  return <html><body>Global error occurred</body></html>;
-}
-```
+Learn about deployment:
 
-## Resources
-
-- [Sentry Dashboard](https://sentry.io)
-- [Sentry Docs](https://docs.sentry.io)
-- [Next.js Integration](https://docs.sentry.io/platforms/javascript/guides/nextjs/)
+👉 **[Deployment Guide](../../deployment/full-deployment-guide)**

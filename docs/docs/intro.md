@@ -64,35 +64,23 @@ Kosuke Template is perfect for:
 
 ## 📚 Documentation Structure
 
-This documentation is organized to guide you from setup to production:
-
-### 🏁 [Getting Started](getting-started/prerequisites)
-
-Step-by-step guide to set up all services and deploy your first version.
+This documentation is organized to guide you from understanding to deployment:
 
 ### 🏗️ [Architecture](architecture/tech-stack)
 
-Understand the technical stack, project structure, and design decisions.
+Understand the technical stack, project structure, database schema, and authentication flow.
 
 ### ✨ [Features](features/organizations)
 
-Deep dive into organizations, billing, email system, and more.
+Deep dive into organizations, billing, email system, file uploads, and error monitoring.
 
-### 🚀 [Deployment](deployment/vercel-deployment)
+### 🚀 [Deployment](deployment/full-deployment-guide)
 
-Deploy to Vercel with database migrations and environment setup.
+Complete deployment guide from forking to production, including all service configuration.
 
-### 🏭 [Production](production/checklist)
+### 📖 [Services Reference](services)
 
-Transition from development to production with custom domains and monitoring.
-
-### 📖 [Services](services/clerk)
-
-Detailed reference for each integrated service.
-
-### 💻 [Development](development/local-setup)
-
-Local setup, testing, database operations, and development workflow.
+Quick reference for Clerk, Polar, Neon, Vercel, Resend, and Sentry with common operations.
 
 ### 📋 [Reference](reference/commands)
 
@@ -122,9 +110,14 @@ Error monitoring with Sentry, automated testing with Vitest, and comprehensive l
 
 ## 🚦 Quick Start
 
-Ready to get started? Jump into the [Getting Started](getting-started/prerequisites) guide to set up your first Kosuke Template project.
+**Want to use Kosuke Template for your SaaS?**  
+→ Follow the [Complete Deployment Guide](deployment/full-deployment-guide) to deploy in 60-90 minutes.
 
-Already familiar with the setup? Check out the [Architecture](architecture/tech-stack) section to understand how everything works together.
+**Want to contribute to Kosuke Template?**  
+→ See the [Contributing Guide](https://github.com/filopedraz/kosuke-template#-contributing) in the README.
+
+**Want to understand the architecture?**  
+→ Explore [Architecture](architecture/tech-stack) and [Features](features/organizations) sections.
 
 ## 🤝 Community & Support
 

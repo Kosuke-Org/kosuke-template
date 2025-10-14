@@ -1,8 +1,0 @@
-{
-  "label": "Production",
-  "position": 6,
-  "link": {
-    "type": "generated-index",
-    "description": "Transition from development to production with custom domains, production credentials, and monitoring."
-  }
-}

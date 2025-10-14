@@ -18,10 +18,7 @@ Complete billing and subscription management powered by Polar.
 
 ### Subscription Flow
 
-```
-1. User clicks "Upgrade" → 2. Polar checkout → 3. Payment
-→ 4. Webhook notification → 5. Database update → 6. Access granted
-```
+When a user upgrades, they're redirected to Polar's secure checkout page. After successful payment, Polar sends a webhook notification to update the database, and the user immediately gains access to their new subscription tier.
 
 ### Automated Sync
 
@@ -31,69 +28,25 @@ Complete billing and subscription management powered by Polar.
 
 ## Upgrading Plans
 
-Users can upgrade from the billing page:
-
-```typescript
-// Redirect to Polar checkout
-const checkoutUrl = await createCheckout({
-  productId: POLAR_PRO_PRODUCT_ID,
-  userId,
-});
-
-redirect(checkoutUrl);
-```
+Users can upgrade their subscription from the billing page. The system generates a secure checkout link that redirects to Polar's hosted checkout page, handles payment processing, and automatically updates the user's subscription tier upon successful payment.
 
 ## Checking Subscription Status
 
-```typescript
-import { getUserSubscription } from '@/lib/billing';
-
-const subscription = await getUserSubscription(userId);
-
-if (subscription.tier === 'pro') {
-  // User has pro features
-}
-```
+The application can check a user's current subscription tier to enable or disable features. This information is stored in the database and synchronized with Polar's records through webhooks and scheduled jobs.
 
 ## Feature Gating
 
-Gate features based on subscription:
-
-```typescript
-export default async function Page() {
-  const subscription = await getUserSubscription(userId);
-
-  if (subscription.tier === 'free') {
-    return <UpgradePrompt />;
-  }
-
-  return <ProFeature />;
-}
-```
+Features can be restricted based on subscription tier. Free tier users see upgrade prompts when attempting to access premium features, while Pro and Business users have full access to their respective feature sets.
 
 ## Subscription Sync
 
 ### Real-Time (Webhooks)
 
-```
-Polar Event → /api/billing/webhook → Database Update
-```
-
-Events handled:
-
-- `subscription.created`
-- `subscription.updated`
-- `subscription.canceled`
+Polar sends webhook events for subscription changes (created, updated, canceled) which immediately update the database, ensuring users have instant access to their new subscription features.
 
 ### Scheduled (Cron)
 
-Runs every 6 hours:
-
-```
-Vercel Cron → /api/cron/sync-subscriptions → Polar API → Database Update
-```
-
-Ensures data consistency if webhooks fail.
+A backup synchronization job runs every 6 hours to ensure data consistency. This catches any missed webhook events and keeps subscription data in perfect sync with Polar's records.
 
 ## Managing Subscriptions
 

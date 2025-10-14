@@ -20,9 +20,9 @@ function HomepageHeader() {
         <div className={styles.buttons}>
           <Link
             className="button button--secondary button--lg"
-            to="/docs/getting-started/prerequisites"
+            to="/docs/deployment/full-deployment-guide"
           >
-            Get Started - 60 min 🚀
+            Deploy in 60 min 🚀
           </Link>
           <Link
             className="button button--outline button--secondary button--lg"

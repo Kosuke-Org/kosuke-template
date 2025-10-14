@@ -101,10 +101,6 @@ const config: Config = {
           title: 'Documentation',
           items: [
             {
-              label: 'Getting Started',
-              to: '/docs/getting-started/prerequisites',
-            },
-            {
               label: 'Architecture',
               to: '/docs/architecture/tech-stack',
             },
@@ -112,22 +108,26 @@ const config: Config = {
               label: 'Features',
               to: '/docs/features/organizations',
             },
+            {
+              label: 'Deployment',
+              to: '/docs/deployment/full-deployment-guide',
+            },
           ],
         },
         {
           title: 'Resources',
           items: [
             {
-              label: 'Deployment',
-              to: '/docs/deployment/vercel-deployment',
+              label: 'Services Reference',
+              to: '/docs/services',
             },
             {
-              label: 'Production',
-              to: '/docs/production/checklist',
-            },
-            {
-              label: 'Reference',
+              label: 'Commands',
               to: '/docs/reference/commands',
+            },
+            {
+              label: 'Troubleshooting',
+              to: '/docs/reference/troubleshooting',
             },
           ],
         },

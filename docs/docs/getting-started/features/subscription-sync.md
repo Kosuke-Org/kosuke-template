@@ -12,11 +12,7 @@ Kosuke Template uses two methods to keep subscription data in sync:
 
 ### 1. Real-Time Webhooks
 
-Immediate updates when events occur in Polar:
-
-```
-Polar Event → Webhook → Database Update → User Access Updated
-```
+Immediate updates when events occur in Polar. When a subscription is created, updated, or canceled, Polar sends a webhook notification that instantly updates the database and user access.
 
 **Benefits**:
 
@@ -32,11 +28,7 @@ Polar Event → Webhook → Database Update → User Access Updated
 
 ### 2. Scheduled Cron Jobs
 
-Backup synchronization every 6 hours:
-
-```
-Vercel Cron → Polar API → Database Sync
-```
+Backup synchronization every 6 hours at 00:00, 06:00, 12:00, and 18:00 UTC. The cron job fetches all subscriptions from Polar's API and ensures the database matches.
 
 **Benefits**:
 
@@ -71,99 +63,25 @@ The cron job:
 
 ### Webhook Handler
 
-Located at `/api/billing/webhook`:
-
-```typescript
-export async function POST(req: Request) {
-  // 1. Verify webhook signature
-  const isValid = await verifyWebhook(req);
-  if (!isValid) return Response.json({ error: 'Invalid signature' }, { status: 401 });
-
-  // 2. Parse event
-  const event = await req.json();
-
-  // 3. Handle event type
-  switch (event.type) {
-    case 'subscription.created':
-      await createSubscription(event.data);
-      break;
-    case 'subscription.updated':
-      await updateSubscription(event.data);
-      break;
-    case 'subscription.canceled':
-      await cancelSubscription(event.data);
-      break;
-  }
-
-  return Response.json({ received: true });
-}
-```
+The webhook handler at `/api/billing/webhook` receives events from Polar, verifies the signature for security, and updates the database accordingly. It handles subscription creation, updates, and cancellations.
 
 ### Cron Handler
 
-Located at `/api/cron/sync-subscriptions`:
+The cron handler at `/api/cron/sync-subscriptions` runs on a schedule, fetches all subscriptions from Polar's API, and synchronizes them with the database. It's protected with a secure token to prevent unauthorized access.
 
-```typescript
-export async function GET(req: Request) {
-  // 1. Verify cron secret
-  const authHeader = req.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+### Cron Configuration
 
-  // 2. Fetch all subscriptions from Polar
-  const polarSubs = await polar.subscriptions.list();
-
-  // 3. Sync to database
-  for (const sub of polarSubs) {
-    await syncSubscription(sub);
-  }
-
-  return Response.json({ synced: polarSubs.length });
-}
-```
-
-## Cron Configuration
-
-Defined in `vercel.json`:
-
-```json
-{
-  "crons": [
-    {
-      "path": "/api/cron/sync-subscriptions",
-      "schedule": "0 */6 * * *"
-    }
-  ]
-}
-```
-
-**Schedule Format**: Cron expression
-
-- `0 */6 * * *`: Every 6 hours at minute 0
-- Runs at: 00:00, 06:00, 12:00, 18:00 UTC
+The cron job is configured in `vercel.json` to run every 6 hours using a standard cron expression. Vercel's infrastructure handles the scheduling automatically.
 
 ## Security
 
 ### Webhook Verification
 
-Webhooks verified using signing secret:
-
-```typescript
-const signature = req.headers.get('webhook-signature');
-const isValid = await verifySignature(payload, signature, secret);
-```
+All webhook requests are verified using Polar's signing secret. Invalid signatures are rejected to prevent malicious requests from modifying subscription data.
 
 ### Cron Authentication
 
-Cron endpoints protected with bearer token:
-
-```typescript
-const authHeader = req.headers.get('authorization');
-if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-  return unauthorized();
-}
-```
+Cron endpoints require a secure bearer token to prevent unauthorized access. This token is stored as an environment variable and must match for the sync to execute.
 
 ## Monitoring
 
@@ -198,15 +116,7 @@ Logs include:
 
 ### Subscription States
 
-Database subscription states:
-
-```typescript
-type SubscriptionStatus =
-  | 'active' // Currently active
-  | 'canceled' // Canceled, access until period end
-  | 'incomplete' // Payment failed
-  | 'past_due'; // Payment retry in progress
-```
+The database tracks subscription states including active, canceled, incomplete (payment failed), and past_due (payment retry in progress). These states determine user access to features.
 
 ### Handling Conflicts
 
@@ -228,23 +138,11 @@ If webhook and cron data differ:
 
 ### Test Cron
 
-```bash
-# Call cron endpoint manually
-curl -H "Authorization: Bearer $CRON_SECRET" \
-  https://yourdomain.com/api/cron/sync-subscriptions
-```
-
-Or trigger in Vercel dashboard.
+The cron endpoint can be triggered manually for testing purposes using the authorization token. It can also be triggered from the Vercel dashboard for immediate synchronization.
 
 ### Verify Sync
 
-```bash
-# Check database
-pnpm run db:studio
-
-# Compare with Polar dashboard
-# Verify all subscriptions match
-```
+Database records can be viewed using Drizzle Studio and compared with Polar's dashboard to ensure all subscriptions match perfectly.
 
 ## Troubleshooting
 

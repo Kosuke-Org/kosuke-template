@@ -1,8 +1,0 @@
-{
-  "label": "Development",
-  "position": 8,
-  "link": {
-    "type": "generated-index",
-    "description": "Local development setup, testing, database operations, and development workflow best practices."
-  }
-}

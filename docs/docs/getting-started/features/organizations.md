@@ -24,20 +24,6 @@ Kosuke Template includes full organization support using Clerk's Organizations f
 
 Users can create organizations from the organization switcher or dedicated page.
 
-### Organization Structure
-
-```typescript
-interface Organization {
-  id: number;
-  clerkOrganizationId: string;
-  name: string;
-  slug: string;
-  imageUrl?: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
 ### Automatic Sync
 
 Organizations are automatically synced from Clerk to your database via webhooks.
@@ -73,46 +59,7 @@ You can define custom roles in Clerk dashboard with fine-grained permissions.
 
 ## Organization Context
 
-### Server Components
-
-```typescript
-import { auth } from '@clerk/nextjs';
-
-export default async function Page() {
-  const { orgId, orgRole } = auth();
-
-  // orgId: Current organization ID
-  // orgRole: User's role in organization
-
-  if (!orgId) {
-    return <SelectOrganization />;
-  }
-
-  return <OrganizationDashboard />;
-}
-```
-
-### Client Components
-
-```typescript
-'use client';
-import { useOrganization } from '@clerk/nextjs';
-
-export function Component() {
-  const { organization, membership } = useOrganization();
-
-  if (!organization) {
-    return <NoOrganization />;
-  }
-
-  return (
-    <div>
-      <h1>{organization.name}</h1>
-      <p>Your role: {membership.role}</p>
-    </div>
-  );
-}
-```
+The application automatically tracks which organization the user is currently viewing. This context is available in both server and client components, ensuring all data and actions are scoped to the correct organization.
 
 ## Organization Switching
 
@@ -128,12 +75,7 @@ When a user switches organizations:
 
 ## Data Isolation
 
-All organization data is automatically isolated:
-
-```typescript
-// Queries automatically filtered by organization
-const data = await db.select().from(projects).where(eq(projects.organizationId, orgId));
-```
+All organization data is automatically isolated. Database queries are filtered by organization ID, ensuring members can only access data belonging to their current organization. This provides complete data security in multi-tenant environments.
 
 ## Organization Subscriptions
 
@@ -147,28 +89,15 @@ Organizations can have their own subscriptions:
 
 ### 1. Always Check Organization Context
 
-```typescript
-const { orgId } = auth();
-if (!orgId) {
-  return <SelectOrganization />;
-}
-```
+Verify that users have selected an organization before showing organization-specific content. Users without an organization should be prompted to create or select one.
 
 ### 2. Verify Permissions
 
-```typescript
-const { orgRole } = auth();
-if (orgRole !== 'admin') {
-  return <div>Admin only</div>;
-}
-```
+Check user roles before allowing sensitive operations. Only admins should be able to manage billing, invite members, or modify organization settings.
 
 ### 3. Filter Data by Organization
 
-```typescript
-// Always include organization filter
-.where(eq(table.organizationId, orgId))
-```
+All database queries for organization-specific data should be automatically filtered by the current organization ID to ensure proper data isolation.
 
 ## Next Steps
 

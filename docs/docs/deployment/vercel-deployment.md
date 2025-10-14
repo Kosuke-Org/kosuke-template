@@ -8,7 +8,7 @@ Deploy your Kosuke Template application to Vercel for production.
 
 ## Automatic Deployment
 
-After completing the [Getting Started](../getting-started/prerequisites) guide, your app deploys automatically:
+After completing the [Deployment Guide](./full-deployment-guide), your app deploys automatically:
 
 ### On Every Push
 
@@ -85,7 +85,7 @@ NEXT_PUBLIC_APP_URL
 CRON_SECRET
 ```
 
-See [Environment Variables](../getting-started/08-environment-variables.md) for complete setup.
+See [Environment Variables](../reference/environment-variables) for complete reference.
 
 ## Custom Domains
 
@@ -131,6 +131,6 @@ Monitor with Sentry:
 
 ## Next Steps
 
-Learn about production configuration:
+Learn about database migrations and preview branches:
 
-👉 **[Going to Production](../production/checklist)**
+👉 **[Database Migrations](./database-migrations)**
