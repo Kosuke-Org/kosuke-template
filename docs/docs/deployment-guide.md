@@ -22,28 +22,6 @@ Create accounts with these services (all have free tiers):
 | **Resend** | Email delivery          | Yes (100/day)   | [resend.com](https://resend.com) |
 | **Sentry** | Error monitoring        | Yes (5k events) | [sentry.io](https://sentry.io)   |
 
-### Required Tools
-
-```bash
-# Node.js 20+
-node --version  # Should be v20.0.0+
-
-# pnpm
-npm install -g pnpm
-pnpm --version
-
-# Docker (for local development)
-docker --version
-docker-compose --version
-
-# Git
-git --version
-```
-
-**Estimated Time**: 60-90 minutes total
-
----
-
 ## Step 1: Fork Repository
 
 ### Fork to Your Account
@@ -58,14 +36,6 @@ git --version
 
 **Good Names**: `my-saas`, `startup-mvp`, `customer-portal`  
 **Avoid**: `My App`, `MyApp123`, `my_app`
-
-### Save Repository URL
-
-```
-https://github.com/YOUR_USERNAME/YOUR_PROJECT_NAME
-```
-
----
 
 ## Step 2: Create Vercel Project
 
@@ -108,13 +78,6 @@ This is expected! We'll fix this in the next steps.
 
 Vercel automatically adds `BLOB_READ_WRITE_TOKEN` environment variable.
 
-**Save URLs**:
-
-- Project: `https://vercel.com/YOUR_USERNAME/YOUR_PROJECT`
-- App: `https://YOUR_PROJECT_NAME.vercel.app`
-
----
-
 ## Step 3: Set Up Neon Database
 
 ### Create via Vercel Integration
@@ -128,6 +91,8 @@ Vercel automatically adds `BLOB_READ_WRITE_TOKEN` environment variable.
 5. Create database:
    - **Region**: Choose closest to users
    - **Name**: `your-project-name-db`
+   - **Environments**: Production, Preview, Development
+   - **Create Database Branch for Deployment**: Preview
 6. Click **Create**
 
 ### Automatic Configuration
@@ -135,9 +100,6 @@ Vercel automatically adds `BLOB_READ_WRITE_TOKEN` environment variable.
 Vercel adds these environment variables:
 
 - `POSTGRES_URL` (pooled connection - **we use this**)
-- `POSTGRES_PRISMA_URL` (unused)
-- `POSTGRES_URL_NO_SSL` (unused)
-- `POSTGRES_URL_NON_POOLING` (direct connection)
 
 ### Preview Branches
 
@@ -147,9 +109,13 @@ Neon automatically creates database branches for pull requests:
 - PR closed → Branch deleted
 - Isolated testing per PR
 
----
-
 ## Step 4: Configure Polar Billing
+
+:::warning
+
+Will be removed in the future.
+
+:::
 
 ### Choose Environment
 
@@ -208,7 +174,7 @@ Start with **sandbox** for testing (transition to production later):
    - **Events**: ✅ `subscription.created`, `subscription.updated`, `subscription.canceled`
 3. **Copy Signing Secret**
 
-**Save Configuration**:
+**Update the environment variables in Vercel**:
 
 ```bash
 POLAR_ENVIRONMENT=sandbox
@@ -218,8 +184,6 @@ POLAR_BUSINESS_PRODUCT_ID=prod_xyz789...
 POLAR_ACCESS_TOKEN=polar_oat_...
 POLAR_WEBHOOK_SECRET=polar_webhook_...
 ```
-
----
 
 ## Step 5: Configure Clerk Authentication
 
@@ -249,6 +213,14 @@ CLERK_SECRET_KEY=sk_test_...
 3. Configure:
    - **Organization naming**: ✅ Allow custom names
    - **Default roles**: admin, member (recommended)
+   - **Allow Personal Accounts**: ON
+   - **Sessions Claims __session**:
+      ```json
+      {
+         "publicMetadata": "{{user.public_metadata}}"
+      }
+      ```
+   - **Enable Organization Slugs**: ON
 4. Click **Save**
 
 ### Set Up Webhook
@@ -262,7 +234,7 @@ CLERK_SECRET_KEY=sk_test_...
      - ✅ Membership: `organizationMembership.created`, `organizationMembership.updated`, `organizationMembership.deleted`
 3. **Copy Signing Secret** (starts with `whsec_`)
 
-**Save Configuration**:
+**Update the environment variables in Vercel**:
 
 ```bash
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
@@ -275,8 +247,6 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
 ```
-
----
 
 ## Step 6: Configure Resend Email
 
@@ -309,8 +279,6 @@ For production, verify your custom domain:
 3. Add DNS records (SPF, DKIM, DMARC)
 4. Wait for verification
 5. Update: `RESEND_FROM_EMAIL=hello@yourdomain.com`
-
----
 
 ## Step 7: Configure Sentry Monitoring
 
@@ -345,8 +313,6 @@ The template includes Sentry configuration with:
 - Automatic source map upload
 
 Adjust sample rates in `sentry.*.config.ts` if needed.
-
----
 
 ## Step 8: Add Environment Variables
 
@@ -422,8 +388,6 @@ Or in Vercel: **Deployments** → **⋯** → **Redeploy**
 4. Verify no errors in console
 
 **🎉 Your application is now live!**
-
----
 
 ## Going to Production
 
@@ -532,168 +496,3 @@ Value: v=DMARC1; p=none; rua=mailto:dmarc@yourdomain.com
    ```bash
    RESEND_FROM_EMAIL=hello@yourdomain.com
    ```
-
-### Production Checklist
-
-Before launching:
-
-#### 🔐 Security
-
-- [ ] Rotate all API keys to production credentials
-- [ ] Generate new `CRON_SECRET` (unique, 32+ characters)
-- [ ] Verify webhook secrets are production values
-- [ ] Enable HTTPS redirect (automatic in Vercel)
-- [ ] Review CORS settings
-
-#### 📧 Email
-
-- [ ] Verify custom domain in Resend
-- [ ] Test email deliverability across providers
-- [ ] Check spam score with [Mail Tester](https://mail-tester.com)
-
-#### 💳 Billing
-
-- [ ] Test checkout flow with real card
-- [ ] Verify subscription activation
-- [ ] Test cancellation flow
-- [ ] Monitor webhook delivery in Polar dashboard
-
-#### 📊 Monitoring
-
-- [ ] Configure Sentry alerts for error rate > 5%
-- [ ] Set up email/Slack notifications
-- [ ] Enable session replay
-- [ ] Monitor performance metrics
-
-#### 📄 Legal
-
-- [ ] Add Terms of Service page
-- [ ] Add Privacy Policy page
-- [ ] Configure cookie consent (if EU users)
-- [ ] Review data retention policies
-
-### Post-Launch Monitoring
-
-**Immediate (First 24 Hours)**:
-
-- Monitor error rates in Sentry
-- Watch deployment logs in Vercel
-- Test critical user flows
-- Check webhook delivery (Clerk, Polar)
-
-**First Week**:
-
-- Review user feedback
-- Monitor subscription conversions
-- Check email deliverability
-- Optimize performance issues
-
-**Ongoing**:
-
-- Weekly: Review error dashboard
-- Monthly: Security audit, dependency updates
-- Quarterly: Rotate API keys, performance review
-
----
-
-## Security Best Practices
-
-### Environment Variables
-
-- ✅ Never commit secrets to Git (`.env` in `.gitignore`)
-- ✅ Use different keys for development/production
-- ✅ Rotate API keys every 90 days
-- ✅ Use minimum required scopes
-
-### Webhook Security
-
-All webhooks are verified:
-
-```typescript
-// Clerk webhook verification (implemented)
-const evt = await webhook.verify(payload, headers);
-
-// Polar webhook verification (implemented)
-const isValid = await verifyPolarWebhook(payload, signature);
-
-// Cron protection (implemented)
-if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-  return new Response('Unauthorized', { status: 401 });
-}
-```
-
-### Database Security
-
-- ✅ Always use SSL: `?sslmode=require` (included in Neon URL)
-- ✅ Connection pooling enabled (Neon default)
-- ✅ Parameterized queries (Drizzle handles this)
-- ✅ No exposed connection strings
-
-### Authentication Security
-
-Clerk provides:
-
-- Secure HTTP-only cookies
-- Short-lived access tokens
-- Refresh token rotation
-- CSRF protection
-- Optional MFA
-
----
-
-## Troubleshooting
-
-### Deployment Fails
-
-**Check build logs** in Vercel for:
-
-- Missing environment variables
-- TypeScript errors
-- Migration failures
-
-**Solution**:
-
-```bash
-# Test locally first
-pnpm run build
-pnpm run typecheck
-pnpm run lint
-```
-
-### Webhooks Not Receiving Events
-
-**Clerk webhook**:
-
-1. Verify URL: `https://yourdomain.com/api/clerk/webhook`
-2. Check signing secret matches
-3. View webhook logs in Clerk dashboard
-4. Test with webhook tester
-
-**Polar webhook**:
-
-1. Verify URL: `https://yourdomain.com/api/billing/webhook`
-2. Check webhook secret matches
-3. View logs in Polar dashboard
-4. Ensure events are selected
-
-### Database Connection Failed
-
-1. Check `POSTGRES_URL` is set in Vercel
-2. Verify migration files in `lib/db/migrations/`
-3. Test locally: `pnpm run db:migrate`
-4. Check Neon dashboard for connection info
-
-### Emails Not Sending
-
-1. Check `RESEND_API_KEY` is correct
-2. Verify sender domain (use `onboarding@resend.dev` for testing)
-3. Check Resend dashboard for delivery logs
-4. Test with Resend API playground
-
----
-
-## Support
-
-- **Documentation**: [docs-template.kosuke.ai](https://docs-template.kosuke.ai)
-- **GitHub Issues**: [Report bugs or request features](https://github.com/filopedraz/kosuke-template/issues)
-- **Service Docs**: Clerk, Polar, Neon, Resend, Sentry official documentation
