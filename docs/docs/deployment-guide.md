@@ -452,7 +452,98 @@ The engine is configured to:
 
 **Cost**: Free tier includes 3 shared-cpu VMs with 256MB RAM each.
 
-## Step 9: Add Environment Variables
+## Step 9: Configure GitHub Actions Secrets
+
+The template includes GitHub Actions for automated PR reviews and microservice deployment. Configure repository secrets to enable these features.
+
+### Navigate to GitHub Secrets
+
+1. Go to your forked repository on GitHub
+2. Click **Settings** → **Secrets and variables** → **Actions**
+3. Click **New repository secret**
+
+### Required Secrets
+
+#### 1. Anthropic API Key (Claude AI)
+
+Enables AI-powered PR reviews and issue assistance via Claude.
+
+**Get API Key:**
+
+1. Go to [console.anthropic.com](https://console.anthropic.com)
+2. Sign up or log in
+3. Navigate to **API Keys**
+4. Click **Create Key**
+5. Copy the key (starts with `sk-ant-`)
+
+**Add to GitHub:**
+
+- **Name**: `ANTHROPIC_API_KEY`
+- **Secret**: `sk-ant-api03-...`
+
+**Usage:**
+- Mention `@claude` in pull requests for code reviews
+- Mention `@claude` in issues for assistance
+- Automated PR analysis and suggestions
+
+#### 2. Fly.io API Token (Microservice Deployment)
+
+Enables automatic deployment of the engine microservice on pull requests and pushes.
+
+**Get API Token:**
+
+```bash
+fly auth token
+```
+
+Or via dashboard:
+
+1. Go to [fly.io/user/personal_access_tokens](https://fly.io/user/personal_access_tokens)
+2. Click **Create token**
+3. Name: `github-actions-deploy`
+4. Copy the token
+
+**Add to GitHub:**
+
+- **Name**: `FLY_API_TOKEN`
+- **Secret**: `fo1_...`
+
+**Usage:**
+- Automatic engine deployment on main branch pushes
+- Preview deployments for pull requests
+
+#### 3. OpenAI API Key (Codex PR Reviews)
+
+Optional: Enables additional AI-powered code review features.
+
+**Get API Key:**
+
+1. Go to [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+2. Sign up or log in
+3. Click **Create new secret key**
+4. Name: `github-actions-pr-review`
+5. Copy the key (starts with `sk-`)
+
+**Add to GitHub:**
+
+- **Name**: `OPENAI_API_KEY`
+- **Secret**: `sk-...`
+
+**Usage:**
+- Enhanced PR review with Codex analysis
+- Code quality suggestions
+- Security vulnerability detection
+
+### Verify Configuration
+
+After adding secrets:
+
+1. Go to **Actions** tab in your repository
+2. Secrets should be available to workflows
+3. Test by creating a pull request
+4. Check Actions logs for successful API connections
+
+## Step 10: Add Environment Variables
 
 ### Navigate to Vercel
 
