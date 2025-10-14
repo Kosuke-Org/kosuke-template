@@ -50,12 +50,6 @@ export const baseMiddleware = async (auth: ClerkMiddlewareAuth, req: NextRequest
     return NextResponse.next();
   }
 
-  if (isAuthenticated && isRootRoute(req)) {
-    // User is authenticated and onboarding complete, but no org
-    // Let them see the root page (they can create/join orgs from there)
-    return NextResponse.next();
-  }
-
   // Allow all other requests for authenticated users
   return NextResponse.next();
 };
