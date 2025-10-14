@@ -1,0 +1,8 @@
+{
+  "label": "Deployment",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "description": "Deploy your Kosuke Template application to Vercel with database migrations and proper environment configuration."
+  }
+}

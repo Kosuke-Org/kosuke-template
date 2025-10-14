@@ -18,8 +18,18 @@ function HomepageHeader() {
         </Heading>
         <p className="hero__subtitle">{siteConfig.tagline}</p>
         <div className={styles.buttons}>
-          <Link className="button button--secondary button--lg" to="/docs/intro">
-            Docusaurus Tutorial - 5min ⏱️
+          <Link
+            className="button button--secondary button--lg"
+            to="/docs/getting-started/prerequisites"
+          >
+            Get Started - 60 min 🚀
+          </Link>
+          <Link
+            className="button button--outline button--secondary button--lg"
+            to="/docs/architecture/tech-stack"
+            style={{ marginLeft: '1rem' }}
+          >
+            View Architecture 📖
           </Link>
         </div>
       </div>
