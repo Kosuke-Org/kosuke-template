@@ -18,15 +18,12 @@ function HomepageHeader() {
         </Heading>
         <p className="hero__subtitle">{siteConfig.tagline}</p>
         <div className={styles.buttons}>
-          <Link
-            className="button button--secondary button--lg"
-            to="/docs/deployment/full-deployment-guide"
-          >
+          <Link className="button button--secondary button--lg" to="/docs/deployment-guide">
             Deploy in 60 min 🚀
           </Link>
           <Link
             className="button button--outline button--secondary button--lg"
-            to="/docs/getting-started/architecture"
+            to="/docs/"
             style={{ marginLeft: '1rem' }}
           >
             Learn More 📖

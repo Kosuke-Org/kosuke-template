@@ -7,103 +7,103 @@ slug: /
 
 **Kosuke Template** is a production-ready, multi-tenant SaaS starter built with modern web technologies. Get your SaaS application up and running in minutes, not months.
 
-## 🚀 What You Get
+## 🚀 Tech Stack
 
-Kosuke Template includes everything you need to build a professional SaaS application:
-
-### Core Stack
-
-- **Next.js 15** with App Router for optimal performance
-- **React 19** with Server Components
-- **TypeScript** for type-safe development
-- **Tailwind CSS** + **Shadcn UI** for beautiful interfaces
-
-### Authentication & Organizations
-
-- **Clerk** authentication with full **Organizations** support
-- Teams, roles, and permissions out of the box
-- Organization invitations and member management
-- Webhook integration for automatic user sync
-
-### Billing & Subscriptions
-
-- **Polar** billing integration with subscription management
-- Multiple subscription tiers (Free, Pro, Business)
-- Automated subscription synchronization via cron jobs
-- Webhook-based billing event handling
-
-### Database & Storage
-
-- **PostgreSQL** with **Drizzle ORM**
-- **Neon** database with automatic preview branches
-- **Vercel Blob** for file uploads
-- Type-safe schema and migrations
-
-### Email & Communication
-
-- **Resend** email service
-- **React Email** templates
-- Welcome emails and notifications
-- Full email template customization
-
-### Monitoring & Quality
-
-- **Sentry** error monitoring and performance tracking
-- **Vitest** with React Testing Library
-- Comprehensive ESLint and TypeScript checks
-- Pre-commit hooks for code quality
+- **Next.js 15** (App Router) + **React 19** + **TypeScript**
+- **Clerk** - Authentication with Organizations, teams, and roles
+- **PostgreSQL** (Neon) + **Drizzle ORM** - Type-safe database with auto migrations
+- **Polar** - Subscription billing with sandbox testing
+- **Resend** + **React Email** - Transactional emails with React components
+- **Vercel Blob** - File storage with CDN
+- **Sentry** - Error tracking and performance monitoring
+- **Tailwind CSS** + **Shadcn UI** - Beautiful, accessible components
+- **Vitest** - Fast testing with React Testing Library
 
 ## 🎯 Who Is This For?
-
-Kosuke Template is perfect for:
 
 - **Solo founders** who want to launch quickly
 - **Development teams** building multi-tenant applications
 - **Agencies** needing a robust starter for client projects
 - **Engineers** who want to learn modern SaaS architecture
 
-## 📚 Documentation Structure
+## Services Reference
 
-This documentation is organized to guide you from understanding to deployment:
+Quick reference for all integrated services:
 
-### 🏁 [Getting Started](getting-started/architecture)
+| Service    | Purpose                 | Free Tier    | Dashboard                                          |
+| ---------- | ----------------------- | ------------ | -------------------------------------------------- |
+| **Clerk**  | Authentication & Orgs   | 10k MAUs     | [dashboard.clerk.com](https://dashboard.clerk.com) |
+| **Polar**  | Billing & Subscriptions | Sandbox mode | [polar.sh/dashboard](https://polar.sh/dashboard)   |
+| **Neon**   | PostgreSQL Database     | 3 GB         | [console.neon.tech](https://console.neon.tech)     |
+| **Vercel** | Application Hosting     | Unlimited    | [vercel.com](https://vercel.com)                   |
+| **Resend** | Email Delivery          | 3k emails/mo | [resend.com](https://resend.com)                   |
+| **Sentry** | Error Monitoring        | 5k events/mo | [sentry.io](https://sentry.io)                     |
 
-Understand Kosuke Template's architecture, features, and the services that power it. No code, just concepts.
+### When to Upgrade
 
-### 🚀 [Deployment](deployment/full-deployment-guide)
+- **Clerk**: > 10,000 monthly active users
+- **Polar**: Ready for real payments (switch to production)
+- **Neon**: > 3 GB storage or need dedicated compute
+- **Vercel**: > 100 GB bandwidth or need team features
+- **Resend**: > 3,000 emails/month
+- **Sentry**: Exceeding error or performance event limits
 
-Complete step-by-step deployment guide from forking to production, with all service configuration details.
+## Features
 
-### 📋 [Reference](reference/commands)
+### Organizations & Teams
 
-Technical reference with commands, environment variables, and troubleshooting.
+Complete multi-tenancy with Clerk Organizations:
 
-## 🌟 Key Features
+- Create unlimited organizations with team invitations
+- Admin and member roles with customizable permissions
+- Automatic webhook sync to your database
+- Organization-scoped data isolation
+- Organization-level billing and subscriptions
 
-### Multi-Tenancy with Organizations
+### Subscription Management
 
-Built-in support for teams and organizations using Clerk's Organizations feature. Users can create organizations, invite team members, assign roles, and manage permissions.
+Polar billing integration with automated sync:
 
-### Automated Subscription Management
+- Three tiers: Free, Pro ($20/mo), Business ($200/mo)
+- Real-time webhook updates + 6-hour cron backup sync
+- Hosted checkout pages with automatic receipts
+- Feature gating based on subscription tier
+- Sandbox mode for testing without real charges
 
-Polar billing integration with automated syncing every 6 hours. Webhooks handle real-time updates while cron jobs ensure data consistency.
+### Email System
 
-### Type-Safe Everything
+Transactional emails with React Email and Resend:
 
-From database queries to API routes, Kosuke Template uses TypeScript throughout. Drizzle ORM provides type-safe database operations with automatic migrations.
+- Build email templates with React components
+- Welcome emails sent automatically on signup
+- Preview templates locally with development server
+- High deliverability optimized for transactional mail
+- Custom domain verification for production
 
-### Beautiful UI Components
+### File Uploads
 
-Pre-built Shadcn UI components with dark mode support. Responsive design that works beautifully on all devices.
+Vercel Blob storage for user content:
 
-### Production-Ready
+- Profile images and organization logos
+- Automatic image optimization and CDN delivery
+- 5 MB size limit with format validation (JPEG, PNG, WebP)
+- Admin-only access control for organization logos
+- Base64 upload via tRPC for seamless integration
 
-Error monitoring with Sentry, automated testing with Vitest, and comprehensive linting ensures your code is production-ready from day one.
+### Error Monitoring
+
+Sentry integration for production confidence:
+
+- Automatic error tracking (client, server, API)
+- Performance monitoring with transaction tracking
+- Session replay for debugging (10% sample, 100% on errors)
+- Source maps for readable TypeScript stack traces
+- Release tracking with automatic deployment tagging
 
 ## 🚦 Quick Start
 
 **Want to use Kosuke Template for your SaaS?**  
-→ Start with [Getting Started](getting-started/architecture) to understand what's included, then follow the [Deployment Guide](deployment/full-deployment-guide) to deploy in 60-90 minutes.
+→ Follow the [Deployment Guide](deployment-guide) to deploy in 60-90 minutes.
 
 **Want to contribute to Kosuke Template?**  
 → See the [Contributing Guide](https://github.com/filopedraz/kosuke-template#-contributing) in the README for local development setup.

@@ -10,11 +10,8 @@ Production-ready Next.js 15 SaaS starter with Clerk Organizations, Polar Billing
 
 ## 🚀 Quick Links
 
-- [Getting Started](https://docs-template.kosuke.ai/category/getting-started) - Complete setup guide
-- [Architecture](https://docs-template.kosuke.ai/category/architecture) - Tech stack and structure
-- [Features](https://docs-template.kosuke.ai/category/features) - Organizations, billing, email
-- [Deployment](https://docs-template.kosuke.ai/category/deployment) - Deploy to production
-- [Reference](https://docs-template.kosuke.ai/category/reference) - Commands and troubleshooting
+- [Documentation Overview](https://docs-template.kosuke.ai/docs/) - Architecture, features, and services
+- [Deployment Guide](https://docs-template.kosuke.ai/docs/deployment-guide) - Deploy to production in 60-90 minutes
 
 ## 🛠 Tech Stack
 
@@ -120,11 +117,7 @@ CRON_SECRET=dev_cron_secret
 #### 4. Start Database
 
 ```bash
-# Start PostgreSQL container
-docker-compose up -d postgres
-
-# Verify it's running
-docker-compose ps
+docker-compose up -d
 ```
 
 #### 5. Run Migrations
@@ -217,160 +210,6 @@ pnpm run test:watch
 # With coverage report
 pnpm run test:coverage
 ```
-
-#### Writing Tests
-
-Tests are in `__tests__/` directory:
-
-```typescript
-// __tests__/hooks/use-auth.test.tsx
-import { renderHook } from '@testing-library/react';
-import { useAuth } from '@/hooks/use-auth';
-
-describe('useAuth', () => {
-  it('should return user data', async () => {
-    const { result } = renderHook(() => useAuth());
-    expect(result.current.user).toBeDefined();
-  });
-});
-```
-
-### Code Style
-
-#### Naming Conventions
-
-```typescript
-// Components: PascalCase
-export function UserProfile() {}
-
-// Functions: camelCase
-export function getUserData() {}
-
-// Constants: UPPER_SNAKE_CASE
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
-// Types: PascalCase
-interface UserProfile {}
-type SubscriptionTier = 'free' | 'pro';
-```
-
-#### Import Order
-
-```typescript
-// 1. React
-import { useState } from 'react';
-
-// 2. External libraries
-import { Button } from '@/components/ui/button';
-
-// 3. Internal utilities
-import { db } from '@/lib/db/drizzle';
-
-// 4. Types
-import type { User } from '@/lib/types';
-```
-
-### Pre-Commit Hooks
-
-The project includes pre-commit hooks that automatically run:
-
-- ESLint validation
-- TypeScript type checking
-- Prettier formatting
-- Test suite
-
-If any check fails, the commit is blocked. Fix the issues and try again.
-
-### Pull Request Guidelines
-
-1. **Update documentation** if you change APIs or add features
-2. **Add tests** for new functionality (aim for >80% coverage)
-3. **Ensure all checks pass** (lint, typecheck, tests)
-4. **Write clear PR description**:
-   - What changes were made
-   - Why they were needed
-   - How to test them
-5. **Request review** from maintainers
-6. **Address feedback** promptly
-7. **Keep commits clean** (squash if requested)
-
-### Commit Message Convention
-
-We follow [Conventional Commits](https://www.conventionalcommits.org/):
-
-- `feat:` New features
-- `fix:` Bug fixes
-- `docs:` Documentation changes
-- `style:` Code style changes (formatting, etc.)
-- `refactor:` Code refactoring
-- `test:` Test additions or changes
-- `chore:` Maintenance tasks
-
-**Examples**:
-
-```bash
-git commit -m "feat: add user profile export"
-git commit -m "fix: resolve billing webhook timeout"
-git commit -m "docs: update deployment guide"
-```
-
-### Troubleshooting
-
-#### Port Already in Use
-
-```bash
-# Kill process on port 3000
-lsof -ti:3000 | xargs kill -9
-
-# Or use different port
-PORT=3001 pnpm run dev
-```
-
-#### Database Connection Failed
-
-```bash
-# Restart PostgreSQL
-docker-compose restart postgres
-
-# Check logs
-docker-compose logs postgres
-
-# Recreate container
-docker-compose down
-docker-compose up -d postgres
-```
-
-#### Module Not Found
-
-```bash
-# Clear and reinstall
-rm -rf node_modules pnpm-lock.yaml
-pnpm install
-
-# Clear Next.js cache
-rm -rf .next
-```
-
-### Reporting Issues
-
-When reporting bugs, include:
-
-- **Clear description** of the problem
-- **Steps to reproduce**
-- **Expected vs actual behavior**
-- **Environment details** (OS, Node version, pnpm version)
-- **Error messages** or logs
-- **Screenshots** if applicable
-
-### Feature Requests
-
-We welcome feature requests! Please:
-
-- **Check existing issues** first to avoid duplicates
-- **Describe the feature** clearly with use cases
-- **Explain the value** it would provide
-- **Consider implementation** complexity
-- **Be open to discussion** and alternative approaches
 
 ### Getting Help
 

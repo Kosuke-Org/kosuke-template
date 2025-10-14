@@ -1,8 +1,8 @@
 ---
-sidebar_position: 1
+sidebar_position: 2
 ---
 
-# Complete Deployment Guide
+# Deployment Guide
 
 Deploy Kosuke Template to production in 60-90 minutes. This guide covers forking the repository, setting up all services, and configuring your production environment.
 
@@ -689,16 +689,6 @@ pnpm run lint
 2. Verify sender domain (use `onboarding@resend.dev` for testing)
 3. Check Resend dashboard for delivery logs
 4. Test with Resend API playground
-
----
-
-## Additional Resources
-
-- [Database Migrations Guide](./database-migrations) - Migration management
-- [Neon Preview Branches](./neon-preview-branches) - Database branching
-- [Commands Reference](../reference/commands) - All available commands
-- [Environment Variables](../reference/environment-variables) - Complete variable reference
-- [Troubleshooting](../reference/troubleshooting) - Common issues
 
 ---
 

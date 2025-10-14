@@ -101,16 +101,12 @@ const config: Config = {
           title: 'Documentation',
           items: [
             {
-              label: 'Getting Started',
-              to: '/docs/getting-started/architecture',
+              label: 'Overview',
+              to: '/docs/',
             },
             {
               label: 'Deployment',
-              to: '/docs/deployment/full-deployment-guide',
-            },
-            {
-              label: 'Reference',
-              to: '/docs/reference/commands',
+              to: '/docs/deployment-guide',
             },
           ],
         },
