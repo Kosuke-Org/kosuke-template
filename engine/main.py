@@ -79,7 +79,7 @@ async def convert_endpoint(payload: ConvertRequest) -> ConvertResponse:
         converted_amount=converted_amount,
         from_currency=from_curr.value,
         to_currency=to_curr.value,
-        exchange_rate=round(exchange_rate, 4)
+        exchange_rate=round(exchange_rate, 4),
     )
 
 

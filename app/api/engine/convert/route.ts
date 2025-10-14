@@ -3,8 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { ApiResponseHandler } from '@/lib/api';
 import { convertCurrency, EngineError } from '@/lib/engine/client';
 import type { 
-  CurrencyConvertRequest, 
-  CurrencyConvertResponse 
+  CurrencyConvertRequest
 } from '@/lib/types';
 
 export async function POST(request: NextRequest) {
