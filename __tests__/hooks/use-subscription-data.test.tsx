@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useSubscriptionStatus, useCanSubscribe } from '@/hooks/use-subscription-data';
 import { resetMocks } from '../setup/mocks';

@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCaller } from '@/lib/trpc/server';
 import { mockClerkUser } from '@/__tests__/setup/mocks';
-import type { UserSubscriptionInfo, SubscriptionEligibility } from '@/lib/types';
+import type { UserSubscriptionInfo, SubscriptionEligibility, ClerkUserType } from '@/lib/types';
 import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
 import { SubscriptionState } from '@/lib/types';
+import type Stripe from 'stripe';
 
 vi.mock('@/lib/billing', () => ({
   getUserSubscription: vi.fn(),
@@ -57,7 +58,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -106,7 +107,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -144,7 +145,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -181,7 +182,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -226,7 +227,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -266,7 +267,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -304,7 +305,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -327,7 +328,21 @@ describe('Billing Router', () => {
         activeSubscription: {
           id: 'sub_123',
           stripeSubscriptionId: 'sub_stripe_123',
-        } as any,
+          clerkUserId: 'user_123',
+          organizationId: null,
+          subscriptionType: 'personal' as const,
+          stripeCustomerId: 'cus_123',
+          stripePriceId: 'price_123',
+          status: 'active',
+          tier: 'pro',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          cancelAtPeriodEnd: 'false',
+          scheduledDowngradeTier: null,
+          canceledAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       };
 
       const mockEligibility: SubscriptionEligibility = {
@@ -347,7 +362,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -382,7 +397,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -400,7 +415,21 @@ describe('Billing Router', () => {
         activeSubscription: {
           id: 'sub_123',
           stripeSubscriptionId: 'sub_stripe_123',
-        } as any,
+          clerkUserId: 'user_123',
+          organizationId: null,
+          subscriptionType: 'personal' as const,
+          stripeCustomerId: 'cus_123',
+          stripePriceId: 'price_123',
+          status: 'past_due',
+          tier: 'pro',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(),
+          cancelAtPeriodEnd: 'false',
+          scheduledDowngradeTier: null,
+          canceledAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       };
 
       const mockEligibility: SubscriptionEligibility = {
@@ -417,7 +446,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -436,7 +465,21 @@ describe('Billing Router', () => {
         activeSubscription: {
           id: 'sub_123',
           stripeSubscriptionId: 'sub_stripe_123',
-        } as any,
+          clerkUserId: 'user_123',
+          organizationId: null,
+          subscriptionType: 'personal' as const,
+          stripeCustomerId: 'cus_123',
+          stripePriceId: 'price_123',
+          status: 'active',
+          tier: 'pro',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(),
+          cancelAtPeriodEnd: 'false',
+          scheduledDowngradeTier: null,
+          canceledAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       };
 
       const mockEligibility: SubscriptionEligibility = {
@@ -456,7 +499,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -478,8 +521,21 @@ describe('Billing Router', () => {
         activeSubscription: {
           id: 'sub_123',
           stripeSubscriptionId: 'sub_stripe_123',
+          clerkUserId: 'user_123',
+          organizationId: null,
+          subscriptionType: 'personal' as const,
+          stripeCustomerId: 'cus_123',
+          stripePriceId: 'price_123',
+          status: 'canceled',
           tier: 'pro',
-        } as any,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: futureDate,
+          cancelAtPeriodEnd: 'true',
+          scheduledDowngradeTier: null,
+          canceledAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       };
 
       const mockEligibility: SubscriptionEligibility = {
@@ -500,7 +556,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -538,7 +594,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -571,7 +627,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -590,8 +646,21 @@ describe('Billing Router', () => {
         activeSubscription: {
           id: 'sub_123',
           stripeSubscriptionId: 'sub_stripe_123',
+          clerkUserId: 'user_123',
+          organizationId: null,
+          subscriptionType: 'personal' as const,
+          stripeCustomerId: 'cus_123',
+          stripePriceId: 'price_123',
+          status: 'canceled',
           tier: 'pro',
-        } as any,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          cancelAtPeriodEnd: 'true',
+          scheduledDowngradeTier: null,
+          canceledAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       };
 
       const mockEligibility: SubscriptionEligibility = {
@@ -611,7 +680,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -634,7 +703,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -655,7 +724,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -675,13 +744,26 @@ describe('Billing Router', () => {
         message: 'Subscription synced successfully',
         subscription: {
           id: 'sub_stripe_123',
+          object: 'subscription',
           status: 'active',
-        } as any,
+          current_period_start: Math.floor(Date.now() / 1000),
+          current_period_end: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000),
+          customer: 'cus_123',
+          items: {
+            object: 'list',
+            data: [{ id: 'si_123', price: { id: 'price_123' } }],
+            has_more: false,
+            total_count: 1,
+            url: '',
+          },
+          cancel_at_period_end: false,
+          metadata: { clerkUserId: 'user_123', tier: 'pro' },
+        } as unknown as Stripe.Subscription,
       });
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -705,7 +787,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -729,7 +811,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -754,15 +836,29 @@ describe('Billing Router', () => {
         currentPeriodEnd: new Date(),
         activeSubscription: {
           id: 'sub_123',
+          clerkUserId: 'user_123',
+          organizationId: null,
+          subscriptionType: 'personal' as const,
+          stripeSubscriptionId: 'sub_stripe_123',
+          stripeCustomerId: 'cus_123',
+          stripePriceId: 'price_123',
+          status: 'active',
+          tier: 'pro',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(),
+          cancelAtPeriodEnd: 'false',
+          scheduledDowngradeTier: null,
+          canceledAt: null,
+          createdAt: new Date(),
           updatedAt: new Date('2024-01-15'),
-        } as any,
+        },
       };
 
       vi.mocked(getUserSubscription).mockResolvedValue(mockSubscriptionInfo);
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -789,7 +885,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -811,7 +907,7 @@ describe('Billing Router', () => {
 
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });

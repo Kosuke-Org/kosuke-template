@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCaller } from '@/lib/trpc/server';
 import { mockClerkUser } from '@/__tests__/setup/mocks';
+import type { ClerkUserType } from '@/lib/types';
 
 vi.mock('@/lib/storage', () => ({
   uploadProfileImage: vi.fn(),
@@ -49,7 +50,8 @@ describe('User Router', () => {
       vi.mocked(syncUserFromClerk).mockResolvedValue({
         id: 'local_user_123',
         clerkUserId: 'user_123',
-      } as any);
+        wasUpdated: true,
+      });
 
       const caller = await createCaller({
         userId: 'user_123',
@@ -57,7 +59,7 @@ describe('User Router', () => {
           ...mockClerkUser,
           imageUrl: 'https://example.com/old-avatar.jpg',
           publicMetadata: {},
-        } as any,
+        } as unknown as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -82,7 +84,7 @@ describe('User Router', () => {
     it('should throw error when file is too large', async () => {
       const caller = await createCaller({
         userId: 'user_123',
-        user: mockClerkUser as any,
+        user: mockClerkUser as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -105,7 +107,11 @@ describe('User Router', () => {
 
       vi.mocked(uploadProfileImage).mockResolvedValue('https://blob.vercel-storage.com/new.jpg');
       vi.mocked(deleteProfileImage).mockResolvedValue(undefined);
-      vi.mocked(syncUserFromClerk).mockResolvedValue({} as any);
+      vi.mocked(syncUserFromClerk).mockResolvedValue({
+        id: 'local_user_123',
+        clerkUserId: 'user_123',
+        wasUpdated: true,
+      });
 
       const caller = await createCaller({
         userId: 'user_123',
@@ -113,7 +119,7 @@ describe('User Router', () => {
           ...mockClerkUser,
           imageUrl: 'https://blob.vercel-storage.com/old.jpg',
           publicMetadata: {},
-        } as any,
+        } as unknown as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -137,7 +143,11 @@ describe('User Router', () => {
       const { syncUserFromClerk } = await import('@/lib/auth');
 
       vi.mocked(deleteProfileImage).mockResolvedValue(undefined);
-      vi.mocked(syncUserFromClerk).mockResolvedValue({} as any);
+      vi.mocked(syncUserFromClerk).mockResolvedValue({
+        id: 'local_user_123',
+        clerkUserId: 'user_123',
+        wasUpdated: true,
+      });
 
       const caller = await createCaller({
         userId: 'user_123',
@@ -145,7 +155,7 @@ describe('User Router', () => {
           ...mockClerkUser,
           imageUrl: 'https://blob.vercel-storage.com/avatar.jpg',
           publicMetadata: {},
-        } as any,
+        } as unknown as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
@@ -165,7 +175,7 @@ describe('User Router', () => {
           ...mockClerkUser,
           imageUrl: null,
           publicMetadata: {},
-        } as any,
+        } as unknown as ClerkUserType,
         orgId: null,
         orgRole: null,
       });
