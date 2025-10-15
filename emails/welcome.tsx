@@ -56,7 +56,7 @@ export function WelcomeEmail({ firstName, email, dashboardUrl, settingsUrl }: We
         {[
           'Next.js 15 with App Router and TypeScript',
           'Clerk Authentication with user management',
-          'Polar Billing integration for subscriptions',
+          'Stripe Billing integration for subscriptions',
           'Beautiful Shadcn UI components',
           'PostgreSQL database with Drizzle ORM',
           'Dark/Light mode support',

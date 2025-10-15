@@ -25,21 +25,27 @@ export async function POST() {
       return NextResponse.json({ error: 'No active subscription to cancel' }, { status: 400 });
     }
 
-    // Validate that subscription has a valid subscription ID
-    if (!subscriptionInfo.activeSubscription.subscriptionId) {
+    // Validate that subscription has a valid Stripe subscription ID
+    if (!subscriptionInfo.activeSubscription.stripeSubscriptionId) {
       return NextResponse.json(
         { error: 'Invalid subscription: missing subscription ID' },
         { status: 400 }
       );
     }
 
-    // Cancel the subscription
-    await cancelUserSubscription(clerkUser.id, subscriptionInfo.activeSubscription.subscriptionId);
+    // Cancel the subscription via Stripe
+    const result = await cancelUserSubscription(
+      clerkUser.id,
+      subscriptionInfo.activeSubscription.stripeSubscriptionId
+    );
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.message }, { status: 400 });
+    }
 
     return NextResponse.json({
       success: true,
-      message:
-        'Subscription cancelled successfully. Access will continue until the end of your billing period.',
+      message: result.message,
     });
   } catch (error) {
     console.error('Error cancelling subscription:', error);

@@ -1,6 +1,6 @@
 # Kosuke Template
 
-A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Polar Billing, Vercel Blob, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
+A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Stripe Billing, Vercel Blob, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
 
 ## 🚀 Features
 
@@ -9,7 +9,7 @@ A modern Next.js 15 template with TypeScript, Clerk authentication with Organiza
 - **Clerk Authentication** for user management with **Organizations & Teams**
 - **PostgreSQL** database with Drizzle ORM
 - **Shadcn UI** components with Tailwind CSS
-- **Polar** billing integration with automated sync (personal & organization subscriptions)
+- **Stripe** billing integration with automated sync (personal & organization subscriptions)
 - **Vercel Cron Jobs** for subscription data synchronization
 - **Resend** email service with **React Email** templates
 - **Profile image uploads** with Vercel Blob
@@ -89,11 +89,14 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 CLERK_WEBHOOK_SECRET=whsec_...
 
-# Polar Billing
-POLAR_ACCESS_TOKEN=polar_oat_...
-POLAR_ENVIRONMENT=sandbox
-POLAR_PRO_PRODUCT_ID=prod_...
-POLAR_BUSINESS_PRODUCT_ID=prod_...
+# Stripe Billing
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PRO_PRICE_ID=price_...      # $20/month
+STRIPE_BUSINESS_PRICE_ID=price_... # $200/month
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_SUCCESS_URL=http://localhost:3000/billing/success
+STRIPE_CANCEL_URL=http://localhost:3000/settings/billing
 
 # Sentry Error Monitoring
 NEXT_PUBLIC_SENTRY_DSN=https://your-sentry-dsn-here.ingest.sentry.io/project-id
@@ -161,7 +164,7 @@ pnpm run shadcn:force    # Force update all components
 
 This template includes a robust subscription synchronization system powered by Vercel Cron Jobs:
 
-- **🕐 Scheduled Sync**: Automatically syncs subscription data from Polar every 6 hours
+- **🕐 Scheduled Sync**: Automatically syncs subscription data from Stripe every 6 hours
 - **🔒 Secure Endpoint**: Protected by `CRON_SECRET` token authentication
 - **🛡️ Webhook Backup**: Ensures data consistency even if webhooks are missed
 - **📊 Monitoring**: Built-in health checks and comprehensive logging
@@ -245,7 +248,7 @@ pnpm run db:seed       # Seed database
 For complete deployment instructions, production configuration, and DevOps guidance, see the [CLI Setup Guide](./cli/README.md) which covers:
 
 - 🤖 **Interactive Vercel deployment** with automated environment variable setup
-- 🏦 **Production Polar billing** configuration
+- 🏦 **Production Stripe billing** configuration
 - 🔐 **Production Clerk authentication** setup
 - ☁️ **Custom domain configuration**
 - 🔒 **Security best practices**

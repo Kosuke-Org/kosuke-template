@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { ensureUserSynced } from '@/lib/auth';
-import { getUserSubscription, getSubscriptionEligibility, polar } from '@/lib/billing';
+import {
+  getUserSubscription,
+  getSubscriptionEligibility,
+  createCheckoutSession,
+} from '@/lib/billing';
 import { ApiErrorHandler } from '@/lib/api/errors';
 
 export async function POST(request: NextRequest) {
@@ -17,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Ensure user is synced to local database
-    const localUser = await ensureUserSynced(user);
+    await ensureUserSynced(user);
 
     const { tier } = await request.json();
 
@@ -39,61 +43,60 @@ export async function POST(request: NextRequest) {
           error: eligibility.reason || 'Cannot create new subscription or upgrade at this time.',
           action: 'customer_portal_required',
           message:
-            'Please manage your existing subscription first. Contact support or check your Polar emails for subscription management links.',
+            'Please manage your existing subscription first. You can access the Stripe Customer Portal from your billing settings.',
         },
         { status: 409 }
       );
     }
 
-    // Get the appropriate product ID
-    const productId =
-      tier === 'pro' ? process.env.POLAR_PRO_PRODUCT_ID! : process.env.POLAR_BUSINESS_PRODUCT_ID!;
+    const customerEmail = user.emailAddresses[0]?.emailAddress;
+    if (!customerEmail) {
+      return NextResponse.json({ error: 'No email found for user' }, { status: 400 });
+    }
 
-    // Prepare checkout data
-    const checkoutData = {
-      products: [productId],
-      successUrl: process.env.POLAR_SUCCESS_URL!,
-      customerEmail: user.emailAddresses[0]?.emailAddress,
+    // Create Stripe Checkout session
+    const result = await createCheckoutSession({
+      tier,
+      userId: user.id,
+      customerEmail,
       metadata: {
-        userId: user.id, // Clerk user ID
-        localUserId: localUser.id.toString(), // Local database ID
         tier,
         // Add context about previous subscription if it exists
-        ...(currentSubscription.activeSubscription?.subscriptionId && {
-          previousSubscriptionId: currentSubscription.activeSubscription.subscriptionId,
+        ...(currentSubscription.activeSubscription?.stripeSubscriptionId && {
+          previousSubscriptionId: currentSubscription.activeSubscription.stripeSubscriptionId,
         }),
         previousTier: currentSubscription.activeSubscription?.tier || 'free',
       },
-    };
+    });
 
-    // Create checkout session with Polar (following best practices)
-    const checkoutSession = await polar.checkouts.create(checkoutData);
+    if (!result.success) {
+      return NextResponse.json({ error: result.message }, { status: 400 });
+    }
 
     return NextResponse.json({
       success: true,
-      checkoutUrl: checkoutSession.url,
-      checkoutId: checkoutSession.id,
+      checkoutUrl: result.data?.url,
+      sessionId: result.data?.id,
     });
   } catch (error) {
     console.error('💥 Error creating checkout session:', error);
 
-    // Handle specific Polar API errors
+    // Handle specific Stripe API errors
     if (error instanceof Error) {
       if (error.message.includes('active subscription') || error.message.includes('already has')) {
-        // Best practice: Don't auto-sync, direct to customer portal
         return NextResponse.json(
           {
             success: false,
             error: 'You have an existing subscription that needs to be managed first.',
             action: 'customer_portal_required',
             message:
-              'Please contact support or check your Polar emails for subscription management links.',
+              'Please access the Stripe Customer Portal from your billing settings to manage your subscription.',
           },
           { status: 409 }
         );
       }
 
-      if (error.message.includes('product') && error.message.includes('not found')) {
+      if (error.message.includes('price') && error.message.includes('not found')) {
         return ApiErrorHandler.badRequest('Invalid subscription tier selected');
       }
     }

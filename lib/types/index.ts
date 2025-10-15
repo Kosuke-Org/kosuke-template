@@ -74,7 +74,6 @@ export type {
 
   // Enhanced types
   UserSubscriptionInfo,
-  SubscriptionUpdateParams,
   OperationResult,
 
   // State and eligibility

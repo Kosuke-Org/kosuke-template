@@ -9,7 +9,7 @@ You are an expert senior software engineer specializing in the Kosuke Template t
 **Core Stack**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Shadcn UI
 **Authentication**: Clerk with webhook integration
 **Database**: PostgreSQL with Drizzle ORM
-**Billing**: Polar billing with subscription management
+**Billing**: Stripe billing with subscription management
 **Storage**: Vercel Blob for file uploads
 **Email**: Resend for transactional emails
 **Monitoring**: Sentry for error tracking and performance
@@ -30,7 +30,7 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
 - `./lib`: Core utilities and configurations
   - `./lib/db`: Drizzle ORM schema, migrations, and database utilities
   - `./lib/auth`: Clerk authentication utilities
-  - `./lib/billing`: Polar billing integration
+  - `./lib/billing`: Stripe billing integration
   - `./lib/email`: Resend email templates and utilities
   - `./lib/storage`: Vercel Blob storage utilities
 - `./public`: Static assets
@@ -135,14 +135,15 @@ import { useUser } from '@clerk/nextjs';
 const { user, isLoaded } = useUser();
 ```
 
-### Polar Billing Integration
+### Stripe Billing Integration
 
-- **Products**: Configure PRO and BUSINESS tier product IDs in environment
+- **Prices**: Configure PRO and BUSINESS tier price IDs in environment
 - **Subscriptions**: Synced via webhooks to `userSubscriptions` table
-- **Checkout**: Use Polar SDK for subscription management
+- **Checkout**: Use Stripe Checkout for subscription management
 - **Tiers**: 'free', 'pro', 'business' - stored in database
 - **Webhooks**: Handle subscription changes via `/api/billing/webhook`
 - **Cron Sync**: Automated subscription sync every 6 hours
+- **Customer Portal**: Stripe manages payment methods and billing history
 
 ```typescript
 // Subscription check pattern
@@ -963,7 +964,7 @@ const handleUpload = async (file: File) => {
 - Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError)
 - Structure files: exported component, subcomponents, helpers, static content, types
 - Always reference Clerk users via `clerkUserId` in database operations
-- Use proper error handling for all external API calls (Clerk, Polar, Resend)
+- Use proper error handling for all external API calls (Clerk, Stripe, Resend)
 
 ### TypeScript and Type Safety Guidelines
 
@@ -1177,7 +1178,7 @@ import { tasks } from '@/lib/db/schema'; // OK in database queries
 
 - **Unit Tests**: Vitest for utility functions and components
 - **Integration Tests**: Database operations and API routes
-- **Mocking**: Use Vitest (`vi`) to mock Clerk, Polar, Resend APIs
+- **Mocking**: Use Vitest (`vi`) to mock Clerk, Stripe, Resend APIs
 - **Coverage**: Maintain good test coverage for critical paths
 - **E2E**: Consider Playwright for critical user flows
 

@@ -1,9 +1,9 @@
 import { db } from '@/lib/db';
-import { userSubscriptions } from '@/lib/db/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { userSubscriptions, users } from '@/lib/db/schema';
+import { eq, desc } from 'drizzle-orm';
 import { UserSubscription } from '@/lib/db/schema';
 import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
-import { type UserSubscriptionInfo, type SubscriptionUpdateParams } from '@/lib/types';
+import { type UserSubscriptionInfo } from '@/lib/types';
 
 /**
  * Core subscription CRUD operations
@@ -56,14 +56,21 @@ export function safeSubscriptionStatusCast(
  * Create a free tier subscription for a new user
  */
 export async function createFreeSubscription(clerkUserId: string): Promise<UserSubscription> {
+  // Get stripe customer ID if exists
+  const user = await db.query.users.findFirst({
+    where: eq(users.clerkUserId, clerkUserId),
+  });
+
   const freeSubscriptionData = {
     clerkUserId,
-    subscriptionId: null,
-    productId: null,
+    stripeSubscriptionId: null,
+    stripeCustomerId: user?.stripeCustomerId || null,
+    stripePriceId: null,
     status: SubscriptionStatus.ACTIVE,
     tier: SubscriptionTier.FREE,
     currentPeriodStart: null,
     currentPeriodEnd: null,
+    cancelAtPeriodEnd: 'false',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -105,15 +112,21 @@ export async function getUserSubscription(clerkUserId: string): Promise<UserSubs
   // Determine current tier based on subscription state
   let currentTier = SubscriptionTier.FREE;
 
+  // Check if subscription is marked for cancellation at period end
+  const isCancelAtPeriodEnd = activeSubscription.cancelAtPeriodEnd === 'true';
+
   // User has access to paid tier if:
-  // 1. Subscription is active
-  // 2. Subscription is canceled but still in grace period
+  // 1. Subscription is active and not marked for cancellation
+  // 2. Subscription is marked for cancellation but still in grace period
   const isInGracePeriod =
-    subscriptionStatus === SubscriptionStatus.CANCELED &&
+    isCancelAtPeriodEnd &&
     activeSubscription.currentPeriodEnd &&
     new Date() < activeSubscription.currentPeriodEnd;
 
-  if (subscriptionStatus === SubscriptionStatus.ACTIVE || isInGracePeriod) {
+  if (
+    (subscriptionStatus === SubscriptionStatus.ACTIVE && !isCancelAtPeriodEnd) ||
+    isInGracePeriod
+  ) {
     currentTier = subscriptionTier;
   }
 
@@ -123,28 +136,6 @@ export async function getUserSubscription(clerkUserId: string): Promise<UserSubs
     currentPeriodEnd: activeSubscription.currentPeriodEnd,
     activeSubscription,
   };
-}
-
-/**
- * Update user subscription status using Clerk user ID
- */
-export async function updateUserSubscription(
-  clerkUserId: string,
-  subscriptionId: string,
-  updates: SubscriptionUpdateParams
-): Promise<void> {
-  await db
-    .update(userSubscriptions)
-    .set({
-      ...updates,
-      updatedAt: new Date(),
-    })
-    .where(
-      and(
-        eq(userSubscriptions.clerkUserId, clerkUserId),
-        eq(userSubscriptions.subscriptionId, subscriptionId)
-      )
-    );
 }
 
 /**

@@ -12,16 +12,29 @@ import { PRICING } from './config';
  */
 
 /**
- * Calculate the current subscription state based on status and dates
+ * Calculate the current subscription state based on status, dates, and cancellation flag
  */
 export function calculateSubscriptionState(
   status: SubscriptionStatus | null,
   tier: SubscriptionTier,
-  currentPeriodEnd: Date | null
+  currentPeriodEnd: Date | null,
+  cancelAtPeriodEnd?: string | null
 ): SubscriptionState {
   // Free tier is always free
   if (tier === SubscriptionTier.FREE) {
     return SubscriptionState.FREE;
+  }
+
+  // Check if subscription is marked for cancellation at period end
+  const isMarkedForCancellation = cancelAtPeriodEnd === 'true';
+
+  if (isMarkedForCancellation) {
+    // Still in grace period
+    if (currentPeriodEnd && new Date() < currentPeriodEnd) {
+      return SubscriptionState.CANCELED_GRACE_PERIOD;
+    }
+    // Grace period expired
+    return SubscriptionState.CANCELED_EXPIRED;
   }
 
   // Handle active subscriptions
@@ -29,7 +42,7 @@ export function calculateSubscriptionState(
     return SubscriptionState.ACTIVE;
   }
 
-  // Handle canceled subscriptions
+  // Handle canceled subscriptions (immediate cancellation)
   if (status === SubscriptionStatus.CANCELED) {
     if (currentPeriodEnd && new Date() < currentPeriodEnd) {
       return SubscriptionState.CANCELED_GRACE_PERIOD;
@@ -60,9 +73,10 @@ export function calculateSubscriptionState(
 export function getSubscriptionEligibility(
   subscription: UserSubscriptionInfo
 ): SubscriptionEligibility {
-  const { status, tier, currentPeriodEnd } = subscription;
+  const { status, tier, currentPeriodEnd, activeSubscription } = subscription;
+  const cancelAtPeriodEnd = activeSubscription?.cancelAtPeriodEnd;
 
-  const state = calculateSubscriptionState(status, tier, currentPeriodEnd);
+  const state = calculateSubscriptionState(status, tier, currentPeriodEnd, cancelAtPeriodEnd);
 
   const eligibility: SubscriptionEligibility = {
     canReactivate: false,
@@ -85,7 +99,8 @@ export function getSubscriptionEligibility(
 
     case SubscriptionState.CANCELED_GRACE_PERIOD:
       eligibility.canReactivate = true;
-      eligibility.canCreateNew = true; // For tier changes (treat as new subscription)
+      // During grace period, user can only reactivate - no new subscriptions or upgrades
+      // They must either reactivate or wait for the period to end
       eligibility.gracePeriodEnds = currentPeriodEnd || undefined;
       break;
 

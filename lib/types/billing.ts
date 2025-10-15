@@ -32,19 +32,10 @@ export interface UserSubscriptionInfo {
   activeSubscription: UserSubscription | null;
 }
 
-export interface SubscriptionUpdateParams {
-  status?: SubscriptionStatus;
-  tier?: SubscriptionTier;
-  currentPeriodStart?: Date;
-  currentPeriodEnd?: Date;
-  canceledAt?: Date | null;
-}
-
 export interface CheckoutSessionParams {
-  tier: keyof typeof import('@/lib/billing/config').PRODUCT_IDS;
+  tier: keyof typeof import('@/lib/billing/config').PRICE_IDS;
   userId: string;
   customerEmail: string;
-  successUrl?: string;
   metadata?: Record<string, string>;
 }
 

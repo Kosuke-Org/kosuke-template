@@ -10,39 +10,23 @@ export function useSubscriptionActions() {
   const queryClient = useQueryClient();
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
 
-  const upgradeMutation = useMutation({
-    mutationFn: async ({
-      tier,
-      isUpgrade,
-    }: {
-      tier: string;
-      isUpgrade: boolean;
-    }): Promise<UpgradeResponse> => {
-      const endpoint = isUpgrade
-        ? '/api/billing/upgrade-subscription'
-        : '/api/billing/create-checkout';
-
-      const response = await fetch(endpoint, {
+  const checkoutMutation = useMutation({
+    mutationFn: async ({ tier }: { tier: string }): Promise<UpgradeResponse> => {
+      // Stripe Checkout handles both new subscriptions and upgrades
+      const response = await fetch('/api/billing/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tier }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to process upgrade request');
+        throw new Error('Failed to create checkout session');
       }
 
       return response.json();
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       if (data.success && data.checkoutUrl) {
-        if (variables.isUpgrade) {
-          toast({
-            title: 'Upgrade Initiated',
-            description: `Your subscription has been updated and you'll be redirected to complete your ${variables.tier} upgrade.`,
-            variant: 'default',
-          });
-        }
         window.location.href = data.checkoutUrl;
       } else {
         toast({
@@ -53,10 +37,10 @@ export function useSubscriptionActions() {
       }
     },
     onError: (error) => {
-      console.error('Upgrade error:', error);
+      console.error('Checkout error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to process upgrade. Please try again.',
+        description: 'Failed to create checkout session. Please try again.',
         variant: 'destructive',
       });
     },
@@ -79,8 +63,9 @@ export function useSubscriptionActions() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
-      queryClient.invalidateQueries({ queryKey: ['subscription-eligibility'] });
+      // Force immediate refetch to update UI
+      queryClient.refetchQueries({ queryKey: ['subscription-status'] });
+      queryClient.refetchQueries({ queryKey: ['subscription-eligibility'] });
 
       toast({
         title: 'Subscription Canceled',
@@ -112,8 +97,9 @@ export function useSubscriptionActions() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['subscription-status'] });
-      queryClient.invalidateQueries({ queryKey: ['subscription-eligibility'] });
+      // Force immediate refetch to update UI
+      queryClient.refetchQueries({ queryKey: ['subscription-status'] });
+      queryClient.refetchQueries({ queryKey: ['subscription-eligibility'] });
 
       toast({
         title: 'Subscription Reactivated',
@@ -131,10 +117,43 @@ export function useSubscriptionActions() {
     },
   });
 
-  const handleUpgrade = async (tier: string, currentTier: string, subscriptionStatus?: string) => {
+  const cancelDowngradeMutation = useMutation({
+    mutationFn: async (): Promise<{ success: boolean; message?: string }> => {
+      const response = await fetch('/api/billing/cancel-downgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel pending downgrade');
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Force immediate refetch to update UI
+      queryClient.refetchQueries({ queryKey: ['subscription-status'] });
+      queryClient.refetchQueries({ queryKey: ['subscription-eligibility'] });
+
+      toast({
+        title: 'Downgrade Canceled',
+        description: data.message || 'Your pending downgrade has been canceled.',
+        variant: 'default',
+      });
+    },
+    onError: (error) => {
+      console.error('Cancel downgrade error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to cancel pending downgrade. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleUpgrade = async (tier: string) => {
     setUpgradeLoading(tier);
-    const isUpgrade = currentTier !== 'free' && subscriptionStatus === 'active';
-    upgradeMutation.mutate({ tier, isUpgrade });
+    checkoutMutation.mutate({ tier });
   };
 
   const handleCancel = async () => {
@@ -145,13 +164,19 @@ export function useSubscriptionActions() {
     reactivateMutation.mutate();
   };
 
+  const handleCancelDowngrade = async () => {
+    cancelDowngradeMutation.mutate();
+  };
+
   return {
     handleUpgrade,
     handleCancel,
     handleReactivate,
-    isUpgrading: upgradeMutation.isPending,
+    handleCancelDowngrade,
+    isUpgrading: checkoutMutation.isPending,
     isCanceling: cancelMutation.isPending,
     isReactivating: reactivateMutation.isPending,
+    isCancelingDowngrade: cancelDowngradeMutation.isPending,
     upgradeLoading,
   };
 }

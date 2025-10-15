@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import {
-  syncUserSubscriptionFromPolar,
-  syncStaleSubscriptions,
-  emergencyFullSync,
-} from '@/lib/billing/polar-sync';
+import { syncUserSubscriptionFromStripe, syncStaleSubscriptions } from '@/lib/billing/stripe-sync';
 import { ensureUserSynced } from '@/lib/auth';
 import { ApiErrorHandler } from '@/lib/api/errors';
 
@@ -32,7 +28,7 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'user':
         // Sync current user's subscription
-        const userResult = await syncUserSubscriptionFromPolar(user.id);
+        const userResult = await syncUserSubscriptionFromStripe(user.id);
         return NextResponse.json({
           success: userResult.success,
           message: userResult.message,
@@ -50,20 +46,8 @@ export async function POST(request: NextRequest) {
           action: 'stale_sync',
         });
 
-      case 'emergency':
-        // Emergency full sync (admin-only - you might want to add auth check)
-        const emergencyResult = await emergencyFullSync(100);
-        return NextResponse.json({
-          success: true,
-          message: `Emergency sync: ${emergencyResult.synced}/${emergencyResult.processed} synced`,
-          processed: emergencyResult.processed,
-          synced: emergencyResult.synced,
-          errors: emergencyResult.errors,
-          action: 'emergency_sync',
-        });
-
       default:
-        return ApiErrorHandler.badRequest('Invalid action. Use: user, stale, or emergency');
+        return ApiErrorHandler.badRequest('Invalid action. Use: user or stale');
     }
   } catch (error) {
     console.error('💥 Error in sync endpoint:', error);
@@ -96,9 +80,8 @@ export async function GET() {
         lastUpdated: new Date().toISOString(),
       },
       availableActions: [
-        { action: 'user', description: 'Sync current user subscription' },
+        { action: 'user', description: 'Sync current user subscription from Stripe' },
         { action: 'stale', description: 'Sync all stale subscriptions (admin)' },
-        { action: 'emergency', description: 'Emergency full sync (admin)' },
       ],
     });
   } catch (error) {

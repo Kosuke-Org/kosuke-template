@@ -33,7 +33,7 @@ const coreFeatures = [
   {
     icon: Zap,
     title: 'Billing Ready',
-    description: 'Polar integration for subscriptions, webhooks, and payments.',
+    description: 'Stripe integration for subscriptions, webhooks, and payments.',
     metrics: 'PCI compliant',
   },
 ];
@@ -339,7 +339,7 @@ export function Home() {
                         <h3 className="text-base sm:text-lg font-semibold">Revenue Ready</h3>
                       </div>
                       <Badge variant="outline" className="text-xs">
-                        Polar + Stripe
+                        Stripe
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground font-sans">

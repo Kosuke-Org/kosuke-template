@@ -30,11 +30,13 @@ export async function GET() {
       canCreateNew: eligibility.canCreateNew,
       canUpgrade: eligibility.canUpgrade,
       canReactivate: eligibility.canReactivate,
+      canCancel: eligibility.canCancel,
       reason: eligibility.reason || null,
       currentSubscription: {
         tier: currentSubscription.tier,
         status: currentSubscription.status,
         currentPeriodEnd: currentSubscription.currentPeriodEnd,
+        cancelAtPeriodEnd: currentSubscription.activeSubscription?.cancelAtPeriodEnd,
         isInGracePeriod:
           currentSubscription.status === 'canceled' &&
           currentSubscription.currentPeriodEnd &&

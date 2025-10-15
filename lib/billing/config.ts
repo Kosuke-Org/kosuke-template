@@ -1,12 +1,12 @@
 /**
  * Billing configuration and constants
- * Contains product mappings, pricing information, and billing-related constants
+ * Contains price mappings, pricing information, and billing-related constants
  */
 
-// Product ID mapping for Polar products
-export const PRODUCT_IDS = {
-  pro: process.env.POLAR_PRO_PRODUCT_ID!,
-  business: process.env.POLAR_BUSINESS_PRODUCT_ID!,
+// Price ID mapping for Stripe prices
+export const PRICE_IDS = {
+  pro: process.env.STRIPE_PRO_PRICE_ID!,
+  business: process.env.STRIPE_BUSINESS_PRICE_ID!,
 } as const;
 
 // Pricing information for all tiers
@@ -33,5 +33,6 @@ export const PRICING = {
 
 // Billing-related URLs and endpoints
 export const BILLING_URLS = {
-  success: process.env.POLAR_SUCCESS_URL!,
+  success: process.env.STRIPE_SUCCESS_URL!,
+  cancel: process.env.STRIPE_CANCEL_URL!,
 } as const;

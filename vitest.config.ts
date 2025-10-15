@@ -24,7 +24,7 @@ export default defineConfig({
         'lib/email/**',
         'lib/auth/user-sync.ts',
         'lib/billing/operations.ts',
-        'lib/billing/polar-sync.ts',
+        'lib/billing/stripe-sync.ts',
         'lib/billing/cron-sync.ts',
         'lib/billing/subscription.ts',
         'lib/storage.ts',

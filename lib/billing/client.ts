@@ -1,17 +1,20 @@
-import { Polar } from '@polar-sh/sdk';
+import Stripe from 'stripe';
 
 /**
- * Centralized Polar client configuration
- * Single source of truth for all Polar API interactions
+ * Centralized Stripe client configuration
+ * Single source of truth for all Stripe API interactions
  */
 
-// Initialize Polar client with environment-based configuration
-export const polar = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN!,
-  server: process.env.POLAR_ENVIRONMENT === 'sandbox' ? 'sandbox' : 'production',
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
+}
+
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2025-09-30.clover',
+  typescript: true,
 });
 
 /**
- * Re-export Polar types for convenience
+ * Re-export Stripe types for convenience
  */
-export type { Polar } from '@polar-sh/sdk';
+export type { Stripe };

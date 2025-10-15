@@ -13,6 +13,7 @@ export const users = pgTable('users', {
   email: text('email').notNull(),
   displayName: text('display_name'),
   profileImageUrl: text('profile_image_url'),
+  stripeCustomerId: text('stripe_customer_id').unique(), // Stripe customer ID
   notificationSettings: text('notification_settings'), // JSON string for notification preferences
   lastSyncedAt: timestamp('last_synced_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -73,7 +74,7 @@ export const teamMemberships = pgTable('team_memberships', {
   joinedAt: timestamp('joined_at').defaultNow().notNull(),
 });
 
-// User Subscriptions - Links Clerk users/organizations to Polar subscriptions
+// User Subscriptions - Links Clerk users/organizations to Stripe subscriptions
 export const userSubscriptions = pgTable('user_subscriptions', {
   id: uuid('id').defaultRandom().primaryKey(),
   clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID (owner/admin)
@@ -81,12 +82,15 @@ export const userSubscriptions = pgTable('user_subscriptions', {
     onDelete: 'cascade',
   }), // Nullable for personal subscriptions
   subscriptionType: text('subscription_type').notNull().default('personal'), // 'personal' | 'organization'
-  subscriptionId: text('subscription_id').unique(), // Polar subscription ID (nullable for free tier)
-  productId: text('product_id'), // Polar product ID (nullable for free tier)
+  stripeSubscriptionId: text('stripe_subscription_id').unique(), // Stripe subscription ID (nullable for free tier)
+  stripeCustomerId: text('stripe_customer_id'), // Stripe customer ID (nullable for free tier)
+  stripePriceId: text('stripe_price_id'), // Stripe price ID (nullable for free tier)
   status: text('status').notNull(), // 'active', 'canceled', 'past_due', 'unpaid', 'incomplete'
   tier: text('tier').notNull(), // 'free', 'pro', 'business'
   currentPeriodStart: timestamp('current_period_start'),
   currentPeriodEnd: timestamp('current_period_end'),
+  cancelAtPeriodEnd: text('cancel_at_period_end').notNull().default('false'), // 'true' or 'false' - Stripe cancellation pattern
+  scheduledDowngradeTier: text('scheduled_downgrade_tier'), // Target tier for scheduled downgrade (nullable)
   canceledAt: timestamp('canceled_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

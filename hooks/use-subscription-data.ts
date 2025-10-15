@@ -29,12 +29,10 @@ export function useSubscriptionData() {
       }
       const data = await response.json();
       return {
-        canReactivate:
-          data.currentSubscription?.isInGracePeriod &&
-          data.currentSubscription?.status === 'canceled',
-        canCreateNew: data.canSubscribe,
-        canUpgrade: data.canSubscribe,
-        canCancel: data.currentSubscription?.status === 'active',
+        canReactivate: data.canReactivate,
+        canCreateNew: data.canCreateNew,
+        canUpgrade: data.canUpgrade,
+        canCancel: data.canCancel, // Use backend-calculated value
         state: data.currentSubscription?.status || 'free',
         gracePeriodEnds: data.currentSubscription?.currentPeriodEnd,
         reason: data.reason,

@@ -1,0 +1,1 @@
+ALTER TABLE "user_subscriptions" ADD COLUMN "scheduled_downgrade_tier" text;

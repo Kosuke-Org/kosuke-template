@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { reactivateUserSubscription, getSubscriptionEligibility } from '@/lib/billing';
-import { getUserSubscriptionWithSync } from '@/lib/billing/polar-sync';
+import {
+  reactivateUserSubscription,
+  getSubscriptionEligibility,
+  getUserSubscription,
+} from '@/lib/billing';
 import { ensureUserSynced } from '@/lib/auth';
 import { ApiErrorHandler } from '@/lib/api/errors';
 
@@ -20,8 +23,8 @@ export async function POST() {
     // Ensure user is synced to local database
     await ensureUserSynced(clerkUser);
 
-    // Get user's current subscription and check eligibility (with sync fallback)
-    const subscriptionInfo = await getUserSubscriptionWithSync(clerkUser.id, true);
+    // Get user's current subscription and check eligibility
+    const subscriptionInfo = await getUserSubscription(clerkUser.id);
     const eligibility = getSubscriptionEligibility(subscriptionInfo);
 
     // Validate reactivation eligibility
@@ -36,26 +39,30 @@ export async function POST() {
       );
     }
 
-    // Validate that subscription exists and has a valid subscription ID
-    if (!subscriptionInfo.activeSubscription?.subscriptionId) {
+    // Validate that subscription exists and has a valid Stripe subscription ID
+    if (!subscriptionInfo.activeSubscription?.stripeSubscriptionId) {
       return NextResponse.json(
         { error: 'No valid subscription found to reactivate' },
         { status: 400 }
       );
     }
 
-    // Reactivate the subscription
+    // Reactivate the subscription via Stripe
     const result = await reactivateUserSubscription(
       clerkUser.id,
-      subscriptionInfo.activeSubscription.subscriptionId
+      subscriptionInfo.activeSubscription.stripeSubscriptionId
     );
+
+    if (!result.success) {
+      return NextResponse.json({ error: result.message }, { status: 400 });
+    }
 
     return NextResponse.json({
       success: true,
       message: result.message,
       gracePeriodEnds: eligibility.gracePeriodEnds?.toISOString(),
       subscription: {
-        id: subscriptionInfo.activeSubscription.subscriptionId,
+        id: subscriptionInfo.activeSubscription.stripeSubscriptionId,
         tier: subscriptionInfo.activeSubscription.tier,
         status: 'active',
       },

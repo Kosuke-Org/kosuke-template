@@ -31,29 +31,35 @@ export const mockClerkWebhookUser = {
   updated_at: Date.now(),
 };
 
-// Mock Polar responses
-export const mockPolarCheckout = {
-  id: 'checkout_123',
-  url: 'https://polar.sh/checkout/123',
+// Mock Stripe responses
+export const mockStripeCheckoutSession = {
+  id: 'cs_test_123',
+  url: 'https://checkout.stripe.com/c/pay/cs_test_123',
   status: 'open',
-  products: ['product_123'],
-  metadata: {},
+  mode: 'subscription',
+  customer: 'cus_123',
+  metadata: { clerkUserId: 'user_123', tier: 'pro' },
 };
 
-export const mockPolarSubscription = {
-  id: 'subscription_123',
+export const mockStripeSubscription = {
+  id: 'sub_123',
   status: 'active',
-  current_period_start: new Date().toISOString(),
-  current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-  customer_id: 'customer_123',
-  product_id: 'product_123',
-  price_id: 'price_123',
-  metadata: { userId: 'user_123' },
+  current_period_start: Math.floor(Date.now() / 1000),
+  current_period_end: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000),
+  customer: 'cus_123',
+  items: {
+    data: [{ price: { id: 'price_123' } }],
+  },
+  cancel_at_period_end: false,
+  metadata: { clerkUserId: 'user_123', tier: 'pro' },
 };
 
-export const mockPolarWebhookEvent = {
-  type: 'subscription.created',
-  data: mockPolarSubscription,
+export const mockStripeWebhookEvent = {
+  id: 'evt_123',
+  type: 'customer.subscription.created',
+  data: {
+    object: mockStripeSubscription,
+  },
 };
 
 // Setup mocks
@@ -68,20 +74,31 @@ export function setupMocks() {
     },
   }));
 
-  // Mock Polar client
+  // Mock Stripe client
   vi.mock('@/lib/billing/client', () => ({
-    polar: {
-      checkouts: {
-        create: vi.fn(() => Promise.resolve(mockPolarCheckout)),
+    stripe: {
+      checkout: {
+        sessions: {
+          create: vi.fn(() => Promise.resolve(mockStripeCheckoutSession)),
+          retrieve: vi.fn(() => Promise.resolve(mockStripeCheckoutSession)),
+        },
       },
       subscriptions: {
-        list: vi.fn(() => Promise.resolve({ items: [mockPolarSubscription] })),
-        get: vi.fn(() => Promise.resolve(mockPolarSubscription)),
-        cancel: vi.fn(() => Promise.resolve(mockPolarSubscription)),
-        reactivate: vi.fn(() => Promise.resolve(mockPolarSubscription)),
+        retrieve: vi.fn(() => Promise.resolve(mockStripeSubscription)),
+        update: vi.fn(() => Promise.resolve(mockStripeSubscription)),
+        list: vi.fn(() => Promise.resolve({ data: [mockStripeSubscription] })),
+      },
+      customers: {
+        create: vi.fn(() => Promise.resolve({ id: 'cus_123' })),
+        retrieve: vi.fn(() => Promise.resolve({ id: 'cus_123' })),
+      },
+      billingPortal: {
+        sessions: {
+          create: vi.fn(() => Promise.resolve({ url: 'https://billing.stripe.com/session/123' })),
+        },
       },
       webhooks: {
-        constructEvent: vi.fn(() => mockPolarWebhookEvent),
+        constructEvent: vi.fn(() => mockStripeWebhookEvent),
       },
     },
   }));
