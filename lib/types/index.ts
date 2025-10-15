@@ -102,6 +102,9 @@ export type {
 // Webhook type guards
 export { isUserEvent, isOrganizationEvent, isMembershipEvent, isInvitationEvent } from './webhooks';
 
+// Engine types
+export type { CurrencyCode, CurrencyConvertRequest, CurrencyConvertResponse } from './engine';
+
 // Note: API types are now handled by lib/api module
 // Import from '@/lib/api' for API-related types and utilities
 

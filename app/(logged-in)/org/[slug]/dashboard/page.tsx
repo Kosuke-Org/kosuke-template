@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { CurrencyConverter } from './components/currency-converter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -750,6 +751,20 @@ export default function Page() {
                   ))}
                 </div>
               </ScrollArea>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Currency Converter Example to show how to use the engine service */}
+        <section className="space-y-4">
+          <h3 className="text-2xl font-semibold">Currency Converter Example</h3>
+          <Card>
+            <CardHeader>
+              <CardTitle>Currency Converter</CardTitle>
+              <CardDescription>Example integration with the engine service</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CurrencyConverter />
             </CardContent>
           </Card>
         </section>
