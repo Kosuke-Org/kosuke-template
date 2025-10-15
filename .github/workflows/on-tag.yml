@@ -6,8 +6,8 @@ on:
       - 'v*.*.*'
 
 jobs:
-  update-version-file:
-    name: Update Version File
+  update-version-files:
+    name: Update Version Files
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -22,23 +22,38 @@ jobs:
         id: get_version
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
+          VERSION_NUMBER=${VERSION#v}
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "VERSION_NUMBER=${VERSION_NUMBER}" >> $GITHUB_ENV
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Update package.json
+        run: |
+          npm version ${{ env.VERSION_NUMBER }} --no-git-tag-version --allow-same-version
+
+      - name: Update engine/pyproject.toml
+        run: |
+          sed -i "3s/version = \".*\"/version = \"${{ env.VERSION_NUMBER }}\"/" engine/pyproject.toml
 
       - name: Update .version file
         run: |
           echo "${{ env.VERSION }}" > .version
 
-      - name: Commit and push version file
+      - name: Commit and push version updates
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add .version
+          git add package.json engine/pyproject.toml .version
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update version to ${{ env.VERSION }}" && git push origin HEAD:main)
 
-  build-and-push:
-    name: Build and Push Docker Image
-    needs: update-version-file
+  build-and-release:
+    name: Build Docker Image and Create Release
+    needs: update-version-files
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -86,3 +101,52 @@ jobs:
           name: Release ${{ env.VERSION }}
           generate_release_notes: true
           token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            ## What's Changed
+            
+            This release includes changes automatically categorized from merged pull requests.
+            
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ env.VERSION }}
+            
+            ### PR Label Categories:
+            - 🚀 **feature**: New features and enhancements
+            - 🐛 **bug**: Bug fixes and patches
+            - 📚 **documentation**: Documentation updates
+            - 🔧 **enhancement**: Improvements to existing features
+            - ⚡ **performance**: Performance improvements
+            - 🔒 **security**: Security fixes
+            - 💥 **breaking**: Breaking changes (requires migration)
+            - 🧹 **chore**: Maintenance and internal changes
+            
+            ---
+            
+            ${{ github.event.release.body }}
+
+      - name: Setup Node.js for Docusaurus
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Create Docusaurus Version (major/minor only)
+        if: ${{ !contains(env.VERSION, 'rc') && !contains(env.VERSION, 'beta') && !contains(env.VERSION, 'alpha') }}
+        run: |
+          cd docs
+          pnpm install --frozen-lockfile
+          VERSION_NUMBER=${VERSION#v}
+          pnpm run docusaurus docs:version $VERSION_NUMBER
+          
+          if [ -d "versioned_docs/version-$VERSION_NUMBER" ]; then
+            # Update lastVersion in docusaurus.config.ts to the new version
+            sed -i "s/lastVersion: '[^']*'/lastVersion: '$VERSION_NUMBER'/" docusaurus.config.ts
+            
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add versioned_docs/ versioned_sidebars/ versions.json docusaurus.config.ts
+            git commit -m "docs: add version $VERSION_NUMBER snapshot"
+            git push origin HEAD:main
+          fi

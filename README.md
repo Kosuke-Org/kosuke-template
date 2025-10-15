@@ -1,8 +1,12 @@
 # Kosuke Template
 
+[![GitHub Release](https://img.shields.io/github/v/release/filopedraz/kosuke-template?style=flat-square&logo=github&color=blue)](https://github.com/filopedraz/kosuke-template/releases)
+[![License](https://img.shields.io/github/license/filopedraz/kosuke-template?style=flat-square&color=green)](LICENSE)
+[![Documentation](https://img.shields.io/badge/docs-docs--template.kosuke.ai-blue?style=flat-square&logo=docusaurus)](https://docs-template.kosuke.ai)
+
 A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Stripe Billing, Vercel Blob, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
 
-## 🚀 Features
+Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billing, and complete multi-tenant functionality.
 
 - **Next.js 15** with App Router
 - **TypeScript** for type safety
@@ -19,75 +23,88 @@ A modern Next.js 15 template with TypeScript, Clerk authentication with Organiza
 - **Responsive design** with dark/light mode
 - **Comprehensive testing** setup with Jest
 
-## 🤖 Interactive Setup Guide (Recommended)
+## 📚 Documentation
 
-**For the easiest setup experience**, use our interactive CLI setup guide that walks you through everything step-by-step:
+**Complete setup guide, architecture, and features documentation:**
+
+👉 **[docs-template.kosuke.ai](https://docs-template.kosuke.ai)**
+
+## 🚀 Quick Links
+
+- [Documentation Overview](https://docs-template.kosuke.ai/docs/) - Architecture, features, and services
+- [Deployment Guide](https://docs-template.kosuke.ai/docs/deployment-guide) - Deploy to production in 60-90 minutes
+
+## 🛠 Tech Stack
+
+- **Framework**: Next.js 15 (App Router) + React 19 + TypeScript
+- **Auth**: Clerk (with Organizations)
+- **Database**: PostgreSQL (Neon) + Drizzle ORM
+- **Billing**: Stripe subscriptions
+- **Email**: Resend + React Email
+- **Storage**: Vercel Blob
+- **Monitoring**: Sentry
+- **UI**: Tailwind CSS + Shadcn UI
+
+## 🤝 Contributing
+
+We welcome contributions to improve Kosuke Template! This guide helps you set up your local development environment and submit pull requests.
+
+### Prerequisites
+
+Before contributing, ensure you have:
+
+- **Node.js 20+**: [nodejs.org](https://nodejs.org)
+- **pnpm**: `npm install -g pnpm`
+- **Docker Desktop**: [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)
+- **Git**: [git-scm.com](https://git-scm.com)
+
+### Required Service Accounts
+
+You'll need accounts with these services (all have free tiers):
+
+| Service    | Purpose        | Sign Up                          | Free Tier       |
+| ---------- | -------------- | -------------------------------- | --------------- |
+| **Clerk**  | Authentication | [clerk.com](https://clerk.com)   | 10k MAUs        |
+| **Stripe** | Billing        | [stripe.com](https://stripe.com) | Test mode       |
+| **Resend** | Email          | [resend.com](https://resend.com) | 100 emails/day  |
+| **Sentry** | Monitoring     | [sentry.io](https://sentry.io)   | 5k events/month |
+
+### Local Development Setup
+
+#### 1. Fork & Clone
 
 ```bash
-cd cli
-virtualenv venv -p 3.12
-source venv/bin/activate
-pip install -r requirements.txt
-python main.py
+# Fork the repository on GitHub
+# Then clone your fork
+git clone https://github.com/YOUR_USERNAME/kosuke-template.git
+cd kosuke-template
 ```
 
-The interactive setup guide will:
-
-- ✅ Guide you through creating all necessary accounts
-- ✅ Walk you through configuring each service
-- ✅ Generate environment files automatically
-- ✅ Save progress so you can resume anytime
-- ✅ Set up production deployment on Vercel
-
-📖 **For detailed setup instructions, deployment guides, and DevOps assistance**, see the [CLI Setup Guide](./cli/README.md).
-
-## 🛠 Manual Setup (Alternative)
-
-If you prefer to set up services manually or already have accounts configured:
-
-### Quick Start
-
-1. **Clone and setup:**
-
-   ```bash
-   git clone <your-forked-repo>
-   cd your-project-name
-   cp .env.example .env
-   ```
-
-2. **Database:**
-
-   ```bash
-   docker compose up -d
-   pnpm run db:migrate
-   ```
-
-3. **Install and run:**
-
-   ```bash
-   pnpm install
-   pnpm run dev
-   ```
-
-4. **Email development (optional):**
-
-   ```bash
-   pnpm run dev:email  # Runs Next.js + React Email preview
-   pnpm run email:dev  # React Email preview only
-   ```
-
-### Environment Variables
-
-Create a `.env` file with these required variables:
+#### 2. Install Dependencies
 
 ```bash
-# Database
-POSTGRES_URL=postgres://postgres:postgres@localhost:54321/postgres
+pnpm install
+```
 
-# Clerk Authentication (Organizations enabled)
+#### 3. Set Up Environment Variables
+
+Create `.env` file in the root directory:
+
+```bash
+# Database (Local PostgreSQL via Docker)
+POSTGRES_URL=postgres://postgres:postgres@localhost:54321/postgres
+POSTGRES_DB=postgres
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+
+# Clerk Authentication (from dashboard.clerk.com)
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 CLERK_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
 
 # Stripe Billing
 STRIPE_PUBLISHABLE_KEY=pk_test_...
@@ -98,66 +115,36 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_SUCCESS_URL=http://localhost:3000/billing/success
 STRIPE_CANCEL_URL=http://localhost:3000/settings/billing
 
-# Sentry Error Monitoring
-NEXT_PUBLIC_SENTRY_DSN=https://your-sentry-dsn-here.ingest.sentry.io/project-id
+# Resend Email (from resend.com/api-keys)
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=onboarding@resend.dev
+RESEND_FROM_NAME=Kosuke Template
 
-# Resend Email Service
-RESEND_API_KEY=re_your_resend_api_key_here
-RESEND_FROM_EMAIL=onboarding@yourdomain.com
-RESEND_FROM_NAME=Your App Name
-RESEND_REPLY_TO=support@yourdomain.com
+# Sentry (from sentry.io - optional for local dev)
+NEXT_PUBLIC_SENTRY_DSN=https://...@....ingest.sentry.io/...
 
-# Vercel Blob
-BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
-
-# Subscription Sync Security
-CRON_SECRET=your_secure_cron_secret_here
-
-# Plausible Analytics (Optional)
-NEXT_PUBLIC_PLAUSIBLE_DOMAIN=your-domain.com
-NEXT_PUBLIC_PLAUSIBLE_HOST=https://plausible.io
+# Application
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+CRON_SECRET=dev_cron_secret
 ```
 
-For detailed instructions on obtaining these keys and setting up each service, see the [CLI Setup Guide](./cli/README.md).
+**Get Your Credentials**:
 
-## 🌿 Neon Preview Branches (Zero-Config)
+- **Clerk**: Create free app at [dashboard.clerk.com](https://dashboard.clerk.com) → Enable Organizations → Get API keys
+- **Stripe**: Create account at [stripe.com](https://stripe.com) → Get API keys → Create products and prices
+- **Resend**: Sign up → Create API key → Use `onboarding@resend.dev` for testing
+- **Sentry**: Create project → Copy DSN (optional for local development)
 
-This template includes automatic database branching for pull request previews using Neon + Vercel Integration:
-
-- **🔄 Auto-Create**: Each PR gets its own isolated database branch
-- **📦 Auto-Migrate**: Migrations run via `prebuild` script (before every deploy)
-- **🧹 Auto-Cleanup**: Preview branches deleted when PRs close
-- **💰 Cost-Effective**: Neon branches use copy-on-write storage
-
-**How It Works**:
-
-- Vercel automatically creates Neon branch for each PR
-- `prebuild` script runs migrations before build
-- Works for both preview and production deployments
-
-## 🧪 Testing
-
-Run tests with:
+#### 4. Start Database
 
 ```bash
-pnpm test              # Run all tests
-pnpm run test:watch    # Watch mode
-pnpm run test:coverage # Coverage report
+docker-compose up -d
 ```
 
-## 🤖 Automated Shadcn/UI Updates
-
-This template includes an automated system to keep your shadcn/ui components up-to-date:
-
-- **🕐 Daily Checks**: Automatically checks for component updates every day at 2 AM UTC
-- **📋 Smart PRs**: Creates pull requests only when updates are available
-- **🛡️ Safe Updates**: Includes backups, change summaries, and review guidelines
-- **🔧 Manual Control**: Run updates manually when needed
+#### 5. Run Migrations
 
 ```bash
-pnpm run shadcn:check    # Check for available updates
-pnpm run shadcn:update   # Update components manually
-pnpm run shadcn:force    # Force update all components
+pnpm run db:migrate
 ```
 
 ## ⚡ Automated Subscription Sync
@@ -177,85 +164,115 @@ This template uses **React Email** for building beautiful, responsive email temp
 
 ### Email Development Workflow
 
-```bash
-pnpm run email:dev     # Start React Email preview server (port 3001)
-pnpm run dev:email     # Run both Next.js and React Email preview
-pnpm run email:export  # Export email templates to static HTML
-```
-
-### Creating Email Templates
-
-1. **Create your template** in the `emails/` directory:
-
-```tsx
-// emails/my-template.tsx
-import { BaseLayout } from './base-layout';
-import { Section, Text, Button } from '@react-email/components';
-
-export function MyEmailTemplate({ name }: { name: string }) {
-  return (
-    <BaseLayout preview="Welcome to our service!">
-      <Section>
-        <Text>Hello {name}!</Text>
-        <Button href="https://example.com">Get Started</Button>
-      </Section>
-    </BaseLayout>
-  );
-}
-```
-
-2. **Send the email** using the updated email service:
-
-```tsx
-import { sendEmail } from '@/lib/email';
-import { MyEmailTemplate } from '@/emails/my-template';
-
-await sendEmail({
-  to: 'user@example.com',
-  subject: 'Welcome!',
-  react: <MyEmailTemplate name="John" />,
-});
-```
-
-### Email Preview & Testing
-
-- **Preview**: Visit [http://localhost:3001](http://localhost:3001) when running `pnpm run email:dev`
-- **Live Reload**: Template changes are reflected instantly in the preview
-- **Responsive**: Test email rendering across different screen sizes
-- **Plain Text**: Automatically generates plain text versions
-
-## 📦 Available Scripts
+#### 6. Start Development Server
 
 ```bash
-pnpm run dev           # Start development server
-pnpm run dev:email     # Start Next.js + React Email preview
-pnpm run build         # Build for production
-pnpm run start         # Start production server
-pnpm run lint          # Run ESLint
-pnpm run typecheck     # Run type checking
-pnpm run format        # Format code with Prettier
-pnpm run email:dev     # Start React Email preview server
-pnpm run email:export  # Export email templates to HTML
-pnpm run db:generate   # Generate database migrations
-pnpm run db:migrate    # Run database migrations
-pnpm run db:push       # Push schema changes
-pnpm run db:studio     # Open Drizzle Studio
-pnpm run db:seed       # Seed database
+pnpm run dev
 ```
 
-## 🚀 Deployment & Production
+Visit [localhost:3000](http://localhost:3000) 🚀
 
-For complete deployment instructions, production configuration, and DevOps guidance, see the [CLI Setup Guide](./cli/README.md) which covers:
+### Common Commands
 
-- 🤖 **Interactive Vercel deployment** with automated environment variable setup
-- 🏦 **Production Stripe billing** configuration
-- 🔐 **Production Clerk authentication** setup
-- ☁️ **Custom domain configuration**
-- 🔒 **Security best practices**
-- 📊 **Monitoring and maintenance**
+```bash
+# Development
+pnpm run dev              # Start dev server (port 3000)
+pnpm run build            # Build for production
+pnpm run start            # Start production server
 
-The CLI guide provides step-by-step instructions for both development and production environments.
+# Database
+pnpm run db:generate      # Generate migration from schema changes
+pnpm run db:migrate       # Run pending migrations
+pnpm run db:studio        # Open Drizzle Studio (visual DB browser)
+pnpm run db:seed          # Seed database with test data
 
-## 📄 License
+# Email Development
+pnpm run email:dev        # Preview email templates (port 3001)
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+# Code Quality
+pnpm run lint             # Run ESLint
+pnpm run typecheck        # Run TypeScript type checking
+pnpm run format           # Format code with Prettier
+
+# Testing
+pnpm test                 # Run all tests
+pnpm run test:watch       # Watch mode
+pnpm run test:coverage    # Coverage report
+```
+
+### Database Operations
+
+#### Making Schema Changes
+
+```bash
+# 1. Edit lib/db/schema.ts
+# 2. Generate migration
+pnpm run db:generate
+
+# 3. Review generated SQL in lib/db/migrations/
+# 4. Apply migration
+pnpm run db:migrate
+```
+
+#### Visual Database Browser
+
+```bash
+pnpm run db:studio
+# Visit https://local.drizzle.studio
+```
+
+### Email Template Development
+
+```bash
+# Start preview server
+pnpm run email:dev
+
+# Visit localhost:3001 to:
+# - Preview all email templates
+# - Test with different props
+# - View HTML and plain text versions
+# - Check responsive design
+```
+
+### Testing
+
+#### Run Tests
+
+```bash
+# All tests
+pnpm test
+
+# Watch mode (auto-rerun on changes)
+pnpm run test:watch
+
+# With coverage report
+pnpm run test:coverage
+```
+
+### Getting Help
+
+- **Documentation**: [docs-template.kosuke.ai](https://docs-template.kosuke.ai)
+- **GitHub Issues**: [github.com/filopedraz/kosuke-template/issues](https://github.com/filopedraz/kosuke-template/issues)
+- **Discussions**: Use GitHub Discussions for questions
+
+## 🚀 Releasing (Maintainers)
+
+Creating a new release is simple:
+
+```bash
+# Create and push a tag
+git tag -a v1.2.0 -m "Release version 1.2.0"
+git push origin v1.2.0
+```
+
+GitHub Actions will automatically:
+- Update all version files (package.json, pyproject.toml, .version)
+- Build and push Docker images
+- Create GitHub Release with changelog
+- Generate documentation version snapshot
+
+See [Contributing Guide](https://docs-template.kosuke.ai/docs/contributing) for full release process.
+
+## 📝 License
+
+MIT License - see [LICENSE](./LICENSE) file for details.
