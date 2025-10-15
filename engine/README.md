@@ -19,12 +19,15 @@ This service provides a simple health check endpoint and can be extended with ad
 
 ```
 engine/
-├── main.py              # FastAPI application with endpoints
-├── models.py            # Pydantic models for request/response validation
-├── pyproject.toml       # UV project configuration and dependencies
-├── Dockerfile           # Container configuration for Fly.io
-├── fly.toml            # Fly.io deployment configuration
-└── README.md           # This file
+├── main.py                    # FastAPI application with endpoints
+├── models.py                  # Pydantic models for request/response validation
+├── src/                       # Source code
+│   └── api                    # Example API endpoint
+         └── currency.py       # Example algorithm module
+├── pyproject.toml             # UV project configuration and dependencies
+├── Dockerfile                 # Container configuration for Fly.io
+├── fly.toml                   # Fly.io deployment configuration
+└── README.md                  # This file
 ```
 
 ## API Endpoints
@@ -61,6 +64,31 @@ Root endpoint with API information.
 ```
 
 ### GET /docs
+### POST /convert
+
+Converts currency from one to another. This endpoint is purely an example to illustrate how the engine can expose algorithmic functionality. Replace `src/currency_converter.py` with your real logic.
+
+Request body:
+
+```json
+{
+  "amount": 100,
+  "from_currency": "USD",
+  "to_currency": "EUR"
+}
+```
+
+Response body:
+
+```json
+{
+  "converted_amount": 85.0,
+  "from_currency": "USD",
+  "to_currency": "EUR",
+  "exchange_rate": 0.85
+}
+```
+
 
 Interactive API documentation (Swagger UI).
 
@@ -114,6 +142,15 @@ This project uses several tools to maintain code quality:
 - **MyPy**: Static type checking
 - **Pytest**: Testing framework with coverage
 
+Ruff is enforced in CI and should be used to format any generated code. If you generate Python modules (e.g., clients, models), run:
+
+```bash
+ruff format .
+ruff check . --fix
+```
+
+Please ensure any codegen pipeline includes a formatting step with Ruff.
+
 #### Manual Code Quality Checks
 
 ```bash
@@ -145,6 +182,10 @@ git commit -m "message" --no-verify
 curl http://localhost:8000/health
 
 curl http://localhost:8000/
+
+curl -X POST http://localhost:8000/convert \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 100, "from_currency": "USD", "to_currency": "EUR"}'
 ```
 
 ## Docker Development
