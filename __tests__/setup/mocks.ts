@@ -14,6 +14,9 @@ export const mockClerkUserType = {
   updatedAt: Date.now(),
 };
 
+// Export as mockClerkUser for consistency with tests
+export const mockClerkUser = mockClerkUserType;
+
 export const mockClerkAuth = {
   userId: 'user_123',
   sessionId: 'session_123',

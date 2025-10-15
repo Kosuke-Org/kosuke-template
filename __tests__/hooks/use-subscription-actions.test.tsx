@@ -3,12 +3,24 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
 import { resetMocks } from '../setup/mocks';
 import { vi } from 'vitest';
+import { httpBatchLink } from '@trpc/client';
+import { trpc } from '@/lib/trpc/client';
+import superjson from 'superjson';
+import React from 'react';
 
 // Mock useToast hook
 const mockToast = vi.fn();
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
     toast: mockToast,
+  }),
+}));
+
+// Mock Next.js router
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    refresh: vi.fn(),
   }),
 }));
 
@@ -20,9 +32,20 @@ const createWrapper = () => {
     },
   });
 
+  const trpcClient = trpc.createClient({
+    links: [
+      httpBatchLink({
+        url: '/api/trpc',
+        transformer: superjson,
+      }),
+    ],
+  });
+
   // eslint-disable-next-line react/display-name
   return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </trpc.Provider>
   );
 };
 

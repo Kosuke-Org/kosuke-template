@@ -1,65 +1,21 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import type { SubscriptionInfo, SubscriptionEligibility } from '@/lib/types';
+import { trpc } from '@/lib/trpc/client';
 
-export function useSubscriptionData() {
-  const { toast } = useToast();
-
-  const subscriptionQuery = useQuery({
-    queryKey: ['subscription-status'],
-    queryFn: async (): Promise<SubscriptionInfo> => {
-      const response = await fetch('/api/billing/subscription-status');
-      if (!response.ok) {
-        throw new Error('Failed to fetch subscription info');
-      }
-      return response.json();
-    },
-    retry: 1,
+/**
+ * Get user's subscription status
+ */
+export function useSubscriptionStatus() {
+  return trpc.billing.getStatus.useQuery(undefined, {
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
+}
 
-  const eligibilityQuery = useQuery({
-    queryKey: ['subscription-eligibility'],
-    queryFn: async (): Promise<SubscriptionEligibility> => {
-      const response = await fetch('/api/billing/can-subscribe');
-      if (!response.ok) {
-        throw new Error('Failed to fetch subscription eligibility');
-      }
-      const data = await response.json();
-      return {
-        canReactivate: data.canReactivate,
-        canCreateNew: data.canCreateNew,
-        canUpgrade: data.canUpgrade,
-        canCancel: data.canCancel, // Use backend-calculated value
-        state: data.currentSubscription?.status || 'free',
-        gracePeriodEnds: data.currentSubscription?.currentPeriodEnd,
-        reason: data.reason,
-      };
-    },
-    retry: 1,
+/**
+ * Check if user can subscribe or perform subscription actions
+ */
+export function useCanSubscribe() {
+  return trpc.billing.canSubscribe.useQuery(undefined, {
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
-
-  const refetchSubscriptionInfo = async () => {
-    try {
-      await Promise.all([subscriptionQuery.refetch(), eligibilityQuery.refetch()]);
-    } catch (error) {
-      console.error('Error refetching subscription info:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to refresh subscription information. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  return {
-    subscriptionInfo: subscriptionQuery.data,
-    eligibility: eligibilityQuery.data,
-    isLoading: subscriptionQuery.isLoading || eligibilityQuery.isLoading,
-    error: subscriptionQuery.error || eligibilityQuery.error,
-    refetchSubscriptionInfo,
-  };
 }

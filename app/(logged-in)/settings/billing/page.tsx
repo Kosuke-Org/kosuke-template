@@ -20,8 +20,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useSubscriptionData } from '@/hooks/use-subscription-data';
+import { useSubscriptionStatus, useCanSubscribe } from '@/hooks/use-subscription-data';
 import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
+import { trpc } from '@/lib/trpc/client';
+import { useToast } from '@/hooks/use-toast';
 
 // Page-specific skeleton for billing page
 function BillingSkeleton() {
@@ -149,7 +151,10 @@ const PRICING = {
 
 export default function BillingPage() {
   const { user, isSignedIn } = useUser();
-  const { subscriptionInfo, eligibility, isLoading } = useSubscriptionData();
+  const { toast } = useToast();
+  const { data: subscriptionInfo, isLoading: isLoadingStatus } = useSubscriptionStatus();
+  const { data: eligibility, isLoading: isLoadingEligibility } = useCanSubscribe();
+  const isLoading = isLoadingStatus || isLoadingEligibility;
   const {
     handleUpgrade,
     handleCancel,
@@ -161,9 +166,23 @@ export default function BillingPage() {
     upgradeLoading,
   } = useSubscriptionActions();
 
-  const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const createPortalSession = trpc.billing.createPortalSession.useMutation({
+    onSuccess: (data) => {
+      window.location.href = data.url;
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const formatDate = (date: string | Date | null | undefined) => {
+    if (!date) return 'N/A';
+    const dateObj = date instanceof Date ? date : new Date(date);
+    return dateObj.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -502,20 +521,22 @@ export default function BillingPage() {
           {isPaidPlan ? (
             <>
               <Button
-                onClick={async () => {
-                  const response = await fetch('/api/billing/customer-portal', {
-                    method: 'POST',
-                  });
-                  const data = await response.json();
-                  if (data.url) {
-                    window.location.href = data.url;
-                  }
-                }}
+                onClick={() => createPortalSession.mutate()}
+                disabled={createPortalSession.isPending}
                 variant="outline"
                 className="w-full sm:w-auto"
               >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Manage Billing in Stripe
+                {createPortalSession.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Manage Billing in Stripe
+                  </>
+                )}
               </Button>
             </>
           ) : (
