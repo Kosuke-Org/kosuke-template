@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn, isClerkAPIResponseError } from '@/lib/utils';
 
 describe('Utils', () => {
   describe('cn (classnames utility)', () => {
@@ -42,6 +42,18 @@ describe('Utils', () => {
       expect(result).toContain('py-2');
       // px-4 is overridden by px-6 in tailwind-merge behavior
       expect(result).not.toContain('px-4');
+    });
+  });
+
+  describe('isClerkAPIResponseError', () => {
+    it('should return true if the error is a ClerkAPIResponseError', () => {
+      const error = { clerkError: true };
+      expect(isClerkAPIResponseError(error)).toBe(true);
+    });
+
+    it('should return false if the error is not a ClerkAPIResponseError', () => {
+      const error = new Error('Error');
+      expect(isClerkAPIResponseError(error)).toBe(false);
     });
   });
 });
