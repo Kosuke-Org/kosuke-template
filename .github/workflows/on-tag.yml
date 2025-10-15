@@ -122,6 +122,16 @@ jobs:
             
             ${{ github.event.release.body }}
 
+      - name: Setup Node.js for Docusaurus
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Create Docusaurus Version (major/minor only)
         if: ${{ !contains(env.VERSION, 'rc') && !contains(env.VERSION, 'beta') && !contains(env.VERSION, 'alpha') }}
         run: |
