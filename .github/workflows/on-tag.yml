@@ -38,7 +38,7 @@ jobs:
 
       - name: Update engine/pyproject.toml
         run: |
-          sed -i "s/version = \".*\"/version = \"${{ env.VERSION_NUMBER }}\"/" engine/pyproject.toml
+          sed -i "3s/version = \".*\"/version = \"${{ env.VERSION_NUMBER }}\"/" engine/pyproject.toml
 
       - name: Update .version file
         run: |
