@@ -33,8 +33,8 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
   const { handleSignOut } = useAuthActions();
   const { activeOrganization } = useActiveOrganization();
   const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
-  const settingsUrl = activeOrganization ? `/org/${activeOrganization.slug}/settings` : '/';
-  const billingUrl = activeOrganization ? `/org/${activeOrganization.slug}/billing` : '/';
+  const settingsUrl = '/settings';
+  const billingUrl = '/settings/billing';
 
   return (
     <header
