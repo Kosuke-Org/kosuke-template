@@ -1,6 +1,6 @@
 {
   "name": "kosuke-template",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "type": "module",
   "private": true,
   "scripts": {
@@ -151,10 +151,10 @@
     "node": ">=20",
     "pnpm": "10"
   },
-    "lint-staged": {
-      "*.{js,jsx,ts,tsx}": [
-        "prettier --write",
-        "eslint --fix"
-      ]
-    }
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
+  }
 }

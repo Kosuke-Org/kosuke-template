@@ -1,6 +1,6 @@
 [project]
 name = "engine-service"
-version = "1.0.0"
+version = "1.1.0"
 description = "Core engine service for Kosuke Template"
 authors = [{name = "Kosuke Team"}]
 requires-python = ">=3.12"
@@ -32,7 +32,7 @@ only-include = ["main.py", "models.py"]
 
 # ==== pytest ====
 [tool.pytest.ini_options]
-minversion = "6.0"
+minversion = "1.1.0"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
@@ -71,7 +71,7 @@ exclude_lines = [
 
 # ==== mypy ====
 [tool.mypy]
-python_version = "3.12"
+python_version = "1.1.0"
 check_untyped_defs = true
 ignore_missing_imports = true
 warn_unused_ignores = true
@@ -87,7 +87,7 @@ disallow_incomplete_defs = true
 # ==== ruff ====
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "1.1.0"
 exclude = [
     ".venv",
     "venv",
