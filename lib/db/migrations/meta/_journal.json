@@ -12,15 +12,8 @@
     {
       "idx": 1,
       "version": "7",
-      "when": 1760519922425,
-      "tag": "0001_spooky_polaris",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1760536312948,
-      "tag": "0002_clever_silver_surfer",
+      "when": 1760541419806,
+      "tag": "0001_big_namora",
       "breakpoints": true
     }
   ]

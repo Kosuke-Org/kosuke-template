@@ -1,5 +1,5 @@
 {
-  "id": "8161a93e-9c4c-4a72-b05d-e259c0eea40f",
+  "id": "60227750-4014-4dce-b491-942a50d61847",
   "prevId": "4efcd392-3e1a-4f27-b4b5-b12a62411063",
   "version": "7",
   "dialect": "postgresql",
@@ -571,6 +571,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'false'"
+        },
+        "scheduled_downgrade_tier": {
+          "name": "scheduled_downgrade_tier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "canceled_at": {
           "name": "canceled_at",
