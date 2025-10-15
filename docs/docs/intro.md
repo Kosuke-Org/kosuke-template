@@ -1,47 +1,133 @@
 ---
 sidebar_position: 1
+slug: /
 ---
 
-# Tutorial Intro
+# Welcome to Kosuke Template
 
-Let's discover **Docusaurus in less than 5 minutes**.
+**Kosuke Template** is a production-ready, multi-tenant SaaS starter built with modern web technologies. Get your SaaS application up and running in minutes, not months.
 
-## Getting Started
+## 🚀 Tech Stack
 
-Get started by **creating a new site**.
+- **Next.js 15** (App Router) + **React 19** + **TypeScript**
+- **FastAPI** (Python) - Microservice backend on Fly.io for extensible business logic
+- **Clerk** - Authentication with Organizations, teams, and roles
+- **PostgreSQL** (Neon) + **Drizzle ORM** - Type-safe database with auto migrations
+- **Polar** - Subscription billing with sandbox testing
+- **Resend** + **React Email** - Transactional emails with React components
+- **Vercel Blob** - File storage with CDN
+- **Sentry** - Error tracking and performance monitoring
+- **Tailwind CSS** + **Shadcn UI** - Beautiful, accessible components
+- **Vitest** - Fast testing with React Testing Library
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+## 🎯 Who Is This For?
 
-### What you'll need
+- **Solo founders** who want to launch quickly
+- **Development teams** building multi-tenant applications
+- **Agencies** needing a robust starter for client projects
+- **Engineers** who want to learn modern SaaS architecture
 
-- [Node.js](https://nodejs.org/en/download/) version 20.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
+## Services Reference
 
-## Generate a new site
+Quick reference for all integrated services:
 
-Generate a new Docusaurus site using the **classic template**.
+| Service    | Purpose                 | Free Tier    | Dashboard                                          |
+| ---------- | ----------------------- | ------------ | -------------------------------------------------- |
+| **Clerk**  | Authentication & Orgs   | 10k MAUs     | [dashboard.clerk.com](https://dashboard.clerk.com) |
+| **Polar**  | Billing & Subscriptions | Sandbox mode | [polar.sh/dashboard](https://polar.sh/dashboard)   |
+| **Neon**   | PostgreSQL Database     | 3 GB         | [console.neon.tech](https://console.neon.tech)     |
+| **Vercel** | Application Hosting     | Unlimited    | [vercel.com](https://vercel.com)                   |
+| **Fly.io** | Microservice Hosting    | 3 VMs        | [fly.io/dashboard](https://fly.io/dashboard)       |
+| **Resend** | Email Delivery          | 3k emails/mo | [resend.com](https://resend.com)                   |
+| **Sentry** | Error Monitoring        | 5k events/mo | [sentry.io](https://sentry.io)                     |
 
-The classic template will automatically be added to your project after you run the command:
+### When to Upgrade
 
-```bash
-npm init docusaurus@latest my-website classic
-```
+- **Clerk**: > 10,000 monthly active users
+- **Polar**: Ready for real payments (switch to production)
+- **Neon**: > 3 GB storage or need dedicated compute
+- **Vercel**: > 100 GB bandwidth or need team features
+- **Fly.io**: Need more than 3 VMs or dedicated compute
+- **Resend**: > 3,000 emails/month
+- **Sentry**: Exceeding error or performance event limits
 
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
+## Features
 
-The command also installs all necessary dependencies you need to run Docusaurus.
+### Organizations & Teams
 
-## Start your site
+Complete multi-tenancy with Clerk Organizations:
 
-Run the development server:
+- Create unlimited organizations with team invitations
+- Admin and member roles with customizable permissions
+- Automatic webhook sync to your database
+- Organization-scoped data isolation
+- Organization-level billing and subscriptions
 
-```bash
-cd my-website
-npm run start
-```
+### Subscription Management
 
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
+Polar billing integration with automated sync:
 
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
+- Three tiers: Free, Pro ($20/mo), Business ($200/mo)
+- Real-time webhook updates + 6-hour cron backup sync
+- Hosted checkout pages with automatic receipts
+- Feature gating based on subscription tier
+- Sandbox mode for testing without real charges
 
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+### Email System
+
+Transactional emails with React Email and Resend:
+
+- Build email templates with React components
+- Welcome emails sent automatically on signup
+- Preview templates locally with development server
+- High deliverability optimized for transactional mail
+- Custom domain verification for production
+
+### File Uploads
+
+Vercel Blob storage for user content:
+
+- Profile images and organization logos
+- Automatic image optimization and CDN delivery
+- 5 MB size limit with format validation (JPEG, PNG, WebP)
+- Admin-only access control for organization logos
+- Base64 upload via tRPC for seamless integration
+
+### Microservice Architecture
+
+Python FastAPI engine service on Fly.io:
+
+- Auto-scaling microservice (scales to zero when idle)
+- FastAPI with Pydantic validation and auto-generated docs
+- Sentry integration for error tracking and monitoring
+- UV for fast dependency management
+- Health checks and observability built-in
+- Extend with custom business logic as needed
+
+### Error Monitoring
+
+Sentry integration for production confidence:
+
+- Automatic error tracking (client, server, API, microservices)
+- Performance monitoring with transaction tracking
+- Session replay for debugging (10% sample, 100% on errors)
+- Source maps for readable TypeScript stack traces
+- Release tracking with automatic deployment tagging
+
+## 🚦 Quick Start
+
+**Want to use Kosuke Template for your SaaS?**  
+→ Follow the [Deployment Guide](deployment-guide) to deploy in 60-90 minutes.
+
+**Want to contribute to Kosuke Template?**  
+→ See the [Contributing Guide](https://github.com/filopedraz/kosuke-template#-contributing) in the README for local development setup.
+
+## 🤝 Community & Support
+
+- **Documentation**: You're reading it! Explore the sidebar for detailed guides.
+- **GitHub**: [github.com/filopedraz/kosuke-template](https://github.com/filopedraz/kosuke-template)
+- **Issues**: Report bugs or request features on GitHub
+
+## 📄 License
+
+Kosuke Template is open source and available under the MIT License.

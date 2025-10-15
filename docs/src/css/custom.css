@@ -1,30 +1,179 @@
 /**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
+ * Kosuke Template Documentation - Custom Styling
+ * Matches the main application's minimal, neutral aesthetic
+ * Primary colors are NEUTRAL (black/white), not blue
  */
 
-/* You can override the default Infima variables here. */
+/* ============================================================================
+ * LIGHT THEME (Default) - Neutral Design
+ * ============================================================================ */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
+  /* Primary Brand Color - NEUTRAL BLACK (not blue!) */
+  --ifm-color-primary: hsl(240 5.9% 10%);
+  --ifm-color-primary-dark: hsl(240 5.9% 8%);
+  --ifm-color-primary-darker: hsl(240 5.9% 6%);
+  --ifm-color-primary-darkest: hsl(240 5.9% 4%);
+  --ifm-color-primary-light: hsl(240 3.8% 20%);
+  --ifm-color-primary-lighter: hsl(240 3.8% 30%);
+  --ifm-color-primary-lightest: hsl(240 3.8% 40%);
+
+  /* Background & Surface Colors - Pure white and soft grays */
+  --ifm-background-color: hsl(0 0% 100%);
+  --ifm-background-surface-color: hsl(0 0% 100%);
+  --ifm-font-color-base: hsl(240 5.9% 10%);
+  --ifm-font-color-secondary: hsl(240 3.8% 46.1%);
+
+  /* Navbar - Clean white with neutral text */
+  --ifm-navbar-background-color: hsl(0 0% 100%);
+  --ifm-navbar-link-color: hsl(240 5.9% 10%);
+  --ifm-navbar-link-hover-color: hsl(240 5.9% 10%);
+  --ifm-navbar-link-active-color: hsl(240 5.9% 10%);
+  --ifm-navbar-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+
+  /* Footer - Minimal neutral */
+  --ifm-footer-background-color: hsl(0 0% 98%);
+  --ifm-footer-color: hsl(240 5.3% 26.1%);
+  --ifm-footer-link-color: hsl(240 3.8% 46.1%);
+  --ifm-footer-link-hover-color: hsl(240 5.9% 10%);
+
+  /* Sidebar - Neutral with subtle hover states */
+  --ifm-menu-color: hsl(240 3.8% 46.1%);
+  --ifm-menu-color-active: hsl(240 5.9% 10%);
+  --ifm-menu-color-background-active: hsl(240 4.8% 95.9%);
+  --ifm-menu-color-background-hover: hsl(240 4.8% 95.9%);
+
+  /* Code Blocks - Soft gray background */
+  --ifm-code-background: hsl(240 4.8% 95.9%);
   --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.05);
+
+  /* Tables & Borders - Subtle neutral */
+  --ifm-table-border-color: hsl(220 13% 91%);
+  --ifm-toc-border-color: hsl(220 13% 91%);
+  --ifm-color-emphasis-300: hsl(220 13% 91%);
+
+  /* Border Radius - Consistent with main app */
+  --ifm-global-radius: 0.65rem;
+  --ifm-button-border-radius: 0.65rem;
+
+  /* Hero Section - Override primary color background */
+  --ifm-hero-background-color: hsl(240 5.9% 10%);
+  --ifm-hero-text-color: hsl(0 0% 98%);
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
+/* ============================================================================
+ * DARK THEME - Neutral Design
+ * ============================================================================ */
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  /* Primary Brand Color - NEUTRAL WHITE/LIGHT GRAY (not blue!) */
+  --ifm-color-primary: hsl(0 0% 98%);
+  --ifm-color-primary-dark: hsl(0 0% 92%);
+  --ifm-color-primary-darker: hsl(0 0% 88%);
+  --ifm-color-primary-darkest: hsl(0 0% 80%);
+  --ifm-color-primary-light: hsl(0 0% 100%);
+  --ifm-color-primary-lighter: hsl(0 0% 100%);
+  --ifm-color-primary-lightest: hsl(0 0% 100%);
+
+  /* Background & Surface Colors - Dark neutrals */
+  --ifm-background-color: hsl(240 5.9% 10%);
+  --ifm-background-surface-color: hsl(240 5.3% 14.9%);
+  --ifm-font-color-base: hsl(0 0% 98%);
+  --ifm-font-color-secondary: hsl(240 5% 64.9%);
+
+  /* Navbar - Dark neutral */
+  --ifm-navbar-background-color: hsl(240 5.3% 14.9%);
+  --ifm-navbar-link-color: hsl(0 0% 98%);
+  --ifm-navbar-link-hover-color: hsl(0 0% 98%);
+  --ifm-navbar-link-active-color: hsl(0 0% 98%);
+  --ifm-navbar-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+
+  /* Footer - Dark neutral */
+  --ifm-footer-background-color: hsl(240 3.7% 15.9%);
+  --ifm-footer-color: hsl(240 4.8% 95.9%);
+  --ifm-footer-link-color: hsl(240 5% 64.9%);
+  --ifm-footer-link-hover-color: hsl(0 0% 98%);
+
+  /* Sidebar - Dark neutral with subtle blue accent only on active */
+  --ifm-menu-color: hsl(240 5% 64.9%);
+  --ifm-menu-color-active: hsl(224.3 76.3% 48%);
+  --ifm-menu-color-background-active: hsl(240 3.7% 15.9%);
+  --ifm-menu-color-background-hover: hsl(240 3.7% 15.9%);
+
+  /* Code Blocks - Dark */
+  --ifm-code-background: rgba(255, 255, 255, 0.06);
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.1);
+
+  /* Tables & Borders - Dark */
+  --ifm-table-border-color: hsl(240 3.7% 15.9%);
+  --ifm-toc-border-color: hsl(240 3.7% 15.9%);
+  --ifm-color-emphasis-300: hsl(240 3.7% 15.9%);
+
+  /* Hero Section - Keep dark background in dark mode */
+  --ifm-hero-background-color: hsl(240 5.9% 10%);
+  --ifm-hero-text-color: hsl(0 0% 98%);
+}
+
+/* ============================================================================
+ * COMPONENT OVERRIDES
+ * ============================================================================ */
+
+/* Hero Section - Ensure proper contrast */
+.hero--primary {
+  --ifm-hero-background-color: hsl(240 5.9% 10%);
+  --ifm-hero-text-color: hsl(0 0% 98%);
+}
+
+[data-theme='dark'] .hero--primary {
+  --ifm-hero-background-color: hsl(240 5.9% 10%);
+  --ifm-hero-text-color: hsl(0 0% 98%);
+}
+
+/* Buttons - Minimal neutral design for hero section (dark background) */
+.hero--primary .button--secondary {
+  background-color: hsl(0 0% 98%);
+  color: hsl(240 5.9% 10%);
+  border-color: hsl(0 0% 98%);
+}
+
+.hero--primary .button--secondary:hover {
+  background-color: hsl(0 0% 92%);
+  color: hsl(240 5.9% 10%);
+  border-color: hsl(0 0% 92%);
+}
+
+.hero--primary .button--outline.button--secondary {
+  background-color: transparent;
+  color: hsl(0 0% 98%);
+  border-color: hsl(0 0% 98%);
+}
+
+.hero--primary .button--outline.button--secondary:hover {
+  background-color: hsl(0 0% 98%);
+  color: hsl(240 5.9% 10%);
+  border-color: hsl(0 0% 98%);
+}
+
+/* Same styling for dark mode */
+[data-theme='dark'] .hero--primary .button--secondary {
+  background-color: hsl(0 0% 98%);
+  color: hsl(240 5.9% 10%);
+  border-color: hsl(0 0% 98%);
+}
+
+[data-theme='dark'] .hero--primary .button--secondary:hover {
+  background-color: hsl(0 0% 92%);
+  color: hsl(240 5.9% 10%);
+  border-color: hsl(0 0% 92%);
+}
+
+[data-theme='dark'] .hero--primary .button--outline.button--secondary {
+  background-color: transparent;
+  color: hsl(0 0% 98%);
+  border-color: hsl(0 0% 98%);
+}
+
+[data-theme='dark'] .hero--primary .button--outline.button--secondary:hover {
+  background-color: hsl(0 0% 98%);
+  color: hsl(240 5.9% 10%);
+  border-color: hsl(0 0% 98%);
 }

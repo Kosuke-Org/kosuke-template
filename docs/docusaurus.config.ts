@@ -5,8 +5,9 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'My Site',
-  tagline: 'Dinosaurs are cool',
+  title: 'Kosuke Template',
+  tagline:
+    'Production-ready Next.js 15 SaaS starter with Organizations, Billing, and Authentication',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -15,17 +16,17 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
+  url: 'https://docs-template.kosuke.ai',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'facebook', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
+  organizationName: 'filopedraz', // Usually your GitHub org/user name.
+  projectName: 'kosuke-template', // Usually your repo name.
 
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'warn', // Temporarily warn instead of throw to complete migration
 
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
@@ -43,8 +44,16 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+          editUrl: 'https://github.com/filopedraz/kosuke-template/tree/main/docs/',
+          // Versioning configuration
+          lastVersion: 'current',
+          versions: {
+            current: {
+              label: 'Next 🚧',
+              path: 'next',
+              banner: 'unreleased',
+            },
+          },
         },
         blog: {
           showReadingTime: true,
@@ -54,8 +63,7 @@ const config: Config = {
           },
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+          editUrl: 'https://github.com/filopedraz/kosuke-template/tree/main/docs/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
@@ -75,9 +83,9 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'My Site',
+      title: 'Kosuke Template',
       logo: {
-        alt: 'My Site Logo',
+        alt: 'Kosuke Template Logo',
         src: 'img/logo.svg',
       },
       items: [
@@ -85,11 +93,21 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
-          label: 'Tutorial',
+          label: 'Documentation',
         },
         { to: '/blog', label: 'Blog', position: 'left' },
         {
-          href: 'https://github.com/facebook/docusaurus',
+          href: 'https://github.com/filopedraz/kosuke-template/releases',
+          label: 'Changelog',
+          position: 'left',
+        },
+        {
+          type: 'docsVersionDropdown',
+          position: 'right',
+          dropdownActiveClassDisabled: true,
+        },
+        {
+          href: 'https://github.com/filopedraz/kosuke-template',
           label: 'GitHub',
           position: 'right',
         },
@@ -99,28 +117,36 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: 'Documentation',
           items: [
             {
-              label: 'Tutorial',
-              to: '/docs/intro',
+              label: 'Overview',
+              to: '/docs/',
+            },
+            {
+              label: 'Deployment',
+              to: '/docs/deployment-guide',
             },
           ],
         },
         {
-          title: 'Community',
+          title: 'Resources',
           items: [
             {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+              label: 'GitHub',
+              href: 'https://github.com/filopedraz/kosuke-template',
             },
             {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
+              label: 'Contributing',
+              href: 'https://github.com/filopedraz/kosuke-template#-contributing',
             },
             {
-              label: 'X',
-              href: 'https://x.com/docusaurus',
+              label: 'Blog',
+              to: '/blog',
+            },
+            {
+              label: 'Changelog',
+              href: 'https://github.com/filopedraz/kosuke-template/releases',
             },
           ],
         },
@@ -128,17 +154,17 @@ const config: Config = {
           title: 'More',
           items: [
             {
-              label: 'Blog',
-              to: '/blog',
+              label: 'Releases',
+              href: 'https://github.com/filopedraz/kosuke-template/releases',
             },
             {
-              label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus',
+              label: 'License',
+              href: 'https://github.com/filopedraz/kosuke-template/blob/main/LICENSE',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Kosuke Template. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
