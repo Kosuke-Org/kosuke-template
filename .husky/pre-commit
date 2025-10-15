@@ -64,11 +64,11 @@ js_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|jsx|
 if [ -n "$js_files" ]; then
   echo "🌐 Running Next.js code quality checks..."
 
-  # Run linting
-  echo "🔍 Running ESLint..."
-  pnpm run lint
+  # Run linting and formatting
+  echo "🌐 Running JS/TS lint-staged checks..."
+  pnpm lint-staged
   if [ $? -ne 0 ]; then
-    echo "❌ Linting failed. Please fix the errors before committing."
+    echo "❌ JS/TS lint-staged checks failed. Please fix the errors before committing."
     exit 1
   fi
 
@@ -85,16 +85,6 @@ if [ -n "$js_files" ]; then
   pnpm test
   if [ $? -ne 0 ]; then
     echo "❌ Tests failed. Please fix the failing tests before committing."
-    exit 1
-  fi
-
-  # Run formatting
-  echo "💅 Running formatting..."
-  pnpm run format
-
-  # Check if any files were modified by formatting
-  if [ -n "$(git diff)" ]; then
-    echo "❌ Formatting changed some files. Please stage the changes and try committing again."
     exit 1
   fi
 

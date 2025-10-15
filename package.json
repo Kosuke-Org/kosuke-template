@@ -13,6 +13,7 @@
     "lint:all": "pnpm run lint && pnpm run lint:engine",
     "lint:engine": "cd engine && uv run ruff check .",
     "lint:engine:fix": "cd engine && uv run ruff check . --fix",
+    "lint-staged": "lint-staged",
     "test": "vitest",
     "test:all": "pnpm run test && pnpm run test:engine",
     "test:engine": "cd engine && uv run pytest -v",
@@ -149,5 +150,11 @@
   "engines": {
     "node": ">=20",
     "pnpm": "10"
-  }
+  },
+    "lint-staged": {
+      "*.{js,jsx,ts,tsx}": [
+        "prettier --write",
+        "eslint --fix"
+      ]
+    }
 }
