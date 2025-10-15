@@ -1,3 +1,4 @@
+import { ClerkAPIResponseError } from '@clerk/types';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -32,4 +33,13 @@ export function getInitials(name: string | null | undefined): string {
 
   // Always return just the first letter
   return trimmedName.charAt(0).toUpperCase();
+}
+
+export function isClerkAPIResponseError(error: unknown): error is ClerkAPIResponseError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'clerkError' in error &&
+    error.clerkError === true
+  );
 }

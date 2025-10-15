@@ -26,6 +26,7 @@ import {
   getOrgMembersSchema,
 } from '../schemas/organizations';
 import { z } from 'zod';
+import { isClerkAPIResponseError } from '@/lib/utils';
 
 export const organizationsRouter = router({
   /**
@@ -391,23 +392,37 @@ export const organizationsRouter = router({
 
     // Create invitation in Clerk with redirect URL
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    await clerk.organizations.createOrganizationInvitation({
-      organizationId: org.clerkOrgId,
-      emailAddress: input.email,
-      role: input.role,
-      inviterUserId: ctx.userId,
-      // we redirect to sign-in because Clerk's components handle the sign-in and sign-up for new users
-      redirectUrl: `${appUrl}/sign-in`,
-      publicMetadata: {
-        // this should be added to the user's metadata when they sign in
-        onboardingComplete: true,
-      },
-    });
+    try {
+      await clerk.organizations.createOrganizationInvitation({
+        organizationId: org.clerkOrgId,
+        emailAddress: input.email,
+        role: input.role,
+        inviterUserId: ctx.userId,
+        // we redirect to sign-in because Clerk's components handle the sign-in and sign-up for new users
+        redirectUrl: `${appUrl}/sign-in`,
+        publicMetadata: {
+          // this should be added to the user's metadata when they sign in
+          onboardingComplete: true,
+        },
+      });
 
-    return {
-      success: true,
-      message: `Invitation sent to ${input.email}`,
-    };
+      return {
+        success: true,
+        message: `Invitation sent to ${input.email}`,
+      };
+    } catch (error) {
+      if (isClerkAPIResponseError(error)) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: error.errors?.[0]?.message || error.message,
+        });
+      }
+
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to create organization invitation',
+      });
+    }
   }),
 
   /**
