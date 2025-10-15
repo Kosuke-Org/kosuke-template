@@ -982,6 +982,43 @@ async function proxyToEngine<T>(endpoint: string, options: RequestInit = {}): Pr
 }
 ```
 
+### Docker Compose Configuration
+
+- **Environment Variables**: Always use `env_file: - .env` in docker-compose.yml to load environment variables from the root `.env` file. Never hardcode environment variables in the docker-compose.yml `environment:` section.
+
+### Python Engine Microservice - Stateless
+
+- **Stateless Architecture**: The engine microservice is stateless and performs ONLY computational operations (LMSR, BTL, Monte Carlo). It does NOT connect to the database. Never add `DATABASE_URL` to engine environment variables or `depends_on: postgres` in docker-compose.yml. All data persistence is handled by Next.js + tRPC + Drizzle.
+
+### Python Code Formatting - Ruff
+
+- **Formatter & Linter**: Use Ruff for all Python code formatting and linting
+- **Format on Save**: Configure VS Code to auto-format Python files on save using Ruff
+- **Code Style**: Follow PEP 8 conventions (enforced automatically by Ruff)
+- **Type Hints**: Always use type hints for function signatures
+- **Import Organization**: Ruff automatically organizes and sorts imports on save
+- **Commands**:
+  - `ruff format .` - Format all Python files
+  - `ruff check . --fix` - Auto-fix linting issues
+  - `ruff check .` - Check without fixes
+
+### Python Testing with Pytest
+
+- **Test Runner**: Use pytest for all Python testing
+- **Test Discovery**: pytest automatically discovers tests matching `test_*.py` or `*_test.py` patterns
+- **Fixtures**: Use pytest fixtures for setup/teardown and dependency injection
+- **Mocking**: Use `unittest.mock` or `pytest-mock` for mocking external dependencies
+- **Commands**:
+  - `pytest` - Run all tests
+  - `pytest -v` - Run with verbose output
+  - `pytest -k "test_name"` - Run specific tests matching pattern
+  - `pytest --cov` - Run tests with coverage report
+  - `pytest -x` - Stop on first failure
+  - `pytest --lf` - Run only tests that failed last time
+  - `pytest -s` - Show print statements (disable output capture)
+
+### Python Best Practices - Code Quality (MANDATORY)
+
 ### Python Pydantic Model Organization - MANDATORY
 
 **ALWAYS colocate Pydantic models with their corresponding API endpoint files. NEVER create a centralized models.py file.**
@@ -990,130 +1027,175 @@ async function proxyToEngine<T>(endpoint: string, options: RequestInit = {}): Pr
 
 ```plaintext
 engine/
-├── main.py                    # FastAPI app + HealthResponse model (general)
+├── main.py                    # FastAPI app (general)
 └── src/
     └── api/
-        ├── markets.py         # LMSR endpoints + LMSR models
-        ├── modeling.py        # BTL endpoints + BTL models
-        ├── experiments.py     # Experiments endpoints + Experiments models
-        └── belief.py          # Belief endpoints + Belief models
+        └── currency.py        # currency endpoint
 ```
 
-**✅ CORRECT - Models colocated with endpoints:**
+**Logging:**
+- ✅ Use lazy formatting - NEVER use f-strings in logging calls
+- ✅ Use logger.exception() - For exception logging, use `.exception()` instead of `.error(..., exc_info=True)`
 
 ```python
-# engine/src/api/markets.py
-"""LMSR market API endpoints."""
+# ❌ WRONG - F-strings in logging
+logger.info(f"Processing {item_id} with value {value}")
+logger.error(f"Failed to process {item}: {error}", exc_info=True)
 
-from fastapi import APIRouter
-from pydantic import BaseModel, Field
+# ✅ CORRECT - Lazy formatting
+logger.info("Processing %s with value %s", item_id, value)
+logger.exception("Failed to process %s", item)  # Automatically includes exc_info
+```
+### Exception Handling
 
-# ==== LMSR Models ====
+- ✅ Use 'raise from' - Always chain exceptions with raise ... from err
+- ✅ Catch specific exceptions - Never catch blind Exception, use specific types
+- ✅ Log before re-raising - Use logger.exception() in except blocks
 
-class LMSRState(BaseModel):
-    """LMSR market state."""
-    b: float = Field(..., gt=0, description="Liquidity parameter")
-    s: float = Field(..., description="State variable")
+```python
+# ❌ WRONG - No exception chaining
+except Exception as e:
+    raise HTTPException(status_code=500, detail=str(e))
 
-class LMSRInitializeRequest(BaseModel):
-    """Request to initialize LMSR market."""
-    b: float = Field(..., gt=0, description="Liquidity parameter")
+# ✅ CORRECT - Proper exception chaining
+except ValueError as e:
+    raise HTTPException(status_code=400, detail=str(e)) from e
+except Exception as e:
+    logger.exception("Unexpected error processing request")
+    raise HTTPException(status_code=500, detail=str(e)) from e
+```
+### Magic Values
 
-class LMSRInitializeResponse(BaseModel):
-    """Response with initial LMSR state."""
-    lmsr_state: LMSRState
-    price: float
+- ✅ Define constants - Never use magic numbers/strings in comparisons
+- ✅ Name meaningfully - Constants should clearly explain their purpose
 
-# ==== API Routes ====
+```python
+# ❌ WRONG - Magic values
+if variance > 1e-6:
+    kelly_fraction = expected_return / variance
+if len(trades) < 2:
+    return 0.0
 
-router = APIRouter()
+# ✅ CORRECT - Named constants
+EPSILON = 1e-6  # Small value for numerical stability
+MIN_TRADES_FOR_FLOW = 2  # Minimum trades required for order flow calculation
 
-@router.post("/lmsr/initialize", response_model=LMSRInitializeResponse)
-async def initialize_lmsr(request: LMSRInitializeRequest):
-    # Implementation
-    pass
+if variance > EPSILON:
+    kelly_fraction = expected_return / variance
+if len(trades) < MIN_TRADES_FOR_FLOW:
+    return 0.0
 ```
 
-**❌ WRONG - Centralized models.py:**
+### Code Simplification
+
+- ✅ Remove unnecessary assignments - Return directly when possible
+- ✅ Use ternary operators - For simple if-else assignments
+- ✅ Remove commented code - Delete, don't comment out
+- ✅ Remove unused variables - Clean up all unused assignments
 
 ```python
-# ❌ NO! Don't create a centralized models.py
-# engine/models.py
-class LMSRState(BaseModel):
-    pass
+# ❌ WRONG - Unnecessary assignment
+def calculate():
+    result = some_calculation()
+    return result
 
-class BTLParams(BaseModel):
-    pass
+if condition:
+    value = calculate_a()
+else:
+    value = calculate_b()
 
-class ExperimentRequest(BaseModel):
-    pass
+# ✅ CORRECT - Direct return and ternary
+def calculate():
+    return some_calculation()
 
-# ❌ NO! Don't import models from centralized file
-# engine/src/api/markets.py
-from models import LMSRState, LMSRInitializeRequest
+value = calculate_a() if condition else calculate_b()
 ```
 
-#### **🔧 Organization Principles**
+### Boolean Arguments
 
-**Model Placement:**
-- **API-specific models** → Colocate with their API endpoint file
-- **General utility models** → Define in main.py (e.g., HealthResponse)
-- **Never create separate model files** → Models live with their endpoints
-
-**Benefits:**
-- ✅ Better discoverability - Models are next to their usage
-- ✅ Clear ownership - Each endpoint owns its models
-- ✅ Easier refactoring - Change endpoint and models together
-- ✅ Reduced coupling - No central dependency file
-- ✅ Improved maintainability - Related code stays together
-
-**Import Organization:**
+- ✅ Use keyword-only - Force callers to use keyword arguments for booleans
+- ✅ Avoid boolean traps - Make function calls self-documenting
 
 ```python
-# Always import from the API module that owns the models
-from src.api.markets import LMSRState, LMSRInitializeRequest
-from src.api.modeling import BTLParams, BTLRunRequest
-from src.api.experiments import ExperimentBTLRequest, RiskRank
+# ❌ WRONG - Positional boolean
+def stop_agent(agent_id: int, close_positions: bool = False):
+    pass
+
+stop_agent(123, True)  # What does True mean?
+
+# ✅ CORRECT - Keyword-only boolean
+def stop_agent(agent_id: int, *, close_positions: bool = False):
+    pass
+
+stop_agent(123, close_positions=True)  # Clear intent
+```
+### Type Checking Imports
+
+- ✅ Use TYPE_CHECKING - Move type-only imports to TYPE_CHECKING block
+- ✅ Avoid runtime overhead - Types shouldn't impact runtime performance
+
+```python
+# ❌ WRONG - Type import at runtime
+from numpy.typing import NDArray
+
+# ✅ CORRECT - Type checking block
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
 ```
 
-**Model Sections:**
-- Use clear section headers: `# ==== LMSR Models ====`
-- Group related models together (requests, responses, shared types)
-- Place models at the top of the file, before route definitions
-- Keep models in logical order (state → request → response)
+### Import Organization
 
-**File Structure:**
+- ✅ Use absolute imports - Prefer absolute over relative imports
+- ✅ Group imports - stdlib, third-party, local (Ruff auto-organizes)
 
 ```python
-"""Module docstring."""
+# ❌ WRONG - Relative imports from parent
+from ..agents.manager import AgentManager
 
-# Standard library imports
-import logging
+# ✅ CORRECT - Absolute imports
+from src.agents.manager import AgentManager
+```
 
-# Third-party imports
-from fastapi import APIRouter
-from pydantic import BaseModel, Field
+### Naming Conventions
 
-# Local imports
-from src.some_module import SomeClass
+- ✅ Use snake_case - For variables and functions, including in local scope
+- ✅ Avoid single uppercase - Reserved for constants or specific conventions
 
+```python
+# ❌ WRONG - Uppercase variable in function
+def build_graph():
+    G = nx.DiGraph()
+    return G
 
-# ==== Models ====
+# ✅ CORRECT - Lowercase variable
+def build_graph():
+    graph = nx.DiGraph()
+    return graph
+```
 
-class RequestModel(BaseModel):
-    pass
+### Exception Handling Structure
 
-class ResponseModel(BaseModel):
-    pass
+- ✅ Extract raises to functions - Move complex raise logic to helper functions
+- ✅ Return directly in try - When successful, return immediately
 
+```python
+# ❌ WRONG - Complex raise inline
+if result.get("success") is False:
+    raise HTTPException(status_code=404, detail=result.get("error", "Not found"))
 
-# ==== API Routes ====
+result_data = result.get("data")
+return result_data
 
-router = APIRouter()
+# ✅ CORRECT - Helper function + direct return
+def _raise_not_found(detail: str) -> None:
+    raise HTTPException(status_code=404, detail=detail)
 
-@router.post("/endpoint")
-async def endpoint_handler(request: RequestModel) -> ResponseModel:
-    pass
+if result.get("success") is False:
+    _raise_not_found(result.get("error", "Not found"))
+
+return result.get("data")
 ```
 
 ### Mutation Design Guideline (MANDATORY)
