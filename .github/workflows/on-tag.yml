@@ -141,9 +141,12 @@ jobs:
           pnpm run docusaurus docs:version $VERSION_NUMBER
           
           if [ -d "versioned_docs/version-$VERSION_NUMBER" ]; then
+            # Update lastVersion in docusaurus.config.ts to the new version
+            sed -i "s/lastVersion: '[^']*'/lastVersion: '$VERSION_NUMBER'/" docusaurus.config.ts
+            
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
-            git add versioned_docs/ versioned_sidebars/ versions.json
+            git add versioned_docs/ versioned_sidebars/ versions.json docusaurus.config.ts
             git commit -m "docs: add version $VERSION_NUMBER snapshot"
             git push origin HEAD:main
           fi
