@@ -990,6 +990,17 @@ async function proxyToEngine<T>(endpoint: string, options: RequestInit = {}): Pr
 
 - **Stateless Architecture**: The engine microservice is stateless and performs ONLY computational operations (LMSR, BTL, Monte Carlo). It does NOT connect to the database. Never add `DATABASE_URL` to engine environment variables or `depends_on: postgres` in docker-compose.yml. All data persistence is handled by Next.js + tRPC + Drizzle.
 
+### Engine Folder Structure
+
+**ALWAYS colocate Pydantic models with their corresponding API endpoint files. NEVER create a centralized models.py file.**
+
+```plaintext
+engine/
+├── main.py                    # FastAPI app (general)
+└── src/
+    └── api/
+        └── currency.py        # currency endpoint
+```
 ### Python Code Formatting - Ruff
 
 - **Formatter & Linter**: Use Ruff for all Python code formatting and linting
@@ -1018,20 +1029,6 @@ async function proxyToEngine<T>(endpoint: string, options: RequestInit = {}): Pr
   - `pytest -s` - Show print statements (disable output capture)
 
 ### Python Best Practices - Code Quality (MANDATORY)
-
-### Python Pydantic Model Organization - MANDATORY
-
-**ALWAYS colocate Pydantic models with their corresponding API endpoint files. NEVER create a centralized models.py file.**
-
-#### **📁 Model Colocation Structure**
-
-```plaintext
-engine/
-├── main.py                    # FastAPI app (general)
-└── src/
-    └── api/
-        └── currency.py        # currency endpoint
-```
 
 **Logging:**
 - ✅ Use lazy formatting - NEVER use f-strings in logging calls
