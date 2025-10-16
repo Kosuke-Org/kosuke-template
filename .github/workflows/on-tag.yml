@@ -103,11 +103,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           body: |
             ## What's Changed
-
+            
             This release includes changes automatically categorized from merged pull requests.
-
+            
             **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ env.VERSION }}
-
+            
             ### PR Label Categories:
             - 🚀 **feature**: New features and enhancements
             - 🐛 **bug**: Bug fixes and patches
@@ -117,9 +117,9 @@ jobs:
             - 🔒 **security**: Security fixes
             - 💥 **breaking**: Breaking changes (requires migration)
             - 🧹 **chore**: Maintenance and internal changes
-
+            
             ---
-
+            
             ${{ github.event.release.body }}
 
       - name: Setup Node.js for Docusaurus
@@ -139,7 +139,7 @@ jobs:
           pnpm install --frozen-lockfile
           VERSION_NUMBER=${VERSION#v}
           pnpm run docusaurus docs:version $VERSION_NUMBER
-
+          
           if [ -d "versioned_docs/version-$VERSION_NUMBER" ]; then
             # Update lastVersion in docusaurus.config.ts to the new version
             sed -i "s/lastVersion: '[^']*'/lastVersion: '$VERSION_NUMBER'/" docusaurus.config.ts

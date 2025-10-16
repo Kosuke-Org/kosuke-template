@@ -31,15 +31,15 @@ slug: /
 
 Quick reference for all integrated services:
 
-| Service    | Purpose                 | Free Tier    | Dashboard                                            |
-| ---------- | ----------------------- | ------------ | ---------------------------------------------------- |
-| **Clerk**  | Authentication & Orgs   | 10k MAUs     | [dashboard.clerk.com](https://dashboard.clerk.com)   |
+| Service    | Purpose                 | Free Tier    | Dashboard                                          |
+| ---------- | ----------------------- | ------------ | -------------------------------------------------- |
+| **Clerk**  | Authentication & Orgs   | 10k MAUs     | [dashboard.clerk.com](https://dashboard.clerk.com) |
 | **Stripe** | Billing & Subscriptions | Test mode    | [dashboard.stripe.com](https://dashboard.stripe.com) |
-| **Neon**   | PostgreSQL Database     | 3 GB         | [console.neon.tech](https://console.neon.tech)       |
-| **Vercel** | Application Hosting     | Unlimited    | [vercel.com](https://vercel.com)                     |
-| **Fly.io** | Microservice Hosting    | 3 VMs        | [fly.io/dashboard](https://fly.io/dashboard)         |
-| **Resend** | Email Delivery          | 3k emails/mo | [resend.com](https://resend.com)                     |
-| **Sentry** | Error Monitoring        | 5k events/mo | [sentry.io](https://sentry.io)                       |
+| **Neon**   | PostgreSQL Database     | 3 GB         | [console.neon.tech](https://console.neon.tech)     |
+| **Vercel** | Application Hosting     | Unlimited    | [vercel.com](https://vercel.com)                   |
+| **Fly.io** | Microservice Hosting    | 3 VMs        | [fly.io/dashboard](https://fly.io/dashboard)       |
+| **Resend** | Email Delivery          | 3k emails/mo | [resend.com](https://resend.com)                   |
+| **Sentry** | Error Monitoring        | 5k events/mo | [sentry.io](https://sentry.io)                     |
 
 ### When to Upgrade
 
