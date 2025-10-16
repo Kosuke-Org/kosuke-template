@@ -26,6 +26,8 @@ async function resetDatabase() {
     await sql`CREATE SCHEMA public`;
     await sql`GRANT ALL ON SCHEMA public TO public`;
 
+    // Drop the drizzle schema - when seeding the db we will run the migrations again
+    await sql`DROP SCHEMA IF EXISTS drizzle CASCADE`;
     console.log('✅ All tables dropped successfully');
   } catch (error) {
     console.error('❌ Error resetting database:', error);
