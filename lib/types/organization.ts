@@ -1,6 +1,6 @@
 /**
  * Organization Domain Types
- * Centralized type definitions for organizations, teams, and memberships
+ * Centralized type definitions for organizations, and memberships
  */
 
 // Re-export schema types (ALWAYS re-export even if not extending)
@@ -9,10 +9,6 @@ export type {
   NewOrganization,
   OrgMembership,
   NewOrgMembership,
-  Team,
-  NewTeam,
-  TeamMembership,
-  NewTeamMembership,
 } from '@/lib/db/schema';
 
 /**
@@ -27,17 +23,6 @@ export const OrgRole = {
 export type OrgRoleValue = (typeof OrgRole)[keyof typeof OrgRole];
 
 /**
- * Team Role Constants
- * Enum-like object for team roles
- */
-export const TeamRole = {
-  LEAD: 'lead',
-  MEMBER: 'member',
-} as const;
-
-export type TeamRoleValue = (typeof TeamRole)[keyof typeof TeamRole];
-
-/**
  * Type Guards
  * Runtime type checking utilities
  */
@@ -47,14 +32,6 @@ export function isOrgAdmin(role: string): role is 'org:admin' {
 
 export function isOrgMember(role: string): role is 'org:member' {
   return role === OrgRole.MEMBER;
-}
-
-export function isTeamLead(role: string): role is 'lead' {
-  return role === TeamRole.LEAD;
-}
-
-export function isTeamMember(role: string): role is 'member' {
-  return role === TeamRole.MEMBER;
 }
 
 /**
@@ -69,14 +46,6 @@ export function canInviteMembers(role: OrgRoleValue): boolean {
   return role === OrgRole.ADMIN; // Can be extended to allow members too
 }
 
-export function canManageTeams(role: OrgRoleValue): boolean {
-  return role === OrgRole.ADMIN;
-}
-
 export function canManageBilling(role: OrgRoleValue): boolean {
   return role === OrgRole.ADMIN;
-}
-
-export function canManageTeam(role: OrgRoleValue, teamRole?: TeamRoleValue): boolean {
-  return role === OrgRole.ADMIN || teamRole === TeamRole.LEAD;
 }

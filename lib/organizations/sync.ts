@@ -386,7 +386,7 @@ export async function softDeleteOrganization(clerkOrgId: string): Promise<void> 
 
     console.log('✅ Organization soft deleted');
 
-    // Option 2: Hard delete (cascade will remove memberships, teams, etc.)
+    // Option 2: Hard delete (cascade will remove memberships, etc.)
     // await db.delete(organizations).where(eq(organizations.id, org.id));
   } catch (error) {
     console.error('💥 Error deleting organization:', error);

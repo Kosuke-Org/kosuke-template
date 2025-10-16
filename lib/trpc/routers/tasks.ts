@@ -34,15 +34,6 @@ export const tasksRouter = router({
       }
     }
 
-    // Filter by team
-    if (input?.teamId !== undefined) {
-      if (input.teamId === null) {
-        conditions.push(isNull(tasks.teamId));
-      } else {
-        conditions.push(eq(tasks.teamId, input.teamId));
-      }
-    }
-
     // Filter by completion status
     if (input?.completed !== undefined) {
       conditions.push(eq(tasks.completed, input.completed ? 'true' : 'false'));
@@ -89,7 +80,6 @@ export const tasksRouter = router({
       .values({
         clerkUserId: ctx.userId,
         organizationId: input.organizationId ?? null,
-        teamId: input.teamId ?? null,
         title: input.title,
         description: input.description ?? null,
         priority: input.priority,
@@ -138,7 +128,6 @@ export const tasksRouter = router({
     if (input.priority !== undefined) updateData.priority = input.priority;
     if (input.dueDate !== undefined) updateData.dueDate = input.dueDate;
     if (input.organizationId !== undefined) updateData.organizationId = input.organizationId;
-    if (input.teamId !== undefined) updateData.teamId = input.teamId;
 
     const [updatedTask] = await db
       .update(tasks)

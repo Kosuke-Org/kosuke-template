@@ -4,7 +4,6 @@ import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 // Enums
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);
 export const orgRoleEnum = pgEnum('org_role', ['org:admin', 'org:member']);
-export const teamRoleEnum = pgEnum('team_role', ['lead', 'member']);
 
 // Users - Minimal sync from Clerk for local queries and future expansion
 export const users = pgTable('users', {
@@ -47,33 +46,6 @@ export const orgMemberships = pgTable('org_memberships', {
   invitedBy: text('invited_by'), // clerkUserId of inviter
 });
 
-// Teams - Groups within organizations
-export const teams = pgTable('teams', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  organizationId: uuid('organization_id')
-    .notNull()
-    .references(() => organizations.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  description: text('description'),
-  color: text('color'), // Hex color for UI
-  createdBy: text('created_by').notNull(), // clerkUserId
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
-
-// Team Memberships - Links users to teams
-export const teamMemberships = pgTable('team_memberships', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  teamId: uuid('team_id')
-    .notNull()
-    .references(() => teams.id, { onDelete: 'cascade' }),
-  clerkUserId: text('clerk_user_id')
-    .notNull()
-    .references(() => users.clerkUserId, { onDelete: 'cascade' }),
-  role: teamRoleEnum('role').notNull().default('member'),
-  joinedAt: timestamp('joined_at').defaultNow().notNull(),
-});
-
 // User Subscriptions - Links Clerk users/organizations to Stripe subscriptions
 export const userSubscriptions = pgTable('user_subscriptions', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -113,7 +85,6 @@ export const tasks = pgTable('tasks', {
   organizationId: uuid('organization_id').references(() => organizations.id, {
     onDelete: 'cascade',
   }), // Nullable for personal tasks
-  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'set null' }), // Nullable
   title: text('title').notNull(),
   description: text('description'),
   completed: text('completed').notNull().default('false'), // 'true' or 'false' as text
@@ -157,11 +128,6 @@ export enum ActivityType {
   ORG_MEMBER_ADDED = 'org_member_added',
   ORG_MEMBER_REMOVED = 'org_member_removed',
   ORG_MEMBER_ROLE_UPDATED = 'org_member_role_updated',
-  TEAM_CREATED = 'team_created',
-  TEAM_UPDATED = 'team_updated',
-  TEAM_DELETED = 'team_deleted',
-  TEAM_MEMBER_ADDED = 'team_member_added',
-  TEAM_MEMBER_REMOVED = 'team_member_removed',
 }
 
 // Types (derive from Drizzle schema to avoid Zod instance mismatches)
@@ -177,12 +143,7 @@ export type Organization = InferSelectModel<typeof organizations>;
 export type NewOrganization = InferInsertModel<typeof organizations>;
 export type OrgMembership = InferSelectModel<typeof orgMemberships>;
 export type NewOrgMembership = InferInsertModel<typeof orgMemberships>;
-export type Team = InferSelectModel<typeof teams>;
-export type NewTeam = InferInsertModel<typeof teams>;
-export type TeamMembership = InferSelectModel<typeof teamMemberships>;
-export type NewTeamMembership = InferInsertModel<typeof teamMemberships>;
 
 // Infer enum types from schema
 export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];
 export type OrgRole = (typeof orgRoleEnum.enumValues)[number];
-export type TeamRole = (typeof teamRoleEnum.enumValues)[number];

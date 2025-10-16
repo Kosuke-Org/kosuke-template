@@ -10,7 +10,7 @@ Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billin
 
 - **Next.js 15** with App Router
 - **TypeScript** for type safety
-- **Clerk Authentication** for user management with **Organizations & Teams**
+- **Clerk Authentication** for user management with **Organizations**
 - **PostgreSQL** database with Drizzle ORM
 - **Shadcn UI** components with Tailwind CSS
 - **Stripe** billing integration with automated sync (personal & organization subscriptions)
@@ -266,6 +266,7 @@ git push origin v1.2.0
 ```
 
 GitHub Actions will automatically:
+
 - Update all version files (package.json, pyproject.toml, .version)
 - Build and push Docker images
 - Create GitHub Release with changelog

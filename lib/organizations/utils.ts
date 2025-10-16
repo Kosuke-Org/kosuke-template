@@ -4,9 +4,9 @@
  */
 
 import { db } from '@/lib/db';
-import { organizations, orgMemberships, teams, teamMemberships } from '@/lib/db/schema';
+import { organizations, orgMemberships } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import type { Organization, OrgMembership, OrgRoleValue, Team, TeamMembership } from '@/lib/types';
+import type { Organization, OrgMembership, OrgRoleValue } from '@/lib/types';
 
 /**
  * Slug generation
@@ -66,10 +66,6 @@ export function canManageOrg(role: string): boolean {
 
 export function canInviteMembers(role: string): boolean {
   // Currently only admins, but can be extended
-  return isOrgAdmin(role);
-}
-
-export function canManageTeams(role: string): boolean {
   return isOrgAdmin(role);
 }
 
@@ -243,65 +239,6 @@ export async function getMembershipByClerkId(
 }
 
 /**
- * Team utilities
- * Get all teams in an organization
- */
-export async function getOrgTeams(organizationId: string): Promise<Team[]> {
-  return await db.select().from(teams).where(eq(teams.organizationId, organizationId));
-}
-
-/**
- * Get team by ID
- */
-export async function getTeamById(teamId: string): Promise<Team | null> {
-  const [team] = await db.select().from(teams).where(eq(teams.id, teamId)).limit(1);
-
-  return team || null;
-}
-
-/**
- * Check if user is member of a team
- */
-export async function isUserTeamMember(clerkUserId: string, teamId: string): Promise<boolean> {
-  const [membership] = await db
-    .select()
-    .from(teamMemberships)
-    .where(and(eq(teamMemberships.clerkUserId, clerkUserId), eq(teamMemberships.teamId, teamId)))
-    .limit(1);
-
-  return !!membership;
-}
-
-/**
- * Get user's teams in an organization
- */
-export async function getUserTeams(clerkUserId: string, organizationId: string): Promise<Team[]> {
-  const result = await db
-    .select({
-      id: teams.id,
-      organizationId: teams.organizationId,
-      name: teams.name,
-      description: teams.description,
-      color: teams.color,
-      createdBy: teams.createdBy,
-      createdAt: teams.createdAt,
-      updatedAt: teams.updatedAt,
-    })
-    .from(teams)
-    .innerJoin(teamMemberships, eq(teamMemberships.teamId, teams.id))
-    .where(
-      and(eq(teamMemberships.clerkUserId, clerkUserId), eq(teams.organizationId, organizationId))
-    );
-
-  return result;
-}
-
-/**
- * Get all members of a team
- */
-export async function getTeamMembers(teamId: string): Promise<TeamMembership[]> {
-  return await db.select().from(teamMemberships).where(eq(teamMemberships.teamId, teamId));
-}
 
 /**
  * Settings helpers
@@ -336,13 +273,6 @@ export function isValidOrgName(name: string): boolean {
 export function isValidOrgSlug(slug: string): boolean {
   // Slug must be lowercase, alphanumeric with hyphens, 1-50 characters
   return /^[a-z0-9-]{1,50}$/.test(slug);
-}
-
-/**
- * Validate team name
- */
-export function isValidTeamName(name: string): boolean {
-  return name.length >= 1 && name.length <= 100;
 }
 
 /**
