@@ -266,6 +266,7 @@ git push origin v1.2.0
 ```
 
 GitHub Actions will automatically:
+
 - Update all version files (package.json, pyproject.toml, .version)
 - Build and push Docker images
 - Create GitHub Release with changelog

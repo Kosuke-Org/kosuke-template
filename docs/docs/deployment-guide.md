@@ -18,7 +18,7 @@ Create accounts with these services (all have free tiers):
 | **Vercel** | Application hosting     | Yes (Hobby)     | [vercel.com](https://vercel.com) |
 | **Neon**   | PostgreSQL database     | Yes (3 GB)      | Via Vercel integration           |
 | **Fly.io** | Microservice hosting    | Yes (3 VMs)     | [fly.io](https://fly.io)         |
-| **Stripe** | Billing & subscriptions | Test mode    | [stripe.com](https://stripe.com) |
+| **Stripe** | Billing & subscriptions | Test mode       | [stripe.com](https://stripe.com) |
 | **Clerk**  | Authentication          | Yes (10k MAUs)  | [clerk.com](https://clerk.com)   |
 | **Resend** | Email delivery          | Yes (100/day)   | [resend.com](https://resend.com) |
 | **Sentry** | Error monitoring        | Yes (5k events) | [sentry.io](https://sentry.io)   |
@@ -642,6 +642,7 @@ When ready to launch with real payments and custom domain:
    STRIPE_CANCEL_URL=https://yourdomain.com/settings/billing
    ```
 7. Redeploy
+
 #### Add Domain to Vercel
 
 1. Go to **Settings → Domains**
