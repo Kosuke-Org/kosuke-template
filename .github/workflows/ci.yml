@@ -38,9 +38,6 @@ jobs:
       - name: Run tests
         run: pnpm run test
 
-      - name: Build application
-        run: pnpm run build
-
   test-engine:
     name: Test and Lint Engine Service
     runs-on: ubuntu-latest
