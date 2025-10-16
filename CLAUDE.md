@@ -925,13 +925,15 @@ const handleUpload = async (file: File) => {
 You can use the existing currency_converter example as a reference guide.
 
 **When to Use the Engine Service:**
+
 - **Advanced Calculations**: Complex mathematical operations, financial calculations, data processing
-- **Algorithm Implementation**: Machine learning, optimization, data analysis  
+- **Algorithm Implementation**: Machine learning, optimization, data analysis
 - **External API Integration**: Third-party services that require server-side processing
 - **Heavy Computation**: CPU-intensive tasks that shouldn't block the main application
 - **Specialized Libraries**: Python libraries not available in Node.js ecosystem
 
 **Engine Service Architecture:**
+
 - **FastAPI Backend**: Python microservice running on port 8000 (configurable)
 - **Docker Support**: Containerized for easy deployment and scaling
 - **Type-Safe Integration**: tRPC routers provide end-to-end type safety
@@ -939,6 +941,7 @@ You can use the existing currency_converter example as a reference guide.
 - **Error Handling**: Comprehensive error handling with user-friendly messages
 
 **Engine Client Integration (MANDATORY):**
+
 - **ALWAYS use `lib/engine/client.ts`** for all engine microservice communication
 - **NEVER make direct HTTP calls** to the engine service from routers or API routes
 - **Decouple logic**: Engine client handles HTTP communication, business logic stays in routers
@@ -951,24 +954,22 @@ You can use the existing currency_converter example as a reference guide.
 import { convertCurrency, EngineError } from '@/lib/engine/client';
 
 export const engineRouter = router({
-  convert: protectedProcedure
-    .input(currencyConvertRequestSchema)
-    .mutation(async ({ input }) => {
-      try {
-        return await convertCurrency(input);
-      } catch (error) {
-        if (error instanceof EngineError) {
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: `Engine error: ${error.message}`,
-          });
-        }
+  convert: protectedProcedure.input(currencyConvertRequestSchema).mutation(async ({ input }) => {
+    try {
+      return await convertCurrency(input);
+    } catch (error) {
+      if (error instanceof EngineError) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: 'Currency conversion failed',
+          message: `Engine error: ${error.message}`,
         });
       }
-    }),
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Currency conversion failed',
+      });
+    }
+  }),
 });
 
 // ❌ WRONG - Direct HTTP calls
@@ -997,6 +998,7 @@ engine/
     └── api/
         └── currency.py        # currency endpoint
 ```
+
 ### Python Code Formatting - Ruff
 
 - **Formatter & Linter**: Use Ruff for all Python code formatting and linting
@@ -1027,6 +1029,7 @@ engine/
 ### Python Best Practices - Code Quality (MANDATORY)
 
 **Logging:**
+
 - ✅ Use lazy formatting - NEVER use f-strings in logging calls
 - ✅ Use logger.exception() - For exception logging, use `.exception()` instead of `.error(..., exc_info=True)`
 
@@ -1039,6 +1042,7 @@ logger.error(f"Failed to process {item}: {error}", exc_info=True)
 logger.info("Processing %s with value %s", item_id, value)
 logger.exception("Failed to process %s", item)  # Automatically includes exc_info
 ```
+
 ### Exception Handling
 
 - ✅ Use 'raise from' - Always chain exceptions with raise ... from err
@@ -1057,6 +1061,7 @@ except Exception as e:
     logger.exception("Unexpected error processing request")
     raise HTTPException(status_code=500, detail=str(e)) from e
 ```
+
 ### Magic Values
 
 - ✅ Define constants - Never use magic numbers/strings in comparisons
@@ -1122,6 +1127,7 @@ def stop_agent(agent_id: int, *, close_positions: bool = False):
 
 stop_agent(123, close_positions=True)  # Clear intent
 ```
+
 ### Type Checking Imports
 
 - ✅ Use TYPE_CHECKING - Move type-only imports to TYPE_CHECKING block
@@ -1504,6 +1510,7 @@ For detailed SEO guidelines and examples, use the `seo` rule only when needed.
 **When integrating, migrating, or updating third-party services, ALWAYS update the documentation accordingly.**
 
 Examples of service changes that require documentation updates:
+
 - Billing provider migrations (e.g., Polar → Stripe)
 - Authentication provider changes
 - Database or ORM updates
@@ -1513,6 +1520,7 @@ Examples of service changes that require documentation updates:
 - API endpoint removals or restructuring
 
 **Documentation files to review and update:**
+
 - `./docs/docs/intro.md` - Update service descriptions and tech stack overview
 - `./docs/docs/deployment-guide.md` - Update deployment instructions and environment variables
 - `./docs/blog/` - Add migration notes or release information if applicable
