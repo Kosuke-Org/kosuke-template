@@ -108,13 +108,21 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     }
 
     const priceId = subscription.items.data[0]?.price.id;
+    const subscriptionItem = subscription.items.data[0];
 
-    // Stripe API includes period fields on subscriptions, but TypeScript types don't
-    // See: https://docs.stripe.com/api/subscriptions/object
-    // @ts-expect-error - current_period_start exists in actual API but not in TS types
-    const currentPeriodStart = subscription.current_period_start;
-    // @ts-expect-error - current_period_end exists in actual API but not in TS types
-    const currentPeriodEnd = subscription.current_period_end;
+    if (!subscriptionItem) {
+      console.error('❌ No subscription items found:', subscription.id);
+      return;
+    }
+
+    // Get period dates from subscription item (most reliable source)
+    const currentPeriodStart = subscriptionItem.current_period_start;
+    const currentPeriodEnd = subscriptionItem.current_period_end;
+
+    if (!currentPeriodStart || !currentPeriodEnd) {
+      console.error('❌ Missing period dates in subscription item:', subscription.id);
+      return;
+    }
 
     // Before creating new subscription, mark any existing active subscriptions as replaced
     // This prevents duplicate active subscriptions when upgrading
@@ -184,12 +192,20 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   try {
     const priceId = subscription.items.data[0]?.price.id;
+    const subscriptionItem = subscription.items.data[0];
 
-    // Stripe API includes period fields on subscriptions, but TypeScript types don't
-    // @ts-expect-error - current_period_start exists in actual API but not in TS types
-    const currentPeriodStart = subscription.current_period_start;
-    // @ts-expect-error - current_period_end exists in actual API but not in TS types
-    const currentPeriodEnd = subscription.current_period_end;
+    if (!subscriptionItem) {
+      console.error('❌ No subscription items found:', subscription.id);
+      return;
+    }
+
+    const currentPeriodStart = subscriptionItem.current_period_start;
+    const currentPeriodEnd = subscriptionItem.current_period_end;
+
+    if (!currentPeriodStart || !currentPeriodEnd) {
+      console.error('❌ Missing period dates in subscription item:', subscription.id);
+      return;
+    }
 
     await db
       .update(userSubscriptions)

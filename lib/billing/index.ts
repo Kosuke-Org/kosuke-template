@@ -8,7 +8,6 @@
 // Core functionality
 export {
   getUserSubscription,
-  createFreeSubscription,
   hasFeatureAccess,
   safeSubscriptionTierCast,
   safeSubscriptionStatusCast,
