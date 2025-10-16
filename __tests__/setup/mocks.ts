@@ -1,6 +1,9 @@
 import { vi } from 'vitest';
 import React, { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Stripe from 'stripe';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Mock Clerk auth
 export const mockClerkUserType = {
@@ -153,6 +156,105 @@ export function mockFetchResponse(data: unknown, status = 200) {
 // Helper to mock fetch error
 export function mockFetchError(error: string) {
   (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error(error));
+}
+
+// Stripe webhook event factories
+export function createStripeSubscriptionEvent(
+  type:
+    | 'customer.subscription.created'
+    | 'customer.subscription.updated'
+    | 'customer.subscription.deleted',
+  subscription: Partial<Stripe.Subscription> = {}
+): Stripe.Event {
+  const now = Math.floor(Date.now() / 1000);
+  return {
+    id: `evt_${Math.random().toString(36).substr(2, 9)}`,
+    object: 'event',
+    api_version: '2023-10-16',
+    created: now,
+    type,
+    data: {
+      object: {
+        id: 'sub_123',
+        status: 'active',
+        customer: 'cus_123',
+        items: {
+          data: [
+            {
+              id: 'si_123',
+              price: { id: 'price_123' } as any,
+              current_period_start: now,
+              current_period_end: now + 2592000,
+            } as any,
+          ],
+        } as any,
+        cancel_at_period_end: false,
+        metadata: { clerkUserId: 'user_123', tier: 'pro' },
+        ...subscription,
+      } as Stripe.Subscription,
+      previous_attributes: {},
+    },
+    livemode: false,
+    pending_webhooks: 1,
+    request: null,
+  } as Stripe.Event;
+}
+
+export function createStripeInvoiceEvent(
+  type: 'invoice.paid' | 'invoice.payment_failed',
+  invoice: any = {}
+): Stripe.Event {
+  const now = Math.floor(Date.now() / 1000);
+  return {
+    id: `evt_${Math.random().toString(36).substr(2, 9)}`,
+    object: 'event',
+    api_version: '2023-10-16',
+    created: now,
+    type,
+    data: {
+      object: {
+        id: `in_${Math.random().toString(36).substr(2, 9)}`,
+        subscription: 'sub_123',
+        period_start: now,
+        period_end: now + 2592000,
+        ...invoice,
+      } as Stripe.Invoice,
+      previous_attributes: {},
+    },
+    livemode: false,
+    pending_webhooks: 1,
+    request: null,
+  } as Stripe.Event;
+}
+
+export function createStripeSubscriptionScheduleEvent(
+  type: 'subscription_schedule.completed' | 'subscription_schedule.canceled',
+  schedule: any = {}
+): Stripe.Event {
+  const now = Math.floor(Date.now() / 1000);
+  return {
+    id: `evt_${Math.random().toString(36).substr(2, 9)}`,
+    object: 'event',
+    api_version: '2023-10-16',
+    created: now,
+    type,
+    data: {
+      object: {
+        id: `sub_sched_${Math.random().toString(36).substr(2, 9)}`,
+        subscription: 'sub_123',
+        metadata: {
+          clerkUserId: 'user_123',
+          targetTier: 'pro',
+          currentSubscriptionId: 'sub_123',
+        },
+        ...schedule,
+      } as Stripe.SubscriptionSchedule,
+      previous_attributes: {},
+    },
+    livemode: false,
+    pending_webhooks: 1,
+    request: null,
+  } as Stripe.Event;
 }
 
 // TanStack Query test wrapper
