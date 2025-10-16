@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:email": "concurrently \"pnpm run dev\" \"pnpm run email:dev\"",
-    "prebuild": "node scripts/vercel-build.js",
+    "prebuild": "pnpm run db:migrate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 0",
