@@ -185,6 +185,7 @@ pnpm run db:generate      # Generate migration from schema changes
 pnpm run db:migrate       # Run pending migrations
 pnpm run db:studio        # Open Drizzle Studio (visual DB browser)
 pnpm run db:seed          # Seed database with test data
+pnpm run db:reset         # Reset database and seed it with test data
 
 # Email Development
 pnpm run email:dev        # Preview email templates (port 3001)
@@ -213,6 +214,26 @@ pnpm run db:generate
 # 4. Apply migration
 pnpm run db:migrate
 ```
+
+#### Seed with test data
+
+Populate your local database with realistic test data:
+
+```bash
+# Reset database and seed with test data
+pnpm run db:reset
+
+# Or just seed (without reset)
+pnpm run db:seed
+```
+
+**Test Users Created:**
+
+- `jane+clerk_test@example.com` - Admin of "Jane Smith Co." (Free tier)
+- `john+clerk_test@example.com` - Admin of "John Doe Ltd." (Free tier), Member of "Jane Smith Co."
+
+**Clerk Verification Code:**
+When signing in with test users in development, use verification code: `424242`
 
 #### Visual Database Browser
 
