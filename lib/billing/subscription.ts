@@ -1,7 +1,6 @@
 import { db } from '@/lib/db';
-import { userSubscriptions, users } from '@/lib/db/schema';
+import { userSubscriptions } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
-import { UserSubscription } from '@/lib/db/schema';
 import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
 import { type UserSubscriptionInfo } from '@/lib/types';
 
@@ -53,48 +52,8 @@ export function safeSubscriptionStatusCast(
 }
 
 /**
- * Create a free tier subscription for a new user
- */
-export async function createFreeSubscription(clerkUserId: string): Promise<UserSubscription> {
-  // Check if user already has any subscription (prevent duplicates)
-  const existingSubscription = await db.query.userSubscriptions.findFirst({
-    where: eq(userSubscriptions.clerkUserId, clerkUserId),
-  });
-
-  if (existingSubscription) {
-    console.log('⚠️ Subscription already exists for user, returning existing:', clerkUserId);
-    return existingSubscription;
-  }
-
-  // Get stripe customer ID if exists
-  const user = await db.query.users.findFirst({
-    where: eq(users.clerkUserId, clerkUserId),
-  });
-
-  const freeSubscriptionData = {
-    clerkUserId,
-    stripeSubscriptionId: null,
-    stripeCustomerId: user?.stripeCustomerId || null,
-    stripePriceId: null,
-    status: SubscriptionStatus.ACTIVE,
-    tier: SubscriptionTier.FREE,
-    currentPeriodStart: null,
-    currentPeriodEnd: null,
-    cancelAtPeriodEnd: 'false',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
-  const [newSubscription] = await db
-    .insert(userSubscriptions)
-    .values(freeSubscriptionData)
-    .returning();
-
-  return newSubscription;
-}
-
-/**
  * Get user's current subscription information using Clerk user ID
+ * Returns free tier if no paid subscription exists (no record created)
  */
 export async function getUserSubscription(clerkUserId: string): Promise<UserSubscriptionInfo> {
   const activeSubscription = await db.query.userSubscriptions.findFirst({
@@ -102,16 +61,14 @@ export async function getUserSubscription(clerkUserId: string): Promise<UserSubs
     orderBy: [desc(userSubscriptions.createdAt)],
   });
 
+  // If no subscription exists, return free tier (no record created)
   if (!activeSubscription) {
-    // Create a free tier subscription if none exists
-    console.log('🆕 Creating free tier subscription for user:', clerkUserId);
-    const freeSubscription = await createFreeSubscription(clerkUserId);
-
+    console.log('📋 No subscription found, returning free tier for user:', clerkUserId);
     return {
       tier: SubscriptionTier.FREE,
       status: SubscriptionStatus.ACTIVE,
       currentPeriodEnd: null,
-      activeSubscription: freeSubscription,
+      activeSubscription: null,
     };
   }
 
