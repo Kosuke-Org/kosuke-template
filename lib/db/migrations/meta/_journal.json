@@ -15,6 +15,13 @@
       "when": 1760541419806,
       "tag": "0001_big_namora",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1760620839947,
+      "tag": "0002_lovely_morbius",
+      "breakpoints": true
     }
   ]
 }

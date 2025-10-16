@@ -40,29 +40,19 @@ export type {
   NewOrganization,
   OrgMembership,
   NewOrgMembership,
-  Team,
-  NewTeam,
-  TeamMembership,
-  NewTeamMembership,
 
   // Role types
   OrgRoleValue,
-  TeamRoleValue,
 } from './organization';
 
 // Organization constants and helper functions
 export {
   OrgRole,
-  TeamRole,
   isOrgAdmin,
   isOrgMember,
-  isTeamLead,
-  isTeamMember,
   canManageOrganization,
   canInviteMembers,
-  canManageTeams,
   canManageBilling,
-  canManageTeam,
 } from './organization';
 
 // Billing and subscription types
