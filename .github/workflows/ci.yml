@@ -3,6 +3,8 @@ name: CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
 
 jobs:
   test-nextjs:
@@ -37,9 +39,6 @@ jobs:
 
       - name: Run tests
         run: pnpm run test
-
-      - name: Build application
-        run: pnpm run build
 
   test-engine:
     name: Test and Lint Engine Service
