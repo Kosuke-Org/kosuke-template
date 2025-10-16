@@ -56,6 +56,16 @@ export function safeSubscriptionStatusCast(
  * Create a free tier subscription for a new user
  */
 export async function createFreeSubscription(clerkUserId: string): Promise<UserSubscription> {
+  // Check if user already has any subscription (prevent duplicates)
+  const existingSubscription = await db.query.userSubscriptions.findFirst({
+    where: eq(userSubscriptions.clerkUserId, clerkUserId),
+  });
+
+  if (existingSubscription) {
+    console.log('⚠️ Subscription already exists for user, returning existing:', clerkUserId);
+    return existingSubscription;
+  }
+
   // Get stripe customer ID if exists
   const user = await db.query.users.findFirst({
     where: eq(users.clerkUserId, clerkUserId),
