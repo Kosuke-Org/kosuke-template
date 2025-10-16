@@ -13,7 +13,7 @@ slug: /
 - **FastAPI** (Python) - Microservice backend on Fly.io for extensible business logic
 - **Clerk** - Authentication with Organizations, teams, and roles
 - **PostgreSQL** (Neon) + **Drizzle ORM** - Type-safe database with auto migrations
-- **Polar** - Subscription billing with sandbox testing
+- **Stripe** - Subscription billing and payments
 - **Resend** + **React Email** - Transactional emails with React components
 - **Vercel Blob** - File storage with CDN
 - **Sentry** - Error tracking and performance monitoring
@@ -34,7 +34,7 @@ Quick reference for all integrated services:
 | Service    | Purpose                 | Free Tier    | Dashboard                                          |
 | ---------- | ----------------------- | ------------ | -------------------------------------------------- |
 | **Clerk**  | Authentication & Orgs   | 10k MAUs     | [dashboard.clerk.com](https://dashboard.clerk.com) |
-| **Polar**  | Billing & Subscriptions | Sandbox mode | [polar.sh/dashboard](https://polar.sh/dashboard)   |
+| **Stripe** | Billing & Subscriptions | Test mode    | [dashboard.stripe.com](https://dashboard.stripe.com) |
 | **Neon**   | PostgreSQL Database     | 3 GB         | [console.neon.tech](https://console.neon.tech)     |
 | **Vercel** | Application Hosting     | Unlimited    | [vercel.com](https://vercel.com)                   |
 | **Fly.io** | Microservice Hosting    | 3 VMs        | [fly.io/dashboard](https://fly.io/dashboard)       |
@@ -44,7 +44,7 @@ Quick reference for all integrated services:
 ### When to Upgrade
 
 - **Clerk**: > 10,000 monthly active users
-- **Polar**: Ready for real payments (switch to production)
+- **Stripe**: Ready for real payments (switch to live mode)
 - **Neon**: > 3 GB storage or need dedicated compute
 - **Vercel**: > 100 GB bandwidth or need team features
 - **Fly.io**: Need more than 3 VMs or dedicated compute
@@ -65,13 +65,13 @@ Complete multi-tenancy with Clerk Organizations:
 
 ### Subscription Management
 
-Polar billing integration with automated sync:
+Stripe billing integration with automated sync:
 
 - Three tiers: Free, Pro ($20/mo), Business ($200/mo)
 - Real-time webhook updates + 6-hour cron backup sync
 - Hosted checkout pages with automatic receipts
 - Feature gating based on subscription tier
-- Sandbox mode for testing without real charges
+- Test mode for testing without real charges
 
 ### Email System
 

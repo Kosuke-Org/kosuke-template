@@ -1504,12 +1504,25 @@ For detailed SEO guidelines and examples, use the `seo` rule only when needed.
 - Test authentication flows and subscription management thoroughly
 - Implement proper error handling for all external service integrations
 
-### Quick Setup Checklist for New Features
+### Service Integration & Documentation Updates - MANDATORY
 
-1. **Database Changes**: Update schema → `pnpm run db:generate` → `pnpm run db:migrate`
-2. **Authentication**: Verify user sessions and permissions
-3. **Billing**: Check subscription tier if feature is gated
-4. **UI Components**: Use existing Shadcn components when possible
-5. **Error Handling**: Implement proper error boundaries and fallbacks
-6. **Testing**: Write tests for critical functionality
-7. **Type Safety**: Ensure proper TypeScript types throughout
+**When integrating, migrating, or updating third-party services, ALWAYS update the documentation accordingly.**
+
+Examples of service changes that require documentation updates:
+- Billing provider migrations (e.g., Polar → Stripe)
+- Authentication provider changes
+- Database or ORM updates
+- Email service migrations
+- Storage provider changes
+- Monitoring/error tracking service changes
+- API endpoint removals or restructuring
+
+**Documentation files to review and update:**
+- `./docs/docs/intro.md` - Update service descriptions and tech stack overview
+- `./docs/docs/deployment-guide.md` - Update deployment instructions and environment variables
+- `./docs/blog/` - Add migration notes or release information if applicable
+- `./emails/` - Update any service references in email templates
+- `./components/home.tsx` - Update home page service descriptions
+- `.env.example` - Update environment variable names and requirements
+
+When a service change occurs, automatically identify and update all affected documentation files, environment examples, and service references across the codebase.
