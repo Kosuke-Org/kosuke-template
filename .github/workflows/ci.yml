@@ -37,6 +37,9 @@ jobs:
       - name: Run TypeScript type checking
         run: pnpm run typecheck
 
+      - name: Check code formatting
+        run: pnpm run format:check
+
       - name: Run tests
         run: pnpm run test
 
