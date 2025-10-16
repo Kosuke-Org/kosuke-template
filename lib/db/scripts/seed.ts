@@ -32,19 +32,6 @@ import {
   type NewActivityLog,
 } from '../schema';
 
-/**
- * Generate a URL-safe slug from a name
- */
-function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
-}
-
 const IS_PRODUCTION =
   process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
 
@@ -60,9 +47,16 @@ if (!process.env.CLERK_SECRET_KEY) {
 
 console.log('🔒 Environment check passed: Running in development mode\n');
 
-/**
- * Main seed function
- */
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+}
+
 async function seed() {
   console.log('🌱 Starting database seed...\n');
   console.log('📌 Note: If you encounter duplicate key errors, run `pnpm run db:reset`');
@@ -514,7 +508,6 @@ async function seed() {
   }
 }
 
-// Run the seed function
 seed()
   .catch((error) => {
     console.error('Fatal error:', error);
