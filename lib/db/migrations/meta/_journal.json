@@ -8,6 +8,13 @@
       "when": 1759328294606,
       "tag": "0000_smart_kat_farrell",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1760541419806,
+      "tag": "0001_big_namora",
+      "breakpoints": true
     }
   ]
 }

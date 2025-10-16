@@ -150,13 +150,13 @@ export const technologies: Technology[] = [
     category: 'email',
   },
   {
-    name: 'Polar',
-    description: 'Subscription management and billing made simple for developers',
+    name: 'Stripe',
+    description: 'Payment infrastructure for the internet with powerful subscription management',
     logoPath: {
-      light: '/logos/polar_light.svg',
-      dark: '/logos/polar_dark.svg',
+      light: '/logos/stripe_light.svg',
+      dark: '/logos/stripe_dark.svg',
     },
-    url: 'https://polar.sh',
+    url: 'https://stripe.com',
     category: 'backend',
   },
 ];

@@ -18,7 +18,7 @@ Create accounts with these services (all have free tiers):
 | **Vercel** | Application hosting     | Yes (Hobby)     | [vercel.com](https://vercel.com) |
 | **Neon**   | PostgreSQL database     | Yes (3 GB)      | Via Vercel integration           |
 | **Fly.io** | Microservice hosting    | Yes (3 VMs)     | [fly.io](https://fly.io)         |
-| **Polar**  | Billing & subscriptions | Sandbox mode    | [polar.sh](https://polar.sh)     |
+| **Stripe** | Billing & subscriptions | Test mode    | [stripe.com](https://stripe.com) |
 | **Clerk**  | Authentication          | Yes (10k MAUs)  | [clerk.com](https://clerk.com)   |
 | **Resend** | Email delivery          | Yes (100/day)   | [resend.com](https://resend.com) |
 | **Sentry** | Error monitoring        | Yes (5k events) | [sentry.io](https://sentry.io)   |
@@ -110,29 +110,15 @@ Neon automatically creates database branches for pull requests:
 - PR closed → Branch deleted
 - Isolated testing per PR
 
-## Step 4: Configure Polar Billing
+## Step 4: Configure Stripe Billing
 
-:::warning
+### Choose Mode
 
-Will be removed in the future.
+Start in Stripe **test mode** (shown as **Sandbox** in the dashboard) and switch to live only when you are ready to charge real cards:
 
-:::
-
-### Choose Environment
-
-Start with **sandbox** for testing (transition to production later):
-
-- Dashboard: [sandbox.polar.sh/dashboard](https://sandbox.polar.sh/dashboard)
-- No real charges
-- Full feature testing
-
-### Create Account & Organization
-
-1. Go to [sandbox.polar.sh](https://sandbox.polar.sh)
-2. Sign up (GitHub or email)
-3. Create organization:
-   - **Name**: Your company name
-   - **Slug**: Auto-generated URL identifier
+- Dashboard: [dashboard.stripe.com/dashboard](https://dashboard.stripe.com/dashboard)
+- Click your organization name (top-left) → **Switch to a sandbox**
+- No real charges—perfect for end-to-end testing
 
 ### Create Products
 
@@ -142,10 +128,12 @@ Start with **sandbox** for testing (transition to production later):
 2. Configure:
    - **Name**: `Pro Plan`
    - **Description**: `Professional subscription with advanced features`
-   - **Type**: `Subscription`
-   - **Price**: `$20.00 USD per month`
+   - **Recursion**: `Recurring`
+   - **Amount**: `$20.00 USD per month`
    - **Billing Interval**: `Monthly`
-3. **Copy Product ID**: `prod_abc123...`
+3. Click **Save product**
+4. Under **Pricing**, open the recurring price Stripe created
+5. **Copy the Price ID**: `price_abc123...`
 
 #### Product 2: Business Plan
 
@@ -153,37 +141,44 @@ Start with **sandbox** for testing (transition to production later):
 2. Configure:
    - **Name**: `Business Plan`
    - **Description**: `Business subscription with premium features and priority support`
-   - **Type**: `Subscription`
+   - **Recursion**: `Recurring`
    - **Price**: `$200.00 USD per month`
    - **Billing Interval**: `Monthly`
-3. **Copy Product ID**: `prod_xyz789...`
+3. Click **Save product**
+4. Under **Pricing**, open the recurring price
+5. **Copy the Price ID**: `price_xyz789...`
 
 ### Create API Token
 
-1. Go to **Settings** → **API Tokens**
-2. Click **Create Token**
-3. Configure:
-   - **Name**: `your-project-api`
-   - **Scopes**: ✅ `products:read`, `products:write`, `checkouts:write`, `subscriptions:read`, `subscriptions:write`
-4. **Copy token** (starts with `polar_oat_`)
+1. Go to **Developers** → **API keys**
+2. Copy the **Publishable key (test mode)**: `pk_test_...`
+3. Click **Reveal test key** and copy the **Secret key**: `sk_test_...`
 
 ### Set Up Webhook
 
 1. Go to **Webhooks** → **Add Endpoint**
 2. Configure:
    - **Endpoint URL**: `https://your-project-name.vercel.app/api/billing/webhook`
-   - **Events**: ✅ `subscription.created`, `subscription.updated`, `subscription.canceled`
+   - **Events**:
+     - ✅ `customer.subscription.created`
+     - ✅ `customer.subscription.updated`
+     - ✅ `customer.subscription.deleted`
+     - ✅ `invoice.paid`
+     - ✅ `invoice.payment_failed`
+     - ✅ `subscription_schedule.completed`
+     - ✅ `subscription_schedule.canceled`
 3. **Copy Signing Secret**
 
 **Update the environment variables in Vercel**:
 
 ```bash
-POLAR_ENVIRONMENT=sandbox
-POLAR_ORGANIZATION_ID=your-org-slug
-POLAR_PRO_PRODUCT_ID=prod_abc123...
-POLAR_BUSINESS_PRODUCT_ID=prod_xyz789...
-POLAR_ACCESS_TOKEN=polar_oat_...
-POLAR_WEBHOOK_SECRET=polar_webhook_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PRO_PRICE_ID=price_...
+STRIPE_BUSINESS_PRICE_ID=price_abc123...
+STRIPE_WEBHOOK_SECRET=whsec_xyz789...
+STRIPE_SUCCESS_URL=https://your-project-name.vercel.app/settings/billing
+STRIPE_CANCEL_URL=https://your-project-name.vercel.app/settings/billing
 ```
 
 ## Step 5: Configure Clerk Authentication
@@ -573,13 +568,14 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
 
-# Polar Billing
-POLAR_ACCESS_TOKEN=polar_oat_...
-POLAR_ENVIRONMENT=sandbox
-POLAR_ORGANIZATION_ID=your-org-slug
-POLAR_PRO_PRODUCT_ID=prod_...
-POLAR_BUSINESS_PRODUCT_ID=prod_...
-POLAR_WEBHOOK_SECRET=polar_webhook_...
+# Stripe Billing
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_PRO_PRICE_ID=price_...
+STRIPE_BUSINESS_PRICE_ID=price_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_SUCCESS_URL=https://your-project-name.vercel.app/settings/billing
+STRIPE_CANCEL_URL=https://your-project-name.vercel.app/settings/billing
 
 # Sentry Monitoring
 NEXT_PUBLIC_SENTRY_DSN=https://...@....ingest.sentry.io/...
@@ -628,26 +624,24 @@ Or in Vercel: **Deployments** → **⋯** → **Redeploy**
 
 When ready to launch with real payments and custom domain:
 
-### Transition Polar to Production
+### Transition Stripe to Production
 
-1. Go to [polar.sh/dashboard](https://polar.sh/dashboard) (not sandbox)
-2. Create production organization
+1. Go to [dashboard.stripe.com](https://dashboard.stripe.com)
+2. Activate your account (remove test mode)
 3. Create same products (Pro $20, Business $200)
-4. Create production API token with same scopes
-5. Set up webhook: `https://yourdomain.com/api/billing/webhook`
+4. Get production API keys from **Developers → API keys**
+5. Set up production webhook: `https://yourdomain.com/api/billing/webhook`
 6. Update environment variables:
    ```bash
-   POLAR_ENVIRONMENT=production
-   POLAR_ACCESS_TOKEN=polar_oat_[production_token]
-   POLAR_ORGANIZATION_ID=[production_org_slug]
-   POLAR_PRO_PRODUCT_ID=[production_pro_id]
-   POLAR_BUSINESS_PRODUCT_ID=[production_business_id]
-   POLAR_WEBHOOK_SECRET=[production_webhook_secret]
+   STRIPE_SECRET_KEY=sk_live_...
+   STRIPE_PUBLISHABLE_KEY=pk_live_...
+   STRIPE_PRO_PRICE_ID=[production_pro_price_id]
+   STRIPE_BUSINESS_PRICE_ID=[production_business_price_id]
+   STRIPE_WEBHOOK_SECRET=[production_webhook_secret]
+   STRIPE_SUCCESS_URL=https://yourdomain.com/billing/success
+   STRIPE_CANCEL_URL=https://yourdomain.com/settings/billing
    ```
 7. Redeploy
-
-### Configure Custom Domain
-
 #### Add Domain to Vercel
 
 1. Go to **Settings → Domains**
@@ -693,7 +687,7 @@ fly secrets set FRONTEND_URL=https://yourdomain.com
 Update webhook URLs in all services:
 
 - **Clerk**: `https://yourdomain.com/api/clerk/webhook`
-- **Polar**: `https://yourdomain.com/api/billing/webhook`
+- **Stripe**: `https://yourdomain.com/api/billing/webhook`
 
 ### Configure Clerk for Production
 

@@ -1,4 +1,4 @@
-import { syncStaleSubscriptions } from './polar-sync';
+import { syncStaleSubscriptions } from './stripe-sync';
 
 /**
  * Cron job handler for periodic subscription syncing
@@ -39,18 +39,17 @@ export async function runPeriodicSync() {
     };
   }
 }
-
 /**
  * Health check for sync system
  */
 export async function checkSyncHealth() {
-  // Add health checks like database connectivity, Polar API status, etc.
+  // Add health checks like database connectivity, Stripe API status, etc.
   return {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     checks: {
       database: 'ok', // You can add actual DB ping here
-      polarApi: 'ok', // You can add actual Polar API ping here
+      stripeApi: 'ok', // You can add actual Stripe API ping here
     },
   };
 }

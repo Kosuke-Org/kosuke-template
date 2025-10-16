@@ -761,9 +761,7 @@ export default function Page() {
           <Card>
             <CardHeader>
               <CardTitle>Currency Converter</CardTitle>
-              <CardDescription>
-                Example integration with the engine service
-              </CardDescription>
+              <CardDescription>Example integration with the engine service</CardDescription>
             </CardHeader>
             <CardContent>
               <CurrencyConverter />

@@ -4,7 +4,24 @@
 [![License](https://img.shields.io/github/license/filopedraz/kosuke-template?style=flat-square&color=green)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-docs--template.kosuke.ai-blue?style=flat-square&logo=docusaurus)](https://docs-template.kosuke.ai)
 
-Production-ready Next.js 15 SaaS starter with Clerk Organizations, Polar Billing, and complete multi-tenant functionality.
+A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Stripe Billing, Vercel Blob, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
+
+Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billing, and complete multi-tenant functionality.
+
+- **Next.js 15** with App Router
+- **TypeScript** for type safety
+- **Clerk Authentication** for user management with **Organizations & Teams**
+- **PostgreSQL** database with Drizzle ORM
+- **Shadcn UI** components with Tailwind CSS
+- **Stripe** billing integration with automated sync (personal & organization subscriptions)
+- **Vercel Cron Jobs** for subscription data synchronization
+- **Resend** email service with **React Email** templates
+- **Profile image uploads** with Vercel Blob
+- **Multi-tenancy** with organization and team management
+- **Sentry** error monitoring and performance tracking
+- **Plausible Analytics** integration with configurable domains
+- **Responsive design** with dark/light mode
+- **Comprehensive testing** setup with Jest
 
 ## 📚 Documentation
 
@@ -22,7 +39,7 @@ Production-ready Next.js 15 SaaS starter with Clerk Organizations, Polar Billing
 - **Framework**: Next.js 15 (App Router) + React 19 + TypeScript
 - **Auth**: Clerk (with Organizations)
 - **Database**: PostgreSQL (Neon) + Drizzle ORM
-- **Billing**: Polar subscriptions
+- **Billing**: Stripe subscriptions
 - **Email**: Resend + React Email
 - **Storage**: Vercel Blob
 - **Monitoring**: Sentry
@@ -48,7 +65,7 @@ You'll need accounts with these services (all have free tiers):
 | Service    | Purpose        | Sign Up                          | Free Tier       |
 | ---------- | -------------- | -------------------------------- | --------------- |
 | **Clerk**  | Authentication | [clerk.com](https://clerk.com)   | 10k MAUs        |
-| **Polar**  | Billing        | [polar.sh](https://polar.sh)     | Sandbox mode    |
+| **Stripe** | Billing        | [stripe.com](https://stripe.com) | Test mode       |
 | **Resend** | Email          | [resend.com](https://resend.com) | 100 emails/day  |
 | **Sentry** | Monitoring     | [sentry.io](https://sentry.io)   | 5k events/month |
 
@@ -89,14 +106,14 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
 
-# Polar Billing (from sandbox.polar.sh)
-POLAR_ENVIRONMENT=sandbox
-POLAR_ACCESS_TOKEN=polar_oat_...
-POLAR_ORGANIZATION_ID=your-org-slug
-POLAR_PRO_PRODUCT_ID=prod_...
-POLAR_BUSINESS_PRODUCT_ID=prod_...
-POLAR_WEBHOOK_SECRET=polar_webhook_...
-POLAR_SUCCESS_URL=http://localhost:3000/billing/success?checkout_id={CHECKOUT_ID}
+# Stripe Billing
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PRO_PRICE_ID=price_...      # $20/month
+STRIPE_BUSINESS_PRICE_ID=price_... # $200/month
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_SUCCESS_URL=http://localhost:3000/billing/success
+STRIPE_CANCEL_URL=http://localhost:3000/settings/billing
 
 # Resend Email (from resend.com/api-keys)
 RESEND_API_KEY=re_...
@@ -114,7 +131,7 @@ CRON_SECRET=dev_cron_secret
 **Get Your Credentials**:
 
 - **Clerk**: Create free app at [dashboard.clerk.com](https://dashboard.clerk.com) → Enable Organizations → Get API keys
-- **Polar**: Use [sandbox.polar.sh](https://sandbox.polar.sh) → Create org → Create products → Get API token
+- **Stripe**: Create account at [stripe.com](https://stripe.com) → Get API keys → Create products and prices
 - **Resend**: Sign up → Create API key → Use `onboarding@resend.dev` for testing
 - **Sentry**: Create project → Copy DSN (optional for local development)
 
@@ -129,6 +146,23 @@ docker-compose up -d
 ```bash
 pnpm run db:migrate
 ```
+
+## ⚡ Automated Subscription Sync
+
+This template includes a robust subscription synchronization system powered by Vercel Cron Jobs:
+
+- **🕐 Scheduled Sync**: Automatically syncs subscription data from Stripe every 6 hours
+- **🔒 Secure Endpoint**: Protected by `CRON_SECRET` token authentication
+- **🛡️ Webhook Backup**: Ensures data consistency even if webhooks are missed
+- **📊 Monitoring**: Built-in health checks and comprehensive logging
+
+The sync system runs automatically after deployment, requiring no manual intervention. Monitor sync activities through your Vercel Dashboard under the Functions tab.
+
+## 📧 Email Templates with React Email
+
+This template uses **React Email** for building beautiful, responsive email templates with React components and TypeScript.
+
+### Email Development Workflow
 
 #### 6. Start Development Server
 

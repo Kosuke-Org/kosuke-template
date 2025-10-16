@@ -31,3 +31,4 @@ beforeAll(() => {
 
 // Setup environment variables for testing
 process.env.TEST_DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/kosuke_test';
+process.env.POSTGRES_URL = 'postgresql://postgres:postgres@localhost:5432/kosuke_test';

@@ -1,40 +1,205 @@
-import { polar } from './client';
-import { PRODUCT_IDS, BILLING_URLS } from './config';
+import { stripe } from './client';
+import { PRICE_IDS, BILLING_URLS, PRICING } from './config';
 import { type CheckoutSessionParams, type OperationResult } from '@/lib/types';
-import { SubscriptionStatus } from '@/lib/db/schema';
-import { getUserSubscription, updateUserSubscription } from './subscription';
+import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
+import { getUserSubscription } from './subscription';
 import { getSubscriptionEligibility } from './eligibility';
+import { db } from '@/lib/db';
+import { users, userSubscriptions } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 /**
  * Billing operations: checkout, cancel, reactivate
- * Handles Polar API interactions for subscription management
+ * Handles Stripe API interactions for subscription management
  */
 
 /**
- * Create a checkout session for a specific tier
+ * Get or create Stripe customer for a user
  */
-export async function createCheckoutSession(
+async function getOrCreateStripeCustomer(
+  clerkUserId: string,
+  customerEmail: string
+): Promise<string> {
+  // Check if user already has a Stripe customer ID
+  const user = await db.query.users.findFirst({
+    where: eq(users.clerkUserId, clerkUserId),
+  });
+
+  if (user?.stripeCustomerId) {
+    return user.stripeCustomerId;
+  }
+
+  // Create new Stripe customer
+  const customer = await stripe.customers.create({
+    email: customerEmail,
+    metadata: {
+      clerkUserId,
+    },
+  });
+
+  // Save customer ID to user record
+  await db
+    .update(users)
+    .set({ stripeCustomerId: customer.id, updatedAt: new Date() })
+    .where(eq(users.clerkUserId, clerkUserId));
+
+  return customer.id;
+}
+
+/**
+ * Create a subscription schedule for downgrade (deferred subscription change)
+ */
+async function createSubscriptionSchedule(
   params: CheckoutSessionParams
 ): Promise<OperationResult<{ url: string; id: string }>> {
   try {
-    const { tier, userId, customerEmail, successUrl, metadata = {} } = params;
+    const { tier, userId, customerEmail } = params;
 
-    const productId = PRODUCT_IDS[tier];
-    if (!productId) {
+    // Get current subscription
+    const currentSubscription = await getUserSubscription(userId);
+
+    if (
+      !currentSubscription.activeSubscription?.stripeSubscriptionId ||
+      !currentSubscription.currentPeriodEnd
+    ) {
+      return {
+        success: false,
+        message: 'No active subscription found to downgrade from.',
+      };
+    }
+
+    const priceId = PRICE_IDS[tier];
+    if (!priceId) {
       return {
         success: false,
         message: `Invalid tier: ${tier}`,
       };
     }
 
-    const checkout = await polar.checkouts.create({
-      products: [productId],
-      successUrl: successUrl || BILLING_URLS.success,
-      customerEmail,
+    // Get or create Stripe customer
+    const customerId = await getOrCreateStripeCustomer(userId, customerEmail);
+
+    // Create subscription schedule to start after current period ends
+    const schedule = await stripe.subscriptionSchedules.create({
+      customer: customerId,
+      start_date: Math.floor(currentSubscription.currentPeriodEnd.getTime() / 1000),
+      end_behavior: 'release', // Convert to regular subscription after schedule completes
+      phases: [
+        {
+          items: [
+            {
+              price: priceId,
+              quantity: 1,
+            },
+          ],
+          metadata: {
+            clerkUserId: userId,
+            tier,
+            isDowngrade: 'true',
+          },
+        },
+      ],
       metadata: {
-        userId,
+        clerkUserId: userId,
+        targetTier: tier,
+        isDowngrade: 'true',
+        currentSubscriptionId: currentSubscription.activeSubscription.stripeSubscriptionId,
+      },
+    });
+
+    // Mark current subscription to cancel at period end
+    await stripe.subscriptions.update(currentSubscription.activeSubscription.stripeSubscriptionId, {
+      cancel_at_period_end: true,
+    });
+
+    // Update local database to mark scheduled downgrade
+    await db
+      .update(userSubscriptions)
+      .set({
+        cancelAtPeriodEnd: 'true',
+        scheduledDowngradeTier: tier, // Track the target tier
+        canceledAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(
+        eq(
+          userSubscriptions.stripeSubscriptionId,
+          currentSubscription.activeSubscription.stripeSubscriptionId
+        )
+      );
+
+    console.log('✅ Created subscription schedule for downgrade:', schedule.id);
+
+    return {
+      success: true,
+      message: `Your subscription will downgrade to ${PRICING[tier as keyof typeof PRICING].name} on ${currentSubscription.currentPeriodEnd.toLocaleDateString()}`,
+      data: {
+        url: BILLING_URLS.success, // Redirect to success page
+        id: schedule.id,
+      },
+    };
+  } catch (error) {
+    console.error('💥 Error creating subscription schedule:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to create subscription schedule',
+    };
+  }
+}
+
+/**
+ * Create a Stripe Checkout session for upgrades or new subscriptions
+ */
+export async function createCheckoutSession(
+  params: CheckoutSessionParams
+): Promise<OperationResult<{ url: string; id: string }>> {
+  try {
+    const { tier, userId, customerEmail, metadata = {} } = params;
+
+    // Check if this is a downgrade
+    const currentSubscription = await getUserSubscription(userId);
+    const currentPrice = PRICING[currentSubscription.tier as keyof typeof PRICING]?.price || 0;
+    const newPrice = PRICING[tier as keyof typeof PRICING]?.price;
+
+    // If downgrading (new price < current price), use subscription schedule
+    if (currentSubscription.tier !== SubscriptionTier.FREE && newPrice < currentPrice) {
+      console.log('🔽 Detected downgrade, creating subscription schedule instead');
+      return createSubscriptionSchedule(params);
+    }
+
+    const priceId = PRICE_IDS[tier];
+    if (!priceId) {
+      return {
+        success: false,
+        message: `Invalid tier: ${tier}`,
+      };
+    }
+
+    // Get or create Stripe customer
+    const customerId = await getOrCreateStripeCustomer(userId, customerEmail);
+
+    // Create checkout session for upgrade or new subscription
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      mode: 'subscription',
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: BILLING_URLS.success,
+      cancel_url: BILLING_URLS.cancel,
+      metadata: {
+        clerkUserId: userId,
         tier,
         ...metadata,
+      },
+      subscription_data: {
+        metadata: {
+          clerkUserId: userId,
+          tier,
+        },
       },
     });
 
@@ -42,8 +207,8 @@ export async function createCheckoutSession(
       success: true,
       message: 'Checkout session created successfully',
       data: {
-        url: checkout.url!,
-        id: checkout.id,
+        url: session.url!,
+        id: session.id,
       },
     };
   } catch (error) {
@@ -56,14 +221,14 @@ export async function createCheckoutSession(
 }
 
 /**
- * Cancel user's active subscription
+ * Cancel user's active subscription (mark for cancellation at period end)
  */
 export async function cancelUserSubscription(
   clerkUserId: string,
-  subscriptionId: string
+  stripeSubscriptionId: string
 ): Promise<OperationResult> {
   try {
-    console.log('🔄 Canceling subscription via Polar API:', subscriptionId);
+    console.log('🔄 Canceling subscription via Stripe API:', stripeSubscriptionId);
 
     const currentSubscription = await getUserSubscription(clerkUserId);
     const eligibility = getSubscriptionEligibility(currentSubscription);
@@ -77,7 +242,7 @@ export async function cancelUserSubscription(
 
     if (
       !currentSubscription.activeSubscription ||
-      currentSubscription.activeSubscription.subscriptionId !== subscriptionId
+      currentSubscription.activeSubscription.stripeSubscriptionId !== stripeSubscriptionId
     ) {
       return {
         success: false,
@@ -85,47 +250,24 @@ export async function cancelUserSubscription(
       };
     }
 
-    // Cancel subscription via Polar API
-    try {
-      const canceledSubscription = await polar.subscriptions.revoke({
-        id: subscriptionId,
-      });
-
-      console.log('✅ Successfully canceled subscription in Polar:', canceledSubscription);
-    } catch (polarError: unknown) {
-      console.error('💥 Polar API error during cancellation:', polarError);
-
-      const error = polarError as { status?: number; message?: string };
-      if (error.status === 404) {
-        return {
-          success: false,
-          message: 'Subscription not found in Polar. It may have already been canceled.',
-        };
-      } else if (error.status === 403) {
-        return {
-          success: false,
-          message: 'Access denied. Unable to cancel this subscription.',
-        };
-      } else if (error.status && error.status >= 500) {
-        return {
-          success: false,
-          message: 'Polar service is temporarily unavailable. Please try again later.',
-        };
-      } else {
-        return {
-          success: false,
-          message: `Failed to cancel subscription: ${error.message || 'Unknown error'}`,
-        };
-      }
-    }
-
-    // Update local database
-    await updateUserSubscription(clerkUserId, subscriptionId, {
-      status: SubscriptionStatus.CANCELED,
-      canceledAt: new Date(),
+    // Cancel subscription at period end via Stripe API
+    await stripe.subscriptions.update(stripeSubscriptionId, {
+      cancel_at_period_end: true,
     });
 
-    console.log('✅ Successfully updated local subscription status to canceled');
+    console.log('✅ Successfully canceled subscription in Stripe');
+
+    // Update local database
+    await db
+      .update(userSubscriptions)
+      .set({
+        cancelAtPeriodEnd: 'true',
+        canceledAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(userSubscriptions.stripeSubscriptionId, stripeSubscriptionId));
+
+    console.log('✅ Successfully updated local subscription status');
 
     return {
       success: true,
@@ -145,16 +287,15 @@ export async function cancelUserSubscription(
 }
 
 /**
- * Reactivate a canceled subscription (uncancels it in Polar)
+ * Reactivate a canceled subscription (remove cancellation)
  */
 export async function reactivateUserSubscription(
   clerkUserId: string,
-  subscriptionId: string
+  stripeSubscriptionId: string
 ): Promise<OperationResult> {
   try {
-    console.log('🔄 Reactivating subscription via Polar API:', subscriptionId);
+    console.log('🔄 Reactivating subscription via Stripe API:', stripeSubscriptionId);
 
-    // Validate subscription eligibility for reactivation
     const currentSubscription = await getUserSubscription(clerkUserId);
     const eligibility = getSubscriptionEligibility(currentSubscription);
 
@@ -167,7 +308,7 @@ export async function reactivateUserSubscription(
 
     if (
       !currentSubscription.activeSubscription ||
-      currentSubscription.activeSubscription.subscriptionId !== subscriptionId
+      currentSubscription.activeSubscription.stripeSubscriptionId !== stripeSubscriptionId
     ) {
       return {
         success: false,
@@ -175,53 +316,23 @@ export async function reactivateUserSubscription(
       };
     }
 
-    // Reactivate subscription via Polar API (this triggers subscription.updated webhook)
-    try {
-      // Based on Polar's architecture: Update subscription to remove cancellation
-      // This follows the pattern where cancellation is scheduled for period end
-      // and can be removed before the period expires
-      // For now, we'll need to implement the actual update logic once Polar confirms their API
-      // This is a placeholder that follows their likely pattern
-      const reactivatedSubscription = await polar.subscriptions.get({ id: subscriptionId });
-
-      // TODO: Replace with actual reactivation call once Polar API is confirmed
-      // Likely something like: polar.subscriptions.update(subscriptionId, { cancel_at: null })
-      console.warn('⚠️  Placeholder: Actual Polar reactivation API call needed here');
-      console.log('✅ Subscription reactivation requested via Polar API:', subscriptionId);
-
-      console.log('✅ Successfully reactivated subscription in Polar:', reactivatedSubscription);
-    } catch (polarError: unknown) {
-      console.error('💥 Polar API error during reactivation:', polarError);
-
-      const error = polarError as { status?: number; message?: string };
-      if (error.status === 404) {
-        return {
-          success: false,
-          message: 'Subscription not found in Polar.',
-        };
-      } else if (error.status === 403) {
-        return {
-          success: false,
-          message: 'Access denied. Unable to reactivate this subscription.',
-        };
-      } else if (error.status && error.status >= 500) {
-        return {
-          success: false,
-          message: 'Polar service is temporarily unavailable. Please try again later.',
-        };
-      } else {
-        return {
-          success: false,
-          message: `Failed to reactivate subscription: ${error.message || 'Unknown error'}`,
-        };
-      }
-    }
-
-    // Update local database - the webhook should handle this, but we can update optimistically
-    await updateUserSubscription(clerkUserId, subscriptionId, {
-      status: SubscriptionStatus.ACTIVE,
-      canceledAt: null,
+    // Reactivate subscription via Stripe API
+    await stripe.subscriptions.update(stripeSubscriptionId, {
+      cancel_at_period_end: false,
     });
+
+    console.log('✅ Successfully reactivated subscription in Stripe');
+
+    // Update local database
+    await db
+      .update(userSubscriptions)
+      .set({
+        status: SubscriptionStatus.ACTIVE,
+        cancelAtPeriodEnd: 'false',
+        canceledAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(userSubscriptions.stripeSubscriptionId, stripeSubscriptionId));
 
     console.log('✅ Successfully updated local subscription status to active');
 
@@ -237,6 +348,159 @@ export async function reactivateUserSubscription(
         error instanceof Error
           ? error.message
           : 'Unable to reactivate subscription at this time. Please contact support.',
+    };
+  }
+}
+
+/**
+ * Create Stripe Customer Portal session for subscription management
+ */
+export async function createCustomerPortalSession(
+  clerkUserId: string
+): Promise<OperationResult<{ url: string }>> {
+  try {
+    const user = await db.query.users.findFirst({
+      where: eq(users.clerkUserId, clerkUserId),
+    });
+
+    if (!user?.stripeCustomerId) {
+      return {
+        success: false,
+        message: 'No Stripe customer found for this user.',
+      };
+    }
+
+    const session = await stripe.billingPortal.sessions.create({
+      customer: user.stripeCustomerId,
+      return_url: BILLING_URLS.cancel,
+    });
+
+    return {
+      success: true,
+      message: 'Customer portal session created',
+      data: {
+        url: session.url,
+      },
+    };
+  } catch (error) {
+    console.error('💥 Error creating customer portal session:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to create portal session',
+    };
+  }
+}
+
+/**
+ * Cancel a pending subscription downgrade (cancels the subscription schedule)
+ */
+export async function cancelPendingDowngrade(clerkUserId: string): Promise<OperationResult> {
+  try {
+    console.log('🔄 Canceling pending downgrade for user:', clerkUserId);
+
+    // Get current subscription
+    const currentSubscription = await getUserSubscription(clerkUserId);
+
+    if (!currentSubscription.activeSubscription?.scheduledDowngradeTier) {
+      return {
+        success: false,
+        message: 'No pending downgrade found.',
+      };
+    }
+
+    if (!currentSubscription.activeSubscription?.stripeCustomerId) {
+      return {
+        success: false,
+        message: 'No Stripe customer found.',
+      };
+    }
+
+    // Find the subscription schedule for this customer
+    const schedules = await stripe.subscriptionSchedules.list({
+      customer: currentSubscription.activeSubscription.stripeCustomerId,
+      limit: 10,
+    });
+
+    console.log('📋 Found schedules:', schedules.data.length);
+    schedules.data.forEach((schedule) => {
+      console.log(
+        `  Schedule ${schedule.id}: status=${schedule.status}, metadata=`,
+        schedule.metadata
+      );
+    });
+
+    // Find the pending schedule for this user (status can be 'not_started' or 'active')
+    const pendingSchedule = schedules.data.find(
+      (schedule) =>
+        schedule.metadata?.clerkUserId === clerkUserId &&
+        (schedule.status === 'active' || schedule.status === 'not_started')
+    );
+
+    if (!pendingSchedule) {
+      console.error('❌ No pending schedule found for user:', clerkUserId);
+      console.error(
+        'Available schedules:',
+        schedules.data.map((s) => ({
+          id: s.id,
+          status: s.status,
+          metadata: s.metadata,
+        }))
+      );
+      return {
+        success: false,
+        message: 'No pending subscription schedule found.',
+      };
+    }
+
+    console.log(
+      '✅ Found pending schedule:',
+      pendingSchedule.id,
+      'with status:',
+      pendingSchedule.status
+    );
+
+    // Cancel the subscription schedule in Stripe
+    await stripe.subscriptionSchedules.cancel(pendingSchedule.id);
+
+    console.log('✅ Canceled subscription schedule in Stripe:', pendingSchedule.id);
+
+    // Reactivate the current subscription in Stripe
+    if (currentSubscription.activeSubscription.stripeSubscriptionId) {
+      await stripe.subscriptions.update(
+        currentSubscription.activeSubscription.stripeSubscriptionId,
+        {
+          cancel_at_period_end: false,
+        }
+      );
+      console.log('✅ Reactivated current subscription in Stripe');
+    }
+
+    // Update local database
+    await db
+      .update(userSubscriptions)
+      .set({
+        scheduledDowngradeTier: null,
+        cancelAtPeriodEnd: 'false',
+        canceledAt: null,
+        status: SubscriptionStatus.ACTIVE,
+        updatedAt: new Date(),
+      })
+      .where(eq(userSubscriptions.clerkUserId, clerkUserId));
+
+    console.log('✅ Successfully canceled pending downgrade');
+
+    return {
+      success: true,
+      message: 'Pending downgrade has been canceled. Your current subscription will continue.',
+    };
+  } catch (error) {
+    console.error('💥 Error canceling pending downgrade:', error);
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Unable to cancel pending downgrade. Please contact support.',
     };
   }
 }

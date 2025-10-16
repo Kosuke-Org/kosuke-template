@@ -5,10 +5,7 @@
 
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
-import { 
-  currencyConvertRequestSchema,
-  currencyConvertResponseSchema,
-} from '../schemas/engine';
+import { currencyConvertRequestSchema, currencyConvertResponseSchema } from '../schemas/engine';
 import { convertCurrency, EngineError } from '@/lib/engine/client';
 
 export const engineRouter = router({
@@ -25,7 +22,7 @@ export const engineRouter = router({
             message: `Engine error: ${error.message}`,
           });
         }
-        
+
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Currency conversion failed',

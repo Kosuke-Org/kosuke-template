@@ -8,7 +8,6 @@
 // Core functionality
 export {
   getUserSubscription,
-  updateUserSubscription,
   createFreeSubscription,
   hasFeatureAccess,
   safeSubscriptionTierCast,
@@ -28,17 +27,18 @@ export {
   createCheckoutSession,
   cancelUserSubscription,
   reactivateUserSubscription,
+  createCustomerPortalSession,
+  cancelPendingDowngrade,
 } from './operations';
 
 // Configuration and constants
-export { PRODUCT_IDS, PRICING, BILLING_URLS } from './config';
+export { PRICE_IDS, PRICING, BILLING_URLS } from './config';
 
 // Client and types
-export { polar } from './client';
+export { stripe } from './client';
 export type {
   SubscriptionEligibility,
   UserSubscriptionInfo,
-  SubscriptionUpdateParams,
   CheckoutSessionParams,
   OperationResult,
 } from '@/lib/types';

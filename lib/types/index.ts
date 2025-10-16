@@ -74,7 +74,6 @@ export type {
 
   // Enhanced types
   UserSubscriptionInfo,
-  SubscriptionUpdateParams,
   OperationResult,
 
   // State and eligibility
@@ -104,11 +103,7 @@ export type {
 export { isUserEvent, isOrganizationEvent, isMembershipEvent, isInvitationEvent } from './webhooks';
 
 // Engine types
-export type {
-  CurrencyCode,
-  CurrencyConvertRequest,
-  CurrencyConvertResponse,
-} from './engine';
+export type { CurrencyCode, CurrencyConvertRequest, CurrencyConvertResponse } from './engine';
 
 // Note: API types are now handled by lib/api module
 // Import from '@/lib/api' for API-related types and utilities

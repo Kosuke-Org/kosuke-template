@@ -111,7 +111,7 @@ describe('Subscription Eligibility Business Logic', () => {
     });
 
     describe('CANCELED_GRACE_PERIOD eligibility', () => {
-      it('should allow reactivation and new subscriptions', () => {
+      it('should allow reactivation only (must reactivate or wait for expiry)', () => {
         const futureDate = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000);
         const subscription = createUserSubscription(
           SubscriptionTier.PRO,
@@ -122,7 +122,7 @@ describe('Subscription Eligibility Business Logic', () => {
 
         expect(eligibility.state).toBe(SubscriptionState.CANCELED_GRACE_PERIOD);
         expect(eligibility.canReactivate).toBe(true);
-        expect(eligibility.canCreateNew).toBe(true);
+        expect(eligibility.canCreateNew).toBe(false); // Must reactivate existing subscription
         expect(eligibility.canCancel).toBe(false);
         expect(eligibility.canUpgrade).toBe(false);
         expect(eligibility.gracePeriodEnds).toEqual(futureDate);

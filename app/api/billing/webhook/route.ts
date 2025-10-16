@@ -1,496 +1,367 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks';
+import { stripe } from '@/lib/billing/client';
 import { db } from '@/lib/db';
 import { userSubscriptions } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import Stripe from 'stripe';
+
+/**
+ * Stripe Webhook Handler
+ * Processes subscription lifecycle events from Stripe
+ *
+ * Endpoint: /api/billing/webhook
+ * Events handled:
+ * - customer.subscription.created
+ * - customer.subscription.updated
+ * - customer.subscription.deleted
+ * - invoice.paid
+ * - invoice.payment_failed
+ * - subscription_schedule.completed (for downgrades)
+ * - subscription_schedule.canceled (when user cancels pending downgrade)
+ */
 
 export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
-    const signature = request.headers.get('webhook-signature');
-    const timestamp = request.headers.get('webhook-timestamp');
-    const webhookId = request.headers.get('webhook-id');
+    const signature = request.headers.get('stripe-signature');
 
     if (!signature) {
+      console.error('❌ Missing stripe-signature header');
       return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
     }
 
-    // Validate that webhook secret is configured
-    if (!process.env.POLAR_WEBHOOK_SECRET) {
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      console.error('❌ STRIPE_WEBHOOK_SECRET not configured');
       return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
     }
 
-    // Validate webhook signature with all required headers
-    const headerVariants = [
-      // Standard webhook headers
-      {
-        'webhook-signature': signature,
-        'webhook-timestamp': timestamp,
-        'webhook-id': webhookId,
-      },
-      // Alternative naming conventions
-      {
-        'polar-signature': signature,
-        'polar-timestamp': timestamp,
-        'polar-id': webhookId,
-      },
-      // Just signature
-      {
-        'webhook-signature': signature,
-      },
-    ];
-
-    let event;
-
-    for (let index = 0; index < headerVariants.length; index++) {
-      const headers = headerVariants[index];
-      // Filter out null/undefined values
-      const cleanHeaders = Object.fromEntries(
-        Object.entries(headers).filter(([, value]) => value !== null && value !== undefined)
-      );
-
-      try {
-        event = validateEvent(rawBody, cleanHeaders, process.env.POLAR_WEBHOOK_SECRET!);
-        break;
-      } catch {
-        continue;
-      }
+    // Verify webhook signature
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+      console.error('❌ Webhook signature verification failed:', err);
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
     }
 
-    if (!event) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
-    }
+    console.log('✅ Stripe webhook event:', event.type, event.id);
 
+    // Handle different event types
     switch (event.type) {
-      case 'subscription.created':
-        await handleSubscriptionCreated(event.data);
+      case 'customer.subscription.created':
+        await handleSubscriptionCreated(event.data.object);
         break;
-      case 'subscription.updated':
-        await handleSubscriptionUpdated(event.data);
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdated(event.data.object);
         break;
-      case 'subscription.active':
-        await handleSubscriptionActive(event.data);
+      case 'customer.subscription.deleted':
+        await handleSubscriptionDeleted(event.data.object);
         break;
-      case 'subscription.canceled':
-        await handleSubscriptionCanceled(event.data);
+      case 'invoice.paid':
+        await handleInvoicePaid(event.data.object);
         break;
-      case 'subscription.uncanceled':
-        await handleSubscriptionUncanceled(event.data);
+      case 'invoice.payment_failed':
+        await handleInvoicePaymentFailed(event.data.object);
         break;
-      case 'checkout.created':
-      case 'checkout.updated':
-      case 'customer.created':
-        // These events are informational and don't require action
+      case 'subscription_schedule.completed':
+        await handleSubscriptionScheduleCompleted(event.data.object);
+        break;
+      case 'subscription_schedule.canceled':
+        await handleSubscriptionScheduleCanceled(event.data.object);
         break;
       default:
-      // Unhandled event type
+        console.log('ℹ️ Unhandled event type:', event.type);
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ received: true });
   } catch (error) {
-    if (error instanceof WebhookVerificationError) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
-    }
-
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('💥 Webhook error:', error);
+    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
   }
 }
 
-// Helper function to safely extract string values
-function safeExtractString(value: unknown): string | undefined {
-  return typeof value === 'string' ? value : undefined;
+/**
+ * Helper: Get clerkUserId from subscription metadata
+ */
+function getClerkUserId(subscription: Stripe.Subscription): string | null {
+  return (subscription.metadata?.clerkUserId as string) || null;
 }
 
-// Helper function to safely extract object values
-function safeExtractObject(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : undefined;
+/**
+ * Helper: Get tier from subscription metadata
+ */
+function getTier(subscription: Stripe.Subscription): string | null {
+  return (subscription.metadata?.tier as string) || null;
 }
 
-// Helper function to safely extract metadata from multiple sources
-function extractMetadataValues(eventData: Record<string, unknown>): {
-  clerkUserId: string | undefined;
-  tier: string | undefined;
-} {
-  const metadata = safeExtractObject(eventData.metadata);
-  const customer = safeExtractObject(eventData.customer);
-  const checkout = safeExtractObject(eventData.checkout);
-
-  const customerMetadata = customer ? safeExtractObject(customer.metadata) : undefined;
-  const checkoutMetadata = checkout ? safeExtractObject(checkout.metadata) : undefined;
-
-  // Try to find userId and tier from any metadata source
-  const clerkUserId =
-    safeExtractString(metadata?.userId) ||
-    safeExtractString(customerMetadata?.userId) ||
-    safeExtractString(checkoutMetadata?.userId);
-
-  const tier =
-    safeExtractString(metadata?.tier) ||
-    safeExtractString(customerMetadata?.tier) ||
-    safeExtractString(checkoutMetadata?.tier);
-
-  return { clerkUserId, tier };
-}
-
-async function handleSubscriptionCreated(data: unknown) {
-  const eventData = safeExtractObject(data);
-
-  if (!eventData) {
-    return;
-  }
-
+/**
+ * Handle subscription.created event
+ */
+async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   try {
-    const { clerkUserId, tier } = extractMetadataValues(eventData);
+    const clerkUserId = getClerkUserId(subscription);
+    const tier = getTier(subscription);
 
-    if (!clerkUserId) {
+    if (!clerkUserId || !tier) {
+      console.error('❌ Missing metadata in subscription.created:', subscription.id);
       return;
     }
 
-    if (!tier) {
-      return;
-    }
+    const priceId = subscription.items.data[0]?.price.id;
 
-    const subscriptionId = safeExtractString(eventData.id);
-    const productId = safeExtractString(eventData.productId);
+    // Stripe API includes period fields on subscriptions, but TypeScript types don't
+    // See: https://docs.stripe.com/api/subscriptions/object
+    // @ts-expect-error - current_period_start exists in actual API but not in TS types
+    const currentPeriodStart = subscription.current_period_start;
+    // @ts-expect-error - current_period_end exists in actual API but not in TS types
+    const currentPeriodEnd = subscription.current_period_end;
 
-    if (!subscriptionId || !productId) {
-      return;
-    }
-
-    let currentPeriodStart: Date;
-    let currentPeriodEnd: Date;
-
-    try {
-      // Improved date field extraction for Polar's actual structure
-      const startDate =
-        safeExtractString(eventData.currentPeriodStart) ||
-        safeExtractString(eventData.startedAt) ||
-        safeExtractString(eventData.started_at) ||
-        safeExtractString(eventData.current_period_start);
-
-      const endDate =
-        safeExtractString(eventData.currentPeriodEnd) ||
-        safeExtractString(eventData.endsAt) ||
-        safeExtractString(eventData.ends_at) ||
-        safeExtractString(eventData.current_period_end);
-
-      if (!startDate || !endDate) {
-        return;
-      }
-
-      currentPeriodStart = new Date(startDate);
-      currentPeriodEnd = new Date(endDate);
-
-      // Validate dates
-      if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
-        return;
-      }
-    } catch {
-      return;
-    }
-
-    const status = safeExtractString(eventData.status);
-    if (!status) {
-      return;
-    }
-
-    const subscriptionData = {
-      clerkUserId,
-      subscriptionId,
-      productId,
-      status,
-      tier,
-      currentPeriodStart,
-      currentPeriodEnd,
-      updatedAt: new Date(),
-    };
-
-    const existingSubscription = await db.query.userSubscriptions.findFirst({
-      where: eq(userSubscriptions.subscriptionId, subscriptionId),
+    // Before creating new subscription, mark any existing active subscriptions as replaced
+    // This prevents duplicate active subscriptions when upgrading
+    const existingSubscriptions = await db.query.userSubscriptions.findMany({
+      where: eq(userSubscriptions.clerkUserId, clerkUserId),
     });
 
-    if (existingSubscription) {
-      await db
-        .update(userSubscriptions)
-        .set(subscriptionData)
-        .where(eq(userSubscriptions.subscriptionId, subscriptionId));
-    } else {
-      await db.insert(userSubscriptions).values({
-        ...subscriptionData,
-        createdAt: new Date(),
-      });
+    // Cancel existing active subscriptions (except free tier)
+    for (const existing of existingSubscriptions) {
+      if (
+        existing.tier !== 'free' &&
+        existing.status === 'active' &&
+        existing.stripeSubscriptionId
+      ) {
+        // Cancel in Stripe first
+        try {
+          await stripe.subscriptions.cancel(existing.stripeSubscriptionId);
+          console.log(
+            `✅ Canceled Stripe subscription ${existing.stripeSubscriptionId} for user upgrade`
+          );
+        } catch (error) {
+          console.error(
+            `⚠️ Failed to cancel Stripe subscription ${existing.stripeSubscriptionId}:`,
+            error
+          );
+          // Continue anyway to update local database
+        }
+
+        // Update local database
+        await db
+          .update(userSubscriptions)
+          .set({
+            status: 'canceled',
+            canceledAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(userSubscriptions.id, existing.id));
+
+        console.log(`✅ Canceled local subscription record ${existing.id} for user upgrade`);
+      }
     }
+
+    await db.insert(userSubscriptions).values({
+      clerkUserId,
+      stripeSubscriptionId: subscription.id,
+      stripeCustomerId: subscription.customer as string,
+      stripePriceId: priceId,
+      status: subscription.status,
+      tier,
+      currentPeriodStart: new Date(currentPeriodStart * 1000),
+      currentPeriodEnd: new Date(currentPeriodEnd * 1000),
+      cancelAtPeriodEnd: subscription.cancel_at_period_end ? 'true' : 'false',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    console.log('✅ Subscription created in database:', subscription.id);
   } catch (error) {
+    console.error('💥 Error handling subscription.created:', error);
     throw error;
   }
 }
 
-async function handleSubscriptionUpdated(data: unknown) {
-  const eventData = safeExtractObject(data);
-
-  if (!eventData) {
-    return;
-  }
-
+/**
+ * Handle subscription.updated event
+ */
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   try {
-    const { clerkUserId } = extractMetadataValues(eventData);
+    const priceId = subscription.items.data[0]?.price.id;
 
-    if (!clerkUserId) {
-      return;
-    }
-
-    const subscriptionId = safeExtractString(eventData.id);
-    const status = safeExtractString(eventData.status);
-
-    if (!subscriptionId || !status) {
-      return;
-    }
-
-    // Improved date field extraction for Polar's actual structure
-    const startDate =
-      safeExtractString(eventData.currentPeriodStart) ||
-      safeExtractString(eventData.startedAt) ||
-      safeExtractString(eventData.started_at) ||
-      safeExtractString(eventData.current_period_start);
-
-    const endDate =
-      safeExtractString(eventData.currentPeriodEnd) ||
-      safeExtractString(eventData.endsAt) ||
-      safeExtractString(eventData.ends_at) ||
-      safeExtractString(eventData.current_period_end);
-
-    if (!startDate || !endDate) {
-      return;
-    }
-
-    const currentPeriodStart = new Date(startDate);
-    const currentPeriodEnd = new Date(endDate);
-
-    // Validate dates
-    if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
-      return;
-    }
+    // Stripe API includes period fields on subscriptions, but TypeScript types don't
+    // @ts-expect-error - current_period_start exists in actual API but not in TS types
+    const currentPeriodStart = subscription.current_period_start;
+    // @ts-expect-error - current_period_end exists in actual API but not in TS types
+    const currentPeriodEnd = subscription.current_period_end;
 
     await db
       .update(userSubscriptions)
       .set({
-        status,
-        currentPeriodStart,
-        currentPeriodEnd,
+        status: subscription.status,
+        stripePriceId: priceId,
+        currentPeriodStart: new Date(currentPeriodStart * 1000),
+        currentPeriodEnd: new Date(currentPeriodEnd * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end ? 'true' : 'false',
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.subscriptionId, subscriptionId));
+      .where(eq(userSubscriptions.stripeSubscriptionId, subscription.id));
+
+    console.log('✅ Subscription updated in database:', subscription.id);
   } catch (error) {
+    console.error('💥 Error handling subscription.updated:', error);
     throw error;
   }
 }
 
-async function handleSubscriptionActive(data: unknown) {
-  const eventData = safeExtractObject(data);
-
-  if (!eventData) {
-    return;
-  }
-
+/**
+ * Handle subscription.deleted event
+ */
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   try {
-    const { clerkUserId, tier } = extractMetadataValues(eventData);
-
-    if (!clerkUserId) {
-      return;
-    }
-
-    const subscriptionId = safeExtractString(eventData.id);
-    const productId =
-      safeExtractString(eventData.productId) || safeExtractString(eventData.product_id);
-
-    if (!subscriptionId) {
-      return;
-    }
-
-    // Improved date field extraction for Polar's actual structure
-    const startDate =
-      safeExtractString(eventData.currentPeriodStart) ||
-      safeExtractString(eventData.startedAt) ||
-      safeExtractString(eventData.started_at) ||
-      safeExtractString(eventData.current_period_start);
-
-    const endDate =
-      safeExtractString(eventData.currentPeriodEnd) ||
-      safeExtractString(eventData.endsAt) ||
-      safeExtractString(eventData.ends_at) ||
-      safeExtractString(eventData.current_period_end);
-
-    let currentPeriodStart: Date | null = null;
-    let currentPeriodEnd: Date | null = null;
-
-    if (startDate && endDate) {
-      currentPeriodStart = new Date(startDate);
-      currentPeriodEnd = new Date(endDate);
-
-      // Validate dates
-      if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
-        currentPeriodStart = null;
-        currentPeriodEnd = null;
-      }
-    }
-
-    const updateData: {
-      status: string;
-      canceledAt: Date | null;
-      updatedAt: Date;
-      currentPeriodStart?: Date | null;
-      currentPeriodEnd?: Date | null;
-      tier?: string;
-      productId?: string;
-    } = {
-      status: 'active',
-      canceledAt: null,
-      updatedAt: new Date(),
-    };
-
-    if (currentPeriodStart && currentPeriodEnd) {
-      updateData.currentPeriodStart = currentPeriodStart;
-      updateData.currentPeriodEnd = currentPeriodEnd;
-    }
-
-    if (tier) {
-      updateData.tier = tier;
-    }
-
-    if (productId) {
-      updateData.productId = productId;
-    }
-
-    const existing = await db.query.userSubscriptions.findFirst({
-      where: eq(userSubscriptions.subscriptionId, subscriptionId),
-    });
-
-    if (existing) {
-      await db
-        .update(userSubscriptions)
-        .set(updateData)
-        .where(eq(userSubscriptions.subscriptionId, subscriptionId));
-    } else {
-      // Create new subscription if it doesn't exist
-      if (!tier || !productId) {
-        return;
-      }
-
-      await db.insert(userSubscriptions).values({
-        clerkUserId,
-        subscriptionId,
-        productId,
-        status: 'active',
-        tier,
-        currentPeriodStart,
-        currentPeriodEnd,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-    }
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function handleSubscriptionCanceled(data: unknown) {
-  const eventData = safeExtractObject(data);
-
-  if (!eventData) {
-    return;
-  }
-
-  try {
-    const { clerkUserId } = extractMetadataValues(eventData);
-
-    if (!clerkUserId) {
-      return;
-    }
-
-    const subscriptionId = safeExtractString(eventData.id);
-
-    if (!subscriptionId) {
-      return;
-    }
-
-    const endDate =
-      safeExtractString(eventData.currentPeriodEnd) || safeExtractString(eventData.endsAt);
-
-    if (!endDate) {
-      return;
-    }
-
-    const currentPeriodEnd = new Date(endDate);
-
-    // Validate date
-    if (isNaN(currentPeriodEnd.getTime())) {
-      return;
-    }
-
     await db
       .update(userSubscriptions)
       .set({
         status: 'canceled',
         canceledAt: new Date(),
-        currentPeriodEnd,
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.subscriptionId, subscriptionId));
+      .where(eq(userSubscriptions.stripeSubscriptionId, subscription.id));
+
+    console.log('✅ Subscription marked as deleted in database:', subscription.id);
   } catch (error) {
+    console.error('💥 Error handling subscription.deleted:', error);
     throw error;
   }
 }
 
-async function handleSubscriptionUncanceled(data: unknown) {
-  const eventData = safeExtractObject(data);
-
-  if (!eventData) {
-    return;
-  }
-
+/**
+ * Handle invoice.paid event (successful renewal)
+ */
+async function handleInvoicePaid(invoice: Stripe.Invoice) {
   try {
-    const { clerkUserId } = extractMetadataValues(eventData);
+    // @ts-expect-error - subscription exists in webhook events but not in Invoice type
+    const sub = invoice.subscription;
+    if (!sub) return;
 
-    if (!clerkUserId) {
-      return;
-    }
+    const subscriptionId = typeof sub === 'string' ? sub : sub.id;
 
-    const subscriptionId = safeExtractString(eventData.id);
-
-    if (!subscriptionId) {
-      return;
-    }
-
-    const startDate =
-      safeExtractString(eventData.currentPeriodStart) || safeExtractString(eventData.startedAt);
-    const endDate =
-      safeExtractString(eventData.currentPeriodEnd) || safeExtractString(eventData.endsAt);
-
-    if (!startDate || !endDate) {
-      return;
-    }
-
-    const currentPeriodStart = new Date(startDate);
-    const currentPeriodEnd = new Date(endDate);
-
-    // Validate dates
-    if (isNaN(currentPeriodStart.getTime()) || isNaN(currentPeriodEnd.getTime())) {
-      return;
-    }
-
+    // Update subscription with period info from invoice + ensure active status
     await db
       .update(userSubscriptions)
       .set({
         status: 'active',
-        canceledAt: null,
-        currentPeriodStart,
-        currentPeriodEnd,
+        currentPeriodStart: new Date(invoice.period_start * 1000),
+        currentPeriodEnd: new Date(invoice.period_end * 1000),
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.subscriptionId, subscriptionId));
+      .where(eq(userSubscriptions.stripeSubscriptionId, subscriptionId));
+
+    console.log('✅ Invoice paid, subscription confirmed active:', subscriptionId);
   } catch (error) {
+    console.error('💥 Error handling invoice.paid:', error);
+    throw error;
+  }
+}
+
+/**
+ * Handle invoice.payment_failed event
+ */
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  try {
+    // Stripe webhook events include subscription property but TypeScript definitions don't
+    // @ts-expect-error - subscription exists in webhook events but not in Invoice type
+    const sub = invoice.subscription;
+    if (!sub) return;
+
+    const subscriptionId = typeof sub === 'string' ? sub : sub.id;
+
+    // Mark subscription as past_due
+    await db
+      .update(userSubscriptions)
+      .set({
+        status: 'past_due',
+        updatedAt: new Date(),
+      })
+      .where(eq(userSubscriptions.stripeSubscriptionId, subscriptionId));
+
+    console.log('⚠️ Payment failed for subscription:', subscriptionId);
+  } catch (error) {
+    console.error('💥 Error handling invoice.payment_failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Handle subscription_schedule.completed event
+ * This fires when a scheduled downgrade is activated (e.g., Business → Pro)
+ */
+async function handleSubscriptionScheduleCompleted(schedule: Stripe.SubscriptionSchedule) {
+  try {
+    const clerkUserId = schedule.metadata?.clerkUserId;
+    const targetTier = schedule.metadata?.targetTier;
+
+    if (!clerkUserId || !targetTier) {
+      console.error('❌ Missing metadata in subscription_schedule.completed:', schedule.id);
+      return;
+    }
+
+    console.log(
+      `✅ Subscription schedule completed for user ${clerkUserId}, downgrading to ${targetTier}`
+    );
+
+    // The schedule automatically creates a new subscription when it completes
+    // The subscription.created event will handle creating the new subscription record
+    // We just need to clear the scheduledDowngradeTier field from the old subscription
+
+    const currentSub = await db.query.userSubscriptions.findFirst({
+      where: eq(userSubscriptions.clerkUserId, clerkUserId),
+    });
+
+    if (currentSub) {
+      await db
+        .update(userSubscriptions)
+        .set({
+          scheduledDowngradeTier: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(userSubscriptions.id, currentSub.id));
+    }
+
+    console.log('✅ Scheduled downgrade completed successfully');
+  } catch (error) {
+    console.error('💥 Error handling subscription_schedule.completed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Handle subscription_schedule.canceled event
+ * This fires when a pending downgrade is canceled by the user
+ */
+async function handleSubscriptionScheduleCanceled(schedule: Stripe.SubscriptionSchedule) {
+  try {
+    const clerkUserId = schedule.metadata?.clerkUserId;
+    const currentSubscriptionId = schedule.metadata?.currentSubscriptionId;
+
+    if (!clerkUserId || !currentSubscriptionId) {
+      console.error('❌ Missing metadata in subscription_schedule.canceled:', schedule.id);
+      return;
+    }
+
+    console.log(`✅ Subscription schedule canceled for user ${clerkUserId}`);
+
+    // Remove the scheduled downgrade and reactivate the current subscription
+    await db
+      .update(userSubscriptions)
+      .set({
+        scheduledDowngradeTier: null,
+        cancelAtPeriodEnd: 'false',
+        canceledAt: null,
+        status: 'active',
+        updatedAt: new Date(),
+      })
+      .where(eq(userSubscriptions.stripeSubscriptionId, currentSubscriptionId));
+
+    console.log('✅ Pending downgrade removed, current subscription reactivated');
+  } catch (error) {
+    console.error('💥 Error handling subscription_schedule.canceled:', error);
     throw error;
   }
 }
