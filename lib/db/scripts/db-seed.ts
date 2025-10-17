@@ -30,6 +30,7 @@ import {
   type NewUserSubscription,
   type NewTask,
   type NewActivityLog,
+  type TaskPriority,
 } from '../schema';
 
 const IS_PRODUCTION =
@@ -390,7 +391,7 @@ async function seed() {
     // Step 7: Create tasks
     console.log('📝 Creating tasks...');
 
-    const taskPriorities: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
+    const taskPriorities: TaskPriority[] = ['low', 'medium', 'high'];
 
     // Personal tasks for Jane
     const janePersonalTasks: NewTask[] = Array.from({ length: 5 }, (_, i) => ({
