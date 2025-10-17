@@ -1504,6 +1504,13 @@ For detailed SEO guidelines and examples, use the `seo` rule only when needed.
 - Test authentication flows and subscription management thoroughly
 - Implement proper error handling for all external service integrations
 
+### Documentation Guidelines - MANDATORY
+
+- **NEVER proactively create documentation files** (\*.md) or README files
+- **NEVER create feature documentation** when implementing new features
+- Only create documentation files if **explicitly requested** by the user
+- Focus on implementing the feature code, not documenting it
+
 ### Service Integration & Documentation Updates - MANDATORY
 
 **When integrating, migrating, or updating third-party services, ALWAYS update the documentation accordingly.**
