@@ -17,6 +17,7 @@ import {
   updateDisplayNameSchema,
   updateUserPublicMetadataSchema,
 } from '../schemas/user';
+import { AUTH_ERRORS } from '@/lib/auth/constants';
 
 export const userRouter = router({
   /**
@@ -30,7 +31,7 @@ export const userRouter = router({
       .limit(1);
 
     if (!user.length) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      throw new TRPCError({ code: 'NOT_FOUND', message: AUTH_ERRORS.USER_NOT_FOUND });
     }
 
     const defaultSettings = {

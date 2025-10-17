@@ -10,7 +10,7 @@ export const AUTH_ROUTES = {
 // Error Messages
 export const AUTH_ERRORS = {
   USER_NOT_FOUND: 'User not found',
-  UNAUTHORIZED: 'UNAUTHORIZED',
+  UNAUTHORIZED: 'Unauthorized',
   SYNC_FAILED: 'Failed to sync user data',
   INVALID_WEBHOOK: 'Invalid webhook signature',
   MISSING_HEADERS: 'Missing required headers',
