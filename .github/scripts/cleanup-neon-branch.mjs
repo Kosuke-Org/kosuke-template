@@ -7,28 +7,27 @@ if (!apiKey || !projectId || !branchName) {
   process.exit(1);
 }
 
+const neonBranchName = `preview/${branchName}`;
+
 try {
   // Get branch ID
-  const listRes = await fetch(
-    `https://console.neon.tech/api/v2/projects/${projectId}/branches`,
-    {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    }
-  );
+  const listRes = await fetch(`https://console.neon.tech/api/v2/projects/${projectId}/branches`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
 
   if (!listRes.ok) {
     throw new Error(`Failed to list branches: ${listRes.status}`);
   }
 
   const data = await listRes.json();
-  const branch = data.branches.find((b) => b.name === branchName);
+  const branch = data.branches.find((b) => b.name === neonBranchName);
 
   if (!branch) {
-    console.log(`Branch ${branchName} not found in Neon, skipping`);
+    console.log(`Branch ${neonBranchName} not found in Neon, skipping`);
     process.exit(0);
   }
 
-  console.log(`Found branch ${branchName} with ID ${branch.id}, deleting...`);
+  console.log(`Found branch ${neonBranchName} with ID ${branch.id}, deleting...`);
 
   // Delete branch
   const deleteRes = await fetch(
@@ -43,7 +42,7 @@ try {
     throw new Error(`Failed to delete branch: ${deleteRes.status}`);
   }
 
-  console.log(`✓ Successfully deleted Neon branch: ${branchName}`);
+  console.log(`✓ Successfully deleted Neon branch: ${neonBranchName}`);
 } catch (error) {
   console.error('Error:', error.message);
   process.exit(1);
