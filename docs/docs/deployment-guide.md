@@ -110,6 +110,23 @@ Neon automatically creates database branches for pull requests:
 - PR closed → Branch deleted
 - Isolated testing per PR
 
+### Configure Automated Branch Cleanup (Optional)
+
+The template includes GitHub Actions automation to clean up preview branches when PRs are closed. This requires Neon API access:
+
+1. Go to [Neon Dashboard → Settings](https://console.neon.tech/app/settings)
+2. Navigate to **API Keys** section
+3. Create new API key: Click **Create API key**
+4. Copy the key
+
+2. Add to **GitHub Secrets** (Settings → Secrets and variables → Actions):
+   - **Name**: `NEON_API_KEY`
+   - **Secret**: [paste your Neon API key]
+   - **Name**: `NEON_PROJECT_ID`
+   - **Secret**: [find in Neon Dashboard → Project Settings]
+
+The cleanup script (`.github/scripts/cleanup-neon-branch.mjs`) automatically runs when PRs close, deleting orphaned preview branches to save resources.
+
 ## Step 4: Configure Stripe Billing
 
 ### Choose Mode
