@@ -183,7 +183,7 @@ export const organizationsRouter = router({
   uploadOrganizationLogo: protectedProcedure
     .input(
       z.object({
-        organizationId: z.string().uuid(),
+        organizationId: z.uuid(),
         fileBase64: z.string(),
         fileName: z.string(),
         mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']),

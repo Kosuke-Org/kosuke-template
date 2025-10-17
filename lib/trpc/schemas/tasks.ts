@@ -11,17 +11,17 @@ export const createTaskSchema = z.object({
   description: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
   dueDate: z.date().optional(),
-  organizationId: z.string().uuid().optional(), // NEW: Organization context
+  organizationId: z.uuid().optional(),
 });
 
 export const updateTaskSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   title: z.string().min(1).max(255).optional(),
   description: z.string().nullable().optional(),
   completed: z.boolean().optional(),
   priority: z.enum(['low', 'medium', 'high']).optional(),
   dueDate: z.date().nullable().optional(),
-  organizationId: z.string().uuid().nullable().optional(), // NEW: Can reassign org
+  organizationId: z.uuid().nullable().optional(),
 });
 
 export const taskListFiltersSchema = z
@@ -29,10 +29,10 @@ export const taskListFiltersSchema = z
     completed: z.boolean().optional(),
     priority: z.enum(['low', 'medium', 'high']).optional(),
     searchQuery: z.string().optional(),
-    organizationId: z.string().uuid().nullable().optional(), // Can filter by org or null (personal)
+    organizationId: z.uuid().nullable().optional(), // Can filter by org or null (personal)
   })
   .optional();
 
 export const deleteTaskSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
 });

@@ -26,7 +26,7 @@ export class ApiErrorHandler {
    * Handle Zod validation errors
    */
   static handleZodError(error: ZodError): NextResponse {
-    const formattedErrors = error.errors.map((err) => ({
+    const formattedErrors = error.issues.map((err) => ({
       field: err.path.join('.'),
       message: err.message,
     }));

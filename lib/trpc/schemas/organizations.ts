@@ -31,10 +31,10 @@ export const createOrgFormSchema = z.object({
 });
 
 export const updateOrganizationSchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID'),
+  organizationId: z.uuid('Invalid organization ID'),
   name: z.string().min(1).max(100).optional(),
-  logoUrl: z.string().url('Invalid URL').nullable().optional(),
-  settings: z.record(z.unknown()).optional(),
+  logoUrl: z.url('Invalid URL').nullable().optional(),
+  settings: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**
@@ -46,20 +46,20 @@ export const orgGeneralFormSchema = z.object({
 });
 
 export const deleteOrganizationSchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID'),
+  organizationId: z.uuid('Invalid organization ID'),
 });
 
 export const getOrganizationSchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID'),
+  organizationId: z.uuid('Invalid organization ID'),
 });
 
 /**
  * Membership Schemas
  */
 export const inviteMemberSchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID'),
-  email: z.string().email('Invalid email address'),
-  role: z.enum(['org:admin', 'org:member']).default('org:member'),
+  organizationId: z.uuid('Invalid organization ID'),
+  email: z.email('Invalid email address'),
+  role: z.enum(['org:admin', 'org:member']).prefault('org:member'),
 });
 
 /**
@@ -67,21 +67,21 @@ export const inviteMemberSchema = z.object({
  * Used for client-side form validation (organizationId provided separately)
  */
 export const orgInviteFormSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.email('Invalid email address'),
   role: z.enum(['org:admin', 'org:member']),
 });
 
 export const updateMemberRoleSchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID'),
+  organizationId: z.uuid('Invalid organization ID'),
   clerkUserId: z.string().min(1, 'User ID is required'),
   role: z.enum(['org:admin', 'org:member']),
 });
 
 export const removeMemberSchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID'),
+  organizationId: z.uuid('Invalid organization ID'),
   clerkUserId: z.string().min(1, 'User ID is required'),
 });
 
 export const getOrgMembersSchema = z.object({
-  organizationId: z.string().uuid('Invalid organization ID'),
+  organizationId: z.uuid('Invalid organization ID'),
 });
