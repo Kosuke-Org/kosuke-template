@@ -1,19 +1,19 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useClerk } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
 export function useAuthActions() {
   const { signOut } = useClerk();
-  const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const signOutMutation = useMutation({
     mutationFn: async () => {
-      router.push('/');
-      await signOut();
+      await signOut({ redirectUrl: '/' });
+      // Clear all cached queries first to prevent stale data or data from other users
+      queryClient.clear();
     },
     onError: (error) => {
       console.error('Error signing out:', error);

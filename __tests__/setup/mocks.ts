@@ -172,3 +172,33 @@ export function createQueryWrapper() {
     return React.createElement(QueryClientProvider, { client: queryClient }, children);
   };
 }
+
+// Mock QueryClient for testing hooks that use useQueryClient
+export function createMockQueryClient() {
+  return {
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+      mutations: {
+        retry: false,
+      },
+    },
+    clear: vi.fn(),
+    invalidateQueries: vi.fn(),
+    refetchQueries: vi.fn(),
+    cancelQueries: vi.fn(),
+    removeQueries: vi.fn(),
+    resetQueries: vi.fn(),
+    isFetching: vi.fn(() => 0),
+    isMutating: vi.fn(() => 0),
+    getQueryData: vi.fn(),
+    setQueryData: vi.fn(),
+    getQueryState: vi.fn(),
+    setQueriesData: vi.fn(),
+    setMutationDefaults: vi.fn(),
+    getQueryDefaults: vi.fn(),
+    setQueryDefaults: vi.fn(),
+    getMutationDefaults: vi.fn(),
+  };
+}
