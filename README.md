@@ -233,6 +233,7 @@ pnpm run db:seed
 - `john+clerk_test@example.com` - Admin of "John Doe Ltd." (Free tier), Member of "Jane Smith Co."
 
 **Clerk Verification Code:**
+
 When signing in with test users in development, use verification code: `424242`
 
 #### Visual Database Browser
