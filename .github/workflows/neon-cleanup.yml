@@ -37,7 +37,7 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "✅ *Neon Branch Cleanup Successful*\nBranch: `${{ github.event.pull_request.head.ref }}`\nRepo: `${{ github.repository }}`"
+                  "text": "✅ *Neon Branch Cleanup Successful* (`${{ github.event.pull_request.head.ref }}`)"
                 }
               }
             ]
@@ -55,7 +55,7 @@ jobs:
                 "type": "section",
                 "text": {
                   "type": "mrkdwn",
-                  "text": "❌ *Neon Branch Cleanup Failed*\nBranch: `${{ github.event.pull_request.head.ref }}`\nRepo: `${{ github.repository }}`\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
+                  "text": "❌ *Neon Branch Cleanup Failed* (`${{ github.event.pull_request.head.ref }}`)\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
                 }
               }
             ]
