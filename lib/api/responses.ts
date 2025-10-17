@@ -18,35 +18,11 @@ export interface MetadataObject {
 }
 
 /**
- * Standard API response structure
- */
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
-}
-
-/**
  * Legacy success response structure (for compatibility)
  */
 export interface ApiSuccess<T> {
   data: T;
   meta?: MetadataObject;
-}
-
-/**
- * Paginated response structure
- */
-export interface PaginatedResponse<T> extends ApiResponse<T[]> {
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
 }
 
 /**

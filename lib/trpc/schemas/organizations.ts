@@ -45,10 +45,6 @@ export const orgGeneralFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name is too long'),
 });
 
-export const deleteOrganizationSchema = z.object({
-  organizationId: z.uuid('Invalid organization ID'),
-});
-
 export const getOrganizationSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
 });

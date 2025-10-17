@@ -5,7 +5,6 @@ import {
   ClerkUserType,
   ClerkWebhookUser,
   UserSyncResult,
-  UserSyncResponse,
   UserSyncOptions,
   LocalUser,
 } from '@/lib/types';
@@ -14,7 +13,6 @@ import {
   extractUserData,
   extractUserDataFromWebhook,
   hasUserChanges,
-  isSyncStale,
   createActivityLogData,
 } from './utils';
 
@@ -180,7 +178,7 @@ export async function getUserByClerkId(clerkUserId: string): Promise<LocalUser |
 /**
  * Logs user activity
  */
-export async function logUserActivity(
+async function logUserActivity(
   clerkUserId: string,
   action: ActivityType,
   metadata?: Record<string, unknown>,
@@ -195,84 +193,5 @@ export async function logUserActivity(
   } catch (error) {
     console.error('Error logging user activity:', error);
     // Don't throw - activity logging shouldn't break the main flow
-  }
-}
-
-/**
- * Ensures user exists in local database with smart sync logic
- * Call this in API routes that need local user data
- */
-export async function ensureUserSynced(
-  clerkUser: ClerkUserType,
-  options: UserSyncOptions = {}
-): Promise<UserSyncResult> {
-  const localUser = await getUserByClerkId(clerkUser.id);
-
-  if (!localUser) {
-    console.log('🔄 User not found locally, syncing from Clerk...');
-    return await syncUserFromClerk(clerkUser, { ...options, includeActivity: true });
-  }
-
-  // Check if sync is stale or force sync is requested
-  if (isSyncStale(localUser.lastSyncedAt) || options.forceSync) {
-    console.log('🔄 User sync is stale, refreshing...');
-    return await syncUserFromClerk(clerkUser, options);
-  }
-
-  return { id: localUser.id, clerkUserId: localUser.clerkUserId };
-}
-
-/**
- * Bulk sync users (useful for migrations or batch operations)
- */
-export async function bulkSyncUsers(
-  users: ClerkUserType[],
-  options: UserSyncOptions = {}
-): Promise<UserSyncResponse[]> {
-  const results: UserSyncResponse[] = [];
-
-  for (const user of users) {
-    try {
-      const syncResult = await syncUserFromClerk(user, options);
-      results.push({
-        success: true,
-        user: syncResult,
-        wasUpdated: true,
-      });
-    } catch (error) {
-      console.error(`Failed to sync user ${user.id}:`, error);
-      results.push({
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-    }
-  }
-
-  return results;
-}
-
-/**
- * Get sync statistics for monitoring
- */
-export async function getSyncStats(): Promise<{
-  totalUsers: number;
-  staleUsers: number;
-  recentlyUpdated: number;
-}> {
-  try {
-    const allUsers = await db.query.users.findMany();
-    const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-    const staleUsers = allUsers.filter((user) => isSyncStale(user.lastSyncedAt));
-    const recentlyUpdated = allUsers.filter((user) => user.lastSyncedAt > dayAgo);
-
-    return {
-      totalUsers: allUsers.length,
-      staleUsers: staleUsers.length,
-      recentlyUpdated: recentlyUpdated.length,
-    };
-  } catch (error) {
-    console.error('Error getting sync stats:', error);
-    throw error;
   }
 }

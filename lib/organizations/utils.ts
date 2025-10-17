@@ -12,7 +12,7 @@ import type { Organization, OrgMembership, OrgRoleValue } from '@/lib/types';
  * Slug generation
  * Generates a URL-friendly slug from organization name
  */
-export function generateOrgSlug(name: string): string {
+function generateOrgSlug(name: string): string {
   return name
     .toLowerCase()
     .trim()
@@ -49,56 +49,9 @@ export async function generateUniqueOrgSlug(name: string): Promise<string> {
 }
 
 /**
- * Role checks
- * Check if role has specific permissions
- */
-export function isOrgAdmin(role: string): boolean {
-  return role === 'org:admin';
-}
-
-export function isOrgMember(role: string): boolean {
-  return role === 'org:member' || role === 'org:admin';
-}
-
-export function canManageOrg(role: string): boolean {
-  return isOrgAdmin(role);
-}
-
-export function canInviteMembers(role: string): boolean {
-  // Currently only admins, but can be extended
-  return isOrgAdmin(role);
-}
-
-export function canManageBilling(role: string): boolean {
-  return isOrgAdmin(role);
-}
-
-/**
- * Membership checks
- * Check if user is a member of an organization
- */
-export async function isUserOrgMember(
-  clerkUserId: string,
-  organizationId: string
-): Promise<boolean> {
-  const [membership] = await db
-    .select()
-    .from(orgMemberships)
-    .where(
-      and(
-        eq(orgMemberships.clerkUserId, clerkUserId),
-        eq(orgMemberships.organizationId, organizationId)
-      )
-    )
-    .limit(1);
-
-  return !!membership;
-}
-
-/**
  * Get user's role in an organization
  */
-export async function getUserOrgRole(
+async function getUserOrgRole(
   clerkUserId: string,
   organizationId: string
 ): Promise<OrgRoleValue | null> {
@@ -176,15 +129,6 @@ export async function getOrgById(organizationId: string): Promise<Organization |
 }
 
 /**
- * Get organization by slug
- */
-export async function getOrgBySlug(slug: string): Promise<Organization | null> {
-  const [org] = await db.select().from(organizations).where(eq(organizations.slug, slug)).limit(1);
-
-  return org || null;
-}
-
-/**
  * Get all organizations a user belongs to
  */
 export async function getUserOrganizations(clerkUserId: string): Promise<Organization[]> {
@@ -207,23 +151,6 @@ export async function getUserOrganizations(clerkUserId: string): Promise<Organiz
 }
 
 /**
- * Get all memberships for a user
- */
-export async function getUserMemberships(clerkUserId: string): Promise<OrgMembership[]> {
-  return await db.select().from(orgMemberships).where(eq(orgMemberships.clerkUserId, clerkUserId));
-}
-
-/**
- * Get all members of an organization
- */
-export async function getOrgMembers(organizationId: string): Promise<OrgMembership[]> {
-  return await db
-    .select()
-    .from(orgMemberships)
-    .where(eq(orgMemberships.organizationId, organizationId));
-}
-
-/**
  * Get membership by Clerk membership ID
  */
 export async function getMembershipByClerkId(
@@ -236,48 +163,4 @@ export async function getMembershipByClerkId(
     .limit(1);
 
   return membership || null;
-}
-
-/**
-
-/**
- * Settings helpers
- * Parse organization settings from JSON string
- */
-export function parseOrgSettings(settingsJson: string): Record<string, unknown> {
-  try {
-    return JSON.parse(settingsJson);
-  } catch {
-    return {};
-  }
-}
-
-/**
- * Stringify organization settings to JSON
- */
-export function stringifyOrgSettings(settings: Record<string, unknown>): string {
-  return JSON.stringify(settings);
-}
-
-/**
- * Validation helpers
- * Validate organization name
- */
-export function isValidOrgName(name: string): boolean {
-  return name.length >= 1 && name.length <= 100;
-}
-
-/**
- * Validate organization slug
- */
-export function isValidOrgSlug(slug: string): boolean {
-  // Slug must be lowercase, alphanumeric with hyphens, 1-50 characters
-  return /^[a-z0-9-]{1,50}$/.test(slug);
-}
-
-/**
- * Validate hex color
- */
-export function isValidHexColor(color: string): boolean {
-  return /^#[0-9A-Fa-f]{6}$/.test(color);
 }

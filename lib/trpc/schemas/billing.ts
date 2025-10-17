@@ -5,7 +5,7 @@ import { z } from 'zod';
  * NO server dependencies - only Zod imports allowed
  */
 
-export const subscriptionTierSchema = z.enum(['pro', 'business']);
+const subscriptionTierSchema = z.enum(['pro', 'business']);
 
 export const createCheckoutSchema = z.object({
   tier: subscriptionTierSchema,
@@ -14,8 +14,3 @@ export const createCheckoutSchema = z.object({
 export const syncActionSchema = z.object({
   action: z.enum(['user', 'stale', 'emergency']).prefault('user'),
 });
-
-// Type exports for client-side use
-export type SubscriptionTier = z.infer<typeof subscriptionTierSchema>;
-export type CreateCheckoutInput = z.infer<typeof createCheckoutSchema>;
-export type SyncActionInput = z.infer<typeof syncActionSchema>;

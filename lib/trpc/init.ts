@@ -7,6 +7,7 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import superjson from 'superjson';
 import { getUserOrgMembership } from '@/lib/organizations';
+import { AUTH_ERRORS } from '../auth/constants';
 
 /**
  * Create context for tRPC
@@ -48,7 +49,7 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
 
   if (!ctx.userId) {
     throw new TRPCError({
-      code: 'UNAUTHORIZED',
+      code: AUTH_ERRORS.UNAUTHORIZED,
       message: 'You must be logged in to perform this action',
     });
   }

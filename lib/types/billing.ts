@@ -45,22 +45,3 @@ export interface OperationResult<T = unknown> {
   data?: T;
   error?: string;
 }
-
-// Subscription action response types (from hooks)
-export interface UpgradeResponse {
-  success: boolean;
-  checkoutUrl?: string;
-  error?: string;
-}
-
-// Subscription information types (merged from use-subscription-data)
-export interface SubscriptionInfo {
-  tier: string;
-  status: string;
-  currentPeriodEnd?: string;
-  activeSubscription?: UserSubscription | null;
-  user?: {
-    localId: string;
-    clerkUserId: string;
-  };
-}

@@ -1,77 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-
-interface TechCardProps {
-  name: string;
-  description: string;
-  logoPath: {
-    light: string;
-    dark: string;
-  };
-  url: string;
-  className?: string;
-}
-
-export function TechCard({ name, description, logoPath, url, className = '' }: TechCardProps) {
-  const [imageError, setImageError] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const { theme, systemTheme } = useTheme();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Determine the current theme, considering system preference
-  const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
-  const logoSrc = currentTheme === 'dark' ? logoPath.dark : logoPath.light;
-
-  const handleClick = () => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  return (
-    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className={className}>
-      <Card
-        className="h-full border-0 bg-card/50 backdrop-blur-xs hover:bg-card/80 transition-all duration-300 cursor-pointer group"
-        onClick={handleClick}
-      >
-        <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
-          <div className="relative w-16 h-16 flex items-center justify-center">
-            {!imageError ? (
-              <Image
-                src={logoSrc}
-                alt={`${name} logo`}
-                width={64}
-                height={64}
-                className="object-contain transition-transform duration-300 group-hover:scale-110"
-                onError={() => setImageError(true)}
-                priority
-              />
-            ) : (
-              <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                <span className="text-2xl font-bold text-muted-foreground">
-                  {name.charAt(0).toUpperCase()}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold group-hover:text-primary transition-colors">
-              {name}
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
 
 interface TechLogoProps {
   name: string;

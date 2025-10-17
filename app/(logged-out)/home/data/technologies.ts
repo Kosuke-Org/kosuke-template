@@ -160,21 +160,3 @@ export const technologies: Technology[] = [
     category: 'backend',
   },
 ];
-
-export const getTechnologiesByCategory = (category: Technology['category']) => {
-  return technologies.filter((tech) => tech.category === category);
-};
-
-export const getFeaturedTechnologies = () => {
-  return technologies.filter((tech) =>
-    [
-      'Next.js 15',
-      'React 19',
-      'TypeScript',
-      'Tailwind CSS',
-      'Shadcn/ui',
-      'Clerk',
-      'Drizzle ORM',
-    ].includes(tech.name)
-  );
-};

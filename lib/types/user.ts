@@ -37,13 +37,6 @@ export interface UserSyncOptions {
   includeActivity?: boolean;
 }
 
-export interface UserSyncResponse {
-  success: boolean;
-  user?: UserSyncResult;
-  error?: string;
-  wasUpdated?: boolean;
-}
-
 // Notification settings types
 export interface NotificationSettings {
   emailNotifications: boolean;

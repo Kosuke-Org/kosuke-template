@@ -7,7 +7,7 @@ import { ClerkUserType } from '@/lib/types/user';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Mock Clerk auth
-export const mockClerkUserType = {
+const mockClerkUserType = {
   id: 'user_123',
   emailAddresses: [{ emailAddress: 'test@example.com' }],
   firstName: 'John',
@@ -21,25 +21,14 @@ export const mockClerkUserType = {
 // Export as mockClerkUser for consistency with tests
 export const mockClerkUser = mockClerkUserType;
 
-export const mockClerkAuth = {
+const mockClerkAuth = {
   userId: 'user_123',
   sessionId: 'session_123',
   user: mockClerkUserType,
 };
 
-// Mock Clerk webhook user
-export const mockClerkWebhookUser = {
-  id: 'user_123',
-  email_addresses: [{ email_address: 'test@example.com' }],
-  first_name: 'John',
-  last_name: 'Doe',
-  image_url: 'https://example.com/avatar.jpg',
-  created_at: Date.now(),
-  updated_at: Date.now(),
-};
-
 // Mock Stripe responses
-export const mockStripeCheckoutSession = {
+const mockStripeCheckoutSession = {
   id: 'cs_test_123',
   url: 'https://checkout.stripe.com/c/pay/cs_test_123',
   status: 'open',
@@ -48,7 +37,7 @@ export const mockStripeCheckoutSession = {
   metadata: { clerkUserId: 'user_123', tier: 'pro' },
 };
 
-export const mockStripeSubscription = {
+const mockStripeSubscription = {
   id: 'sub_123',
   status: 'active',
   current_period_start: Math.floor(Date.now() / 1000),
@@ -61,7 +50,7 @@ export const mockStripeSubscription = {
   metadata: { clerkUserId: 'user_123', tier: 'pro' },
 };
 
-export const mockStripeWebhookEvent = {
+const mockStripeWebhookEvent = {
   id: 'evt_123',
   type: 'customer.subscription.created',
   data: {
@@ -142,21 +131,6 @@ export function setupMocks() {
 
 export function resetMocks() {
   vi.clearAllMocks();
-}
-
-// Helper to mock fetch responses
-export function mockFetchResponse(data: unknown, status = 200) {
-  (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => Promise.resolve(data),
-    text: () => Promise.resolve(JSON.stringify(data)),
-  } as Response);
-}
-
-// Helper to mock fetch error
-export function mockFetchError(error: string) {
-  (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error(error));
 }
 
 // Stripe webhook event factories

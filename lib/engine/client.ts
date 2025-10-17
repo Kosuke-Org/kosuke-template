@@ -33,14 +33,14 @@ export class EngineError extends Error {
   }
 }
 
-export class EngineTimeoutError extends EngineError {
+ class EngineTimeoutError extends EngineError {
   constructor(endpoint: string, timeout: number) {
     super(`Engine request timed out after ${timeout}ms`, 408, endpoint);
     this.name = 'EngineTimeoutError';
   }
 }
 
-export class EngineNetworkError extends EngineError {
+ class EngineNetworkError extends EngineError {
   constructor(endpoint: string, originalError: unknown) {
     super(`Network error connecting to engine: ${String(originalError)}`, 503, endpoint, {
       originalError,

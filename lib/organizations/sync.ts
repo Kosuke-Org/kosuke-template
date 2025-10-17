@@ -12,7 +12,7 @@ import {
   getOrgByClerkId,
   getOrgById,
   getMembershipByClerkId,
-} from './utils';
+} from '@/lib/organizations';
 
 import type {
   Organization,

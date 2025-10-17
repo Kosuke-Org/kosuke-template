@@ -4,7 +4,7 @@ import {
   hasFeatureAccess,
   safeSubscriptionTierCast,
   safeSubscriptionStatusCast,
-} from '@/lib/billing/subscription';
+} from '@/lib/billing';
 import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
 
 // Mock database

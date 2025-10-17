@@ -1,5 +1,5 @@
 import { stripe } from './client';
-import { PRICE_IDS, BILLING_URLS, PRICING } from './config';
+import { PRICE_IDS, BILLING_URLS, PRICING } from '@/lib/billing';
 import { type CheckoutSessionParams, type OperationResult } from '@/lib/types';
 import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 import { getUserSubscription } from './subscription';
