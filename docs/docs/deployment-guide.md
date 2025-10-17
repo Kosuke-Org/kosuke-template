@@ -118,8 +118,7 @@ The template includes GitHub Actions automation to clean up preview branches whe
 2. Navigate to **API Keys** section
 3. Create new API key: Click **Create API key**
 4. Copy the key
-
-2. Add to **GitHub Secrets** (Settings → Secrets and variables → Actions):
+5. Add to **GitHub Secrets** (Settings → Secrets and variables → Actions):
    - **Name**: `NEON_API_KEY`
    - **Secret**: [paste your Neon API key]
    - **Name**: `NEON_PROJECT_ID`
