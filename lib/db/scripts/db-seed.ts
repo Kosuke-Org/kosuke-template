@@ -404,7 +404,7 @@ async function seed() {
     }));
 
     // Organization tasks for org1
-    const org1Tasks: NewTask[] = Array.from({ length: 8 }, (_, i) => ({
+    const org1Tasks: NewTask[] = Array.from({ length: 5 }, (_, i) => ({
       clerkUserId: i % 2 === 0 ? janeClerk.id : johnClerk.id,
       organizationId: insertedOrg1.id,
       title: faker.lorem.sentence({ min: 3, max: 6 }),
@@ -415,7 +415,7 @@ async function seed() {
     }));
 
     // Personal tasks for John
-    const johnPersonalTasks: NewTask[] = Array.from({ length: 4 }, (_, i) => ({
+    const johnPersonalTasks: NewTask[] = Array.from({ length: 5 }, (_, i) => ({
       clerkUserId: johnClerk.id,
       title: faker.lorem.sentence({ min: 3, max: 6 }),
       description: faker.lorem.paragraph(),
@@ -425,7 +425,7 @@ async function seed() {
     }));
 
     // Organization tasks for org2
-    const org2Tasks: NewTask[] = Array.from({ length: 6 }, (_, i) => ({
+    const org2Tasks: NewTask[] = Array.from({ length: 5 }, (_, i) => ({
       clerkUserId: johnClerk.id,
       organizationId: insertedOrg2.id,
       title: faker.lorem.sentence({ min: 3, max: 6 }),
@@ -440,9 +440,9 @@ async function seed() {
       .values([...janePersonalTasks, ...org1Tasks, ...johnPersonalTasks, ...org2Tasks]);
 
     console.log('  ✅ Created 5 personal tasks for Jane');
-    console.log(`  ✅ Created 8 organization tasks for ${org1Name}`);
-    console.log('  ✅ Created 4 personal tasks for John');
-    console.log(`  ✅ Created 6 organization tasks for ${org2Name}\n`);
+    console.log(`  ✅ Created 5 organization tasks for ${org1Name}`);
+    console.log('  ✅ Created 5 personal tasks for John');
+    console.log(`  ✅ Created 5 organization tasks for ${org2Name}\n`);
 
     // Step 8: Create activity logs
     console.log('📊 Creating activity logs...');
@@ -457,7 +457,7 @@ async function seed() {
       ActivityType.SUBSCRIPTION_CREATED,
     ];
 
-    const janeActivities: NewActivityLog[] = Array.from({ length: 10 }, (_, i) => ({
+    const janeActivities: NewActivityLog[] = Array.from({ length: 5 }, (_, i) => ({
       clerkUserId: janeClerk.id,
       action: activityTypes[i % activityTypes.length],
       timestamp: faker.date.recent({ days: 30 }),
@@ -468,7 +468,7 @@ async function seed() {
       }),
     }));
 
-    const johnActivities: NewActivityLog[] = Array.from({ length: 10 }, (_, i) => ({
+    const johnActivities: NewActivityLog[] = Array.from({ length: 5 }, (_, i) => ({
       clerkUserId: johnClerk.id,
       action: activityTypes[i % activityTypes.length],
       timestamp: faker.date.recent({ days: 30 }),
@@ -481,20 +481,23 @@ async function seed() {
 
     await db.insert(activityLogs).values([...janeActivities, ...johnActivities]);
 
-    console.log('  ✅ Created 10 activity logs for Jane');
-    console.log('  ✅ Created 10 activity logs for John\n');
+    console.log('  ✅ Created 5 activity logs for Jane');
+    console.log('  ✅ Created 5 activity logs for John\n');
 
     console.log('✅ Database seeding completed successfully!\n');
     console.log('📊 Summary:');
     console.log('  • 2 users created in Clerk and synced');
     console.log('  • 2 organizations created in Clerk and synced');
     console.log('  • 3 organization memberships created');
-    console.log('  • 2 subscriptions created (1 Business, 1 Pro)');
-    console.log('  • 23 tasks created (9 personal, 14 organization)');
-    console.log('  • 20 activity logs created\n');
+    console.log('  • 2 subscriptions created');
+    console.log('  • 20 tasks created');
+    console.log('  • 10 activity logs created\n');
     console.log('🔑 Test Users:');
-    console.log(`  • ${janeSmithEmail} (Admin of ${org1Name} - Business tier)`);
-    console.log(`  • ${johnDoeEmail} (Admin of ${org2Name} - Pro tier, Member of ${org1Name})\n`);
+    console.log(`  • ${janeSmithEmail} (Admin of ${org1Name})`);
+    console.log(`  • ${johnDoeEmail} (Admin of ${org2Name}, Member of ${org1Name})\n`);
+    console.log(
+      "    To log in with the test users, use Clerk's verification code: \x1b[1m424242\x1b[0m"
+    );
   } catch (error) {
     console.error('❌ Error seeding database:', error);
     throw error;
