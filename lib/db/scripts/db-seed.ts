@@ -42,20 +42,11 @@ if (IS_PRODUCTION) {
 }
 
 if (!process.env.CLERK_SECRET_KEY) {
-  throw new Error('CLERK_SECRET_KEY environment variable is not set');
+  console.error('CLERK_SECRET_KEY environment variable is not set');
+  process.exit(1);
 }
 
 console.log('🔒 Environment check passed: Running in development mode\n');
-
-function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, '') // Remove special characters
-    .replace(/\s+/g, '-') // Replace spaces with hyphens
-    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
-    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
-}
 
 async function seed() {
   console.log('🌱 Starting database seed...\n');
@@ -67,6 +58,9 @@ async function seed() {
     const { clerkClient } = await import('@clerk/nextjs/server');
     const clerk = await clerkClient();
 
+    const janeSmithEmail = 'jane+clerk_test@example.com';
+    const johnDoeEmail = 'john+clerk_test@example.com';
+
     // Step 1: Create or get existing users in Clerk
     console.log('👤 Creating users in Clerk...');
 
@@ -74,7 +68,7 @@ async function seed() {
     let janeClerk;
     try {
       janeClerk = await clerk.users.createUser({
-        emailAddress: ['jane+clerk_test@example.com'],
+        emailAddress: [janeSmithEmail],
         firstName: 'Jane',
         lastName: 'Smith',
         skipPasswordChecks: true,
@@ -87,7 +81,7 @@ async function seed() {
     } catch (error: unknown) {
       // User might already exist, try to find them
       const userList = await clerk.users.getUserList({
-        emailAddress: ['jane+clerk_test@example.com'],
+        emailAddress: [janeSmithEmail],
       });
       if (userList.data.length > 0) {
         janeClerk = userList.data[0];
@@ -101,7 +95,7 @@ async function seed() {
     let johnClerk;
     try {
       johnClerk = await clerk.users.createUser({
-        emailAddress: ['john+clerk_test@example.com'],
+        emailAddress: [johnDoeEmail],
         firstName: 'John',
         lastName: 'Doe',
         skipPasswordChecks: true,
@@ -114,7 +108,7 @@ async function seed() {
     } catch (error: unknown) {
       // User might already exist, try to find them
       const userList = await clerk.users.getUserList({
-        emailAddress: ['john+clerk_test@example.com'],
+        emailAddress: [johnDoeEmail],
       });
       if (userList.data.length > 0) {
         johnClerk = userList.data[0];
@@ -129,7 +123,7 @@ async function seed() {
 
     const janeUser: NewUser = {
       clerkUserId: janeClerk.id,
-      email: 'jane+clerk_test@example.com',
+      email: janeSmithEmail,
       displayName: 'Jane Smith',
       profileImageUrl: janeClerk.imageUrl,
       lastSyncedAt: new Date(),
@@ -137,7 +131,7 @@ async function seed() {
 
     const johnUser: NewUser = {
       clerkUserId: johnClerk.id,
-      email: 'john+clerk_test@example.com',
+      email: johnDoeEmail,
       displayName: 'John Doe',
       profileImageUrl: johnClerk.imageUrl,
       lastSyncedAt: new Date(),
@@ -167,8 +161,8 @@ async function seed() {
     const org1Name = 'Jane Smith Co.';
     const org2Name = 'John Doe Ltd.';
 
-    const org1Slug = generateSlug(org1Name);
-    const org2Slug = generateSlug(org2Name);
+    const org1Slug = 'jane-smith-co';
+    const org2Slug = 'john-doe-ltd';
 
     // Try to get or create Jane's organization
     let org1;
@@ -498,10 +492,8 @@ async function seed() {
     console.log('  • 23 tasks created (9 personal, 14 organization)');
     console.log('  • 20 activity logs created\n');
     console.log('🔑 Test Users:');
-    console.log(`  • jane+clerk_test@example.com (Admin of ${org1Name} - Business tier)`);
-    console.log(
-      `  • john+clerk_test@example.com (Admin of ${org2Name} - Pro tier, Member of ${org1Name})\n`
-    );
+    console.log(`  • ${janeSmithEmail} (Admin of ${org1Name} - Business tier)`);
+    console.log(`  • ${johnDoeEmail} (Admin of ${org2Name} - Pro tier, Member of ${org1Name})\n`);
   } catch (error) {
     console.error('❌ Error seeding database:', error);
     throw error;
