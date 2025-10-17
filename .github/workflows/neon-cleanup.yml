@@ -24,3 +24,39 @@ jobs:
           NEON_PROJECT_ID: ${{ secrets.NEON_PROJECT_ID }}
           BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
         run: node .github/scripts/cleanup-neon-branch.mjs
+
+      - name: Notify Slack - Success
+        if: success()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "text": "✅ Neon branch cleanup successful",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "✅ *Neon Branch Cleanup Successful*\nBranch: `${{ github.event.pull_request.head.ref }}`\nRepo: `${{ github.repository }}`"
+                }
+              }
+            ]
+          }' "$SLACK_WEBHOOK_URL"
+
+      - name: Notify Slack - Failure
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "text": "❌ Neon branch cleanup failed",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "❌ *Neon Branch Cleanup Failed*\nBranch: `${{ github.event.pull_request.head.ref }}`\nRepo: `${{ github.repository }}`\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
+                }
+              }
+            ]
+          }' "$SLACK_WEBHOOK_URL"
