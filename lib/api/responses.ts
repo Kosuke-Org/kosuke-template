@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
  * Type for API metadata values - using unknown is safer than any
  * as it requires type checking before use
  */
-export type MetadataValue =
+type MetadataValue =
   | string
   | number
   | boolean
@@ -13,14 +13,14 @@ export type MetadataValue =
   | MetadataObject
   | MetadataValue[];
 
-export interface MetadataObject {
+interface MetadataObject {
   [key: string]: MetadataValue;
 }
 
 /**
  * Legacy success response structure (for compatibility)
  */
-export interface ApiSuccess<T> {
+interface ApiSuccess<T> {
   data: T;
   meta?: MetadataObject;
 }

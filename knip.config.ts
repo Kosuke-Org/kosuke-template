@@ -3,20 +3,14 @@ const knipConfig = {
   ignore: [
     'engine/**',
     'docs/**',
-    'cli/venv/**',
-    '.react-email/**',
+    'cli/**',
+    // Shadcn/UI components, we keep them as part of the template
     'components/ui/**',
-    'knip.config.ts',
     // Chart/skeleton components are template examples
     'components/skeletons.tsx',
     'components/charts/**',
-    // Library barrel exports (infrastructure for template users)
-    'lib/billing/index.ts',
-    'lib/engine/client.ts',
-    'lib/organizations/index.ts',
-    'lib/organizations/sync.ts',
-    'lib/trpc/init.ts',
-    'lib/trpc/server.ts',
+    // Library barrel exports, infrastructure for template users
+    'lib/**/index.ts',
   ],
   ignoreDependencies: [
     // Shadcn/UI dependencies (only used in components/ui/** which is ignored)
@@ -28,29 +22,26 @@ const knipConfig = {
     'tailwindcss',
     'tailwindcss-animate',
     'vaul',
+    'jsdom',
     // TODO: check if we should use these dependencies
     'drizzle-zod',
     '@trpc/next',
   ],
-  ignoreExportsUsedInFile: {
-    interface: true,
-    type: true,
-  },
   ignoreBinaries: ['uv'],
   rules: {
     files: 'error',
-    dependencies: 'warn',
+    dependencies: 'error',
     devDependencies: 'warn',
-    unlisted: 'off',
-    binaries: 'warn',
-    unresolved: 'off',
+    unlisted: 'error',
+    binaries: 'error',
+    unresolved: 'error',
     exports: 'error',
     types: 'error',
-    nsExports: 'off',
-    nsTypes: 'off',
+    nsExports: 'error',
+    nsTypes: 'error',
     duplicates: 'error',
-    enumMembers: 'warn',
-    classMembers: 'warn',
+    enumMembers: 'error',
+    classMembers: 'error',
   },
 };
 

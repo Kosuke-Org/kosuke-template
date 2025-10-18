@@ -6,7 +6,7 @@
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { currencyConvertRequestSchema, currencyConvertResponseSchema } from '../schemas/engine';
-import { convertCurrency, EngineError } from '@/lib/engine/client';
+import { convertCurrency, EngineError } from '@/lib/engine';
 
 export const engineRouter = router({
   convert: protectedProcedure

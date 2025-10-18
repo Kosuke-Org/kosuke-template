@@ -70,27 +70,6 @@ async function getUserOrgRole(
 }
 
 /**
- * Get user's membership in an organization
- */
-export async function getUserOrgMembership(
-  clerkUserId: string,
-  organizationId: string
-): Promise<OrgMembership | null> {
-  const [membership] = await db
-    .select()
-    .from(orgMemberships)
-    .where(
-      and(
-        eq(orgMemberships.clerkUserId, clerkUserId),
-        eq(orgMemberships.organizationId, organizationId)
-      )
-    )
-    .limit(1);
-
-  return membership || null;
-}
-
-/**
  * Check if user is admin of an organization
  */
 export async function isUserOrgAdmin(

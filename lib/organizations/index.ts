@@ -6,7 +6,6 @@
 // Utility functions
 export {
   generateUniqueOrgSlug,
-  getUserOrgMembership,
   isUserOrgAdmin,
   getOrgByClerkId,
   getOrgById,
@@ -20,7 +19,6 @@ export {
   syncOrgFromWebhook,
   syncMembershipFromClerk,
   syncMembershipFromWebhook,
-  syncAllUserOrganizations,
   removeOrgMembership,
   softDeleteOrganization,
 } from './sync';

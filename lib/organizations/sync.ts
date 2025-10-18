@@ -292,41 +292,6 @@ export async function syncMembershipFromWebhook(
 }
 
 /**
- * Bulk sync all organizations for a user
- * Useful for initial sync or periodic refresh
- */
-export async function syncAllUserOrganizations(clerkUserId: string): Promise<void> {
-  try {
-    console.log('🔄 Syncing all organizations for user:', clerkUserId);
-
-    const client = await clerkClient();
-
-    // Get all organization memberships for user
-    const { data: memberships } = await client.users.getOrganizationMembershipList({
-      userId: clerkUserId,
-    });
-
-    console.log(`📊 Found ${memberships.length} organization memberships`);
-
-    // Sync each organization and membership
-    for (const membership of memberships) {
-      try {
-        await syncOrganizationFromClerk(membership.organization.id);
-        await syncMembershipFromClerk(membership.id);
-      } catch (error) {
-        console.error(`Failed to sync membership ${membership.id}:`, error);
-        // Continue with other memberships
-      }
-    }
-
-    console.log('✅ Finished syncing all organizations for user');
-  } catch (error) {
-    console.error('💥 Error syncing all user organizations:', error);
-    throw error;
-  }
-}
-
-/**
  * Remove organization membership
  * Soft delete by removing from local database
  */

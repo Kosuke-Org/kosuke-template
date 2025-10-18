@@ -5,32 +5,15 @@
 
 // User-related types
 export type {
-  // Base types
-  User,
-  ActivityType,
-
-  // Clerk integration
   ClerkUserType,
-
-  // User operations
   LocalUser,
   UserSyncResult,
   UserSyncOptions,
-
-  // Auth state
   AuthState,
-
-  // Notification settings
   NotificationSettings,
 } from './user';
 
-// Task-related types
-export type {
-  // Base types
-  Task,
-  TaskPriority,
-  NewTask,
-} from './task';
+export type { TaskPriority } from './task';
 
 // Organization-related types
 export type {
@@ -46,19 +29,9 @@ export type {
 
 // Billing and subscription types
 export type {
-  // Base types
-  UserSubscription,
-  SubscriptionTier,
-  SubscriptionStatus,
-
-  // Enhanced types
   UserSubscriptionInfo,
   OperationResult,
-
-  // State and eligibility
   SubscriptionEligibility,
-
-  // Checkout and billing
   CheckoutSessionParams,
 } from './billing';
 

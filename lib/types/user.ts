@@ -1,9 +1,5 @@
 import type { User as ClerkUser } from '@clerk/nextjs/server';
 
-// Base types extending schema
-export type { User, ActivityType } from '@/lib/db/schema';
-
-// Clerk User Types
 export type ClerkUserType = ClerkUser;
 
 export interface LocalUser {

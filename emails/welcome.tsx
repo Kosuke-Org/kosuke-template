@@ -1,7 +1,7 @@
 import { Section, Text, Button, Hr } from '@react-email/components';
 import { BaseLayout } from '@/lib/email/templates';
 
-export interface WelcomeEmailProps {
+interface WelcomeEmailProps {
   firstName: string;
   email: string;
   dashboardUrl?: string;

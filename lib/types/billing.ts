@@ -1,8 +1,5 @@
 import type { UserSubscription, SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
 
-// Base types extending schema
-export type { UserSubscription, SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
-
 // Enhanced subscription state enum for better state management
 export enum SubscriptionState {
   FREE = 'free',

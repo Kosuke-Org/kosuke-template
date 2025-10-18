@@ -1,4 +1,4 @@
-export interface Technology {
+interface Technology {
   name: string;
   description: string;
   logoPath: {
