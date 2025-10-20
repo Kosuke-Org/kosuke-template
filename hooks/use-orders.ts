@@ -29,6 +29,7 @@ export function useOrders(filters: OrderListFilters) {
   } = trpc.orders.list.useQuery(filters, {
     staleTime: 1000 * 60 * 2, // 2 minutes
     placeholderData: (previousData) => previousData,
+    enabled: !!filters?.organizationId,
   });
 
   // Fetch order statistics
@@ -50,8 +51,9 @@ export function useOrders(filters: OrderListFilters) {
         description: 'Order created successfully',
       });
       refetch();
-      // Invalidate stats to refresh them
+      // Invalidate stats and list to refresh them
       utils.orders.getStats.invalidate();
+      utils.orders.list.invalidate();
     },
     onError: (error) => {
       toast({
