@@ -1,0 +1,122 @@
+/**
+ * Custom hook for order operations
+ * Uses tRPC for type-safe order management with inferred types
+ */
+
+'use client';
+
+import { trpc } from '@/lib/trpc/client';
+import { useToast } from '@/hooks/use-toast';
+import type { AppRouter } from '@/lib/trpc/router';
+import type { inferRouterInputs } from '@trpc/server';
+
+// Infer types from tRPC router - no need for manual type definitions!
+type RouterInput = inferRouterInputs<AppRouter>;
+type CreateOrderInput = RouterInput['orders']['create'];
+type UpdateOrderInput = RouterInput['orders']['update'];
+type OrderListFilters = RouterInput['orders']['list'];
+
+export function useOrders(filters: OrderListFilters) {
+  const { toast } = useToast();
+  const utils = trpc.useUtils();
+
+  // Fetch orders with server-side filtering, search, pagination, and sorting
+  const {
+    data: ordersData,
+    isLoading,
+    error,
+    refetch,
+  } = trpc.orders.list.useQuery(filters, {
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    placeholderData: (previousData) => previousData,
+  });
+
+  // Fetch order statistics
+  const { data: stats, isLoading: isLoadingStats } = trpc.orders.getStats.useQuery(
+    {
+      organizationId: filters?.organizationId ?? '',
+    },
+    {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      enabled: !!filters?.organizationId,
+    }
+  );
+
+  // Create order mutation
+  const createOrder = trpc.orders.create.useMutation({
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Order created successfully',
+      });
+      refetch();
+      // Invalidate stats to refresh them
+      utils.orders.getStats.invalidate();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create order',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Update order mutation
+  const updateOrder = trpc.orders.update.useMutation({
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Order updated successfully',
+      });
+      refetch();
+      // Invalidate stats to refresh them
+      utils.orders.getStats.invalidate();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update order',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete order mutation
+  const deleteOrder = trpc.orders.delete.useMutation({
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Order deleted successfully',
+      });
+      refetch();
+      // Invalidate stats to refresh them
+      utils.orders.getStats.invalidate();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete order',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  return {
+    orders: ordersData?.orders ?? [],
+    total: ordersData?.total ?? 0,
+    page: ordersData?.page ?? 1,
+    limit: ordersData?.limit ?? 10,
+    totalPages: ordersData?.totalPages ?? 0,
+    stats,
+    isLoading,
+    isLoadingStats,
+    error,
+    createOrder: (input: CreateOrderInput) => createOrder.mutateAsync(input),
+    updateOrder: (input: UpdateOrderInput) => updateOrder.mutateAsync(input),
+    deleteOrder: (id: string) => deleteOrder.mutateAsync({ id }),
+    isCreating: createOrder.isPending,
+    isUpdating: updateOrder.isPending,
+    isDeleting: deleteOrder.isPending,
+  };
+}

@@ -15,6 +15,14 @@ export type {
 
 export type { TaskPriority } from './task';
 
+// Order-related types
+export type {
+  // Base types
+  Order,
+  NewOrder,
+  OrderStatus,
+} from './order';
+
 // Organization-related types
 export type {
   // Base types

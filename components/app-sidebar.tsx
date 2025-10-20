@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CheckSquare, FileText, LifeBuoy, Send, SquareTerminal } from 'lucide-react';
+import { CheckSquare, FileText, LifeBuoy, ReceiptText, Send, SquareTerminal } from 'lucide-react';
 
 import { NavMain } from '@/components/nav-main';
 import { NavSecondary } from '@/components/nav-secondary';
@@ -29,6 +29,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             title: 'Tasks',
             url: '/tasks',
             icon: CheckSquare,
+          },
+          {
+            title: 'Orders',
+            url: '/orders',
+            icon: ReceiptText,
           },
           {
             title: 'Docs',
@@ -65,6 +70,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: 'Tasks',
           url: `${orgPrefix}/tasks`,
           icon: CheckSquare,
+        },
+        {
+          title: 'Orders',
+          url: `${orgPrefix}/orders`,
+          icon: ReceiptText,
         },
         {
           title: 'Docs',

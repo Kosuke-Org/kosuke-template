@@ -4,6 +4,13 @@ import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 // Enums
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);
 export const orgRoleEnum = pgEnum('org_role', ['org:admin', 'org:member']);
+export const orderStatusEnum = pgEnum('order_status', [
+  'pending',
+  'processing',
+  'shipped',
+  'delivered',
+  'cancelled',
+]);
 
 // Users - Minimal sync from Clerk for local queries and future expansion
 export const users = pgTable('users', {
@@ -94,6 +101,25 @@ export const tasks = pgTable('tasks', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Orders - Customer orders with organization support
+export const orders = pgTable('orders', {
+  id: uuid('id').defaultRandom().primaryKey(), // Serves as both ID and order number
+  customerName: text('customer_name').notNull(),
+  clerkUserId: text('clerk_user_id').notNull(), // User who created/manages the order
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, {
+      onDelete: 'cascade',
+    }), // Orders always belong to an organization
+  status: orderStatusEnum('status').notNull().default('pending'),
+  amount: text('amount').notNull(), // Stored as text to preserve decimal precision (e.g., "1250.50")
+  currency: text('currency').notNull().default('USD'),
+  orderDate: timestamp('order_date').notNull().defaultNow(),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Enums for type safety
 export enum SubscriptionTier {
   FREE = 'free',
@@ -143,7 +169,10 @@ export type Organization = InferSelectModel<typeof organizations>;
 export type NewOrganization = InferInsertModel<typeof organizations>;
 export type OrgMembership = InferSelectModel<typeof orgMemberships>;
 export type NewOrgMembership = InferInsertModel<typeof orgMemberships>;
+export type Order = InferSelectModel<typeof orders>;
+export type NewOrder = InferInsertModel<typeof orders>;
 
 // Infer enum types from schema
 export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];
 export type OrgRole = (typeof orgRoleEnum.enumValues)[number];
+export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
