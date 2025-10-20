@@ -150,3 +150,23 @@ jobs:
             git commit -m "docs: add version $VERSION_NUMBER snapshot"
             git push origin HEAD:main
           fi
+
+  deploy-to-vercel-production:
+    name: Deploy to Vercel Production
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Deploy to Vercel Production
+        uses: vercel/action@master
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          production: true
