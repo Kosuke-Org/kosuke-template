@@ -1,15 +1,18 @@
 import { renderHook, act } from '@testing-library/react';
 import { useAuthActions } from '@/hooks/use-auth-actions';
-import { createQueryWrapper } from '../setup/mocks';
+import { createQueryWrapper, createMockQueryClient } from '../setup/mocks';
 import { vi } from 'vitest';
 
-// Mock useRouter
-const mockPush = vi.fn();
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: mockPush,
-  }),
-}));
+// Create mock query client
+const mockQueryClient = createMockQueryClient();
+
+vi.mock('@tanstack/react-query', async () => {
+  const actual = await vi.importActual('@tanstack/react-query');
+  return {
+    ...actual,
+    useQueryClient: () => mockQueryClient,
+  };
+});
 
 // Mock Clerk
 const mockSignOut = vi.fn();
@@ -51,8 +54,9 @@ describe('useAuthActions', () => {
       result.current.handleSignOut();
     });
 
-    expect(mockPush).toHaveBeenCalledWith('/');
     expect(mockSignOut).toHaveBeenCalled();
+    expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: '/' });
+    expect(mockQueryClient.clear).toHaveBeenCalled();
   });
 
   it('should handle multiple handleSignOut calls', async () => {
@@ -66,7 +70,7 @@ describe('useAuthActions', () => {
       result.current.handleSignOut();
     });
 
-    expect(mockPush).toHaveBeenCalledTimes(2);
     expect(mockSignOut).toHaveBeenCalledTimes(2);
+    expect(mockQueryClient.clear).toHaveBeenCalledTimes(2);
   });
 });
