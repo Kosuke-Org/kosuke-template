@@ -19,6 +19,7 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 // ===== Session Management =====
 
 let sessionId: string | null = null;
+let isFirstRequest = true;
 
 // ===== Main CLI Interface =====
 
@@ -26,9 +27,55 @@ async function processUserMessage(userInput: string): Promise<void> {
   const spinner = ora('Claude is thinking...').start();
 
   try {
+    // Modify the prompt for the first request to enforce planning workflow
+    let effectivePrompt = userInput;
+
+    if (isFirstRequest) {
+      effectivePrompt = `${userInput}
+
+IMPORTANT INSTRUCTIONS FOR FIRST REQUEST:
+This is a product implementation request. You MUST follow this workflow:
+
+1. **Analyze the Request**: Understand what product needs to be built
+2. **Define Implementation Plan**: Create a detailed plan with all required components
+3. **Ask Clarification Questions**: List any ambiguities or missing requirements
+4. **List Core Functionalities**: Present all features in clear bullet points
+5. **Assess Complexity**: If the product is complex (requires 5+ major features or components), split it into multiple tickets
+6. **Create Tickets (if needed)**: Write detailed tickets to a tickets.md file in the workspace root
+7. **Wait for Confirmation**: DO NOT start implementation until the user explicitly confirms the plan
+
+Format your response as:
+---
+## Product Analysis
+[Brief description of what will be built]
+
+## Implementation Plan
+[High-level technical approach]
+
+## Clarification Questions
+- [Question 1]
+- [Question 2]
+...
+
+## Core Functionalities
+- [ ] [Functionality 1]
+- [ ] [Functionality 2]
+...
+
+## Complexity Assessment
+[Simple/Moderate/Complex] - [Explanation]
+[If complex: "This will be split into X tickets"]
+
+---
+
+REMEMBER: Do NOT start implementing. Wait for user confirmation.`;
+
+      isFirstRequest = false;
+    }
+
     // Use the SDK's query function with built-in tools
     const result = query({
-      prompt: userInput,
+      prompt: effectivePrompt,
       options: {
         cwd: WORKSPACE_ROOT,
         settingSources: ['project'],
@@ -148,10 +195,14 @@ async function main() {
   console.log(chalk.dim('\nCommands: /help /clear /exit\n'));
 
   // Initial greeting
+  console.log(chalk.cyan("Claude: Hello! I'm ready to help you build your product."));
   console.log(
     chalk.cyan(
-      "Claude: Hello! I'm ready to help you with your code. What would you like to work on?"
+      'Describe what you want to build, and I will create a detailed plan with all functionalities.'
     )
+  );
+  console.log(
+    chalk.dim('\n💡 Tip: For complex products, I will automatically split the work into tickets.\n')
   );
 
   // Setup readline
@@ -178,17 +229,34 @@ async function main() {
 
       if (trimmedInput === '/clear') {
         sessionId = null;
+        isFirstRequest = true;
         console.clear();
         console.log(chalk.green('✅ Session cleared\n'));
+        console.log(
+          chalk.cyan(
+            "Claude: Hello! I'm ready to help you with your code. Describe the product you'd like to build."
+          )
+        );
         prompt();
         return;
       }
 
       if (trimmedInput === '/help') {
-        console.log(chalk.cyan('\nAvailable commands:'));
+        console.log(chalk.cyan('\n📋 Product Implementation Workflow:'));
+        console.log(
+          chalk.dim('  1️⃣  First request: Describe your product (planning mode activated)')
+        );
+        console.log(chalk.dim('  2️⃣  Review the implementation plan and functionalities'));
+        console.log(chalk.dim('  3️⃣  Confirm to start implementation'));
+        console.log(chalk.dim('  4️⃣  Complex products are split into tickets.md\n'));
+
+        console.log(chalk.cyan('Available commands:'));
         console.log(chalk.dim('  /help  - Show this help message'));
-        console.log(chalk.dim('  /clear - Clear session and start fresh'));
+        console.log(
+          chalk.dim('  /clear - Clear session and start fresh (resets to planning mode)')
+        );
         console.log(chalk.dim('  /exit  - Exit the CLI\n'));
+
         console.log(chalk.cyan('Built-in tools (provided by Claude Agent SDK):'));
         console.log(chalk.dim('  • read_file       - Read file contents'));
         console.log(chalk.dim('  • write_file      - Write or create files'));
@@ -198,11 +266,17 @@ async function main() {
         console.log(chalk.dim('  • bash            - Execute shell commands'));
         console.log(chalk.dim('  • read_multiple   - Read multiple files at once'));
         console.log(chalk.dim('  • task_done       - Mark task as complete\n'));
-        console.log(chalk.cyan('Example requests:'));
-        console.log(chalk.dim('  • "Create a new React component for user profiles"'));
-        console.log(chalk.dim('  • "Add a new tRPC endpoint for tasks"'));
-        console.log(chalk.dim('  • "Refactor the settings page to use the new hook"'));
-        console.log(chalk.dim('  • "Find all files using useAuth and update them"'));
+
+        console.log(chalk.cyan('Example first request (product description):'));
+        console.log(chalk.dim('  • "Build a task management app with priorities and due dates"'));
+        console.log(
+          chalk.dim('  • "Create a blog platform with user authentication and comments"')
+        );
+        console.log(chalk.dim('  • "Implement a real estate listing site like Idealista"\n'));
+
+        console.log(chalk.cyan('Example follow-up requests (after confirmation):'));
+        console.log(chalk.dim('  • "Start implementing ticket #1"'));
+        console.log(chalk.dim('  • "Add error handling to the user authentication"'));
         console.log(chalk.dim('  • "Run the tests and fix any failures"\n'));
         prompt();
         return;
