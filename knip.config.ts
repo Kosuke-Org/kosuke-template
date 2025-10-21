@@ -22,7 +22,6 @@ const knipConfig = {
     'tailwindcss',
     'tailwindcss-animate',
     'vaul',
-    'jsdom',
     // TODO: check if we should use these dependencies
     'drizzle-zod',
     '@trpc/next',

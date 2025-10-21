@@ -137,6 +137,7 @@
     "eslint-config-next": "15.2.4",
     "eslint-config-prettier": "^9.0.0",
     "husky": "^8.0.0",
+    "jsdom": "^27.0.1",
     "knip": "^5.45.3",
     "lint-staged": "^15.0.0",
     "postcss": "^8.5.3",
