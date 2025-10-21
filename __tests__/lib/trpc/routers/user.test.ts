@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCaller } from '@/lib/trpc/server';
-import { mockClerkUser } from '@/__tests__/setup/mocks';
+import { createMockTRPCContext, mockClerkUser } from '@/__tests__/setup/mocks';
 import type { ClerkUserType } from '@/lib/types';
 
 vi.mock('@/lib/storage', () => ({
@@ -53,16 +53,7 @@ describe('User Router', () => {
         wasUpdated: true,
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: {
-          ...mockClerkUser,
-          imageUrl: 'https://example.com/old-avatar.jpg',
-          publicMetadata: {},
-        } as unknown as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       // Create a small base64 image (1x1 pixel PNG)
       const base64Image =
@@ -82,12 +73,7 @@ describe('User Router', () => {
     });
 
     it('should throw error when file is too large', async () => {
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       // Create a large base64 string (simulating > 5MB file)
       const largeBase64 = 'data:image/png;base64,' + 'A'.repeat(7 * 1024 * 1024);
@@ -113,16 +99,17 @@ describe('User Router', () => {
         wasUpdated: true,
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: {
-          ...mockClerkUser,
-          imageUrl: 'https://blob.vercel-storage.com/old.jpg',
-          publicMetadata: {},
-        } as unknown as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(
+        createMockTRPCContext({
+          userId: 'user_123',
+          getUser: () =>
+            Promise.resolve({
+              ...mockClerkUser,
+              imageUrl: 'https://blob.vercel-storage.com/old.jpg',
+              publicMetadata: {},
+            } as unknown as ClerkUserType),
+        })
+      );
 
       const base64Image =
         'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
@@ -149,16 +136,17 @@ describe('User Router', () => {
         wasUpdated: true,
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: {
-          ...mockClerkUser,
-          imageUrl: 'https://blob.vercel-storage.com/avatar.jpg',
-          publicMetadata: {},
-        } as unknown as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(
+        createMockTRPCContext({
+          userId: 'user_123',
+          getUser: () =>
+            Promise.resolve({
+              ...mockClerkUser,
+              imageUrl: 'https://blob.vercel-storage.com/avatar.jpg',
+              publicMetadata: {},
+            } as unknown as ClerkUserType),
+        })
+      );
 
       const result = await caller.user.deleteProfileImage();
 
@@ -169,16 +157,17 @@ describe('User Router', () => {
     });
 
     it('should throw error when no profile image to delete', async () => {
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: {
-          ...mockClerkUser,
-          imageUrl: null,
-          publicMetadata: {},
-        } as unknown as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(
+        createMockTRPCContext({
+          userId: 'user_123',
+          getUser: () =>
+            Promise.resolve({
+              ...mockClerkUser,
+              imageUrl: null,
+              publicMetadata: {},
+            } as unknown as ClerkUserType),
+        })
+      );
 
       await expect(caller.user.deleteProfileImage()).rejects.toThrow('No profile image to delete');
     });
