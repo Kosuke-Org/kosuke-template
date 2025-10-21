@@ -5,8 +5,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { CalendarIcon, Filter, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CalendarIcon, ListFilter, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,11 +28,11 @@ interface OrderFiltersProps {
   dateTo?: Date;
   minAmount: number;
   maxAmount: number;
+  activeFiltersCount: number;
   onStatusesChange: (statuses: OrderStatus[]) => void;
   onDateFromChange: (date?: Date) => void;
   onDateToChange: (date?: Date) => void;
   onAmountRangeChange: (min: number, max: number) => void;
-  onClearFilters: () => void;
 }
 
 export function OrderFilters({
@@ -41,15 +41,13 @@ export function OrderFilters({
   dateTo,
   minAmount,
   maxAmount,
+  activeFiltersCount,
   onStatusesChange,
   onDateFromChange,
   onDateToChange,
   onAmountRangeChange,
-  onClearFilters,
 }: OrderFiltersProps) {
   const [open, setOpen] = useState(false);
-
-  // Local state for pending changes
   const [pendingStatuses, setPendingStatuses] = useState<OrderStatus[]>(selectedStatuses);
   const [pendingDateRange, setPendingDateRange] = useState<DateRange | undefined>({
     from: dateFrom,
@@ -57,7 +55,6 @@ export function OrderFilters({
   });
   const [pendingAmountRange, setPendingAmountRange] = useState([minAmount, maxAmount]);
 
-  // Sync with props when they change externally (e.g., clear all)
   useEffect(() => {
     setPendingStatuses(selectedStatuses);
   }, [selectedStatuses]);
@@ -86,28 +83,13 @@ export function OrderFilters({
     setOpen(false);
   };
 
-  const handleReset = () => {
-    setPendingStatuses([]);
-    setPendingDateRange(undefined);
-    setPendingAmountRange([0, MAX_AMOUNT]);
-  };
-
   const handleCancel = () => {
-    // Reset to current applied values
     setPendingStatuses(selectedStatuses);
     setPendingDateRange({ from: dateFrom, to: dateTo });
     setPendingAmountRange([minAmount, maxAmount]);
     setOpen(false);
   };
 
-  // Calculate active filters count
-  const activeFiltersCount =
-    selectedStatuses.length +
-    (dateFrom ? 1 : 0) +
-    (dateTo ? 1 : 0) +
-    (minAmount > 0 || maxAmount < MAX_AMOUNT ? 1 : 0);
-
-  // Check if there are pending changes
   const hasPendingChanges =
     JSON.stringify(pendingStatuses.sort()) !== JSON.stringify([...selectedStatuses].sort()) ||
     pendingDateRange?.from?.getTime() !== dateFrom?.getTime() ||
@@ -132,7 +114,7 @@ export function OrderFilters({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="h-9 gap-2">
-          <Filter />
+          <ListFilter />
           Filters
           {activeFiltersCount > 0 && (
             <Badge variant="secondary" className="h-5 px-1.5 text-xs">
@@ -259,18 +241,6 @@ export function OrderFilters({
             Cancel
           </Button>
           <div className="flex items-center gap-2">
-            {activeFiltersCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  onClearFilters();
-                  handleReset();
-                }}
-              >
-                Clear all
-              </Button>
-            )}
             <Button size="sm" onClick={handleApply} disabled={!hasPendingChanges} className="h-8">
               Apply
             </Button>

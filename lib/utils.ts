@@ -43,3 +43,33 @@ export function isClerkAPIResponseError(error: unknown): error is ClerkAPIRespon
     error.clerkError === true
   );
 }
+
+export function downloadFile(data: string, filename: string, mimeType?: string) {
+  let blob: Blob;
+
+  // Detect if data is base64 (for Excel files) or plain text (for CSV)
+  if (filename.endsWith('.xlsx')) {
+    // Decode base64 and create binary blob for Excel
+    const binaryString = atob(data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    blob = new Blob([bytes], {
+      type: mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+  } else {
+    // Plain text blob for CSV
+    blob = new Blob([data], { type: mimeType || 'text/csv;charset=utf-8;' });
+  }
+
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

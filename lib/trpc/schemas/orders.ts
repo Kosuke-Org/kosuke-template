@@ -11,6 +11,10 @@ import { orderStatusEnum } from '@/lib/db/schema';
 const orderStatusValues = orderStatusEnum.enumValues;
 const orderStatusZodEnum = z.enum(orderStatusValues as [string, ...string[]]);
 
+// Export type enum for orders
+export const exportTypeEnum = z.enum(['csv', 'excel']);
+export type ExportType = z.infer<typeof exportTypeEnum>;
+
 export const createOrderSchema = z.object({
   customerName: z.string().min(1, 'Customer name is required').max(255),
   amount: z

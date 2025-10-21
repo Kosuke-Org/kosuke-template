@@ -20,6 +20,9 @@ import {
   Hash,
   User,
   CircleDollarSign,
+  ChevronDown,
+  Loader2,
+  X,
 } from 'lucide-react';
 import {
   Table,
@@ -50,8 +53,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { OrderStatus } from '@/lib/types';
 import type { AppRouter } from '@/lib/trpc/router';
 import type { inferRouterOutputs } from '@trpc/server';
+import { exportTypeEnum, type ExportType } from '@/lib/trpc/schemas/orders';
 import { OrderFilters, ActiveFilterBadges } from './order-filters';
-import { statusColors } from '../utils';
+import { MAX_AMOUNT, statusColors } from '../utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Infer OrderWithDetails from tRPC router output
 type RouterOutput = inferRouterOutputs<AppRouter>;
@@ -85,6 +90,9 @@ interface OrdersDataTableProps {
   onSortChange: (column: 'orderDate' | 'amount', order: 'asc' | 'desc') => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  // Export handler
+  onExport: (type: ExportType) => void;
+  isExporting: boolean;
 }
 
 function TableSkeleton() {
@@ -131,6 +139,9 @@ export function OrdersDataTable({
   onSortChange,
   onEdit,
   onDelete,
+  // Export handler
+  onExport,
+  isExporting,
 }: OrdersDataTableProps) {
   const formatCurrency = (amount: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -167,6 +178,12 @@ export function OrdersDataTable({
   const startIndex = (page - 1) * pageSize + 1;
   const endIndex = Math.min(page * pageSize, total);
 
+  const activeFiltersCount =
+    selectedStatuses.length +
+    (dateFrom ? 1 : 0) +
+    (dateTo ? 1 : 0) +
+    (minAmount > 0 || maxAmount < MAX_AMOUNT ? 1 : 0);
+
   return (
     <Card>
       <CardHeader className="pb-3 space-y-3">
@@ -182,6 +199,7 @@ export function OrdersDataTable({
             />
           </div>
           <OrderFilters
+            activeFiltersCount={activeFiltersCount}
             selectedStatuses={selectedStatuses}
             dateFrom={dateFrom}
             dateTo={dateTo}
@@ -191,8 +209,37 @@ export function OrdersDataTable({
             onDateFromChange={onDateFromChange}
             onDateToChange={onDateToChange}
             onAmountRangeChange={onAmountRangeChange}
-            onClearFilters={onClearFilters}
           />
+          {activeFiltersCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={onClearFilters}>
+              <X />
+              Clear all
+            </Button>
+          )}
+          <div className="ml-auto">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" disabled={isExporting}>
+                  {isExporting && <Loader2 className="animate-spin" />}
+                  Export
+                  <ChevronDown />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-30 p-2" align="end">
+                {exportTypeEnum.options.map((type) => (
+                  <Button
+                    key={type}
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => onExport(type)}
+                    disabled={isExporting}
+                  >
+                    {type.toUpperCase()}
+                  </Button>
+                ))}
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         {/* Active Filters Badges */}
@@ -245,20 +292,20 @@ export function OrdersDataTable({
                       </div>
                     </TableHead>
                     <TableHead>
-                      <Button variant="ghost" onClick={() => handleSort('orderDate')}>
-                        <Calendar />
-                        Date
-                        {getSortIcon('orderDate')}
-                      </Button>
-                    </TableHead>
-                    <TableHead>
                       <Button variant="ghost" onClick={() => handleSort('amount')}>
                         <CircleDollarSign />
                         Amount
                         {getSortIcon('amount')}
                       </Button>
                     </TableHead>
-                    <TableHead className="w-10"></TableHead>
+                    <TableHead>
+                      <Button variant="ghost" onClick={() => handleSort('orderDate')}>
+                        <Calendar />
+                        Date
+                        {getSortIcon('orderDate')}
+                      </Button>
+                    </TableHead>
+                    <TableHead className="w-50"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -273,10 +320,10 @@ export function OrdersDataTable({
                           {order.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="pl-5">{formatDate(order.orderDate)}</TableCell>
                       <TableCell className="font-medium pl-5">
                         {formatCurrency(order.amount)}
                       </TableCell>
+                      <TableCell className="pl-5">{formatDate(order.orderDate)}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

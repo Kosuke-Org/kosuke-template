@@ -7,8 +7,10 @@
 
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
+import { downloadFile } from '@/lib/utils';
 import type { AppRouter } from '@/lib/trpc/router';
 import type { inferRouterInputs } from '@trpc/server';
+import type { ExportType } from '@/lib/trpc/schemas/orders';
 
 // Infer types from tRPC router - no need for manual type definitions!
 type RouterInput = inferRouterInputs<AppRouter>;
@@ -104,6 +106,24 @@ export function useOrders(filters: OrderListFilters) {
     },
   });
 
+  const exportOrders = trpc.orders.export.useMutation({
+    onSuccess: (data, variables) => {
+      downloadFile(data.data, data.filename);
+
+      toast({
+        title: 'Success',
+        description: `Orders exported as ${variables.type.toUpperCase()}`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to export orders',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     orders: ordersData?.orders ?? [],
     total: ordersData?.total ?? 0,
@@ -117,8 +137,11 @@ export function useOrders(filters: OrderListFilters) {
     createOrder: (input: CreateOrderInput) => createOrder.mutateAsync(input),
     updateOrder: (input: UpdateOrderInput) => updateOrder.mutateAsync(input),
     deleteOrder: (id: string) => deleteOrder.mutateAsync({ id }),
+    exportOrders: ({ organizationId, type }: { organizationId: string; type: ExportType }) =>
+      exportOrders.mutateAsync({ organizationId, type }),
     isCreating: createOrder.isPending,
     isUpdating: updateOrder.isPending,
     isDeleting: deleteOrder.isPending,
+    isExporting: exportOrders.isPending,
   };
 }

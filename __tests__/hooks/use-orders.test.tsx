@@ -37,6 +37,9 @@ vi.mock('@/lib/trpc/client', () => ({
       getStats: {
         useQuery: vi.fn(),
       },
+      export: {
+        useMutation: vi.fn(),
+      },
     },
     useUtils: () => ({
       orders: {
@@ -143,6 +146,11 @@ describe('useOrders', () => {
     });
 
     (trpc.orders.delete.useMutation as Mock).mockReturnValue({
+      mutateAsync: vi.fn(),
+      isPending: false,
+    });
+
+    (trpc.orders.export.useMutation as Mock).mockReturnValue({
       mutateAsync: vi.fn(),
       isPending: false,
     });

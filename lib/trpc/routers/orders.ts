@@ -10,11 +10,14 @@ import {
   deleteOrderSchema,
   getOrderSchema,
   orderListFiltersSchema,
+  exportTypeEnum,
 } from '../schemas/orders';
 import { db } from '@/lib/db/drizzle';
 import { orders, organizations, users, type OrderStatus } from '@/lib/db/schema';
 import { eq, and, or, ilike, gte, lte, desc, asc, sql, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import * as XLSX from 'xlsx';
+import { z } from 'zod';
 
 export const ordersRouter = router({
   /**
@@ -327,5 +330,92 @@ export const ordersRouter = router({
         deliveredOrders,
         averageOrderValue,
       };
+    }),
+
+  /**
+   * Export orders as CSV or Excel format
+   * Exports all orders for the organization (no filtering applied)
+   */
+  export: protectedProcedure
+    .input(
+      z.object({
+        organizationId: z.uuid(),
+        type: exportTypeEnum,
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { organizationId, type } = input;
+
+      // Verify user has access to the organization
+      const membership = await db
+        .select()
+        .from(organizations)
+        .where(eq(organizations.id, organizationId))
+        .limit(1);
+
+      if (membership.length === 0) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Organization not found',
+        });
+      }
+
+      // Fetch all orders for the organization (ordered by date, newest first)
+      const ordersList = await db
+        .select({
+          id: orders.id,
+          customerName: orders.customerName,
+          status: orders.status,
+          amount: orders.amount,
+          orderDate: orders.orderDate,
+          notes: orders.notes,
+          createdAt: orders.createdAt,
+        })
+        .from(orders)
+        .where(eq(orders.organizationId, organizationId))
+        .orderBy(desc(orders.orderDate));
+
+      const headers = ['Order ID', 'Customer Name', 'Status', 'Amount', 'Order Date', 'Notes'];
+      const rows = ordersList.map((order) => [
+        order.id,
+        order.customerName,
+        order.status,
+        order.amount,
+        new Date(order.orderDate).toISOString().split('T')[0],
+        order.notes || '',
+      ]);
+
+      const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
+
+      const timestamp = new Date().toISOString().split('T')[0];
+      const fileName = `orders-${timestamp}`;
+
+      switch (type) {
+        case 'excel': {
+          const excelBuffer = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
+
+          return {
+            data: excelBuffer,
+            filename: `${fileName}.xlsx`,
+          };
+        }
+
+        case 'csv': {
+          const csvData = XLSX.write(workbook, { type: 'string', bookType: 'csv' });
+
+          return {
+            data: csvData,
+            filename: `${fileName}.csv`,
+          };
+        }
+
+        default:
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `Unsupported export type: ${type}`,
+          });
+      }
     }),
 });

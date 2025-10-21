@@ -85,9 +85,11 @@ export default function OrgOrdersPage() {
     createOrder,
     updateOrder,
     deleteOrder,
+    exportOrders,
     isCreating,
     isUpdating,
     isDeleting,
+    isExporting,
   } = useOrders({
     organizationId: activeOrganization?.id ?? '',
     statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
@@ -213,6 +215,9 @@ export default function OrgOrdersPage() {
         }}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
+        // Export handler
+        onExport={(type) => exportOrders({ organizationId: activeOrganization?.id ?? '', type })}
+        isExporting={isExporting}
       />
 
       {/* Create Order Dialog */}
