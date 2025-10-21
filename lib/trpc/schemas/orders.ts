@@ -20,11 +20,11 @@ export const createOrderSchema = z.object({
   orderDate: z.date().optional(),
   status: orderStatusZodEnum.optional(),
   notes: z.string().max(1000).optional(),
-  organizationId: z.string().uuid(),
+  organizationId: z.uuid(),
 });
 
 export const updateOrderSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   customerName: z.string().min(1).max(255).optional(),
   amount: z
     .string()
@@ -44,7 +44,7 @@ export const orderListFiltersSchema = z
     dateTo: z.date().optional(),
     minAmount: z.number().optional(),
     maxAmount: z.number().optional(),
-    organizationId: z.string().uuid(),
+    organizationId: z.uuid(),
     page: z.number().int().positive().default(1),
     limit: z.number().int().positive().max(100).default(10),
     sortBy: z.enum(['orderDate', 'amount']).default('orderDate'),
@@ -53,9 +53,9 @@ export const orderListFiltersSchema = z
   .optional();
 
 export const deleteOrderSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
 });
 
 export const getOrderSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
 });

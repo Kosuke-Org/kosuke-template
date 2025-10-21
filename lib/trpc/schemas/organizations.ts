@@ -55,7 +55,7 @@ export const getOrganizationSchema = z.object({
 export const inviteMemberSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
   email: z.email('Invalid email address'),
-  role: z.enum(['org:admin', 'org:member']).prefault('org:member'),
+  role: z.enum(['org:admin', 'org:member']).default('org:member'),
 });
 
 /**
