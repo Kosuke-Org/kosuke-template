@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createCaller } from '@/lib/trpc/server';
-import { mockClerkUser } from '@/__tests__/setup/mocks';
-import type { UserSubscriptionInfo, SubscriptionEligibility, ClerkUserType } from '@/lib/types';
+import { createMockTRPCContext } from '@/__tests__/setup/mocks';
+import type { UserSubscriptionInfo, SubscriptionEligibility } from '@/lib/types';
 import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
 import { SubscriptionState } from '@/lib/types';
 import type Stripe from 'stripe';
@@ -56,12 +56,7 @@ describe('Billing Router', () => {
       };
       vi.mocked(getUserSubscription).mockResolvedValue(mockSubscriptionInfo);
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.getStatus();
 
@@ -72,12 +67,7 @@ describe('Billing Router', () => {
     });
 
     it('should throw error when not authenticated', async () => {
-      const caller = await createCaller({
-        userId: null,
-        user: null,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext());
 
       await expect(caller.billing.getStatus()).rejects.toThrow('You must be logged in');
     });
@@ -105,12 +95,7 @@ describe('Billing Router', () => {
       vi.mocked(getUserSubscription).mockResolvedValue(mockSubscriptionInfo);
       vi.mocked(getSubscriptionEligibility).mockReturnValue(mockEligibility);
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.canSubscribe();
 
@@ -143,12 +128,7 @@ describe('Billing Router', () => {
       vi.mocked(getUserSubscription).mockResolvedValue(mockSubscriptionInfo);
       vi.mocked(getSubscriptionEligibility).mockReturnValue(mockEligibility);
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.canSubscribe();
 
@@ -180,12 +160,7 @@ describe('Billing Router', () => {
       vi.mocked(getUserSubscription).mockResolvedValue(mockSubscriptionInfo);
       vi.mocked(getSubscriptionEligibility).mockReturnValue(mockEligibility);
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.canSubscribe();
 
@@ -225,12 +200,7 @@ describe('Billing Router', () => {
         },
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.createCheckout({ tier: 'pro' });
 
@@ -265,12 +235,7 @@ describe('Billing Router', () => {
       vi.mocked(getUserSubscription).mockResolvedValue(mockSubscriptionInfo);
       vi.mocked(getSubscriptionEligibility).mockReturnValue(mockEligibility);
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       await expect(caller.billing.createCheckout({ tier: 'pro' })).rejects.toThrow(
         'Payment past due'
@@ -303,12 +268,7 @@ describe('Billing Router', () => {
         message: 'Stripe API error',
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       await expect(caller.billing.createCheckout({ tier: 'pro' })).rejects.toThrow(
         'Stripe API error'
@@ -360,12 +320,7 @@ describe('Billing Router', () => {
         message: 'Subscription will be canceled at period end',
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.cancel();
 
@@ -395,12 +350,7 @@ describe('Billing Router', () => {
       vi.mocked(getUserSubscription).mockResolvedValue(mockSubscriptionInfo);
       vi.mocked(getSubscriptionEligibility).mockReturnValue(mockEligibility);
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       await expect(caller.billing.cancel()).rejects.toThrow('Subscription cannot be canceled');
     });
@@ -444,12 +394,7 @@ describe('Billing Router', () => {
       vi.mocked(getUserSubscription).mockResolvedValue(mockSubscriptionInfo);
       vi.mocked(getSubscriptionEligibility).mockReturnValue(mockEligibility);
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       await expect(caller.billing.cancel()).rejects.toThrow('Subscription cannot be canceled');
     });
@@ -497,12 +442,7 @@ describe('Billing Router', () => {
         message: 'Stripe API error',
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       await expect(caller.billing.cancel()).rejects.toThrow('Stripe API error');
     });
@@ -554,12 +494,7 @@ describe('Billing Router', () => {
         message: 'Subscription reactivated successfully',
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.reactivate();
 
@@ -592,12 +527,7 @@ describe('Billing Router', () => {
       vi.mocked(getUserSubscription).mockResolvedValue(mockSubscriptionInfo);
       vi.mocked(getSubscriptionEligibility).mockReturnValue(mockEligibility);
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       await expect(caller.billing.reactivate()).rejects.toThrow(
         'Subscription cannot be reactivated'
@@ -625,12 +555,7 @@ describe('Billing Router', () => {
       vi.mocked(getUserSubscription).mockResolvedValue(mockSubscriptionInfo);
       vi.mocked(getSubscriptionEligibility).mockReturnValue(mockEligibility);
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       await expect(caller.billing.reactivate()).rejects.toThrow('No subscription found');
     });
@@ -678,12 +603,7 @@ describe('Billing Router', () => {
         message: 'Stripe API error',
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       await expect(caller.billing.reactivate()).rejects.toThrow('Stripe API error');
     });
@@ -701,12 +621,7 @@ describe('Billing Router', () => {
         },
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.createPortalSession();
 
@@ -722,12 +637,7 @@ describe('Billing Router', () => {
         message: 'No Stripe customer found',
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       await expect(caller.billing.createPortalSession()).rejects.toThrow(
         'No Stripe customer found'
@@ -761,12 +671,7 @@ describe('Billing Router', () => {
         } as unknown as Stripe.Subscription,
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.sync({ action: 'user' });
 
@@ -785,12 +690,7 @@ describe('Billing Router', () => {
         errors: [],
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.sync({ action: 'stale' });
 
@@ -809,12 +709,7 @@ describe('Billing Router', () => {
         errors: [],
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.sync({ action: 'emergency' });
 
@@ -856,12 +751,7 @@ describe('Billing Router', () => {
 
       vi.mocked(getUserSubscription).mockResolvedValue(mockSubscriptionInfo);
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.getSyncStatus();
 
@@ -883,12 +773,7 @@ describe('Billing Router', () => {
         message: 'Pending downgrade has been canceled',
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       const result = await caller.billing.cancelDowngrade();
 
@@ -905,12 +790,7 @@ describe('Billing Router', () => {
         message: 'No pending downgrade found',
       });
 
-      const caller = await createCaller({
-        userId: 'user_123',
-        user: mockClerkUser as ClerkUserType,
-        orgId: null,
-        orgRole: null,
-      });
+      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
       await expect(caller.billing.cancelDowngrade()).rejects.toThrow('No pending downgrade found');
     });

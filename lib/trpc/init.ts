@@ -14,13 +14,14 @@ import { getUserOrgMembership } from '@/lib/organizations';
  */
 export const createTRPCContext = async () => {
   const { userId, orgId, orgRole } = await auth();
-  const user = userId ? await currentUser() : null;
 
   return {
     userId,
-    user,
     orgId, // Active organization ID from Clerk (can be null)
     orgRole, // User's role in active organization (can be null)
+    async getUser() {
+      return userId ? await currentUser() : null;
+    },
   };
 };
 
@@ -45,7 +46,7 @@ export const publicProcedure = t.procedure;
 export const protectedProcedure = t.procedure.use(async (opts) => {
   const { ctx } = opts;
 
-  if (!ctx.userId || !ctx.user) {
+  if (!ctx.userId) {
     throw new TRPCError({
       code: 'UNAUTHORIZED',
       message: 'You must be logged in to perform this action',
@@ -55,9 +56,9 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
   return opts.next({
     ctx: {
       userId: ctx.userId,
-      user: ctx.user,
       orgId: ctx.orgId,
       orgRole: ctx.orgRole,
+      getUser: ctx.getUser,
     },
   });
 });

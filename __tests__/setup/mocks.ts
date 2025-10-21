@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 import React, { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Stripe from 'stripe';
+import { ClerkUserType } from '@/lib/types/user';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -302,5 +303,25 @@ export function createMockQueryClient() {
     getQueryDefaults: vi.fn(),
     setQueryDefaults: vi.fn(),
     getMutationDefaults: vi.fn(),
+  };
+}
+
+// Helper to create tRPC test context matching createTRPCContext signature
+export function createMockTRPCContext(options?: {
+  userId?: string | null;
+  orgId?: string | null;
+  orgRole?: string | null;
+  getUser?: () => Promise<ClerkUserType | null>;
+}) {
+  const userId = options?.userId ?? null;
+
+  return {
+    userId,
+    orgId: options?.orgId ?? null,
+    orgRole: options?.orgRole ?? null,
+    async getUser() {
+      return userId ? (mockClerkUserType as ClerkUserType) : null;
+    },
+    ...options,
   };
 }
