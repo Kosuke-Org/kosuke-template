@@ -11,7 +11,6 @@ const knipConfig = {
     'components/charts/**',
     // Library barrel exports, infrastructure for template users
     'lib/**/index.ts',
-    'vitest.config.ts',
   ],
   ignoreDependencies: [
     // Shadcn/UI dependencies (only used in components/ui/** which is ignored)
@@ -23,6 +22,7 @@ const knipConfig = {
     'tailwindcss',
     'tailwindcss-animate',
     'vaul',
+    'jsdom',
     // TODO: check if we should use these dependencies
     'drizzle-zod',
     '@trpc/next',
