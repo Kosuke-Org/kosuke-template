@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 import React, { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Stripe from 'stripe';
+import { ClerkUserType } from '@/lib/types/user';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -272,5 +273,55 @@ export function createQueryWrapper() {
 
   return function Wrapper({ children }: { children: ReactNode }) {
     return React.createElement(QueryClientProvider, { client: queryClient }, children);
+  };
+}
+
+// Mock QueryClient for testing hooks that use useQueryClient
+export function createMockQueryClient() {
+  return {
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+      mutations: {
+        retry: false,
+      },
+    },
+    clear: vi.fn(),
+    invalidateQueries: vi.fn(),
+    refetchQueries: vi.fn(),
+    cancelQueries: vi.fn(),
+    removeQueries: vi.fn(),
+    resetQueries: vi.fn(),
+    isFetching: vi.fn(() => 0),
+    isMutating: vi.fn(() => 0),
+    getQueryData: vi.fn(),
+    setQueryData: vi.fn(),
+    getQueryState: vi.fn(),
+    setQueriesData: vi.fn(),
+    setMutationDefaults: vi.fn(),
+    getQueryDefaults: vi.fn(),
+    setQueryDefaults: vi.fn(),
+    getMutationDefaults: vi.fn(),
+  };
+}
+
+// Helper to create tRPC test context matching createTRPCContext signature
+export function createMockTRPCContext(options?: {
+  userId?: string | null;
+  orgId?: string | null;
+  orgRole?: string | null;
+  getUser?: () => Promise<ClerkUserType | null>;
+}) {
+  const userId = options?.userId ?? null;
+
+  return {
+    userId,
+    orgId: options?.orgId ?? null,
+    orgRole: options?.orgRole ?? null,
+    async getUser() {
+      return userId ? (mockClerkUserType as ClerkUserType) : null;
+    },
+    ...options,
   };
 }

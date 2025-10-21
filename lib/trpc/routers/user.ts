@@ -88,9 +88,11 @@ export const userRouter = router({
       const buffer = Buffer.from(input.fileBase64.split(',')[1], 'base64');
       const file = new File([buffer], input.fileName, { type: input.mimeType });
 
+      const user = await ctx.getUser();
+
       // Delete old image if exists
-      if (ctx.user.imageUrl) {
-        await deleteProfileImage(ctx.user.imageUrl);
+      if (user?.imageUrl) {
+        await deleteProfileImage(user.imageUrl);
       }
 
       // Upload new image
@@ -100,7 +102,7 @@ export const userRouter = router({
       const clerk = await clerkClient();
       await clerk.users.updateUser(ctx.userId, {
         publicMetadata: {
-          ...ctx.user.publicMetadata,
+          ...user?.publicMetadata,
           customProfileImageUrl: imageUrl,
         },
       });
@@ -120,19 +122,21 @@ export const userRouter = router({
    * Delete profile image
    */
   deleteProfileImage: protectedProcedure.mutation(async ({ ctx }) => {
-    if (!ctx.user.imageUrl) {
+    const user = await ctx.getUser();
+
+    if (!user?.imageUrl) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'No profile image to delete',
       });
     }
 
-    await deleteProfileImage(ctx.user.imageUrl);
+    await deleteProfileImage(user.imageUrl);
 
     const clerk = await clerkClient();
     await clerk.users.updateUser(ctx.userId, {
       publicMetadata: {
-        ...ctx.user.publicMetadata,
+        ...user?.publicMetadata,
         customProfileImageUrl: null,
       },
     });
