@@ -93,7 +93,8 @@ export default function OrgOrdersPage() {
     statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
     searchQuery: searchQuery.trim() || undefined,
     dateFrom,
-    dateTo,
+    // Adjust dateTo to include the entire end date (date picker returns midnight, we need end of day)
+    dateTo: dateTo ? new Date(new Date(dateTo).setHours(23, 59, 59, 999)) : undefined,
     minAmount: minAmount > 0 ? minAmount : undefined,
     maxAmount: maxAmount < 10000 ? maxAmount : undefined,
     page,
