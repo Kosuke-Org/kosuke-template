@@ -123,23 +123,41 @@ REMEMBER: Do NOT start implementing. Wait for user confirmation.`;
               process.stdout.write(chalk.cyan(block.text));
               process.stdout.write('\n');
             } else if (block.type === 'tool_use') {
-              // Tool use - show what tool is being called
+              // Tool use - show what tool is being called with arguments
               console.log(chalk.dim(`\n🔧 Using tool: ${block.name}`));
-              if (block.name === 'write_file') {
-                const input = block.input as { path?: string };
-                if (input.path) {
-                  console.log(chalk.green(`✏️  Writing: ${input.path}`));
-                }
-              } else if (block.name === 'read_file') {
-                const input = block.input as { path?: string };
-                if (input.path) {
-                  console.log(chalk.dim(`📖 Reading: ${input.path}`));
-                }
-              } else if (block.name === 'bash') {
-                const input = block.input as { command?: string };
-                if (input.command) {
-                  console.log(chalk.yellow(`⚡ Running: ${input.command}`));
-                }
+
+              // Show arguments for all tools
+              const input = block.input as Record<string, unknown>;
+
+              // Special formatting for common tools
+              if (block.name === 'Write' && input.path) {
+                console.log(chalk.green(`   ✏️  Writing: ${input.path}`));
+              } else if (block.name === 'Read' && input.path) {
+                console.log(chalk.blue(`   📖 Reading: ${input.path}`));
+              } else if (block.name === 'Bash' && input.command) {
+                console.log(chalk.yellow(`   ⚡ Running: ${input.command}`));
+              } else if (block.name === 'Edit' && input.path) {
+                console.log(chalk.magenta(`   ✂️  Editing: ${input.path}`));
+              } else if (block.name === 'WebSearch' && input.search_term) {
+                console.log(chalk.cyan(`   🔍 Searching: ${input.search_term}`));
+              } else if (block.name === 'TodoWrite' && input.todos) {
+                const todos = input.todos as Array<{ content?: string }>;
+                console.log(chalk.green(`   ✅ Creating ${todos.length} todo(s)`));
+              } else if (block.name === 'Task' && input.content) {
+                console.log(chalk.blue(`   📋 Task: ${input.content}`));
+              } else if (block.name === 'Grep' && input.pattern) {
+                console.log(chalk.cyan(`   🔎 Searching for: ${input.pattern}`));
+              } else if (block.name === 'Glob' && input.glob_pattern) {
+                console.log(chalk.cyan(`   🗂️  Pattern: ${input.glob_pattern}`));
+              } else if (block.name === 'LS' && input.target_directory) {
+                console.log(chalk.blue(`   📁 Listing: ${input.target_directory}`));
+              } else {
+                // For any other tool, show the full arguments
+                const formattedInput = JSON.stringify(input, null, 2)
+                  .split('\n')
+                  .map((line, idx) => (idx === 0 ? `   ${line}` : `      ${line}`))
+                  .join('\n');
+                console.log(chalk.gray(formattedInput));
               }
             }
           }

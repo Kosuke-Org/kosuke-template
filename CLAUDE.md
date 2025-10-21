@@ -1505,6 +1505,13 @@ For detailed SEO guidelines and examples, use the `seo` rule only when needed.
 - Test authentication flows and subscription management thoroughly
 - Implement proper error handling for all external service integrations
 
+### Documentation Guidelines - MANDATORY
+
+- **NEVER proactively create documentation files** (\*.md) or README files
+- **NEVER create feature documentation** when implementing new features
+- Only create documentation files if **explicitly requested** by the user
+- Focus on implementing the feature code, not documenting it
+
 ### Service Integration & Documentation Updates - MANDATORY
 
 **When integrating, migrating, or updating third-party services, ALWAYS update the documentation accordingly.**
@@ -1529,3 +1536,133 @@ Examples of service changes that require documentation updates:
 - `.env.example` - Update environment variable names and requirements
 
 When a service change occurs, automatically identify and update all affected documentation files, environment examples, and service references across the codebase.
+
+### Schema and Seed Synchronization (MANDATORY)
+
+**Whenever the database schema file (@schema.ts) is updated, the seed file MUST be updated accordingly.**
+
+This rule applies to any project using Drizzle ORM with a seed script for development/testing data.
+
+#### **Why This Matters:**
+
+- Schema and seed files must stay in sync to prevent runtime errors
+- Seed scripts should generate data that respects all schema constraints
+- Changes to table structures, enums, or constraints require corresponding seed updates
+- Outdated seed data can cause migration failures or inconsistent test environments
+
+#### **When to Update Seed Files:**
+
+| Schema Change         | Required Seed Update                             |
+| --------------------- | ------------------------------------------------ |
+| Add new table         | Create seed data for the new table               |
+| Add NOT NULL column   | Update all seeds to include the new column       |
+| Add nullable column   | Optionally include in seed data                  |
+| Add/modify enum       | Use updated enum values in seed data             |
+| Add foreign key       | Ensure seed data maintains referential integrity |
+| Add unique constraint | Ensure seed data has unique values               |
+| Add check constraint  | Ensure seed data passes constraint validation    |
+| Change default value  | Update seeds to reflect new defaults             |
+| Rename column         | Update all column references in seeds            |
+| Delete column         | Remove column from all seed data                 |
+| Change data type      | Adjust seed data to match new type               |
+
+#### **Validation Workflow:**
+
+After any schema change, follow this workflow:
+
+1. Update @schema.ts with changes
+2. Generate migration using your ORM tool
+3. **Immediately update seed file** with corresponding changes
+4. Test seed script to verify it runs without errors
+5. Verify seed data respects all constraints
+
+#### **Best Practices:**
+
+- **Realistic Data**: Use realistic, representative seed data that mirrors production patterns. Use faker library
+- **Referential Integrity**: Maintain proper relationships between tables
+- **Edge Cases**: Include boundary values (min/max) and optional field scenarios
+- **Consistent Patterns**: Follow naming conventions and data generation patterns
+- **Documentation**: Comment complex seeding logic for future maintainability
+- **Type Safety**: Use inferred types from schema for type-safe seed data
+
+**✅ CORRECT - Synchronized schema and seed:**
+
+```typescript
+// schema.ts - Added new enum and field
+export const priorityEnum = pgEnum('priority', ['low', 'medium', 'high', 'urgent']);
+export type Priority = (typeof priorityEnum.enumValues)[number];
+
+export const items = pgTable('items', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  priority: priorityEnum('priority').notNull().default('medium'), // NEW FIELD
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// seed.ts - Updated accordingly with faker for realistic data
+import { faker } from '@faker-js/faker';
+
+const priorities: Array<'low' | 'medium' | 'high' | 'urgent'> = ['low', 'medium', 'high', 'urgent'];
+
+const itemValues: (typeof items.$inferInsert)[] = Array.from({ length: 10 }, (_, i) => ({
+  name: faker.commerce.productName(), // NEW FIELD - realistic product names
+  priority: priorities[i % 4], // NEW FIELD - rotating through enum values
+}));
+
+await db.insert(items).values(itemValues);
+```
+
+**❌ WRONG - Schema updated but seed not synchronized:**
+
+```typescript
+// schema.ts - Added new required field
+export const items = pgTable('items', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  priority: priorityEnum('priority').notNull().default('medium'), // NEW FIELD
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// seed.ts - Missing new field (WRONG!)
+const itemValues = [
+  { name: 'Item 1' }, // ❌ Missing 'priority' field
+  { name: 'Item 2' }, // ❌ Will fail or only use default value
+  { name: 'Item 3' }, // ❌ No variation in test data
+];
+
+await db.insert(items).values(itemValues);
+```
+
+#### **Common Pitfalls:**
+
+- ❌ Forgetting to update seed after adding NOT NULL columns
+- ❌ Using outdated enum values that no longer exist
+- ❌ Breaking foreign key constraints with invalid references
+- ❌ Creating duplicate values that violate unique constraints
+- ❌ Using wrong data types that cause type errors
+- ❌ Ignoring new validation rules (min/max, regex patterns)
+
+#### **Type-Safe Seeding:**
+
+Always use inferred types from your schema to ensure type safety and use faker for realistic data:
+
+```typescript
+// ✅ CORRECT - Type-safe seed data with faker
+import { faker } from '@faker-js/faker';
+import { items, type Priority } from './schema';
+
+const priorities: Priority[] = ['low', 'medium', 'high', 'urgent'];
+
+const itemValues: (typeof items.$inferInsert)[] = Array.from({ length: 20 }, (_, i) => ({
+  name: faker.commerce.productName(), // Realistic product names
+  priority: priorities[i % priorities.length] as Priority, // Type-checked enum values
+}));
+
+// ❌ WRONG - No type safety or faker usage
+const itemValues = [
+  {
+    name: 'Item 1', // Static, unrealistic data
+    priority: 'invalid-value', // Type error not caught!
+  },
+];
+```
