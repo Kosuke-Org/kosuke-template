@@ -5,7 +5,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
-import { useOrders } from '@/hooks/use-orders';
+import { useOrderActions, useOrdersList } from '@/hooks/use-orders';
 import { trpc } from '@/lib/trpc/client';
 import { vi, type Mock } from 'vitest';
 
@@ -56,7 +56,7 @@ vi.mock('@/lib/trpc/client', () => ({
   },
 }));
 
-describe('useOrders', () => {
+describe('useOrdersList', () => {
   let queryClient: QueryClient;
 
   // Mock data used across tests
@@ -161,7 +161,7 @@ describe('useOrders', () => {
   );
 
   it('should fetch orders successfully', async () => {
-    const { result } = renderHook(() => useOrders(defaultFilters), { wrapper });
+    const { result } = renderHook(() => useOrdersList(defaultFilters), { wrapper });
 
     await waitFor(() => {
       expect(result.current.orders).toEqual(mockOrders);
@@ -174,7 +174,7 @@ describe('useOrders', () => {
   });
 
   it('should fetch order statistics successfully', async () => {
-    const { result } = renderHook(() => useOrders(defaultFilters), { wrapper });
+    const { result } = renderHook(() => useOrdersList(defaultFilters), { wrapper });
 
     await waitFor(() => {
       expect(result.current.stats).toEqual(mockStats);
@@ -203,7 +203,7 @@ describe('useOrders', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useOrders(defaultFilters), { wrapper });
+    const { result } = renderHook(() => useOrderActions('org_123'), { wrapper });
 
     await result.current.createOrder({
       organizationId: 'org_123',
@@ -243,7 +243,7 @@ describe('useOrders', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useOrders(defaultFilters), { wrapper });
+    const { result } = renderHook(() => useOrderActions('org_123'), { wrapper });
 
     await result.current.updateOrder({
       id: 'order_1',
@@ -271,7 +271,7 @@ describe('useOrders', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useOrders(defaultFilters), { wrapper });
+    const { result } = renderHook(() => useOrderActions('org_123'), { wrapper });
 
     await result.current.deleteOrder('order_1');
 
@@ -288,7 +288,7 @@ describe('useOrders', () => {
       refetch: vi.fn(),
     }));
 
-    renderHook(() => useOrders({ ...defaultFilters, statuses: ['pending'] }), { wrapper });
+    renderHook(() => useOrdersList({ ...defaultFilters, statuses: ['pending'] }), { wrapper });
 
     expect(trpc.orders.list.useQuery).toHaveBeenCalledWith(
       { ...defaultFilters, statuses: ['pending'] },
@@ -300,7 +300,7 @@ describe('useOrders', () => {
     const dateFrom = new Date('2025-01-01');
     const dateTo = new Date('2025-01-31');
 
-    renderHook(() => useOrders({ ...defaultFilters, dateFrom, dateTo }), { wrapper });
+    renderHook(() => useOrdersList({ ...defaultFilters, dateFrom, dateTo }), { wrapper });
 
     expect(trpc.orders.list.useQuery).toHaveBeenCalledWith(
       { ...defaultFilters, dateFrom, dateTo },
@@ -319,7 +319,7 @@ describe('useOrders', () => {
       refetch: vi.fn(),
     });
 
-    const { result } = renderHook(() => useOrders({ ...defaultFilters, searchQuery }), {
+    const { result } = renderHook(() => useOrdersList({ ...defaultFilters, searchQuery }), {
       wrapper,
     });
 
@@ -339,7 +339,7 @@ describe('useOrders', () => {
       refetch: vi.fn(),
     });
 
-    const { result } = renderHook(() => useOrders({ ...defaultFilters, page: 2 }), { wrapper });
+    const { result } = renderHook(() => useOrdersList({ ...defaultFilters, page: 2 }), { wrapper });
 
     expect(result.current.page).toBe(2);
     expect(result.current.totalPages).toBe(5);
@@ -348,7 +348,7 @@ describe('useOrders', () => {
   it('should handle server-side sorting', () => {
     renderHook(
       () =>
-        useOrders({
+        useOrdersList({
           ...defaultFilters,
           sortBy: 'orderDate',
           sortOrder: 'desc',
@@ -372,7 +372,7 @@ describe('useOrders', () => {
 
     renderHook(
       () =>
-        useOrders({
+        useOrdersList({
           ...defaultFilters,
           statuses: ['completed'],
           searchQuery: 'Product',
@@ -413,7 +413,7 @@ describe('useOrders', () => {
       isPending: true,
     });
 
-    const { result } = renderHook(() => useOrders(defaultFilters), { wrapper });
+    const { result } = renderHook(() => useOrderActions('org_123'), { wrapper });
 
     expect(result.current.isCreating).toBe(true);
     expect(result.current.isUpdating).toBe(true);
@@ -436,14 +436,14 @@ describe('useOrders', () => {
       isLoading: false,
     });
 
-    const { result } = renderHook(() => useOrders(defaultFilters), { wrapper });
+    const { result } = renderHook(() => useOrdersList(defaultFilters), { wrapper });
 
     expect(result.current.error).toEqual(mockError);
     expect(result.current.orders).toEqual([]);
   });
 
   it('should preserve previous data during refetch (placeholderData)', () => {
-    const { result } = renderHook(() => useOrders(defaultFilters), { wrapper });
+    const { result } = renderHook(() => useOrdersList(defaultFilters), { wrapper });
 
     expect(trpc.orders.list.useQuery).toHaveBeenCalledWith(
       defaultFilters,
@@ -477,7 +477,7 @@ describe('useOrders', () => {
       isLoading: false,
     });
 
-    const { result } = renderHook(() => useOrders(invalidFilters), { wrapper });
+    const { result } = renderHook(() => useOrdersList(invalidFilters), { wrapper });
 
     expect(trpc.orders.list.useQuery).toHaveBeenCalledWith(
       invalidFilters,

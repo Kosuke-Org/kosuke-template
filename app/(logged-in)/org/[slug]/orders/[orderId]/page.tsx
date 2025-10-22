@@ -29,7 +29,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Field, FieldContent, FieldError } from '@/components/ui/field';
 import { trpc } from '@/lib/trpc/client';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
-import { useOrders } from '@/hooks/use-orders';
+import { useOrderActions } from '@/hooks/use-orders';
 import { orderStatusEnum, type OrderStatus } from '@/lib/db/schema';
 import { statusColors } from '../utils';
 import { format } from 'date-fns';
@@ -65,7 +65,7 @@ interface OrderDetailPageProps {
 export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { activeOrganization, isLoading: isLoadingOrg } = useActiveOrganization();
+  const { activeOrgId } = useActiveOrganization();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -80,9 +80,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     }
   );
 
-  const { updateOrder, deleteOrder, isDeleting } = useOrders({
-    organizationId: activeOrganization?.id ?? '',
-  });
+  const { updateOrder, deleteOrder, isDeleting } = useOrderActions(activeOrgId ?? '');
 
   const handleDelete = async () => {
     await deleteOrder(resolvedParams.orderId);
@@ -150,7 +148,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     await updateOrder(result.data);
   };
 
-  if (isLoadingOrg || isLoading) {
+  if (isLoading) {
     return <OrderDetailSkeleton />;
   }
 

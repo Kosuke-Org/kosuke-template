@@ -1,5 +1,5 @@
 /**
- * Custom hook for order operations
+ * Custom hooks for order operations
  * Uses tRPC for type-safe order management with inferred types
  */
 
@@ -18,10 +18,10 @@ type CreateOrderInput = RouterInput['orders']['create'];
 type UpdateOrderInput = RouterInput['orders']['update'];
 type OrderListFilters = RouterInput['orders']['list'];
 
-export function useOrders(filters: OrderListFilters) {
-  const { toast } = useToast();
-  const utils = trpc.useUtils();
-
+/**
+ * Hook for order list operations (queries)
+ */
+export function useOrdersList(filters: OrderListFilters) {
   const {
     data: ordersData,
     isLoading,
@@ -41,6 +41,26 @@ export function useOrders(filters: OrderListFilters) {
       enabled: !!filters?.organizationId,
     }
   );
+
+  return {
+    orders: ordersData?.orders ?? [],
+    total: ordersData?.total ?? 0,
+    page: ordersData?.page ?? 1,
+    limit: ordersData?.limit ?? 10,
+    totalPages: ordersData?.totalPages ?? 0,
+    stats,
+    isLoading,
+    isLoadingStats,
+    error,
+  };
+}
+
+/**
+ * Hook for order mutations (create, update, delete, export)
+ */
+export function useOrderActions(organizationId: string) {
+  const { toast } = useToast();
+  const utils = trpc.useUtils();
 
   const createOrder = trpc.orders.create.useMutation({
     onSuccess: () => {
@@ -115,20 +135,10 @@ export function useOrders(filters: OrderListFilters) {
   });
 
   return {
-    orders: ordersData?.orders ?? [],
-    total: ordersData?.total ?? 0,
-    page: ordersData?.page ?? 1,
-    limit: ordersData?.limit ?? 10,
-    totalPages: ordersData?.totalPages ?? 0,
-    stats,
-    isLoading,
-    isLoadingStats,
-    error,
     createOrder: (input: CreateOrderInput) => createOrder.mutateAsync(input),
     updateOrder: (input: UpdateOrderInput) => updateOrder.mutateAsync(input),
     deleteOrder: (id: string) => deleteOrder.mutateAsync({ id }),
-    exportOrders: ({ organizationId, type }: { organizationId: string; type: ExportType }) =>
-      exportOrders.mutateAsync({ organizationId, type }),
+    exportOrders: (type: ExportType) => exportOrders.mutateAsync({ organizationId, type }),
     isCreating: createOrder.isPending,
     isUpdating: updateOrder.isPending,
     isDeleting: deleteOrder.isPending,

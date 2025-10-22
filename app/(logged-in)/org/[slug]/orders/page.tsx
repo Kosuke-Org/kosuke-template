@@ -11,7 +11,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useOrders } from '@/hooks/use-orders';
+import { useOrderActions, useOrdersList } from '@/hooks/use-orders';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
 import { useTableSearch } from '@/hooks/use-table-search';
 import { useTableSorting } from '@/hooks/use-table-sorting';
@@ -96,22 +96,7 @@ export default function OrgOrdersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
-  const {
-    orders,
-    total,
-    totalPages,
-    stats,
-    isLoading,
-    isLoadingStats,
-    createOrder,
-    updateOrder,
-    deleteOrder,
-    exportOrders,
-    isCreating,
-    isUpdating,
-    isDeleting,
-    isExporting,
-  } = useOrders({
+  const { orders, total, totalPages, stats, isLoading, isLoadingStats } = useOrdersList({
     organizationId: activeOrganization?.id ?? '',
     statuses: filters.selectedStatuses.length > 0 ? filters.selectedStatuses : undefined,
     searchQuery: searchValue.trim() || undefined,
@@ -127,6 +112,17 @@ export default function OrgOrdersPage() {
     sortBy,
     sortOrder,
   });
+
+  const {
+    createOrder,
+    updateOrder,
+    deleteOrder,
+    exportOrders,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    isExporting,
+  } = useOrderActions(activeOrganization?.id ?? '');
 
   const handleClearFilters = () => {
     resetFilters();
@@ -224,7 +220,7 @@ export default function OrgOrdersPage() {
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
         // Export handler
-        onExport={(type) => exportOrders({ organizationId: activeOrganization?.id ?? '', type })}
+        onExport={(type) => exportOrders(type)}
         isExporting={isExporting}
       />
 
