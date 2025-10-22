@@ -244,10 +244,10 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
               value={order.status}
               onValueChange={(value) => handleUpdate('status', value as OrderStatus)}
             >
-              <SelectTrigger className="[&_svg]:!hidden [&_svg]:fill-red-300 w-full border-0 bg-transparent dark:bg-transparent dark:hover:bg-transparent hover:bg-transparent">
+              <SelectTrigger className="[&>svg]:hidden w-full border-0 bg-transparent dark:bg-transparent dark:hover:bg-transparent hover:bg-transparent">
                 <Badge className={statusColors[order.status]}>{order.status}</Badge>
               </SelectTrigger>
-              <SelectContent className="!w-[120px]">
+              <SelectContent>
                 {orderStatusEnum.enumValues.map((value) => (
                   <SelectItem key={value} value={value}>
                     {value}
