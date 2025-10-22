@@ -16,45 +16,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Generate org-aware navigation items
   const navItems = React.useMemo(() => {
-    if (!activeOrganization) {
-      return {
-        navMain: [
-          {
-            title: 'Dashboard',
-            url: '/dashboard',
-            icon: SquareTerminal,
-            isActive: true,
-          },
-          {
-            title: 'Tasks',
-            url: '/tasks',
-            icon: CheckSquare,
-          },
-          {
-            title: 'Orders',
-            url: '/orders',
-            icon: ReceiptText,
-          },
-          {
-            title: 'Docs',
-            url: '/docs',
-            icon: FileText,
-          },
-        ],
-        navSecondary: [
-          {
-            title: 'Support',
-            url: '#',
-            icon: LifeBuoy,
-          },
-          {
-            title: 'Feedback',
-            url: '#',
-            icon: Send,
-          },
-        ],
-      };
-    }
+    if (!activeOrganization) return { navMain: [], navSecondary: [] };
 
     const orgPrefix = `/org/${activeOrganization.slug}`;
 
@@ -103,7 +65,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarOrgSwitcher />
       </SidebarHeader>
       <SidebarContent>
-        {isLoading ? (
+        {isLoading || !activeOrganization ? (
           <div className="space-y-2 p-2">
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
