@@ -133,18 +133,8 @@ export default function OrgOrdersPage() {
     setDeleteDialogOpen(true);
   };
 
-  if (isLoadingOrg || (isLoading && page === 1)) {
+  if (isLoadingOrg || (isLoading && page === 1) || !activeOrganization) {
     return <OrdersPageSkeleton />;
-  }
-
-  if (!activeOrganization) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-2">
-          <p className="text-sm text-muted-foreground">No organization selected</p>
-        </div>
-      </div>
-    );
   }
 
   return (

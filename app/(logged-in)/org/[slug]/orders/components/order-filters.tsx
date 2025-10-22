@@ -117,9 +117,7 @@ export function OrderFilters({
           <ListFilter />
           Filters
           {activeFiltersCount > 0 && (
-            <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-              {activeFiltersCount}
-            </Badge>
+            <Badge className="w-5 h-5 p-0 text-xs">{activeFiltersCount}</Badge>
           )}
         </Button>
       </PopoverTrigger>
@@ -290,21 +288,21 @@ export function ActiveFilterBadges({
         <Badge
           key={status}
           variant="outline"
-          className={`h-7 gap-1 pl-2 pr-1 ${statusColors[status]}`}
+          className={cn('gap-1 pl-2 pr-1', statusColors[status])}
         >
-          {statusOptions.find((s) => s.value === status)?.label}
+          {status}
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onStatusesChange(selectedStatuses.filter((s) => s !== status))}
-            className="h-4 w-4 p-0 hover:bg-transparent"
+            className="h-4 w-4 p-0 hover:bg-transparent hover:text-current"
           >
-            <X className="h-3 w-3" />
+            <X />
           </Button>
         </Badge>
       ))}
       {(dateFrom || dateTo) && (
-        <Badge variant="secondary" className="h-7 gap-2 pl-2 pr-1">
+        <Badge variant="secondary" className="gap-2 pl-2 pr-1">
           <CalendarIcon />
           {dateFrom && dateTo
             ? `${format(dateFrom, 'MMM d')} - ${format(dateTo, 'MMM d')}`

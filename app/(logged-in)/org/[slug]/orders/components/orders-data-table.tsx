@@ -95,7 +95,7 @@ interface OrdersDataTableProps {
   isExporting: boolean;
 }
 
-function TableSkeleton() {
+export function TableSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 5 }).map((_, i) => (
@@ -311,18 +311,12 @@ export function OrdersDataTable({
                 <TableBody>
                   {orders.map((order) => (
                     <TableRow key={order.id}>
-                      <TableCell className="font-medium">{order.id.substring(0, 8)}</TableCell>
+                      <TableCell className="font-medium">{order.id}</TableCell>
+                      <TableCell>{order.customerName}</TableCell>
                       <TableCell>
-                        <div className="font-medium">{order.customerName}</div>
+                        <Badge className={statusColors[order.status]}>{order.status}</Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={statusColors[order.status]}>
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-medium pl-5">
-                        {formatCurrency(order.amount)}
-                      </TableCell>
+                      <TableCell className="pl-5">{formatCurrency(order.amount)}</TableCell>
                       <TableCell className="pl-5">{formatDate(order.orderDate)}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
