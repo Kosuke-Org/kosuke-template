@@ -13,6 +13,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOrders } from '@/hooks/use-orders';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useTableSearch } from '@/hooks/use-table-search';
+import { useTableSorting } from '@/hooks/use-table-sorting';
+import { useTablePagination } from '@/hooks/use-table-pagination';
+import { useTableFilters } from '@/hooks/use-table-filters';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,16 +65,31 @@ function OrdersPageSkeleton() {
 export default function OrgOrdersPage() {
   const router = useRouter();
   const { activeOrganization, isLoading: isLoadingOrg } = useActiveOrganization();
-  const [selectedStatuses, setSelectedStatuses] = useState<OrderStatus[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [dateFrom, setDateFrom] = useState<Date | undefined>();
-  const [dateTo, setDateTo] = useState<Date | undefined>();
-  const [minAmount, setMinAmount] = useState(0);
-  const [maxAmount, setMaxAmount] = useState(10000);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [sortBy, setSortBy] = useState<'orderDate' | 'amount'>('orderDate');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Reusable table hooks
+  const { searchValue, setSearchValue } = useTableSearch({
+    initialValue: '',
+    debounceMs: 300,
+    onSearchChange: () => {}, // Actual search happens via searchValue in query
+  });
+
+  const { sortBy, sortOrder, handleSort } = useTableSorting<'orderDate' | 'amount'>({
+    initialSortBy: 'orderDate',
+    initialSortOrder: 'desc',
+  });
+
+  const { page, pageSize, setPage, setPageSize, goToFirstPage } = useTablePagination({
+    initialPage: 1,
+    initialPageSize: 10,
+  });
+
+  const { filters, updateFilter, resetFilters } = useTableFilters({
+    selectedStatuses: [] as OrderStatus[],
+    dateFrom: undefined as Date | undefined,
+    dateTo: undefined as Date | undefined,
+    minAmount: 0,
+    maxAmount: 10000,
+  });
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -94,13 +113,15 @@ export default function OrgOrdersPage() {
     isExporting,
   } = useOrders({
     organizationId: activeOrganization?.id ?? '',
-    statuses: selectedStatuses.length > 0 ? selectedStatuses : undefined,
-    searchQuery: searchQuery.trim() || undefined,
-    dateFrom,
+    statuses: filters.selectedStatuses.length > 0 ? filters.selectedStatuses : undefined,
+    searchQuery: searchValue.trim() || undefined,
+    dateFrom: filters.dateFrom,
     // Adjust dateTo to include the entire end date (date picker returns midnight, we need end of day)
-    dateTo: dateTo ? new Date(new Date(dateTo).setHours(23, 59, 59, 999)) : undefined,
-    minAmount: minAmount > 0 ? minAmount : undefined,
-    maxAmount: maxAmount < 10000 ? maxAmount : undefined,
+    dateTo: filters.dateTo
+      ? new Date(new Date(filters.dateTo).setHours(23, 59, 59, 999))
+      : undefined,
+    minAmount: filters.minAmount > 0 ? filters.minAmount : undefined,
+    maxAmount: filters.maxAmount < 10000 ? filters.maxAmount : undefined,
     page,
     limit: pageSize,
     sortBy,
@@ -108,12 +129,8 @@ export default function OrgOrdersPage() {
   });
 
   const handleClearFilters = () => {
-    setSelectedStatuses([]);
-    setDateFrom(undefined);
-    setDateTo(undefined);
-    setMinAmount(0);
-    setMaxAmount(10000);
-    setPage(1);
+    resetFilters();
+    goToFirstPage();
   };
 
   const selectedOrder = orders.find((o) => o.id === selectedOrderId);
@@ -168,48 +185,41 @@ export default function OrgOrdersPage() {
         page={page}
         pageSize={pageSize}
         totalPages={totalPages}
-        searchQuery={searchQuery}
-        sortBy={sortBy}
-        sortOrder={sortOrder}
         isLoading={isLoading}
         // Filter props
-        selectedStatuses={selectedStatuses}
-        dateFrom={dateFrom}
-        dateTo={dateTo}
-        minAmount={minAmount}
-        maxAmount={maxAmount}
+        searchQuery={searchValue}
+        selectedStatuses={filters.selectedStatuses}
+        dateFrom={filters.dateFrom}
+        dateTo={filters.dateTo}
+        minAmount={filters.minAmount}
+        maxAmount={filters.maxAmount}
+        // Sorting props
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSearchChange={setSearchValue}
         onStatusesChange={(statuses) => {
-          setSelectedStatuses(statuses);
-          setPage(1);
+          updateFilter('selectedStatuses', statuses);
+          goToFirstPage();
         }}
         onDateFromChange={(date) => {
-          setDateFrom(date);
-          setPage(1);
+          updateFilter('dateFrom', date);
+          goToFirstPage();
         }}
         onDateToChange={(date) => {
-          setDateTo(date);
-          setPage(1);
+          updateFilter('dateTo', date);
+          goToFirstPage();
         }}
         onAmountRangeChange={(min, max) => {
-          setMinAmount(min);
-          setMaxAmount(max);
-          setPage(1);
+          updateFilter('minAmount', min);
+          updateFilter('maxAmount', max);
+          goToFirstPage();
         }}
         onClearFilters={handleClearFilters}
-        // Action handlers
+        onSortChange={handleSort}
+        // Pagination handlers
         onPageChange={setPage}
-        onPageSizeChange={(size) => {
-          setPageSize(size);
-          setPage(1);
-        }}
-        onSearchChange={(query) => {
-          setSearchQuery(query);
-          setPage(1);
-        }}
-        onSortChange={(column, order) => {
-          setSortBy(column);
-          setSortOrder(order);
-        }}
+        onPageSizeChange={setPageSize}
+        // Action handlers
         onView={handleViewClick}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}

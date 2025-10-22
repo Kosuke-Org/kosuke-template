@@ -1,30 +1,14 @@
 /**
  * Orders DataTable Component
- * Displays orders in a table with sorting, filtering, search, and pagination
+ * TanStack Table implementation with server-side pagination, sorting, and filtering
  */
 
 'use client';
 
-import {
-  MoreHorizontal,
-  Edit,
-  Trash,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  Info,
-  Hash,
-  User,
-  CircleDollarSign,
-  ChevronDown,
-  Loader2,
-  X,
-  Eye,
-} from 'lucide-react';
+import * as React from 'react';
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { Search, X, ChevronDown, Loader2 } from 'lucide-react';
+
 import {
   Table,
   TableBody,
@@ -33,31 +17,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { OrderStatus } from '@/lib/types';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { AppRouter } from '@/lib/trpc/router';
 import type { inferRouterOutputs } from '@trpc/server';
+import type { OrderStatus } from '@/lib/types';
 import { exportTypeEnum, type ExportType } from '@/lib/trpc/schemas/orders';
+import { getOrderColumns } from './orders-columns';
+import { DataTablePagination } from './data-table-pagination';
 import { OrderFilters, ActiveFilterBadges } from './order-filters';
-import { MAX_AMOUNT, statusColors } from '../utils';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { MAX_AMOUNT } from '../utils';
 
 // Infer OrderWithDetails from tRPC router output
 type RouterOutput = inferRouterOutputs<AppRouter>;
@@ -69,26 +41,28 @@ interface OrdersDataTableProps {
   page: number;
   pageSize: number;
   totalPages: number;
-  searchQuery: string;
-  sortBy: 'orderDate' | 'amount';
-  sortOrder: 'asc' | 'desc';
   isLoading: boolean;
   // Filter props
+  searchQuery: string;
   selectedStatuses: OrderStatus[];
   dateFrom?: Date;
   dateTo?: Date;
   minAmount: number;
   maxAmount: number;
+  // Sorting props
+  sortBy: 'orderDate' | 'amount';
+  sortOrder: 'asc' | 'desc';
+  onSearchChange: (query: string) => void;
   onStatusesChange: (statuses: OrderStatus[]) => void;
   onDateFromChange: (date?: Date) => void;
   onDateToChange: (date?: Date) => void;
   onAmountRangeChange: (min: number, max: number) => void;
   onClearFilters: () => void;
-  // Action handlers
+  onSortChange: (column: 'orderDate' | 'amount') => void;
+  // Pagination handlers
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
-  onSearchChange: (query: string) => void;
-  onSortChange: (column: 'orderDate' | 'amount', order: 'asc' | 'desc') => void;
+  // Action handlers
   onView: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
@@ -119,67 +93,50 @@ export function OrdersDataTable({
   page,
   pageSize,
   totalPages,
-  searchQuery,
-  sortBy,
-  sortOrder,
   isLoading,
-  // Filter props
+  searchQuery,
   selectedStatuses,
   dateFrom,
   dateTo,
   minAmount,
   maxAmount,
+  sortBy,
+  sortOrder,
+  onSearchChange,
   onStatusesChange,
   onDateFromChange,
   onDateToChange,
   onAmountRangeChange,
   onClearFilters,
-  // Action handlers
+  onSortChange,
   onPageChange,
   onPageSizeChange,
-  onSearchChange,
-  onSortChange,
   onView,
   onEdit,
   onDelete,
-  // Export handler
   onExport,
   isExporting,
 }: OrdersDataTableProps) {
-  const formatCurrency = (amount: string) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(parseFloat(amount));
-  };
+  const columns = React.useMemo(
+    () =>
+      getOrderColumns({ onView, onEdit, onDelete }, { sortBy, sortOrder, onSort: onSortChange }),
+    [onView, onEdit, onDelete, sortBy, sortOrder, onSortChange]
+  );
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    }).format(new Date(date));
-  };
-
-  const getSortIcon = (column: string) => {
-    if (sortBy !== column) return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    return sortOrder === 'asc' ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
-    ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
-    );
-  };
-
-  const handleSort = (column: 'orderDate' | 'amount') => {
-    if (sortBy === column) {
-      onSortChange(column, sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      onSortChange(column, 'desc');
-    }
-  };
-
-  const startIndex = (page - 1) * pageSize + 1;
-  const endIndex = Math.min(page * pageSize, total);
+  const table = useReactTable({
+    data: orders,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    manualSorting: true,
+    pageCount: totalPages,
+    state: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
+    },
+  });
 
   const activeFiltersCount =
     selectedStatuses.length +
@@ -265,161 +222,62 @@ export function OrdersDataTable({
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <h3 className="font-semibold text-lg mb-1">No orders found</h3>
             <p className="text-sm text-muted-foreground">
-              {searchQuery
+              {searchQuery || activeFiltersCount > 0
                 ? 'Try adjusting your filters'
                 : 'Create your first order to get started'}
             </p>
           </div>
         ) : (
-          <>
+          <div className="space-y-4">
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>
-                      <div className="flex gap-2 items-center">
-                        <Hash size={16} />
-                        Order
-                      </div>
-                    </TableHead>
-                    <TableHead>
-                      <div className="flex gap-2 items-center">
-                        <User size={16} />
-                        Customer
-                      </div>
-                    </TableHead>
-                    <TableHead>
-                      <div className="flex gap-2 items-center">
-                        <Info size={16} />
-                        Status
-                      </div>
-                    </TableHead>
-                    <TableHead>
-                      <Button variant="ghost" onClick={() => handleSort('amount')}>
-                        <CircleDollarSign />
-                        Amount
-                        {getSortIcon('amount')}
-                      </Button>
-                    </TableHead>
-                    <TableHead>
-                      <Button variant="ghost" onClick={() => handleSort('orderDate')}>
-                        <Calendar />
-                        Date
-                        {getSortIcon('orderDate')}
-                      </Button>
-                    </TableHead>
-                    <TableHead className="w-50"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.map((order) => (
-                    <TableRow
-                      key={order.id}
-                      className="cursor-pointer"
-                      onClick={() => onView(order.id)}
-                    >
-                      <TableCell className="font-medium">{order.id}</TableCell>
-                      <TableCell>{order.customerName}</TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[order.status]}>{order.status}</Badge>
-                      </TableCell>
-                      <TableCell className="pl-5">{formatCurrency(order.amount)}</TableCell>
-                      <TableCell className="pl-5">{formatDate(order.orderDate)}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onView(order.id);
-                              }}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onEdit(order.id);
-                              }}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDelete(order.id);
-                              }}
-                              className="text-red-600"
-                            >
-                              <Trash className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => {
+                        return (
+                          <TableHead key={header.id}>
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())}
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
                   ))}
+                </TableHeader>
+                <TableBody>
+                  {table.getRowModel().rows?.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        className="cursor-pointer"
+                        onClick={() => onView(row.original.id)}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={columns.length} className="h-24 text-center">
+                        No results.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
-
-            {/* Pagination */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
-              <div className="text-sm text-muted-foreground">
-                Showing {startIndex} to {endIndex} of {total} orders
-              </div>
-              <div className="flex items-center gap-2">
-                <Select
-                  value={pageSize.toString()}
-                  onValueChange={(value) => onPageSizeChange(Number(value))}
-                >
-                  <SelectTrigger size="sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10 / page</SelectItem>
-                    <SelectItem value="20">20 / page</SelectItem>
-                    <SelectItem value="50">50 / page</SelectItem>
-                    <SelectItem value="100">100 / page</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onPageChange(page - 1)}
-                    disabled={page === 1}
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft />
-                  </Button>
-                  <div className="text-sm px-2">
-                    Page {page} of {totalPages}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onPageChange(page + 1)}
-                    disabled={page >= totalPages}
-                    aria-label="Next page"
-                  >
-                    <ChevronRight />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </>
+            <DataTablePagination
+              table={table}
+              totalRecords={total}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+          </div>
         )}
       </CardContent>
     </Card>
