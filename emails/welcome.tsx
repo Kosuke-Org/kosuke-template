@@ -1,14 +1,19 @@
 import { Section, Text, Button, Hr } from '@react-email/components';
-import { BaseLayout } from './base-layout';
+import { BaseLayout } from '@/lib/email/templates';
 
-export interface WelcomeEmailProps {
+interface WelcomeEmailProps {
   firstName: string;
   email: string;
   dashboardUrl?: string;
   settingsUrl?: string;
 }
 
-export function WelcomeEmail({ firstName, email, dashboardUrl, settingsUrl }: WelcomeEmailProps) {
+export const WelcomeEmail = ({
+  firstName,
+  email,
+  dashboardUrl,
+  settingsUrl,
+}: WelcomeEmailProps) => {
   return (
     <BaseLayout preview={`Welcome to Kosuke Template, ${firstName}! 🎉`}>
       {/* Welcome Message */}
@@ -81,6 +86,4 @@ export function WelcomeEmail({ firstName, email, dashboardUrl, settingsUrl }: We
       </Section>
     </BaseLayout>
   );
-}
-
-export default WelcomeEmail;
+};

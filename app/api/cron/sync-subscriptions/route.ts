@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { runPeriodicSync, checkSyncHealth } from '@/lib/billing/cron-sync';
+import { AUTH_ERRORS } from '@/lib/auth/constants';
 
 /**
  * Vercel Cron endpoint for periodic subscription syncing
@@ -26,13 +27,13 @@ export async function GET(request: Request) {
 
       if (providedSecret !== cronSecret) {
         console.warn('🚫 Unauthorized cron request attempt');
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return NextResponse.json({ error: AUTH_ERRORS.UNAUTHORIZED }, { status: 401 });
       }
     } else {
       // In development, warn if CRON_SECRET is not set
       if (process.env.NODE_ENV === 'production') {
         console.error('⚠️ CRON_SECRET not set in production environment');
-        return NextResponse.json({ error: 'Configuration error' }, { status: 500 });
+        return NextResponse.json({ error: AUTH_ERRORS.CONFIGURATION_ERROR }, { status: 500 });
       } else {
         console.warn('⚠️ CRON_SECRET not set - skipping auth check in development');
       }

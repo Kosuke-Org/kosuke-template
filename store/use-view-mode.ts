@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 
-export type ViewMode = 'list' | 'kanban';
+type ViewMode = 'list' | 'kanban';
 
 interface ViewModeState {
   viewMode: ViewMode;

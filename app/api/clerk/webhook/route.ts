@@ -22,6 +22,7 @@ import type {
   ClerkWebhookUser,
 } from '@/lib/types';
 import { clerkClient } from '@clerk/nextjs/server';
+import { AUTH_ERRORS } from '@/lib/auth/constants';
 
 export async function POST(req: NextRequest) {
   console.log('🔔 Clerk webhook received');
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
   // Check if we have all required headers
   if (!svix_id || !svix_timestamp || !svix_signature) {
     console.error('❌ Missing required Svix headers');
-    return NextResponse.json({ error: 'Missing required headers' }, { status: 400 });
+    return NextResponse.json({ error: AUTH_ERRORS.MISSING_HEADERS }, { status: 400 });
   }
 
   // Get the body

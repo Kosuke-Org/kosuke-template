@@ -62,6 +62,7 @@ pnpm run lint            # Run ESLint
 pnpm run typecheck       # Run TypeScript type checking
 pnpm run format          # Format code with Prettier
 pnpm run format:check    # Check code formatting
+pnpm run knip            # Declutter project
 
 # Shadcn UI Management
 pnpm run shadcn:update   # Update all shadcn components
@@ -73,11 +74,13 @@ pnpm run shadcn:check    # Check for available component updates
 - **ESLint**: Catches unused variables, imports, style issues
 - **TypeScript**: Validates types across entire codebase
 - **Tests**: Ensures functionality works as expected
+- **Knip**: Ensures no duplicate or unusued code is pushed to production
 
 ```bash
 pnpm run lint      # Must pass with 0 errors
 pnpm run typecheck # Must pass with 0 errors
 pnpm test          # All tests must pass
+pnpm knip          # Must pass with 0 errors
 ```
 
 These checks run in pre-commit hooks and CI/CD. Fix all issues before marking work complete.

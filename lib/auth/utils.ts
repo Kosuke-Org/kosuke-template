@@ -1,28 +1,5 @@
 import { ClerkUserType, ClerkWebhookUser, AuthState } from '@/lib/types';
 import { ActivityType } from '@/lib/db/schema';
-import { SYNC_INTERVALS } from './constants';
-
-/**
- * Check if user sync is stale (older than 24 hours)
- */
-export function isSyncStale(lastSyncedAt: Date): boolean {
-  const threshold = new Date(Date.now() - SYNC_INTERVALS.STALE_THRESHOLD_HOURS * 60 * 60 * 1000);
-  return lastSyncedAt < threshold;
-}
-
-/**
- * Get user initials for avatar fallback
- */
-export function getUserInitials(user: ClerkUserType | null): string {
-  if (!user?.fullName && !user?.firstName) return 'U';
-  const name = user?.fullName || user?.firstName || '';
-  return name
-    .split(' ')
-    .map((part: string) => part[0])
-    .join('')
-    .toUpperCase()
-    .substring(0, 2);
-}
 
 /**
  * Extract user data from Clerk API user object

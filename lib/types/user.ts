@@ -1,9 +1,5 @@
 import type { User as ClerkUser } from '@clerk/nextjs/server';
 
-// Base types extending schema
-export type { User, ActivityType } from '@/lib/db/schema';
-
-// Clerk User Types
 export type ClerkUserType = ClerkUser;
 
 export interface LocalUser {
@@ -35,13 +31,6 @@ export interface AuthState {
 export interface UserSyncOptions {
   forceSync?: boolean;
   includeActivity?: boolean;
-}
-
-export interface UserSyncResponse {
-  success: boolean;
-  user?: UserSyncResult;
-  error?: string;
-  wasUpdated?: boolean;
 }
 
 // Notification settings types

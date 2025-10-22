@@ -43,6 +43,9 @@ jobs:
       - name: Run tests
         run: pnpm run test
 
+      - name: Run Knip
+        run: pnpm run knip
+
   test-engine:
     name: Test and Lint Engine Service
     runs-on: ubuntu-latest

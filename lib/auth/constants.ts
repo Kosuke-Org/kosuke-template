@@ -1,10 +1,3 @@
-// Sync Constants
-export const SYNC_INTERVALS = {
-  STALE_THRESHOLD_HOURS: 24,
-  WEBHOOK_RETRY_DELAY_MS: 1000,
-  MAX_RETRY_ATTEMPTS: 3,
-} as const;
-
 // Route Constants
 export const AUTH_ROUTES = {
   SIGN_IN: '/sign-in',

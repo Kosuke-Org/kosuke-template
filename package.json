@@ -27,7 +27,7 @@
     "typecheck": "tsc --noEmit",
     "typecheck:all": "pnpm run typecheck && pnpm run typecheck:engine",
     "typecheck:engine": "cd engine && uv run mypy .",
-    "check:all": "pnpm run lint:all && pnpm run typecheck:all && pnpm run test:all",
+    "check:all": "pnpm run lint:all && pnpm run typecheck:all && pnpm run test:all && pnpm run knip",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:prod": "drizzle-kit migrate --verbose",
@@ -38,7 +38,8 @@
     "email:dev": "email dev --dir emails --port 3001",
     "email:export": "email export --dir emails --out .react-email",
     "shadcn:update": "npx shadcn@canary add -a -y -o",
-    "shadcn:check": "npx shadcn@canary diff"
+    "shadcn:check": "npx shadcn@canary diff",
+    "knip": "knip"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.33.7",
@@ -94,7 +95,6 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.24",
     "input-otp": "^1.4.2",
-    "jose": "^6.0.10",
     "lucide-react": "^0.546.0",
     "next": "15.5.6",
     "next-themes": "^0.4.6",
@@ -114,7 +114,6 @@
     "svix": "^1.77.0",
     "tailwind-merge": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",
-    "tunnel-rat": "^0.1.2",
     "vaul": "^1.1.2",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
@@ -138,6 +137,8 @@
     "eslint-config-next": "15.2.4",
     "eslint-config-prettier": "^9.0.0",
     "husky": "^8.0.0",
+    "jsdom": "^27.0.1",
+    "knip": "^5.45.3",
     "lint-staged": "^15.0.0",
     "postcss": "^8.5.3",
     "prettier": "^3.2.0",
@@ -155,6 +156,9 @@
     "*.{js,jsx,ts,tsx}": [
       "prettier --write",
       "eslint --fix --max-warnings 0"
+    ],
+    "*.{yml,yaml,md,json}": [
+      "prettier --write"
     ]
   }
 }

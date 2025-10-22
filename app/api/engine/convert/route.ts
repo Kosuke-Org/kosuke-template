@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { ApiResponseHandler } from '@/lib/api';
-import { convertCurrency, EngineError } from '@/lib/engine/client';
+import { convertCurrency, EngineError } from '@/lib/engine';
 import type { 
   CurrencyConvertRequest
 } from '@/lib/types';
