@@ -17,6 +17,7 @@ type RouterInput = inferRouterInputs<AppRouter>;
 type CreateOrderInput = RouterInput['orders']['create'];
 type UpdateOrderInput = RouterInput['orders']['update'];
 type OrderListFilters = RouterInput['orders']['list'];
+type DeleteOrderInput = RouterInput['orders']['delete'];
 
 /**
  * Hook for order list operations (queries)
@@ -58,7 +59,7 @@ export function useOrdersList(filters: OrderListFilters) {
 /**
  * Hook for order mutations (create, update, delete, export)
  */
-export function useOrderActions(organizationId: string) {
+export function useOrderActions() {
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
@@ -137,8 +138,9 @@ export function useOrderActions(organizationId: string) {
   return {
     createOrder: (input: CreateOrderInput) => createOrder.mutateAsync(input),
     updateOrder: (input: UpdateOrderInput) => updateOrder.mutateAsync(input),
-    deleteOrder: (id: string) => deleteOrder.mutateAsync({ id }),
-    exportOrders: (type: ExportType) => exportOrders.mutateAsync({ organizationId, type }),
+    deleteOrder: (input: DeleteOrderInput) => deleteOrder.mutateAsync(input),
+    exportOrders: ({ type, organizationId }: { type: ExportType; organizationId: string }) =>
+      exportOrders.mutateAsync({ type, organizationId }),
     isCreating: createOrder.isPending,
     isUpdating: updateOrder.isPending,
     isDeleting: deleteOrder.isPending,

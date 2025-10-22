@@ -122,7 +122,7 @@ export default function OrgOrdersPage() {
     isUpdating,
     isDeleting,
     isExporting,
-  } = useOrderActions(activeOrganization?.id ?? '');
+  } = useOrderActions();
 
   const handleClearFilters = () => {
     resetFilters();
@@ -132,8 +132,8 @@ export default function OrgOrdersPage() {
   const selectedOrder = orders.find((o) => o.id === selectedOrderId);
 
   const handleDeleteOrder = async () => {
-    if (!selectedOrderId) return;
-    await deleteOrder(selectedOrderId);
+    if (!selectedOrderId || !activeOrganization) return;
+    await deleteOrder({ id: selectedOrderId, organizationId: activeOrganization.id });
     setDeleteDialogOpen(false);
     setSelectedOrderId(null);
   };
@@ -220,7 +220,10 @@ export default function OrgOrdersPage() {
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
         // Export handler
-        onExport={(type) => exportOrders(type)}
+        onExport={(type) => {
+          if (!activeOrganization) return;
+          exportOrders({ type, organizationId: activeOrganization.id });
+        }}
         isExporting={isExporting}
       />
 
@@ -229,6 +232,7 @@ export default function OrgOrdersPage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onSubmit={async (values) => {
+          if (!activeOrganization) return;
           await createOrder({
             ...values,
             organizationId: activeOrganization.id,
@@ -244,8 +248,13 @@ export default function OrgOrdersPage() {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         onSubmit={async (values) => {
-          if (!selectedOrderId) return;
-          await updateOrder({ id: selectedOrderId, ...values });
+          if (!selectedOrderId || !activeOrganization) return;
+
+          await updateOrder({
+            id: selectedOrderId,
+            organizationId: activeOrganization.id,
+            ...values,
+          });
         }}
         initialValues={
           selectedOrder

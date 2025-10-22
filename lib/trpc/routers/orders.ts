@@ -168,15 +168,13 @@ export const ordersRouter = router({
         notes: orders.notes,
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
-        organizationName: organizations.name,
-        organizationSlug: organizations.slug,
+        organizationId: orders.organizationId,
         userDisplayName: users.displayName,
         userEmail: users.email,
       })
       .from(orders)
-      .innerJoin(organizations, eq(orders.organizationId, organizations.id))
       .innerJoin(users, eq(orders.clerkUserId, users.clerkUserId))
-      .where(eq(orders.id, input.id))
+      .where(and(eq(orders.id, input.id), eq(orders.organizationId, input.organizationId)))
       .limit(1);
 
     if (order.length === 0) {
@@ -230,7 +228,11 @@ export const ordersRouter = router({
    */
   update: protectedProcedure.input(updateOrderSchema).mutation(async ({ input }) => {
     // Verify order exists and user has access
-    const existingOrder = await db.select().from(orders).where(eq(orders.id, input.id)).limit(1);
+    const existingOrder = await db
+      .select()
+      .from(orders)
+      .where(and(eq(orders.id, input.id), eq(orders.organizationId, input.organizationId)))
+      .limit(1);
 
     if (existingOrder.length === 0) {
       throw new TRPCError({
@@ -259,7 +261,11 @@ export const ordersRouter = router({
    */
   delete: protectedProcedure.input(deleteOrderSchema).mutation(async ({ input }) => {
     // Verify order exists
-    const existingOrder = await db.select().from(orders).where(eq(orders.id, input.id)).limit(1);
+    const existingOrder = await db
+      .select()
+      .from(orders)
+      .where(and(eq(orders.id, input.id), eq(orders.organizationId, input.organizationId)))
+      .limit(1);
 
     if (existingOrder.length === 0) {
       throw new TRPCError({

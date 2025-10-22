@@ -29,6 +29,7 @@ export const createOrderSchema = z.object({
 
 export const updateOrderSchema = z.object({
   id: z.uuid(),
+  organizationId: z.uuid(),
   customerName: z.string().trim().min(1).max(255).optional(),
   amount: z
     .string()
@@ -58,8 +59,10 @@ export const orderListFiltersSchema = z
 
 export const deleteOrderSchema = z.object({
   id: z.uuid(),
+  organizationId: z.uuid(),
 });
 
 export const getOrderSchema = z.object({
   id: z.uuid(),
+  organizationId: z.uuid(),
 });

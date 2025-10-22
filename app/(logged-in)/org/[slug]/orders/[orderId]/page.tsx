@@ -73,17 +73,21 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   const utils = trpc.useUtils();
 
   const { data: order, isLoading } = trpc.orders.get.useQuery(
-    { id: resolvedParams.orderId },
+    {
+      id: resolvedParams.orderId,
+      organizationId: activeOrgId ?? '',
+    },
     {
       staleTime: 1000 * 60 * 2, // 2 minutes
-      enabled: !!resolvedParams.orderId,
+      enabled: !!resolvedParams.orderId && !!activeOrgId,
     }
   );
 
-  const { updateOrder, deleteOrder, isDeleting } = useOrderActions(activeOrgId ?? '');
+  const { updateOrder, deleteOrder, isDeleting } = useOrderActions();
 
   const handleDelete = async () => {
-    await deleteOrder(resolvedParams.orderId);
+    if (!activeOrgId) return;
+    await deleteOrder({ id: resolvedParams.orderId, organizationId: activeOrgId ?? '' });
     router.push(`/org/${resolvedParams.slug}/orders`);
   };
 
@@ -91,7 +95,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     field: keyof Omit<z.infer<typeof updateOrderSchema>, 'id'>,
     value: string | number | Date | OrderStatus
   ) => {
-    if (!order) return;
+    if (!order || !activeOrgId) return;
 
     // Clear previous error for this field
     setFieldErrors((prev) => {
@@ -101,7 +105,11 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     });
 
     // Validate using the schema (Zod will handle trimming)
-    const updates = { id: resolvedParams.orderId, [field]: value };
+    const updates = {
+      id: resolvedParams.orderId,
+      organizationId: activeOrgId,
+      [field]: value,
+    };
     const result = updateOrderSchema.safeParse(updates);
 
     if (!result.success) {
@@ -116,7 +124,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     field: keyof Omit<z.infer<typeof updateOrderSchema>, 'id'>,
     value: string | number | Date | OrderStatus
   ) => {
-    if (!order) return;
+    if (!order || !activeOrgId) return;
 
     setFieldErrors((prev) => {
       const next = { ...prev };
@@ -124,7 +132,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
       return next;
     });
 
-    const updates = { id: resolvedParams.orderId, [field]: value };
+    const updates = { id: resolvedParams.orderId, organizationId: activeOrgId, [field]: value };
     const result = updateOrderSchema.safeParse(updates);
 
     if (!result.success) {
@@ -140,15 +148,18 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     if (originalValue === processedValue) return;
 
     // Optimistic update with validated data
-    utils.orders.get.setData({ id: resolvedParams.orderId }, (old) => {
-      if (!old) return old;
-      return { ...old, [field]: processedValue };
-    });
+    utils.orders.get.setData(
+      { id: resolvedParams.orderId, organizationId: activeOrgId ?? '' },
+      (old) => {
+        if (!old) return old;
+        return { ...old, [field]: processedValue };
+      }
+    );
 
     await updateOrder(result.data);
   };
 
-  if (isLoading) {
+  if (isLoading || !activeOrgId) {
     return <OrderDetailSkeleton />;
   }
 
@@ -157,7 +168,8 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <h3 className="font-semibold text-lg mb-1">Order not found</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          The order you&apos;re looking for doesn&apos;t exist or has been deleted.
+          The order you&apos;re looking for doesn&apos;t exist, has been deleted, or you don&apos;t
+          have permission to view it.
         </p>
         <Button asChild>
           <Link href={`/org/${resolvedParams.slug}/orders`}>

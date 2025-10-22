@@ -203,7 +203,7 @@ describe('useOrdersList', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useOrderActions('org_123'), { wrapper });
+    const { result } = renderHook(() => useOrderActions(), { wrapper });
 
     await result.current.createOrder({
       organizationId: 'org_123',
@@ -243,9 +243,10 @@ describe('useOrdersList', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useOrderActions('org_123'), { wrapper });
+    const { result } = renderHook(() => useOrderActions(), { wrapper });
 
     await result.current.updateOrder({
+      organizationId: 'org_123',
       id: 'order_1',
       customerName: 'John Doe Updated',
       amount: '750.00',
@@ -254,6 +255,7 @@ describe('useOrdersList', () => {
     });
 
     expect(mockMutateAsync).toHaveBeenCalledWith({
+      organizationId: 'org_123',
       id: 'order_1',
       customerName: 'John Doe Updated',
       amount: '750.00',
@@ -271,11 +273,11 @@ describe('useOrdersList', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useOrderActions('org_123'), { wrapper });
+    const { result } = renderHook(() => useOrderActions(), { wrapper });
 
-    await result.current.deleteOrder('order_1');
+    await result.current.deleteOrder({ id: 'order_1', organizationId: 'org_123' });
 
-    expect(mockMutateAsync).toHaveBeenCalledWith({ id: 'order_1' });
+    expect(mockMutateAsync).toHaveBeenCalledWith({ id: 'order_1', organizationId: 'org_123' });
   });
 
   it('should filter orders by status', () => {
@@ -413,7 +415,7 @@ describe('useOrdersList', () => {
       isPending: true,
     });
 
-    const { result } = renderHook(() => useOrderActions('org_123'), { wrapper });
+    const { result } = renderHook(() => useOrderActions(), { wrapper });
 
     expect(result.current.isCreating).toBe(true);
     expect(result.current.isUpdating).toBe(true);
