@@ -22,19 +22,16 @@ export function useOrders(filters: OrderListFilters) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
-  // Fetch orders with server-side filtering, search, pagination, and sorting
   const {
     data: ordersData,
     isLoading,
     error,
-    refetch,
   } = trpc.orders.list.useQuery(filters, {
     staleTime: 1000 * 60 * 2, // 2 minutes
     placeholderData: (previousData) => previousData,
     enabled: !!filters?.organizationId,
   });
 
-  // Fetch order statistics
   const { data: stats, isLoading: isLoadingStats } = trpc.orders.getStats.useQuery(
     {
       organizationId: filters?.organizationId ?? '',
@@ -45,15 +42,12 @@ export function useOrders(filters: OrderListFilters) {
     }
   );
 
-  // Create order mutation
   const createOrder = trpc.orders.create.useMutation({
     onSuccess: () => {
       toast({
         title: 'Success',
         description: 'Order created successfully',
       });
-      refetch();
-      // Invalidate stats and list to refresh them
       utils.orders.getStats.invalidate();
       utils.orders.list.invalidate();
     },
@@ -66,15 +60,13 @@ export function useOrders(filters: OrderListFilters) {
     },
   });
 
-  // Update order mutation
   const updateOrder = trpc.orders.update.useMutation({
     onSuccess: () => {
       toast({
         title: 'Success',
         description: 'Order updated successfully',
       });
-      refetch();
-      // Invalidate stats to refresh them
+      utils.orders.list.invalidate();
       utils.orders.getStats.invalidate();
     },
     onError: (error) => {
@@ -86,16 +78,14 @@ export function useOrders(filters: OrderListFilters) {
     },
   });
 
-  // Delete order mutation
   const deleteOrder = trpc.orders.delete.useMutation({
     onSuccess: () => {
       toast({
         title: 'Success',
         description: 'Order deleted successfully',
       });
-      refetch();
-      // Invalidate stats to refresh them
       utils.orders.getStats.invalidate();
+      utils.orders.list.invalidate();
     },
     onError: (error) => {
       toast({

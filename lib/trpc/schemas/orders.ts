@@ -16,20 +16,20 @@ export const exportTypeEnum = z.enum(['csv', 'excel']);
 export type ExportType = z.infer<typeof exportTypeEnum>;
 
 export const createOrderSchema = z.object({
-  customerName: z.string().min(1, 'Customer name is required').max(255),
+  customerName: z.string().trim().min(1, 'Customer name is required').max(255),
   amount: z
     .string()
     .regex(/^\d+(\.\d{1,2})?$/, 'Invalid amount format')
     .refine((val) => parseFloat(val) > 0, 'Amount must be greater than 0'),
   orderDate: z.date().optional(),
   status: orderStatusZodEnum.optional(),
-  notes: z.string().max(1000).optional(),
+  notes: z.string().trim().max(1000).optional(),
   organizationId: z.uuid(),
 });
 
 export const updateOrderSchema = z.object({
   id: z.uuid(),
-  customerName: z.string().min(1).max(255).optional(),
+  customerName: z.string().trim().min(1).max(255).optional(),
   amount: z
     .string()
     .regex(/^\d+(\.\d{1,2})?$/, 'Invalid amount format')
@@ -37,7 +37,7 @@ export const updateOrderSchema = z.object({
     .optional(),
   orderDate: z.date().optional(),
   status: orderStatusZodEnum.optional(),
-  notes: z.string().max(1000).nullable().optional(),
+  notes: z.string().trim().max(1000).nullable().optional(),
 });
 
 export const orderListFiltersSchema = z

@@ -23,6 +23,7 @@ import {
   ChevronDown,
   Loader2,
   X,
+  Eye,
 } from 'lucide-react';
 import {
   Table,
@@ -88,6 +89,7 @@ interface OrdersDataTableProps {
   onPageSizeChange: (pageSize: number) => void;
   onSearchChange: (query: string) => void;
   onSortChange: (column: 'orderDate' | 'amount', order: 'asc' | 'desc') => void;
+  onView: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   // Export handler
@@ -137,6 +139,7 @@ export function OrdersDataTable({
   onPageSizeChange,
   onSearchChange,
   onSortChange,
+  onView,
   onEdit,
   onDelete,
   // Export handler
@@ -310,7 +313,11 @@ export function OrdersDataTable({
                 </TableHeader>
                 <TableBody>
                   {orders.map((order) => (
-                    <TableRow key={order.id}>
+                    <TableRow
+                      key={order.id}
+                      className="cursor-pointer"
+                      onClick={() => onView(order.id)}
+                    >
                       <TableCell className="font-medium">{order.id}</TableCell>
                       <TableCell>{order.customerName}</TableCell>
                       <TableCell>
@@ -321,17 +328,38 @@ export function OrdersDataTable({
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onEdit(order.id)}>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onView(order.id);
+                              }}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(order.id);
+                              }}
+                            >
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => onDelete(order.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(order.id);
+                              }}
                               className="text-red-600"
                             >
                               <Trash className="mr-2 h-4 w-4" />

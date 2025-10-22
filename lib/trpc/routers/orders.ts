@@ -162,6 +162,7 @@ export const ordersRouter = router({
         id: orders.id,
         customerName: orders.customerName,
         status: orders.status,
+        currency: orders.currency,
         amount: orders.amount,
         orderDate: orders.orderDate,
         notes: orders.notes,

@@ -6,6 +6,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -58,6 +59,7 @@ function OrdersPageSkeleton() {
 }
 
 export default function OrgOrdersPage() {
+  const router = useRouter();
   const { activeOrganization, isLoading: isLoadingOrg } = useActiveOrganization();
   const [selectedStatuses, setSelectedStatuses] = useState<OrderStatus[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -121,6 +123,11 @@ export default function OrgOrdersPage() {
     await deleteOrder(selectedOrderId);
     setDeleteDialogOpen(false);
     setSelectedOrderId(null);
+  };
+
+  const handleViewClick = (id: string) => {
+    if (!activeOrganization) return;
+    router.push(`/org/${activeOrganization.slug}/orders/${id}`);
   };
 
   const handleEditClick = (id: string) => {
@@ -203,6 +210,7 @@ export default function OrgOrdersPage() {
           setSortBy(column);
           setSortOrder(order);
         }}
+        onView={handleViewClick}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
         // Export handler
