@@ -31,10 +31,10 @@ import {
   type NewUserSubscription,
   type NewTask,
   type NewActivityLog,
-  type NewOrder,
   type TaskPriority,
-  type OrderStatus,
 } from '../schema';
+
+import type { NewOrder, OrderStatus } from '@/lib/types/order';
 
 const IS_PRODUCTION =
   process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';

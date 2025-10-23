@@ -8,4 +8,4 @@
  */
 
 // Re-export base types from schema
-export type { Order, NewOrder, OrderStatus } from '@/lib/db/schema';
+export type { NewOrder, OrderStatus } from '@/lib/db/schema';
