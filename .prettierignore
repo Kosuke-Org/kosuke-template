@@ -10,6 +10,7 @@ public
 .env*
 package-lock.json
 yarn.lock
+pnpm-lock.yaml
 bun.lock
 lib/db/migrations
 engine
