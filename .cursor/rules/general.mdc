@@ -95,6 +95,7 @@ These checks run in pre-commit hooks and CI/CD. Fix all issues before marking wo
 - **Relations**: Define proper relations for complex queries
 - **Connection**: Use the configured database instance from `./lib/db/drizzle.ts`
 - **Environment**: PostgreSQL runs on port 54321 locally via Docker Compose
+- **Avoid JSONB Fields**: NEVER use JSONB fields unless absolutely necessary. Prefer proper relational design with dedicated columns and foreign keys. JSONB should only be used for truly dynamic, unstructured data that cannot be modeled with proper schema. This maintains type safety, query performance, and database integrity.
 
 ```typescript
 // Example schema pattern with enum
