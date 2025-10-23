@@ -12,5 +12,5 @@ export const createCheckoutSchema = z.object({
 });
 
 export const syncActionSchema = z.object({
-  action: z.enum(['user', 'stale', 'emergency']).prefault('user'),
+  action: z.enum(['user', 'stale', 'emergency']).default('user'),
 });

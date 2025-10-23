@@ -24,6 +24,6 @@ export const updateDisplayNameSchema = z.object({
 
 export const updateUserPublicMetadataSchema = z.object({
   publicMetadata: z.object({
-    onboardingComplete: z.boolean().optional().prefault(false),
+    onboardingComplete: z.boolean().optional().default(false),
   }),
 });
