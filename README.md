@@ -196,7 +196,7 @@ bun run typecheck        # Run TypeScript type checking
 bun run format           # Format code with Prettier
 
 # Testing
-bun test                # Run all tests
+bun run test                # Run all tests
 bun run test:watch       # Watch mode
 bun run test:coverage    # Coverage report
 ```
@@ -262,7 +262,7 @@ bun run email:dev
 
 ```bash
 # All tests
-bun test
+bun run test
 
 # Watch mode (auto-rerun on changes)
 bun run test:watch

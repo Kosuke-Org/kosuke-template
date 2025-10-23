@@ -53,7 +53,7 @@ bun run dev             # Start development server with hot reload
 docker compose up -d    # Start PostgreSQL database locally
 
 # Testing
-bun test                # Run Vitest test suite
+bun run test                # Run Vitest test suite
 bun run test:watch      # Run tests in watch mode
 bun run test:coverage   # Generate test coverage report
 
@@ -79,7 +79,7 @@ bun run shadcn:check    # Check for available component updates
 ```bash
 bun run lint      # Must pass with 0 errors
 bun run typecheck # Must pass with 0 errors
-bun test          # All tests must pass
+bun run test          # All tests must pass
 bun run knip      # Must pass with 0 errors
 ```
 

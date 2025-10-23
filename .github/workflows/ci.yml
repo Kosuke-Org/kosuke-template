@@ -40,7 +40,7 @@ jobs:
         run: bun run format:check
 
       - name: Run tests
-        run: bun test
+        run: bun run test
 
       - name: Run Knip
         run: bun run knip
