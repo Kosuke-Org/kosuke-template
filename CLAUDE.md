@@ -36,32 +36,32 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
 
 ```bash
 # Database Setup & Migrations
-pnpm run db:generate     # Generate Drizzle migrations from schema changes
-pnpm run db:migrate      # Apply pending migrations to database
-pnpm run db:migrate:prod # Apply migrations in production (verbose)
-pnpm run db:push         # Push schema changes directly (dev only)
-pnpm run db:studio       # Open Drizzle Studio for database inspection
-pnpm run db:seed         # Seed database with initial data
+bun run db:generate     # Generate Drizzle migrations from schema changes
+bun run db:migrate      # Apply pending migrations to database
+bun run db:migrate:prod # Apply migrations in production (verbose)
+bun run db:push         # Push schema changes directly (dev only)
+bun run db:studio       # Open Drizzle Studio for database inspection
+bun run db:seed         # Seed database with initial data
 
 # Development
-pnpm run dev             # Start development server with hot reload
+bun run dev             # Start development server with hot reload
 docker compose up -d    # Start PostgreSQL database locally
 
 # Testing
-pnpm test                # Run Vitest test suite
-pnpm run test:watch      # Run tests in watch mode
-pnpm run test:coverage   # Generate test coverage report
+bun test                # Run Vitest test suite
+bun run test:watch      # Run tests in watch mode
+bun run test:coverage   # Generate test coverage report
 
 # Code Quality
-pnpm run lint            # Run ESLint
-pnpm run typecheck       # Run TypeScript type checking
-pnpm run format          # Format code with Prettier
-pnpm run format:check    # Check code formatting
-pnpm run knip            # Declutter project
+bun run lint            # Run ESLint
+bun run typecheck       # Run TypeScript type checking
+bun run format          # Format code with Prettier
+bun run format:check    # Check code formatting
+bun run knip            # Declutter project
 
 # Shadcn UI Management
-pnpm run shadcn:update   # Update all shadcn components
-pnpm run shadcn:check    # Check for available component updates
+bun run shadcn:update   # Update all shadcn components
+bun run shadcn:check    # Check for available component updates
 ```
 
 ### Code Quality Checks
@@ -72,10 +72,10 @@ pnpm run shadcn:check    # Check for available component updates
 - **Knip**: Ensures no duplicate or unusued code is pushed to production
 
 ```bash
-pnpm run lint      # Must pass with 0 errors
-pnpm run typecheck # Must pass with 0 errors
-pnpm test          # All tests must pass
-pnpm knip          # Must pass with 0 errors
+bun run lint      # Must pass with 0 errors
+bun run typecheck # Must pass with 0 errors
+bun test          # All tests must pass
+bun run knip      # Must pass with 0 errors
 ```
 
 These checks run in pre-commit hooks and CI/CD. Fix all issues before marking work complete.
@@ -83,7 +83,7 @@ These checks run in pre-commit hooks and CI/CD. Fix all issues before marking wo
 ### Database & Drizzle ORM Best Practices
 
 - **Schema Management**: Always use Drizzle schema definitions in `./lib/db/schema.ts`
-- **Migrations**: Generate migrations with `pnpm run db:generate` after schema changes
+- **Migrations**: Generate migrations with `bun run db:generate` after schema changes
 - **Type Safety**: Use `createInsertSchema` and `createSelectSchema` from drizzle-zod
 - **Enums**: Use `pgEnum` for enum types - provides type safety AND database-level validation
 - **Type Inference**: Export inferred types from schema enums for automatic type sync

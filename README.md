@@ -54,7 +54,7 @@ We welcome contributions to improve Kosuke Template! This guide helps you set up
 Before contributing, ensure you have:
 
 - **Node.js 20+**: [nodejs.org](https://nodejs.org)
-- **pnpm**: `npm install -g pnpm`
+- **Bun**: [bun.sh](https://bun.sh) - `curl -fsSL https://bun.sh/install | bash`
 - **Docker Desktop**: [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)
 - **Git**: [git-scm.com](https://git-scm.com)
 
@@ -83,7 +83,7 @@ cd kosuke-template
 #### 2. Install Dependencies
 
 ```bash
-pnpm install
+bun install
 ```
 
 #### 3. Set Up Environment Variables
@@ -144,7 +144,7 @@ docker-compose up -d
 #### 5. Run Migrations
 
 ```bash
-pnpm run db:migrate
+bun run db:migrate
 ```
 
 ## ⚡ Automated Subscription Sync
@@ -167,7 +167,7 @@ This template uses **React Email** for building beautiful, responsive email temp
 #### 6. Start Development Server
 
 ```bash
-pnpm run dev
+bun run dev
 ```
 
 Visit [localhost:3000](http://localhost:3000) 🚀
@@ -176,29 +176,29 @@ Visit [localhost:3000](http://localhost:3000) 🚀
 
 ```bash
 # Development
-pnpm run dev              # Start dev server (port 3000)
-pnpm run build            # Build for production
-pnpm run start            # Start production server
+bun run dev              # Start dev server (port 3000)
+bun run build            # Build for production
+bun run start            # Start production server
 
 # Database
-pnpm run db:generate      # Generate migration from schema changes
-pnpm run db:migrate       # Run pending migrations
-pnpm run db:studio        # Open Drizzle Studio (visual DB browser)
-pnpm run db:seed          # Seed database with test data
-pnpm run db:reset         # Reset database and seed it with test data
+bun run db:generate      # Generate migration from schema changes
+bun run db:migrate       # Run pending migrations
+bun run db:studio        # Open Drizzle Studio (visual DB browser)
+bun run db:seed          # Seed database with test data
+bun run db:reset         # Reset database and seed it with test data
 
 # Email Development
-pnpm run email:dev        # Preview email templates (port 3001)
+bun run email:dev        # Preview email templates (port 3001)
 
 # Code Quality
-pnpm run lint             # Run ESLint
-pnpm run typecheck        # Run TypeScript type checking
-pnpm run format           # Format code with Prettier
+bun run lint             # Run ESLint
+bun run typecheck        # Run TypeScript type checking
+bun run format           # Format code with Prettier
 
 # Testing
-pnpm test                 # Run all tests
-pnpm run test:watch       # Watch mode
-pnpm run test:coverage    # Coverage report
+bun test                # Run all tests
+bun run test:watch       # Watch mode
+bun run test:coverage    # Coverage report
 ```
 
 ### Database Operations
@@ -208,11 +208,11 @@ pnpm run test:coverage    # Coverage report
 ```bash
 # 1. Edit lib/db/schema.ts
 # 2. Generate migration
-pnpm run db:generate
+bun run db:generate
 
 # 3. Review generated SQL in lib/db/migrations/
 # 4. Apply migration
-pnpm run db:migrate
+bun run db:migrate
 ```
 
 #### Seed with test data
@@ -221,10 +221,10 @@ Populate your local database with realistic test data:
 
 ```bash
 # Reset database and seed with test data
-pnpm run db:reset
+bun run db:reset
 
 # Or just seed (without reset)
-pnpm run db:seed
+bun run db:seed
 ```
 
 **Test Users Created:**
@@ -239,7 +239,7 @@ When signing in with test users in development, use verification code: `424242`
 #### Visual Database Browser
 
 ```bash
-pnpm run db:studio
+bun run db:studio
 # Visit https://local.drizzle.studio
 ```
 
@@ -247,7 +247,7 @@ pnpm run db:studio
 
 ```bash
 # Start preview server
-pnpm run email:dev
+bun run email:dev
 
 # Visit localhost:3001 to:
 # - Preview all email templates
@@ -262,13 +262,13 @@ pnpm run email:dev
 
 ```bash
 # All tests
-pnpm test
+bun test
 
 # Watch mode (auto-rerun on changes)
-pnpm run test:watch
+bun run test:watch
 
 # With coverage report
-pnpm run test:coverage
+bun run test:coverage
 ```
 
 ### Getting Help

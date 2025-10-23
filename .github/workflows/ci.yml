@@ -14,37 +14,36 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 10
+          bun-version: latest
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '20'
-          cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install
+        run: bun install
 
       - name: Copy environment variables
         run: cp .env.example .env
 
       - name: Run ESLint
-        run: pnpm run lint
+        run: bun run lint
 
       - name: Run TypeScript type checking
-        run: pnpm run typecheck
+        run: bun run typecheck
 
       - name: Check code formatting
-        run: pnpm run format:check
+        run: bun run format:check
 
       - name: Run tests
-        run: pnpm run test
+        run: bun test
 
       - name: Run Knip
-        run: pnpm run knip
+        run: bun run knip
 
   test-engine:
     name: Test and Lint Engine Service

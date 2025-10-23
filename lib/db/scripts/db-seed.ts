@@ -7,9 +7,9 @@
  *
  * ⚠️ WARNING: This script should ONLY be run in development/test environments!
  *
- * Ensure you have run `pnpm run db:migrate` and `pnpm run db:push` before running this script.
+ * Ensure you have run `bun run db:migrate` and `bun run db:push` before running this script.
  *
- * Usage: pnpm run db:seed
+ * Usage: bun run db:seed
  */
 
 import { faker } from '@faker-js/faker';
@@ -54,7 +54,7 @@ console.log('🔒 Environment check passed: Running in development mode\n');
 
 async function seed() {
   console.log('🌱 Starting database seed...\n');
-  console.log('📌 Note: If you encounter duplicate key errors, run `pnpm run db:reset`');
+  console.log('📌 Note: If you encounter duplicate key errors, run `bun run db:reset`');
   console.log('   or manually delete test users/orgs from Clerk dashboard.\n');
 
   try {
