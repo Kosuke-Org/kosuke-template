@@ -7,7 +7,7 @@
 
 import * as React from 'react';
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { Search, X, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, X, Loader2, Download } from 'lucide-react';
 
 import {
   Table,
@@ -18,7 +18,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -30,6 +29,7 @@ import { getOrderColumns } from './orders-columns';
 import { DataTablePagination } from './data-table-pagination';
 import { OrderFilters, ActiveFilterBadges } from './order-filters';
 import { MAX_AMOUNT } from '../utils';
+import { cn } from '@/lib/utils';
 
 // Infer OrderWithDetails from tRPC router output
 type RouterOutput = inferRouterOutputs<AppRouter>;
@@ -145,65 +145,19 @@ export function OrdersDataTable({
     (minAmount > 0 || maxAmount < MAX_AMOUNT ? 1 : 0);
 
   return (
-    <Card>
-      <CardHeader className="pb-3 space-y-3">
-        {/* Search and Filters Row */}
-        <div className="flex items-center gap-3">
-          <div className="relative w-full sm:w-[400px] lg:w-[500px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by customer name or order ID..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <OrderFilters
-            activeFiltersCount={activeFiltersCount}
-            selectedStatuses={selectedStatuses}
-            dateFrom={dateFrom}
-            dateTo={dateTo}
-            minAmount={minAmount}
-            maxAmount={maxAmount}
-            onStatusesChange={onStatusesChange}
-            onDateFromChange={onDateFromChange}
-            onDateToChange={onDateToChange}
-            onAmountRangeChange={onAmountRangeChange}
+    <>
+      <div className="flex items-center gap-3">
+        <div className="relative w-full sm:w-[400px] lg:w-[500px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by customer name or order ID..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9"
           />
-          {activeFiltersCount > 0 && (
-            <Button variant="ghost" size="sm" onClick={onClearFilters}>
-              <X />
-              Clear all
-            </Button>
-          )}
-          <div className="ml-auto">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" disabled={isExporting}>
-                  {isExporting && <Loader2 className="animate-spin" />}
-                  Export
-                  <ChevronDown />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-30 p-2" align="end">
-                {exportTypeEnum.options.map((type) => (
-                  <Button
-                    key={type}
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => onExport(type)}
-                    disabled={isExporting}
-                  >
-                    {type.toUpperCase()}
-                  </Button>
-                ))}
-              </PopoverContent>
-            </Popover>
-          </div>
         </div>
-
-        {/* Active Filters Badges */}
-        <ActiveFilterBadges
+        <OrderFilters
+          activeFiltersCount={activeFiltersCount}
           selectedStatuses={selectedStatuses}
           dateFrom={dateFrom}
           dateTo={dateTo}
@@ -214,72 +168,113 @@ export function OrdersDataTable({
           onDateToChange={onDateToChange}
           onAmountRangeChange={onAmountRangeChange}
         />
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <TableSkeleton />
-        ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <h3 className="font-semibold text-lg mb-1">No orders found</h3>
-            <p className="text-sm text-muted-foreground">
-              {searchQuery || activeFiltersCount > 0
-                ? 'Try adjusting your filters'
-                : 'Create your first order to get started'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => {
-                        return (
-                          <TableHead key={header.id}>
-                            {header.isPlaceholder
-                              ? null
-                              : flexRender(header.column.columnDef.header, header.getContext())}
-                          </TableHead>
-                        );
-                      })}
-                    </TableRow>
-                  ))}
-                </TableHeader>
-                <TableBody>
-                  {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
-                      <TableRow
-                        key={row.id}
-                        className="cursor-pointer"
-                        onClick={() => onView(row.original.id)}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={columns.length} className="h-24 text-center">
-                        No results.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            <DataTablePagination
-              table={table}
-              totalRecords={total}
-              onPageChange={onPageChange}
-              onPageSizeChange={onPageSizeChange}
-            />
-          </div>
+        {activeFiltersCount > 0 && (
+          <Button variant="ghost" size="sm" onClick={onClearFilters}>
+            <X />
+            Clear all
+          </Button>
         )}
-      </CardContent>
-    </Card>
+        <div className="ml-auto">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" disabled={isExporting}>
+                <Loader2 className={cn('animate-spin hidden', isExporting && 'block')} />
+                <Download className={cn('block', isExporting && 'hidden')} />
+                Export
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-30 p-2" align="end">
+              {exportTypeEnum.options.map((type) => (
+                <Button
+                  key={type}
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => onExport(type)}
+                  disabled={isExporting}
+                >
+                  {type.toUpperCase()}
+                </Button>
+              ))}
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+
+      {/* Active Filters Badges */}
+      <ActiveFilterBadges
+        selectedStatuses={selectedStatuses}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        minAmount={minAmount}
+        maxAmount={maxAmount}
+        onStatusesChange={onStatusesChange}
+        onDateFromChange={onDateFromChange}
+        onDateToChange={onDateToChange}
+        onAmountRangeChange={onAmountRangeChange}
+      />
+      {isLoading ? (
+        <TableSkeleton />
+      ) : orders.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <h3 className="font-semibold text-lg mb-1">No orders found</h3>
+          <p className="text-sm text-muted-foreground">
+            {searchQuery || activeFiltersCount > 0
+              ? 'Try adjusting your filters'
+              : 'Create your first order to get started'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      className="cursor-pointer"
+                      onClick={() => onView(row.original.id)}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <DataTablePagination
+            table={table}
+            totalRecords={total}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        </div>
+      )}
+    </>
   );
 }

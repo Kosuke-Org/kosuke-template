@@ -73,20 +73,19 @@ export function getOrderColumns(
     {
       accessorKey: 'id',
       header: () => <DataTableColumnHeader title="Order" icon={<Hash size={16} />} />,
-      cell: ({ row }) => <div className="font-medium">{row.getValue('id')}</div>,
+      cell: ({ row }) => row.original.id,
     },
     {
       accessorKey: 'customerName',
       header: () => <DataTableColumnHeader title="Customer" icon={<User size={16} />} />,
-      cell: ({ row }) => <div>{row.getValue('customerName')}</div>,
+      cell: ({ row }) => row.original.customerName,
     },
     {
       accessorKey: 'status',
       header: () => <DataTableColumnHeader title="Status" icon={<Info size={16} />} />,
-      cell: ({ row }) => {
-        const status = row.getValue('status') as keyof typeof statusColors;
-        return <Badge className={statusColors[status]}>{status}</Badge>;
-      },
+      cell: ({ row }) => (
+        <Badge className={statusColors[row.original.status]}>{row.original.status}</Badge>
+      ),
     },
     {
       accessorKey: 'amount',
@@ -99,10 +98,7 @@ export function getOrderColumns(
           onSort={() => onSort('amount')}
         />
       ),
-      cell: ({ row }) => {
-        const amount = row.getValue('amount') as string;
-        return <div className="pl-2">{formatCurrency(amount)}</div>;
-      },
+      cell: ({ row }) => formatCurrency(row.original.amount),
     },
     {
       accessorKey: 'orderDate',
@@ -115,10 +111,7 @@ export function getOrderColumns(
           onSort={() => onSort('orderDate')}
         />
       ),
-      cell: ({ row }) => {
-        const date = row.getValue('orderDate') as Date;
-        return <div className="pl-2">{formatDate(date)}</div>;
-      },
+      cell: ({ row }) => formatDate(row.original.orderDate),
     },
     {
       id: 'actions',

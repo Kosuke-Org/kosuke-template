@@ -295,12 +295,12 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         <div className="group flex items-center gap-4 py-1.5">
           <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
           <div className="text-sm text-muted-foreground w-28 shrink-0">Date</div>
-          <div className="flex-1 hover:bg-muted/50 rounded-md transition-colors">
+          <div className="flex-1">
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="h-auto w-full px-3 justify-start text-left hover:bg-transparent focus:bg-transparent"
+                  className="h-auto w-full px-3 justify-start text-left hover:bg-muted/50 focus:bg-muted/50 dark:hover:bg-muted/50 dark:focus:bg-muted/50"
                 >
                   {format(order.orderDate, 'PPP')}
                 </Button>

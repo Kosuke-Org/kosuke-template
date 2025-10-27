@@ -29,7 +29,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { OrderStatus } from '@/lib/types';
 import { OrdersDataTable } from './components/orders-data-table';
-import { OrderStats } from './components/order-stats';
 import { OrderDialog } from './components/order-dialog';
 
 // Skeleton components
@@ -96,7 +95,7 @@ export default function OrgOrdersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
-  const { orders, total, totalPages, stats, isLoading, isLoadingStats } = useOrdersList({
+  const { orders, total, totalPages, isLoading } = useOrdersList({
     organizationId: activeOrganization?.id ?? '',
     statuses: filters.selectedStatuses.length > 0 ? filters.selectedStatuses : undefined,
     searchQuery: searchValue.trim() || undefined,
@@ -163,16 +162,12 @@ export default function OrgOrdersPage() {
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-          <p className="text-muted-foreground">Manage orders for {activeOrganization.name}</p>
         </div>
         <Button onClick={() => setCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Order
         </Button>
       </div>
-
-      {/* Stats Cards */}
-      <OrderStats stats={stats} isLoading={isLoadingStats} />
 
       {/* Orders DataTable */}
       <OrdersDataTable

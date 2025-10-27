@@ -34,9 +34,6 @@ vi.mock('@/lib/trpc/client', () => ({
       delete: {
         useMutation: vi.fn(),
       },
-      getStats: {
-        useQuery: vi.fn(),
-      },
       export: {
         useMutation: vi.fn(),
       },
@@ -47,9 +44,6 @@ vi.mock('@/lib/trpc/client', () => ({
           invalidate: vi.fn(),
           setData: vi.fn(),
           getData: vi.fn(),
-        },
-        getStats: {
-          invalidate: vi.fn(),
         },
       },
     }),
@@ -97,15 +91,6 @@ describe('useOrdersList', () => {
     totalPages: 1,
   };
 
-  const mockStats = {
-    totalOrders: 100,
-    totalRevenue: '50000.00',
-    averageOrderValue: '500.00',
-    pendingOrders: 20,
-    completedOrders: 60,
-    cancelledOrders: 20,
-  };
-
   const defaultFilters = {
     organizationId: 'org_123',
     page: 1,
@@ -127,11 +112,6 @@ describe('useOrdersList', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    });
-
-    (trpc.orders.getStats.useQuery as Mock).mockReturnValue({
-      data: mockStats,
-      isLoading: false,
     });
 
     // Setup default mutation mocks (needed since the hook returns them)
@@ -170,15 +150,6 @@ describe('useOrdersList', () => {
       expect(result.current.limit).toBe(10);
       expect(result.current.totalPages).toBe(1);
       expect(result.current.isLoading).toBe(false);
-    });
-  });
-
-  it('should fetch order statistics successfully', async () => {
-    const { result } = renderHook(() => useOrdersList(defaultFilters), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.stats).toEqual(mockStats);
-      expect(result.current.isLoadingStats).toBe(false);
     });
   });
 
@@ -433,11 +404,6 @@ describe('useOrdersList', () => {
       refetch: vi.fn(),
     });
 
-    (trpc.orders.getStats.useQuery as Mock).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-    });
-
     const { result } = renderHook(() => useOrdersList(defaultFilters), { wrapper });
 
     expect(result.current.error).toEqual(mockError);
@@ -472,11 +438,6 @@ describe('useOrdersList', () => {
       isLoading: false,
       error: null,
       refetch: vi.fn(),
-    });
-
-    (trpc.orders.getStats.useQuery as Mock).mockReturnValue({
-      data: undefined,
-      isLoading: false,
     });
 
     const { result } = renderHook(() => useOrdersList(invalidFilters), { wrapper });

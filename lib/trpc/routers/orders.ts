@@ -281,65 +281,6 @@ export const ordersRouter = router({
   }),
 
   /**
-   * Get order statistics for an organization
-   */
-  getStats: protectedProcedure
-    .input(
-      orderListFiltersSchema.transform((val) => ({
-        organizationId: val?.organizationId ?? '',
-      }))
-    )
-    .query(async ({ input }) => {
-      const { organizationId } = input;
-
-      // Get total orders
-      const totalResult = await db
-        .select({ count: count() })
-        .from(orders)
-        .where(eq(orders.organizationId, organizationId));
-
-      const totalOrders = totalResult[0]?.count ?? 0;
-
-      // Get total revenue (sum of all amounts)
-      const revenueResult = await db
-        .select({
-          total: sql<string>`COALESCE(SUM(CAST(${orders.amount} AS DECIMAL)), 0)`,
-        })
-        .from(orders)
-        .where(eq(orders.organizationId, organizationId));
-
-      const totalRevenue = revenueResult[0]?.total ?? '0';
-
-      // Get pending orders count
-      const pendingResult = await db
-        .select({ count: count() })
-        .from(orders)
-        .where(and(eq(orders.organizationId, organizationId), eq(orders.status, 'pending')));
-
-      const pendingOrders = pendingResult[0]?.count ?? 0;
-
-      // Get delivered orders count
-      const deliveredResult = await db
-        .select({ count: count() })
-        .from(orders)
-        .where(and(eq(orders.organizationId, organizationId), eq(orders.status, 'delivered')));
-
-      const deliveredOrders = deliveredResult[0]?.count ?? 0;
-
-      // Calculate average order value
-      const averageOrderValue =
-        totalOrders > 0 ? (parseFloat(totalRevenue) / totalOrders).toFixed(2) : '0.00';
-
-      return {
-        totalOrders,
-        totalRevenue,
-        pendingOrders,
-        deliveredOrders,
-        averageOrderValue,
-      };
-    }),
-
-  /**
    * Export orders as CSV or Excel format
    * Exports all orders for the organization (no filtering applied)
    */
