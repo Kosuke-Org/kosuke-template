@@ -23,6 +23,53 @@ Create accounts with these services (all have free tiers):
 | **Resend** | Email delivery          | Yes (100/day)   | [resend.com](https://resend.com) |
 | **Sentry** | Error monitoring        | Yes (5k events) | [sentry.io](https://sentry.io)   |
 
+## Environments Overview
+
+Kosuke Template uses a **three-tier environment strategy** for safe, controlled deployments:
+
+### Environment Architecture
+
+| Environment | Branch Tracking | Deploy Trigger | Database | Use Case |
+|---|---|---|---|---|
+| **Production** | None | Git tag `v*.*.*` (GHA) | Production Neon DB | Live users, real payments |
+| **Staging** | main | Auto on push | Staging Neon DB | Integration testing, QA |
+| **Preview** | PR branches | Auto on PR | Inherits staging DB | Feature testing in isolation |
+
+### Key Features
+
+**Production:**
+- Manual deployment via GitHub Actions tag (`v1.0.0`, `v2.1.3`)
+- Production Stripe credentials (live mode)
+- Production Clerk instance
+- Production Neon database
+- Webhook URLs use production domain
+
+**Staging:**
+- Auto-deploys on pushes to main
+- Test Stripe credentials (test mode)
+- Development Clerk instance
+- Staging Neon database with preview branch support
+- Webhook URLs use staging domain (`staging-template.kosuke.ai`)
+- Full sign-up, billing, and authentication testing
+
+**Preview:**
+- Auto-deploys on pull requests
+- Inherits staging database (read/write to shared staging DB)
+- Test Stripe and Clerk credentials
+- ⚠️ **Note**: Webhooks target staging, not preview URLs
+- Use staging environment to test sign-up and billing flows
+
+### Webhook Behavior
+
+| Service | Production | Staging | Preview |
+|---|---|---|---|
+| **Clerk** | `https://yourdomain.com/api/clerk/webhook` | `https://your-project-name-staging.vercel.app/api/clerk/webhook` | Not available |
+| **Stripe** | `https://yourdomain.com/api/billing/webhook` | `https://your-project-name-staging.vercel.app/api/billing/webhook` | Not available |
+
+:::tip
+Preview deployments are great for UI/UX testing, but always test sign-up and billing flows on staging where webhooks are active.
+:::
+
 ## Step 1: Fork Repository
 
 ### Fork to Your Account
@@ -48,40 +95,54 @@ Create accounts with these services (all have free tiers):
 4. Select your forked repository
 5. Click **Import**
 
-### Configure Project
+### Configure Production Environment
 
 - **Project Name**: Same as repository name
 - **Framework Preset**: Next.js (auto-detected)
 - **Root Directory**: `./` (default)
 - **Build Settings**: Leave defaults
 
-### Deploy
-
-Click **Deploy** and wait for build.
-
-:::warning Expected Failure
-First deployment will fail with:
-
-```
-Error: POSTGRES_URL environment variable is not set
-```
-
-This is expected! We'll fix this in the next steps.
-:::
+Click **Deploy** and wait for build (will fail - expected!).
 
 ### Set Up Blob Storage
 
 1. In Vercel project, go to **Storage** tab
-2. Click **Create Database**
-3. Select **Blob**
-4. Name: `your-project-name-blob`
-5. Click **Create**
+2. Click **Create Blob**
+3. Name: `your-project-name-prod-blob`
+4. Region: Same as your Neon production database
+5. Select **Production** environment only
+6. Click **Create**
 
-Vercel automatically adds `BLOB_READ_WRITE_TOKEN` environment variable.
+Vercel automatically adds `BLOB_READ_WRITE_TOKEN` to production environment.
+
+### Set Up Staging Environment
+
+In Vercel project Settings:
+
+1. Click **Environments**
+2. Click **Add Environment**
+3. Configure:
+   - **Name**: `staging`
+   - **Git branch**: `main`
+   - **Auto-deploy on push**: Yes
+4. Click **Create**
+
+Create staging blob storage:
+
+1. Go to **Storage** tab
+2. Click **Create Blob**
+3. Name: `your-project-name-staging-blob`
+4. Region: Same as your Neon staging database
+5. Select **Preview** environment only (staging inherits from preview)
+6. Click **Create**
+
+:::info
+Staging environment inherits all preview environment variables (Neon staging DB, Blob storage) automatically.
+:::
 
 ## Step 3: Set Up Neon Database
 
-### Create via Vercel Integration
+### Create Production Database
 
 1. In Vercel project, go to **Storage** tab
 2. Click **Create Database**
@@ -91,28 +152,42 @@ Vercel automatically adds `BLOB_READ_WRITE_TOKEN` environment variable.
    - **Link existing account** (if you have one)
 5. Create database:
    - **Region**: Choose closest to users
-   - **Name**: `your-project-name-db`
-   - **Environments**: Production, Preview, Development
-   - **Create Database Branch for Deployment**: Preview
+   - **Name**: `your-project-name-prod`
+   - **Environments**: Production only
+   - **Create Database Branch for Deployment**: No
 6. Click **Create**
+
+### Create Staging Database
+
+1. In Vercel project, go to **Storage** tab
+2. Click **Create Database**
+3. Select **Neon**
+4. Create database:
+   - **Region**: Same as production (or closest to development users)
+   - **Name**: `your-project-name-staging`
+   - **Environments**: Preview only (staging inherits)
+   - **Create Database Branch for Deployment**: Yes (enables preview branches for PRs)
+5. Click **Create**
 
 ### Automatic Configuration
 
-Vercel adds these environment variables:
+Vercel adds environment variables automatically:
 
-- `POSTGRES_URL` (pooled connection - **we use this**)
+- `POSTGRES_URL` (Production environment) - Production Neon pooled connection
+- `POSTGRES_URL` (Preview environment) - Staging Neon pooled connection
 
 ### Preview Branches
 
-Neon automatically creates database branches for pull requests:
+Neon automatically creates isolated database branches for pull requests when configured:
 
 - PR opened → Database branch created
+- Run migrations on preview branch automatically
 - PR closed → Branch deleted
-- Isolated testing per PR
+- No impact on staging data
 
 ### Configure Automated Branch Cleanup (Optional)
 
-The template includes GitHub Actions automation to clean up preview branches when PRs are closed. This requires Neon API access:
+The template includes GitHub Actions automation to clean up preview branches when PRs are closed:
 
 1. Go to [Neon Dashboard → Settings](https://console.neon.tech/app/settings)
 2. Navigate to **API Keys** section
@@ -124,19 +199,16 @@ The template includes GitHub Actions automation to clean up preview branches whe
    - **Name**: `NEON_PROJECT_ID`
    - **Secret**: [find in Neon Dashboard → Project Settings]
 
-The cleanup script (`.github/scripts/cleanup-neon-branch.mjs`) automatically runs when PRs close, deleting orphaned preview branches to save resources.
+The cleanup script (`.github/scripts/cleanup-neon-branch.mjs`) automatically runs when PRs close.
 
 ## Step 4: Configure Stripe Billing
 
-### Choose Mode
+### Staging: Create Test Products
 
-Start in Stripe **test mode** (shown as **Sandbox** in the dashboard) and switch to live only when you are ready to charge real cards:
+Start in Stripe **test mode** for staging environment:
 
 - Dashboard: [dashboard.stripe.com/dashboard](https://dashboard.stripe.com/dashboard)
 - Click your organization name (top-left) → **Switch to a sandbox**
-- No real charges—perfect for end-to-end testing
-
-### Create Products
 
 #### Product 1: Pro Plan
 
@@ -164,17 +236,17 @@ Start in Stripe **test mode** (shown as **Sandbox** in the dashboard) and switch
 4. Under **Pricing**, open the recurring price
 5. **Copy the Price ID**: `price_xyz789...`
 
-### Create API Token
+### Staging: Create Test API Credentials & Webhook
 
 1. Go to **Developers** → **API keys**
 2. Copy the **Publishable key (test mode)**: `pk_test_...`
 3. Click **Reveal test key** and copy the **Secret key**: `sk_test_...`
 
-### Set Up Webhook
+**Set Up Test Webhook:**
 
 1. Go to **Webhooks** → **Add Endpoint**
 2. Configure:
-   - **Endpoint URL**: `https://your-project-name.vercel.app/api/billing/webhook`
+   - **Endpoint URL**: `https://your-project-name-staging.vercel.app/api/billing/webhook`
    - **Events**:
      - ✅ `customer.subscription.created`
      - ✅ `customer.subscription.updated`
@@ -185,7 +257,7 @@ Start in Stripe **test mode** (shown as **Sandbox** in the dashboard) and switch
      - ✅ `subscription_schedule.canceled`
 3. **Copy Signing Secret**
 
-**Update the environment variables in Vercel**:
+**Update staging environment variables in Vercel** (select **Preview** environment):
 
 ```bash
 STRIPE_PUBLISHABLE_KEY=pk_test_...
@@ -193,30 +265,60 @@ STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PRO_PRICE_ID=price_...
 STRIPE_BUSINESS_PRICE_ID=price_abc123...
 STRIPE_WEBHOOK_SECRET=whsec_xyz789...
-STRIPE_SUCCESS_URL=https://your-project-name.vercel.app/settings/billing
-STRIPE_CANCEL_URL=https://your-project-name.vercel.app/settings/billing
+STRIPE_SUCCESS_URL=https://your-project-name-staging.vercel.app/settings/billing
+STRIPE_CANCEL_URL=https://your-project-name-staging.vercel.app/settings/billing
+```
+
+### Production: Create Live Products
+
+When ready for production:
+
+1. Go to [dashboard.stripe.com](https://dashboard.stripe.com)
+2. **Disable test mode** (top-left, switch out of sandbox)
+3. Activate your Stripe account (complete verification)
+4. Go to **Products** → **Create Product**
+5. Create same products with same pricing:
+   - **Pro Plan**: $20.00 USD per month
+   - **Business Plan**: $200.00 USD per month
+6. **Copy both Price IDs** (will start with `price_` in live mode)
+
+### Production: Create Live API Credentials & Webhook
+
+1. Go to **Developers** → **API keys** (live mode)
+2. Copy the **Publishable key (live mode)**: `pk_live_...`
+3. Click **Reveal live key** and copy the **Secret key**: `sk_live_...`
+
+**Set Up Production Webhook:**
+
+1. Go to **Webhooks** → **Add Endpoint**
+2. Configure:
+   - **Endpoint URL**: `https://yourdomain.com/api/billing/webhook`
+   - **Events**: Same as staging (all 7 events)
+3. **Copy Signing Secret**
+
+**Update production environment variables in Vercel** (select **Production** environment):
+
+```bash
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_PRO_PRICE_ID=price_prod_...
+STRIPE_BUSINESS_PRICE_ID=price_prod_...
+STRIPE_WEBHOOK_SECRET=whsec_prod_...
+STRIPE_SUCCESS_URL=https://yourdomain.com/settings/billing
+STRIPE_CANCEL_URL=https://yourdomain.com/settings/billing
 ```
 
 ## Step 5: Configure Clerk Authentication
 
-### Create Account & Application
+### Create Single Application
 
 1. Go to [dashboard.clerk.com](https://dashboard.clerk.com)
 2. Sign up with GitHub
 3. Click **Add application**
 4. Configure:
-   - **Application name**: Your project name
+   - **Application name**: `Your Project`
    - **Framework**: Next.js
 5. Click **Create application**
-
-### Get API Keys
-
-Copy these keys immediately:
-
-```bash
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
-```
 
 ### Enable Organizations
 
@@ -235,25 +337,80 @@ CLERK_SECRET_KEY=sk_test_...
    - **Enable Organization Slugs**: ON
 4. Click **Save**
 
-### Set Up Webhook
+### Staging: Development Environment
+
+By default, Clerk creates a Development environment. Get your development credentials:
+
+1. In your Clerk app dashboard, ensure **Development** is selected (top dropdown)
+2. Go to **API Keys**
+3. Copy the **Publishable key**: `pk_test_...`
+4. Click **Reveal secret key** and copy **Secret key**: `sk_test_...`
+
+**Set Up Development Webhook:**
 
 1. Go to **Webhooks** → **Add Endpoint**
 2. Configure:
-   - **Endpoint URL**: `https://your-project-name.vercel.app/api/clerk/webhook`
+   - **Endpoint URL**: `https://your-project-name-staging.vercel.app/api/clerk/webhook`
    - **Subscribe to events**:
      - ✅ User: `user.created`, `user.updated`, `user.deleted`
      - ✅ Organization: `organization.created`, `organization.updated`, `organization.deleted`
      - ✅ Membership: `organizationMembership.created`, `organizationMembership.updated`, `organizationMembership.deleted`
 3. **Copy Signing Secret** (starts with `whsec_`)
 
-**Update the environment variables in Vercel**:
+**Update staging environment variables in Vercel** (select **Preview** environment):
 
 ```bash
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
 CLERK_WEBHOOK_SECRET=whsec_...
 
-# URLs (use these exact values)
+# URLs (same for both environments)
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
+```
+
+### Production: Production Environment
+
+When ready for production:
+
+1. In your Clerk app dashboard, click the environment dropdown (top-left)
+2. Click **+ Create environment**
+3. Configure:
+   - **Name**: `Production`
+   - **Type**: Production
+4. Click **Create**
+
+**Configure Production Domain:**
+
+1. Go to **Settings → Domains** (Production environment)
+2. Add your production domain: `yourdomain.com`
+3. Configure DNS as instructed by Clerk
+
+**Get Production Credentials:**
+
+1. Ensure **Production** environment is selected (top dropdown)
+2. Go to **API Keys**
+3. Copy the **Publishable key**: `pk_live_...`
+4. Click **Reveal secret key** and copy **Secret key**: `sk_live_...`
+
+**Set Up Production Webhook:**
+
+1. Go to **Webhooks** → **Add Endpoint**
+2. Configure:
+   - **Endpoint URL**: `https://yourdomain.com/api/clerk/webhook`
+   - **Subscribe to events**: Same as staging (all 9 events)
+3. **Copy Signing Secret**
+
+**Update production environment variables in Vercel** (select **Production** environment):
+
+```bash
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_...
+CLERK_SECRET_KEY=sk_live_...
+CLERK_WEBHOOK_SECRET=whsec_prod_...
+
+# URLs (same for both environments)
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
@@ -273,24 +430,23 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
    - **Permission**: Full access
 6. **Copy API key** (starts with `re_`)
 
-### Email Configuration
+### Email Configuration (Shared)
 
-For development, use Resend's test domain:
+**Same API key and from-email used for both staging and production:**
+
+```bash
+RESEND_API_KEY=re_...  # Shared - one key for both environments
+RESEND_FROM_EMAIL=noreply@yourdomain.com  # Same for staging & production
+RESEND_FROM_NAME=Your Project Name
+```
+
+Add to Vercel - select **both Production and Preview** environments (staging inherits from preview):
 
 ```bash
 RESEND_API_KEY=re_...
-RESEND_FROM_EMAIL=onboarding@resend.dev
+RESEND_FROM_EMAIL=noreply@yourdomain.com
 RESEND_FROM_NAME=Your Project Name
-# RESEND_REPLY_TO=support@yourdomain.com  # Optional
 ```
-
-For production, verify your custom domain:
-
-1. Go to **Domains** → **Add Domain**
-2. Enter `yourdomain.com`
-3. Add DNS records (SPF, DKIM, DMARC)
-4. Wait for verification
-5. Update: `RESEND_FROM_EMAIL=hello@yourdomain.com`
 
 ## Step 7: Configure Sentry Monitoring
 
@@ -324,7 +480,17 @@ The template includes Sentry configuration with:
 - Session replay (10% normal, 100% on errors)
 - Automatic source map upload
 
+:::info
+The same Sentry project is used across all environments (production, staging, preview). Errors are tagged with `environment` to distinguish them.
+:::
+
 Adjust sample rates in `sentry.*.config.ts` if needed.
+
+**Add to Vercel environment variables** - select both **Production** and **Preview**:
+
+```bash
+NEXT_PUBLIC_SENTRY_DSN=https://hash@region.ingest.sentry.io/project-id
+```
 
 ## Step 8: Deploy Engine Microservice (Fly.io)
 
@@ -465,7 +631,7 @@ The engine is configured to:
 
 ## Step 9: Configure GitHub Actions Secrets
 
-The template includes GitHub Actions for automated PR reviews and microservice deployment. Configure repository secrets to enable these features.
+The template includes GitHub Actions for automated PR reviews and controlled production deployment. Configure repository secrets to enable these features.
 
 ### Navigate to GitHub Secrets
 
@@ -525,7 +691,37 @@ Or via dashboard:
 - Automatic engine deployment on main branch pushes
 - Preview deployments for pull requests
 
-#### 3. OpenAI API Key (Codex PR Reviews)
+#### 3. Vercel Deployment Tokens (Production Deployment)
+
+Enables controlled production deployment via GitHub Actions when tags are created.
+
+**Get Tokens:**
+
+1. Go to [vercel.com/account/tokens](https://vercel.com/account/tokens)
+2. Click **Create Token**
+3. Name: `github-actions-prod-deploy`
+4. Expiration: No expiration (or your preference)
+5. Copy the token
+
+**Add to GitHub:**
+
+- **Name**: `VERCEL_TOKEN`
+- **Secret**: [paste your Vercel token]
+
+**Also add:**
+
+- **Name**: `VERCEL_ORG_ID`
+- **Secret**: [Find in Vercel Settings → Account → ID]
+
+- **Name**: `VERCEL_PROJECT_ID`
+- **Secret**: [Find in Vercel Project Settings → Project ID]
+
+**Usage:**
+
+- Automatic production deployment when tag `v*.*.*` is pushed
+- Example: Create tag `git tag v1.0.0 && git push origin v1.0.0`
+
+#### 4. OpenAI API Key (Optional)
 
 Optional: Enables additional AI-powered code review features.
 
@@ -554,7 +750,7 @@ After adding secrets:
 
 1. Go to **Actions** tab in your repository
 2. Secrets should be available to workflows
-3. Test by creating a pull request
+3. Test by creating a pull request or tag
 4. Check Actions logs for successful API connections
 
 ## Step 10: Add Environment Variables
@@ -569,185 +765,110 @@ After adding secrets:
 For each variable, click **Add New** and:
 
 1. Enter **Key** and **Value**
-2. Select **Production**, **Preview**, and **Development**
+2. Select appropriate environment(s)
 3. Click **Save**
 
-### Complete Variable List
+### Environment Variable Reference
 
-```bash
-# Clerk Authentication
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
-CLERK_WEBHOOK_SECRET=whsec_...
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
+**Three-tier deployment with different credentials:**
 
-# Stripe Billing
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_PRO_PRICE_ID=price_...
-STRIPE_BUSINESS_PRICE_ID=price_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_SUCCESS_URL=https://your-project-name.vercel.app/settings/billing
-STRIPE_CANCEL_URL=https://your-project-name.vercel.app/settings/billing
+- **Preview**: Auto-deploys on pull requests using dynamic `$VERCEL_URL`. Uses staging database/credentials (webhooks can't be dynamic per PR).
+- **Staging**: Auto-deploys main branch to fixed domain. Inherits database & most credentials from Preview.
+- **Production**: Manual tag-triggered deployments (`git tag v*.*.*`). Separate database, live credentials, and production webhook secrets.
 
-# Sentry Monitoring
-NEXT_PUBLIC_SENTRY_DSN=https://...@....ingest.sentry.io/...
+**Variables that differ per environment:**
 
-# Resend Email
-RESEND_API_KEY=re_...
-RESEND_FROM_EMAIL=onboarding@resend.dev
-RESEND_FROM_NAME=Your Project Name
+| Variable | Preview | Staging | Production |
+|---|---|---|---|
+| `NEXT_PUBLIC_APP_URL` | `https://$VERCEL_URL` | `https://your-staging-domain.vercel.app` | `https://yourdomain.com` |
+| `STRIPE_SUCCESS_URL` | Staging domain | Staging domain | Prod domain |
+| `STRIPE_CANCEL_URL` | Staging domain | Staging domain | Prod domain |
+| `STRIPE_WEBHOOK_SECRET` | `we_...` (staging) | `we_...` (staging) | `whsec_...` (prod) |
+| `STRIPE_SECRET_KEY` | `sk_test_...` | `sk_test_...` | `sk_live_...` |
+| `STRIPE_PUBLISHABLE_KEY` | `pk_test_...` | `pk_test_...` | `pk_live_...` |
+| `CLERK_SECRET_KEY` | `sk_test_...` | `sk_test_...` | `sk_live_...` |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_...` | `pk_test_...` | `pk_live_...` |
+| `CLERK_WEBHOOK_SECRET` | Dev webhook | Dev webhook | Prod webhook |
+| `NODE_ENV` | (not set) | (not set) | `production` |
+| `CRON_SECRET` | (not set) | (not set) | Random token |
+| `POSTGRES_URL` | Staging DB | Staging DB | Prod DB |
+| `BLOB_READ_WRITE_TOKEN` | Staging blob | Staging blob | Prod blob |
 
-# Engine Microservice
-ENGINE_BASE_URL=https://your-project-engine.fly.dev
+**Shared across all environments (identical):**
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_FROM_NAME` (one API key, same email)
+- `NEXT_PUBLIC_SENTRY_DSN` (one project, environment-tagged)
+- `ENGINE_BASE_URL` (same microservice)
+- All `NEXT_PUBLIC_CLERK_SIGN_*` URLs (`/sign-in`, `/sign-up`, `/onboarding`)
+- `STRIPE_PRO_PRICE_ID`, `STRIPE_BUSINESS_PRICE_ID` (same prices in test/live mode)
 
-# Application
-NEXT_PUBLIC_APP_URL=https://your-project-name.vercel.app
-NODE_ENV=production
-
-# Cron Security (generate with: openssl rand -base64 32)
-CRON_SECRET=<random-secure-token>
-
-# Database & Storage (already added by Vercel)
-# POSTGRES_URL=postgresql://...@neon.tech/...
-# BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
-```
+**Key Facts:**
+- ✅ Preview & Staging use identical credentials (except `NEXT_PUBLIC_APP_URL`)
+- ✅ Only Production has live credentials for Stripe/Clerk
+- ✅ Database and blob storage auto-configured by Vercel per environment
 
 ### Redeploy
 
-Trigger new deployment:
+Trigger new staging deployment:
 
 ```bash
 git commit --allow-empty -m "Configure environment variables"
-git push
+git push origin main
 ```
 
-Or in Vercel: **Deployments** → **⋯** → **Redeploy**
+Trigger new production deployment:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Or in Vercel: **Deployments** → **⋯** → **Redeploy** (production only).
 
 ### Verify Deployment
 
+**Staging:**
+
 1. ✅ Deployment status: **Ready**
-2. Visit: `https://your-project-name.vercel.app`
+2. Visit: `https://your-staging-domain.vercel.app`
 3. Test sign-in/sign-up
 4. Verify no errors in console
 
-**🎉 Your application is now live!**
+**Production:**
 
-## Going to Production
+1. ✅ Deployment status: **Ready**
+2. Visit: `https://yourdomain.com`
+3. Test sign-in/sign-up with real payment test cards
+4. Verify no errors in Sentry
 
-When ready to launch with real payments and custom domain:
+**🎉 Your staging and production environments are now live!**
 
-### Transition Stripe to Production
+## Deployment Workflow
 
-1. Go to [dashboard.stripe.com](https://dashboard.stripe.com)
-2. Activate your account (remove test mode)
-3. Create same products (Pro $20, Business $200)
-4. Get production API keys from **Developers → API keys**
-5. Set up production webhook: `https://yourdomain.com/api/billing/webhook`
-6. Update environment variables:
-   ```bash
-   STRIPE_SECRET_KEY=sk_live_...
-   STRIPE_PUBLISHABLE_KEY=pk_live_...
-   STRIPE_PRO_PRICE_ID=[production_pro_price_id]
-   STRIPE_BUSINESS_PRICE_ID=[production_business_price_id]
-   STRIPE_WEBHOOK_SECRET=[production_webhook_secret]
-   STRIPE_SUCCESS_URL=https://yourdomain.com/billing/success
-   STRIPE_CANCEL_URL=https://yourdomain.com/settings/billing
-   ```
-7. Redeploy
+### Staging Deployment
 
-#### Add Domain to Vercel
-
-1. Go to **Settings → Domains**
-2. Click **Add Domain**
-3. Enter `yourdomain.com`
-4. Configure DNS:
-
-**A Record** (root domain):
-
-```
-Type: A
-Name: @
-Value: 76.76.21.21
-```
-
-**CNAME Record** (www):
-
-```
-Type: CNAME
-Name: www
-Value: cname.vercel-dns.com
-```
-
-5. Wait for verification (up to 48 hours, usually 1-2 hours)
-
-#### Update Environment Variables
-
-**Vercel:**
+Push to `main` for automatic staging deployment:
 
 ```bash
-NEXT_PUBLIC_APP_URL=https://yourdomain.com
-# ENGINE_BASE_URL remains the same (Fly.io subdomain)
+git commit -m "Feature: add new feature"
+git push origin main
+# → Automatically deploys to staging environment
 ```
 
-**Fly.io Engine:**
+### Production Deployment
+
+Create a git tag to trigger production deployment via GitHub Actions:
 
 ```bash
-fly secrets set FRONTEND_URL=https://yourdomain.com
+git tag v1.0.0
+git push origin v1.0.0
+# → GitHub Actions automatically deploys to production
 ```
 
-#### Update Service Webhooks
+The workflow will:
 
-Update webhook URLs in all services:
+1. Update version files (package.json, pyproject.toml, .version)
+2. Build and push Docker images
+3. Create GitHub Release with release notes
+4. Deploy to Vercel production
 
-- **Clerk**: `https://yourdomain.com/api/clerk/webhook`
-- **Stripe**: `https://yourdomain.com/api/billing/webhook`
-
-### Configure Clerk for Production
-
-1. **Settings → Domain**: Add `yourdomain.com`
-2. **Webhooks**: Update endpoint URL to production domain
-3. **OAuth Providers** (optional):
-   - Configure Google OAuth with production credentials
-   - Configure GitHub OAuth with production credentials
-   - Update redirect URIs to production domain
-
-### Configure Resend Custom Domain
-
-1. Go to Resend dashboard → **Domains**
-2. Click **Add Domain**
-3. Enter `yourdomain.com`
-4. Add DNS records:
-
-**SPF Record**:
-
-```
-Type: TXT
-Name: @
-Value: v=spf1 include:resend.com ~all
-```
-
-**DKIM Record**:
-
-```
-Type: TXT
-Name: resend._domainkey
-Value: [provided by Resend]
-```
-
-**DMARC Record** (recommended):
-
-```
-Type: TXT
-Name: _dmarc
-Value: v=DMARC1; p=none; rua=mailto:dmarc@yourdomain.com
-```
-
-5. Wait for verification
-6. Update environment variable:
-   ```bash
-   RESEND_FROM_EMAIL=hello@yourdomain.com
-   ```
+Check **Actions** tab to verify deployment succeeded.
