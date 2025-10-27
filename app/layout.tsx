@@ -98,7 +98,6 @@ export const metadata: Metadata = {
       url: '/apple-touch-icon.png',
     },
   ],
-  manifest: '/site.webmanifest',
   verification: {
     // Add when you have these set up:
     // google: 'your-google-verification-code',

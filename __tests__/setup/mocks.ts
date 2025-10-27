@@ -129,10 +129,6 @@ export function setupMocks() {
   }));
 }
 
-export function resetMocks() {
-  vi.clearAllMocks();
-}
-
 // Stripe webhook event factories
 export function createStripeSubscriptionEvent(
   type:

@@ -1,7 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
-import { resetMocks } from '../setup/mocks';
 import { vi } from 'vitest';
 import { httpBatchLink } from '@trpc/client';
 import { trpc } from '@/lib/trpc/client';
@@ -51,7 +50,6 @@ const createWrapper = () => {
 
 describe('useSubscriptionActions', () => {
   beforeEach(() => {
-    resetMocks();
     vi.clearAllMocks();
     mockToast.mockClear();
   });
