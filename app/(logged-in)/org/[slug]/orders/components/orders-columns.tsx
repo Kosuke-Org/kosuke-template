@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,12 +48,18 @@ interface ColumnSortingProps {
   onSort: (column: 'orderDate' | 'amount') => void;
 }
 
+interface ColumnSelectionProps {
+  enableRowSelection?: boolean;
+}
+
 export function getOrderColumns(
   actions: ColumnActionsProps,
-  sorting: ColumnSortingProps
+  sorting: ColumnSortingProps,
+  selection?: ColumnSelectionProps
 ): ColumnDef<OrderWithDetails>[] {
   const { onView, onEdit, onDelete } = actions;
   const { sortBy, sortOrder, onSort } = sorting;
+  const { enableRowSelection = true } = selection || {};
 
   const formatCurrency = (amount: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -69,7 +76,35 @@ export function getOrderColumns(
     }).format(new Date(date));
   };
 
-  return [
+  const columns: ColumnDef<OrderWithDetails>[] = [];
+
+  if (enableRowSelection) {
+    columns.push({
+      id: 'select',
+      header: ({ table }) => {
+        return (
+          <Checkbox
+            checked={table.getIsSomeRowsSelected() ? 'indeterminate' : table.getIsAllRowsSelected()}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+          />
+        );
+      },
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          disabled={!row.getCanSelect()}
+          onCheckedChange={row.getToggleSelectedHandler()}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    });
+  }
+
+  // Add regular columns
+  columns.push(
     {
       accessorKey: 'id',
       header: () => <DataTableColumnHeader title="Order" icon={<Hash size={16} />} />,
@@ -160,6 +195,8 @@ export function getOrderColumns(
           </DropdownMenu>
         );
       },
-    },
-  ];
+    }
+  );
+
+  return columns;
 }

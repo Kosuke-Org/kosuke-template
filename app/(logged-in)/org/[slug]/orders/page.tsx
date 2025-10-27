@@ -9,7 +9,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOrderActions, useOrdersList } from '@/hooks/use-orders';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
@@ -17,6 +16,7 @@ import { useTableSearch } from '@/hooks/use-table-search';
 import { useTableSorting } from '@/hooks/use-table-sorting';
 import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTableRowSelection } from '@/hooks/use-table-row-selection';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,28 +35,14 @@ import { OrderDialog } from './components/order-dialog';
 function OrdersPageSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
+      <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-4 w-96" />
+        <Skeleton className="h-6 w-96" />
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <Skeleton className="h-4 w-24 mb-2" />
-              <Skeleton className="h-8 w-32" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-[400px] w-full" />
       </div>
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-[400px] w-full" />
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -89,6 +75,8 @@ export default function OrgOrdersPage() {
     minAmount: 0,
     maxAmount: 10000,
   });
+
+  const rowSelection = useTableRowSelection();
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -220,6 +208,14 @@ export default function OrgOrdersPage() {
           exportOrders({ type, organizationId: activeOrganization.id });
         }}
         isExporting={isExporting}
+        selectedRowIds={rowSelection.selectedRowIds}
+        onRowSelectionChange={rowSelection.setSelectedRowIds}
+        onBulkDelete={async (ids) => {
+          for (const id of ids) {
+            await deleteOrder({ id, organizationId: activeOrganization.id });
+          }
+          rowSelection.clearSelection();
+        }}
       />
 
       {/* Create Order Dialog */}

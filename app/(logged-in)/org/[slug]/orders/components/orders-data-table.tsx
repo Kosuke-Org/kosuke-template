@@ -5,9 +5,15 @@
 
 'use client';
 
-import * as React from 'react';
-import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { Search, X, Loader2, Download } from 'lucide-react';
+import { useMemo, useCallback } from 'react';
+import {
+  flexRender,
+  getCoreRowModel,
+  RowSelectionState,
+  Updater,
+  useReactTable,
+} from '@tanstack/react-table';
+import { Search, X, Loader2, Download, Trash2 } from 'lucide-react';
 
 import {
   Table,
@@ -69,6 +75,10 @@ interface OrdersDataTableProps {
   // Export handler
   onExport: (type: ExportType) => void;
   isExporting: boolean;
+  // Row selection props
+  selectedRowIds?: string[];
+  onRowSelectionChange?: (selectedRowIds: string[]) => void;
+  onBulkDelete?: (selectedRowIds: string[]) => void;
 }
 
 function TableSkeleton() {
@@ -116,8 +126,30 @@ export function OrdersDataTable({
   onDelete,
   onExport,
   isExporting,
+  selectedRowIds = [],
+  onRowSelectionChange,
+  onBulkDelete,
 }: OrdersDataTableProps) {
-  const columns = React.useMemo(
+  const rowSelection = useMemo(() => {
+    const newRowSelection: Record<string, boolean> = {};
+    selectedRowIds.forEach((id) => {
+      newRowSelection[id] = true;
+    });
+    return newRowSelection;
+  }, [selectedRowIds]);
+
+  const handleRowSelectionChange = useCallback(
+    (updaterOrValue: Updater<RowSelectionState>) => {
+      const newRowSelection =
+        typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection) : updaterOrValue;
+
+      const selectedIds = Object.keys(newRowSelection).filter((key) => newRowSelection[key]);
+      onRowSelectionChange?.(selectedIds);
+    },
+    [rowSelection, onRowSelectionChange]
+  );
+
+  const columns = useMemo(
     () =>
       getOrderColumns({ onView, onEdit, onDelete }, { sortBy, sortOrder, onSort: onSortChange }),
     [onView, onEdit, onDelete, sortBy, sortOrder, onSortChange]
@@ -130,11 +162,15 @@ export function OrdersDataTable({
     manualPagination: true,
     manualSorting: true,
     pageCount: totalPages,
+    enableRowSelection: true,
+    getRowId: (row) => row.id,
+    onRowSelectionChange: handleRowSelectionChange,
     state: {
       pagination: {
         pageIndex: page - 1,
         pageSize,
       },
+      rowSelection,
     },
   });
 
@@ -144,8 +180,32 @@ export function OrdersDataTable({
     (dateTo ? 1 : 0) +
     (minAmount > 0 || maxAmount < MAX_AMOUNT ? 1 : 0);
 
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
+  const hasSelectedRows = selectedRows.length > 0;
+
   return (
     <>
+      {/* Bulk Actions Bar */}
+      {hasSelectedRows && (
+        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md border">
+          <span className="text-sm font-medium">
+            {selectedRows.length} row{selectedRows.length > 1 ? 's' : ''} selected
+          </span>
+          <div className="flex items-center gap-2 ml-auto">
+            {onBulkDelete && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => onBulkDelete(selectedRows.map((row) => row.original.id))}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-3">
         <div className="relative w-full sm:w-[400px] lg:w-[500px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -248,7 +308,17 @@ export function OrdersDataTable({
                     <TableRow
                       key={row.id}
                       className="cursor-pointer"
-                      onClick={() => onView(row.original.id)}
+                      onClick={(e) => {
+                        const target = e.target as HTMLElement;
+                        if (
+                          target.closest('[role="checkbox"]') ||
+                          target.closest('[role="menuitem"]') ||
+                          target.closest('button')
+                        ) {
+                          return;
+                        }
+                        onView(row.original.id);
+                      }}
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
