@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,12 +48,18 @@ interface ColumnSortingProps {
   onSort: (column: 'orderDate' | 'amount') => void;
 }
 
+interface ColumnSelectionProps {
+  enableRowSelection?: boolean;
+}
+
 export function getOrderColumns(
   actions: ColumnActionsProps,
-  sorting: ColumnSortingProps
+  sorting: ColumnSortingProps,
+  selection?: ColumnSelectionProps
 ): ColumnDef<OrderWithDetails>[] {
   const { onView, onEdit, onDelete } = actions;
   const { sortBy, sortOrder, onSort } = sorting;
+  const { enableRowSelection = true } = selection || {};
 
   const formatCurrency = (amount: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -69,24 +76,51 @@ export function getOrderColumns(
     }).format(new Date(date));
   };
 
-  return [
+  const columns: ColumnDef<OrderWithDetails>[] = [];
+
+  if (enableRowSelection) {
+    columns.push({
+      id: 'select',
+      header: ({ table }) => {
+        return (
+          <Checkbox
+            checked={table.getIsSomeRowsSelected() ? 'indeterminate' : table.getIsAllRowsSelected()}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+          />
+        );
+      },
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          disabled={!row.getCanSelect()}
+          onCheckedChange={row.getToggleSelectedHandler()}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    });
+  }
+
+  // Add regular columns
+  columns.push(
     {
       accessorKey: 'id',
       header: () => <DataTableColumnHeader title="Order" icon={<Hash size={16} />} />,
-      cell: ({ row }) => <div className="font-medium">{row.getValue('id')}</div>,
+      cell: ({ row }) => row.original.id,
     },
     {
       accessorKey: 'customerName',
       header: () => <DataTableColumnHeader title="Customer" icon={<User size={16} />} />,
-      cell: ({ row }) => <div>{row.getValue('customerName')}</div>,
+      cell: ({ row }) => row.original.customerName,
     },
     {
       accessorKey: 'status',
       header: () => <DataTableColumnHeader title="Status" icon={<Info size={16} />} />,
-      cell: ({ row }) => {
-        const status = row.getValue('status') as keyof typeof statusColors;
-        return <Badge className={statusColors[status]}>{status}</Badge>;
-      },
+      cell: ({ row }) => (
+        <Badge className={statusColors[row.original.status]}>{row.original.status}</Badge>
+      ),
     },
     {
       accessorKey: 'amount',
@@ -99,10 +133,7 @@ export function getOrderColumns(
           onSort={() => onSort('amount')}
         />
       ),
-      cell: ({ row }) => {
-        const amount = row.getValue('amount') as string;
-        return <div className="pl-2">{formatCurrency(amount)}</div>;
-      },
+      cell: ({ row }) => formatCurrency(row.original.amount),
     },
     {
       accessorKey: 'orderDate',
@@ -115,10 +146,7 @@ export function getOrderColumns(
           onSort={() => onSort('orderDate')}
         />
       ),
-      cell: ({ row }) => {
-        const date = row.getValue('orderDate') as Date;
-        return <div className="pl-2">{formatDate(date)}</div>;
-      },
+      cell: ({ row }) => formatDate(row.original.orderDate),
     },
     {
       id: 'actions',
@@ -167,6 +195,8 @@ export function getOrderColumns(
           </DropdownMenu>
         );
       },
-    },
-  ];
+    }
+  );
+
+  return columns;
 }

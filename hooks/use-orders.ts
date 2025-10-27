@@ -33,25 +33,13 @@ export function useOrdersList(filters: OrderListFilters) {
     enabled: !!filters?.organizationId,
   });
 
-  const { data: stats, isLoading: isLoadingStats } = trpc.orders.getStats.useQuery(
-    {
-      organizationId: filters?.organizationId ?? '',
-    },
-    {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      enabled: !!filters?.organizationId,
-    }
-  );
-
   return {
     orders: ordersData?.orders ?? [],
     total: ordersData?.total ?? 0,
     page: ordersData?.page ?? 1,
     limit: ordersData?.limit ?? 10,
     totalPages: ordersData?.totalPages ?? 0,
-    stats,
     isLoading,
-    isLoadingStats,
     error,
   };
 }
@@ -69,7 +57,6 @@ export function useOrderActions() {
         title: 'Success',
         description: 'Order created successfully',
       });
-      utils.orders.getStats.invalidate();
       utils.orders.list.invalidate();
     },
     onError: (error) => {
@@ -88,7 +75,6 @@ export function useOrderActions() {
         description: 'Order updated successfully',
       });
       utils.orders.list.invalidate();
-      utils.orders.getStats.invalidate();
     },
     onError: (error) => {
       toast({
@@ -105,7 +91,6 @@ export function useOrderActions() {
         title: 'Success',
         description: 'Order deleted successfully',
       });
-      utils.orders.getStats.invalidate();
       utils.orders.list.invalidate();
     },
     onError: (error) => {

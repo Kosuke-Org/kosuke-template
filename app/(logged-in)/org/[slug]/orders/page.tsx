@@ -9,7 +9,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOrderActions, useOrdersList } from '@/hooks/use-orders';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
@@ -17,6 +16,7 @@ import { useTableSearch } from '@/hooks/use-table-search';
 import { useTableSorting } from '@/hooks/use-table-sorting';
 import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTableRowSelection } from '@/hooks/use-table-row-selection';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,35 +29,20 @@ import {
 } from '@/components/ui/alert-dialog';
 import type { OrderStatus } from '@/lib/types';
 import { OrdersDataTable } from './components/orders-data-table';
-import { OrderStats } from './components/order-stats';
 import { OrderDialog } from './components/order-dialog';
 
 // Skeleton components
 function OrdersPageSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
+      <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-4 w-96" />
+        <Skeleton className="h-6 w-96" />
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-6">
-              <Skeleton className="h-4 w-24 mb-2" />
-              <Skeleton className="h-8 w-32" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-[400px] w-full" />
       </div>
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-[400px] w-full" />
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
@@ -91,12 +76,14 @@ export default function OrgOrdersPage() {
     maxAmount: 10000,
   });
 
+  const rowSelection = useTableRowSelection();
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
-  const { orders, total, totalPages, stats, isLoading, isLoadingStats } = useOrdersList({
+  const { orders, total, totalPages, isLoading } = useOrdersList({
     organizationId: activeOrganization?.id ?? '',
     statuses: filters.selectedStatuses.length > 0 ? filters.selectedStatuses : undefined,
     searchQuery: searchValue.trim() || undefined,
@@ -163,16 +150,12 @@ export default function OrgOrdersPage() {
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
-          <p className="text-muted-foreground">Manage orders for {activeOrganization.name}</p>
         </div>
         <Button onClick={() => setCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           New Order
         </Button>
       </div>
-
-      {/* Stats Cards */}
-      <OrderStats stats={stats} isLoading={isLoadingStats} />
 
       {/* Orders DataTable */}
       <OrdersDataTable
@@ -225,6 +208,14 @@ export default function OrgOrdersPage() {
           exportOrders({ type, organizationId: activeOrganization.id });
         }}
         isExporting={isExporting}
+        selectedRowIds={rowSelection.selectedRowIds}
+        onRowSelectionChange={rowSelection.setSelectedRowIds}
+        onBulkDelete={async (ids) => {
+          for (const id of ids) {
+            await deleteOrder({ id, organizationId: activeOrganization.id });
+          }
+          rowSelection.clearSelection();
+        }}
       />
 
       {/* Create Order Dialog */}
