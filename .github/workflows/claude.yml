@@ -37,8 +37,6 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           additional_permissions: |
             actions: read
-          custom_instructions: |
-            Perform a GENERAL CODE REVIEW for functionality, bugs, logic, and quality.
 
   # Guidelines consistency check
   claude-consistency-check:
