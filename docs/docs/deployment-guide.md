@@ -29,15 +29,16 @@ Kosuke Template uses a **three-tier environment strategy** for safe, controlled 
 
 ### Environment Architecture
 
-| Environment | Branch Tracking | Deploy Trigger | Database | Use Case |
-|---|---|---|---|---|
-| **Production** | None | Git tag `v*.*.*` (GHA) | Production Neon DB | Live users, real payments |
-| **Staging** | main | Auto on push | Staging Neon DB | Integration testing, QA |
-| **Preview** | PR branches | Auto on PR | Inherits staging DB | Feature testing in isolation |
+| Environment    | Branch Tracking | Deploy Trigger         | Database            | Use Case                     |
+| -------------- | --------------- | ---------------------- | ------------------- | ---------------------------- |
+| **Production** | None            | Git tag `v*.*.*` (GHA) | Production Neon DB  | Live users, real payments    |
+| **Staging**    | main            | Auto on push           | Staging Neon DB     | Integration testing, QA      |
+| **Preview**    | PR branches     | Auto on PR             | Inherits staging DB | Feature testing in isolation |
 
 ### Key Features
 
 **Production:**
+
 - Manual deployment via GitHub Actions tag (`v1.0.0`, `v2.1.3`)
 - Production Stripe credentials (live mode)
 - Production Clerk instance
@@ -45,6 +46,7 @@ Kosuke Template uses a **three-tier environment strategy** for safe, controlled 
 - Webhook URLs use production domain
 
 **Staging:**
+
 - Auto-deploys on pushes to main
 - Test Stripe credentials (test mode)
 - Development Clerk instance
@@ -53,6 +55,7 @@ Kosuke Template uses a **three-tier environment strategy** for safe, controlled 
 - Full sign-up, billing, and authentication testing
 
 **Preview:**
+
 - Auto-deploys on pull requests
 - Inherits staging database (read/write to shared staging DB)
 - Test Stripe and Clerk credentials
@@ -61,9 +64,9 @@ Kosuke Template uses a **three-tier environment strategy** for safe, controlled 
 
 ### Webhook Behavior
 
-| Service | Production | Staging | Preview |
-|---|---|---|---|
-| **Clerk** | `https://yourdomain.com/api/clerk/webhook` | `https://your-project-name-staging.vercel.app/api/clerk/webhook` | Not available |
+| Service    | Production                                   | Staging                                                            | Preview       |
+| ---------- | -------------------------------------------- | ------------------------------------------------------------------ | ------------- |
+| **Clerk**  | `https://yourdomain.com/api/clerk/webhook`   | `https://your-project-name-staging.vercel.app/api/clerk/webhook`   | Not available |
 | **Stripe** | `https://yourdomain.com/api/billing/webhook` | `https://your-project-name-staging.vercel.app/api/billing/webhook` | Not available |
 
 :::tip
@@ -778,23 +781,24 @@ For each variable, click **Add New** and:
 
 **Variables that differ per environment:**
 
-| Variable | Preview | Staging | Production |
-|---|---|---|---|
-| `NEXT_PUBLIC_APP_URL` | `https://$VERCEL_URL` | `https://your-staging-domain.vercel.app` | `https://yourdomain.com` |
-| `STRIPE_SUCCESS_URL` | Staging domain | Staging domain | Prod domain |
-| `STRIPE_CANCEL_URL` | Staging domain | Staging domain | Prod domain |
-| `STRIPE_WEBHOOK_SECRET` | `we_...` (staging) | `we_...` (staging) | `whsec_...` (prod) |
-| `STRIPE_SECRET_KEY` | `sk_test_...` | `sk_test_...` | `sk_live_...` |
-| `STRIPE_PUBLISHABLE_KEY` | `pk_test_...` | `pk_test_...` | `pk_live_...` |
-| `CLERK_SECRET_KEY` | `sk_test_...` | `sk_test_...` | `sk_live_...` |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_...` | `pk_test_...` | `pk_live_...` |
-| `CLERK_WEBHOOK_SECRET` | Dev webhook | Dev webhook | Prod webhook |
-| `NODE_ENV` | (not set) | (not set) | `production` |
-| `CRON_SECRET` | (not set) | (not set) | Random token |
-| `POSTGRES_URL` | Staging DB | Staging DB | Prod DB |
-| `BLOB_READ_WRITE_TOKEN` | Staging blob | Staging blob | Prod blob |
+| Variable                            | Preview               | Staging                                  | Production               |
+| ----------------------------------- | --------------------- | ---------------------------------------- | ------------------------ |
+| `NEXT_PUBLIC_APP_URL`               | `https://$VERCEL_URL` | `https://your-staging-domain.vercel.app` | `https://yourdomain.com` |
+| `STRIPE_SUCCESS_URL`                | Staging domain        | Staging domain                           | Prod domain              |
+| `STRIPE_CANCEL_URL`                 | Staging domain        | Staging domain                           | Prod domain              |
+| `STRIPE_WEBHOOK_SECRET`             | `we_...` (staging)    | `we_...` (staging)                       | `whsec_...` (prod)       |
+| `STRIPE_SECRET_KEY`                 | `sk_test_...`         | `sk_test_...`                            | `sk_live_...`            |
+| `STRIPE_PUBLISHABLE_KEY`            | `pk_test_...`         | `pk_test_...`                            | `pk_live_...`            |
+| `CLERK_SECRET_KEY`                  | `sk_test_...`         | `sk_test_...`                            | `sk_live_...`            |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_...`         | `pk_test_...`                            | `pk_live_...`            |
+| `CLERK_WEBHOOK_SECRET`              | Dev webhook           | Dev webhook                              | Prod webhook             |
+| `NODE_ENV`                          | (not set)             | (not set)                                | `production`             |
+| `CRON_SECRET`                       | (not set)             | (not set)                                | Random token             |
+| `POSTGRES_URL`                      | Staging DB            | Staging DB                               | Prod DB                  |
+| `BLOB_READ_WRITE_TOKEN`             | Staging blob          | Staging blob                             | Prod blob                |
 
 **Shared across all environments (identical):**
+
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_FROM_NAME` (one API key, same email)
 - `NEXT_PUBLIC_SENTRY_DSN` (one project, environment-tagged)
 - `ENGINE_BASE_URL` (same microservice)
@@ -802,6 +806,7 @@ For each variable, click **Add New** and:
 - `STRIPE_PRO_PRICE_ID`, `STRIPE_BUSINESS_PRICE_ID` (same prices in test/live mode)
 
 **Key Facts:**
+
 - ✅ Preview & Staging use identical credentials (except `NEXT_PUBLIC_APP_URL`)
 - ✅ Only Production has live credentials for Stripe/Clerk
 - ✅ Database and blob storage auto-configured by Vercel per environment
