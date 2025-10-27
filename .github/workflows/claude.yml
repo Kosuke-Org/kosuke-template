@@ -11,11 +11,12 @@ on:
     types: [submitted]
 
 jobs:
-  claude:
+  # General code review
+  claude-review:
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.body, 'check consistency')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && !contains(github.event.comment.body, 'check consistency')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') && !contains(github.event.review.body, 'check consistency')) ||
       (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
@@ -23,7 +24,7 @@ jobs:
       pull-requests: read
       issues: read
       id-token: write
-      actions: read # Required for Claude to read CI results on PRs
+      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -31,33 +32,64 @@ jobs:
           fetch-depth: 1
 
       - name: Run Claude Code
-        id: claude
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-
-          # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
+          custom_instructions: |
+            Perform a GENERAL CODE REVIEW for functionality, bugs, logic, and quality.
 
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          # model: "claude-opus-4-20250514"
+  # Guidelines consistency check
+  claude-consistency-check:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && contains(github.event.comment.body, 'check consistency')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && contains(github.event.comment.body, 'check consistency')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') && contains(github.event.review.body, 'check consistency'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
 
-          # Optional: Customize the trigger phrase (default: @claude)
-          # trigger_phrase: "/claude"
+      - name: Read CLAUDE.md guidelines
+        id: guidelines
+        run: |
+          {
+            echo 'GUIDELINES<<EOF'
+            cat CLAUDE.md
+            echo EOF
+          } >> $GITHUB_OUTPUT
 
-          # Optional: Trigger when specific user is assigned to an issue
-          # assignee_trigger: "claude-bot"
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          additional_permissions: |
+            actions: read
+          custom_instructions: |
+            You have access to our project guidelines:
 
-          # Optional: Allow Claude to run specific commands
-          # allowed_tools: "Bash(pnpm add),Bash(pnpm run build),Bash(pnpm run test:*),Bash(pnpm run lint:*)"
+            ${{ steps.guidelines.outputs.GUIDELINES }}
 
-          # Optional: Add custom instructions for Claude to customize its behavior for your project
-          # custom_instructions: |
-          #   Follow our coding standards
-          #   Ensure all new code has tests
-          #   Use TypeScript for new files
+            ---
 
-          # Optional: Custom environment variables for Claude
-          # claude_env: |
-          #   NODE_ENV: test
+            Perform a GUIDELINES REVIEW checking code consistency with CLAUDE.md for:
+            - Type management (no manual types, always infer from tRPC router or database schema)
+            - Loading states (use skeleton components, never plain "Loading..." text)
+            - Component colocation and organization
+            - Database patterns (pgEnum, proper relations, no JSONB abuse)
+            - Error handling and logging practices
+            - Schema and seed synchronization
+            - File structure and naming conventions
+            - tRPC best practices and server-side filtering
+            - All other guidelines in CLAUDE.md
+
+            Provide specific feedback with code examples for any violations found.
