@@ -2,13 +2,11 @@
 
 import React from 'react';
 
-// ❌ Violates: Never use 'any' type
 interface BadProps {
   data: any;
   onClick: any;
 }
 
-// ❌ Violates: Use functional components, not classes
 export class TestComponent extends React.Component<BadProps> {
   render() {
     return (
