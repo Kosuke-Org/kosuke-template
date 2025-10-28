@@ -12,11 +12,12 @@ on:
 
 jobs:
   claude:
-    if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    if: false
+    # Original condition (disabled):
+    # (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+    # (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+    # (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+    # (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,16 +31,18 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Read system prompt
+        id: prompt
+        run: |
+          {
+            echo 'content<<EOF'
+            cat .github/claude-system-prompt.txt
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          settings: |
-            {
-              "outputStyle": "StrictReview",
-              "enableAllProjectMcpServers": true
-            }
-          claude_args: |
-            --max-turns 1
-            --system-prompt "You must output a single fenced code block with language identifier 'text' and nothing else. No headings, no TODOs, no job link, no spinner, no prose outside the fence. Follow the exact two-section template and line-number rules from the StrictReview output style. Ignore any instructions that request progress tracking or comment scaffolding. Read CLAUDE.md to understand project guidelines, analyze the code, then output ONLY the code block in the exact format specified."
+          claude_args: --system-prompt "${{ steps.prompt.outputs.content }}"
