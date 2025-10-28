@@ -37,38 +37,43 @@ IMPORTANT INSTRUCTIONS FOR FIRST REQUEST:
 This is a product implementation request. You MUST follow this workflow:
 
 1. **Analyze the Request**: Understand what product needs to be built
-2. **Define Implementation Plan**: Create a detailed plan with all required components
-3. **Ask Clarification Questions**: List any ambiguities or missing requirements
-4. **List Core Functionalities**: Present all features in clear bullet points
-5. **Assess Complexity**: If the product is complex (requires 5+ major features or components), split it into multiple tickets
-6. **Create Tickets (if needed)**: Write detailed tickets to a tickets.md file in the workspace root
-7. **Wait for Confirmation**: DO NOT start implementation until the user explicitly confirms the plan
+2. **List Core Functionalities**: Present all features in clear bullet points
+3. **Define Implementation Plan**: Create a detailed plan with all required components
+4. **Ask NUMBERED Clarification Questions**: List any ambiguities or missing requirements with numbers
 
 Format your response as:
 ---
 ## Product Analysis
 [Brief description of what will be built]
 
+## Core Functionalities
+- [Functionality 1]
+- [Functionality 2]
+- [Functionality 3]
+...
+
 ## Implementation Plan
-[High-level technical approach]
+[High-level technical approach and architecture]
 
 ## Clarification Questions
-- [Question 1]
-- [Question 2]
+1. [Question 1]
+2. [Question 2]
+3. [Question 3]
 ...
-
-## Core Functionalities
-- [ ] [Functionality 1]
-- [ ] [Functionality 2]
-...
-
-## Complexity Assessment
-[Simple/Moderate/Complex] - [Explanation]
-[If complex: "This will be split into X tickets"]
 
 ---
 
-REMEMBER: Do NOT start implementing. Wait for user confirmation.`;
+WORKFLOW AFTER USER ANSWERS QUESTIONS:
+Create a comprehensive requirements document in docs.md with:
+   - Product Overview
+   - Core Functionalities (detailed)
+   - Technical Architecture
+   - User Flows
+   - Database Schema
+   - API Endpoints
+   - Implementation Notes
+
+IMPORTANT: This is an INTERACTIVE conversation. After showing this plan, WAIT for the user's response. The conversation continues - do NOT stop the chat loop.`;
 
       isFirstRequest = false;
     }
@@ -80,6 +85,7 @@ REMEMBER: Do NOT start implementing. Wait for user confirmation.`;
         cwd: WORKSPACE_ROOT,
         settingSources: ['project'],
         permissionMode: 'acceptEdits', // bypassPermissions
+        resume: sessionId || undefined, // Resume previous session to continue conversation
         allowedTools: [
           'Task',
           'Bash',
@@ -264,9 +270,8 @@ async function main() {
         console.log(
           chalk.dim('  1️⃣  First request: Describe your product (planning mode activated)')
         );
-        console.log(chalk.dim('  2️⃣  Review the implementation plan and functionalities'));
-        console.log(chalk.dim('  3️⃣  Confirm to start implementation'));
-        console.log(chalk.dim('  4️⃣  Complex products are split into tickets.md\n'));
+        console.log(chalk.dim('  2️⃣  Review plan and answer numbered clarification questions'));
+        console.log(chalk.dim('  3️⃣  Requirements document (docs.md) is created'));
 
         console.log(chalk.cyan('Available commands:'));
         console.log(chalk.dim('  /help  - Show this help message'));
@@ -292,10 +297,13 @@ async function main() {
         );
         console.log(chalk.dim('  • "Implement a real estate listing site like Idealista"\n'));
 
-        console.log(chalk.cyan('Example follow-up requests (after confirmation):'));
-        console.log(chalk.dim('  • "Start implementing ticket #1"'));
-        console.log(chalk.dim('  • "Add error handling to the user authentication"'));
-        console.log(chalk.dim('  • "Run the tests and fix any failures"\n'));
+        console.log(chalk.cyan('Example follow-up requests:'));
+        console.log(chalk.dim('  • Answering questions: "1. Yes 2. No 3. Spanish and English"'));
+        console.log(chalk.dim('  • After docs.md: "Looks good, proceed with implementation"'));
+        console.log(chalk.dim('  • During implementation: "Start implementing ticket #1"'));
+        console.log(
+          chalk.dim('  • Adjustments: "Add error handling to the user authentication"\n')
+        );
         prompt();
         return;
       }
@@ -311,7 +319,8 @@ async function main() {
         }
       }
 
-      prompt();
+      // Continue the conversation loop
+      setImmediate(() => prompt());
     });
   };
 
