@@ -3,10 +3,10 @@ import { render } from '@react-email/components';
 import React from 'react';
 
 // Initialize Resend client
-export const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Email configuration
-export const EMAIL_CONFIG = {
+const EMAIL_CONFIG = {
   FROM_EMAIL: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
   FROM_NAME: process.env.RESEND_FROM_NAME || 'Kosuke Template',
   REPLY_TO: process.env.RESEND_REPLY_TO,
@@ -53,14 +53,4 @@ export async function sendEmail({
     console.error('💥 Error sending email:', error);
     throw error;
   }
-}
-
-// Utility function to render React Email component to HTML for preview
-export async function renderEmailToHtml(component: React.ReactElement): Promise<string> {
-  return await render(component);
-}
-
-// Utility function to render React Email component to plain text
-export async function renderEmailToText(component: React.ReactElement): Promise<string> {
-  return await render(component, { plainText: true });
 }

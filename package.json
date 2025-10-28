@@ -5,41 +5,42 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:email": "concurrently \"pnpm run dev\" \"pnpm run email:dev\"",
-    "prebuild": "pnpm run db:migrate",
+    "dev:email": "concurrently \"bun run dev\" \"bun run email:dev\"",
+    "prebuild": "bun run db:migrate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 0",
-    "lint:all": "pnpm run lint && pnpm run lint:engine",
+    "lint:all": "bun run lint && bun run lint:engine",
     "lint:engine": "cd engine && uv run ruff check .",
     "lint:engine:fix": "cd engine && uv run ruff check . --fix",
     "lint-staged": "lint-staged",
     "test": "vitest",
-    "test:all": "pnpm run test && pnpm run test:engine",
+    "test:all": "bun run test && bun run test:engine",
     "test:engine": "cd engine && uv run pytest -v",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "prepare": "husky install",
     "format": "prettier --write .",
-    "format:all": "pnpm run format && pnpm run format:engine",
+    "format:all": "bun run format && bun run format:engine",
     "format:engine": "cd engine && uv run ruff format .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
-    "typecheck:all": "pnpm run typecheck && pnpm run typecheck:engine",
+    "typecheck:all": "bun run typecheck && bun run typecheck:engine",
     "typecheck:engine": "cd engine && uv run mypy .",
-    "check:all": "pnpm run lint:all && pnpm run typecheck:all && pnpm run test:all",
+    "check:all": "bun run lint:all && bun run typecheck:all && bun run test:all && bun run knip",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:prod": "drizzle-kit migrate --verbose",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "npx tsx -r dotenv/config lib/db/scripts/db-seed.ts",
-    "db:reset": "npx tsx -r dotenv/config lib/db/scripts/db-reset.ts && pnpm run db:migrate && pnpm run db:seed",
+    "db:seed": "bunx tsx -r dotenv/config lib/db/scripts/db-seed.ts",
+    "db:reset": "bunx tsx -r dotenv/config lib/db/scripts/db-reset.ts && bun run db:migrate && bun run db:seed",
     "email:dev": "email dev --dir emails --port 3001",
     "email:export": "email export --dir emails --out .react-email",
     "shadcn:update": "npx shadcn@canary add -a -y -o",
     "shadcn:check": "npx shadcn@canary diff",
-    "claude-cli": "npx tsx -r dotenv/config claude-cli.ts"
+    "claude-cli": "npx tsx -r dotenv/config claude-cli.ts",
+    "knip": "knip"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.33.7",
@@ -78,6 +79,7 @@
     "@react-email/tailwind": "^1.2.2",
     "@sentry/nextjs": "^10.20.0",
     "@tanstack/react-query": "^5.90.5",
+    "@tanstack/react-table": "^8.21.3",
     "@trpc/client": "^11.6.0",
     "@trpc/next": "^11.6.0",
     "@trpc/react-query": "^11.6.0",
@@ -95,8 +97,7 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.24",
     "input-otp": "^1.4.2",
-    "jose": "^6.0.10",
-    "lucide-react": "^0.546.0",
+    "lucide-react": "^0.548.0",
     "next": "15.5.6",
     "next-themes": "^0.4.6",
     "pg": "^8.14.1",
@@ -115,8 +116,8 @@
     "svix": "^1.77.0",
     "tailwind-merge": "^3.3.0",
     "tailwindcss-animate": "^1.0.7",
-    "tunnel-rat": "^0.1.2",
     "vaul": "^1.1.2",
+    "xlsx": "^0.18.5",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"
   },
@@ -134,6 +135,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/xlsx": "^0.0.36",
     "@vitejs/plugin-react": "^4.3.4",
     "@vitest/coverage-v8": "^3.1.3",
     "chalk": "^5.6.2",
@@ -142,6 +144,8 @@
     "eslint-config-next": "15.2.4",
     "eslint-config-prettier": "^9.0.0",
     "husky": "^8.0.0",
+    "jsdom": "^27.0.1",
+    "knip": "^5.45.3",
     "lint-staged": "^15.0.0",
     "ora": "^9.0.0",
     "postcss": "^8.5.3",
@@ -153,13 +157,18 @@
     "vitest": "^3.1.3"
   },
   "engines": {
-    "node": "20.x",
-    "pnpm": "10"
+    "node": "20.x"
+  },
+  "overrides": {
+    "parse5": "^7.1.2"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
       "prettier --write",
       "eslint --fix --max-warnings 0"
+    ],
+    "*.{yml,yaml,md,json}": [
+      "prettier --write"
     ]
   }
 }

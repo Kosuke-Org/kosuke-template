@@ -66,7 +66,7 @@ if [ -n "$js_files" ]; then
 
   # Run linting and formatting
   echo "🌐 Running JS/TS lint-staged checks..."
-  pnpm lint-staged
+  bun run lint-staged
   if [ $? -ne 0 ]; then
     echo "❌ JS/TS lint-staged checks failed. Please fix the errors before committing."
     exit 1
@@ -74,7 +74,7 @@ if [ -n "$js_files" ]; then
 
   # Run type checking
   echo "🔎 Running TypeScript type checking..."
-  pnpm run typecheck
+  bun run typecheck
   if [ $? -ne 0 ]; then
     echo "❌ Type checking failed. Please fix the type errors before committing."
     exit 1
@@ -82,7 +82,7 @@ if [ -n "$js_files" ]; then
 
   # Run tests
   echo "🧪 Running tests..."
-  pnpm test
+  bun run test
   if [ $? -ne 0 ]; then
     echo "❌ Tests failed. Please fix the failing tests before committing."
     exit 1

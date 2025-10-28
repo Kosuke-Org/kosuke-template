@@ -22,6 +22,7 @@ const routeNames: Record<string, string> = {
   success: 'Success',
   account: 'Account',
   tasks: 'Tasks',
+  orders: 'Orders',
 };
 
 export function DynamicBreadcrumb() {
@@ -38,51 +39,37 @@ export function DynamicBreadcrumb() {
 
   let breadcrumbItems: Array<{ href: string | null; name: string; isLast: boolean }> = [];
 
-  const getDisplayName = (path: string) => {
-    const pathSegments = path.split('/').filter(Boolean);
-    const subPage = pathSegments[pathSegments.length - 1];
-    return routeNames[subPage] || subPage.charAt(0).toUpperCase() + subPage.slice(1);
+  const getDisplayName = (segment: string) => {
+    return routeNames[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
   };
 
-  // Handle different route patterns
-  if (pathname === '/dashboard') {
-    // Dashboard page - just show "Dashboard"
-    breadcrumbItems = [{ href: '/dashboard', name: 'Dashboard', isLast: true }];
-  } else if (pathname === '/settings') {
-    // Base settings page (account) - show "Settings > Account"
+  // Settings routes: Settings > Subpage
+  if (pathname.startsWith('/settings')) {
+    const subPage = pathSegments[1] || 'account';
     breadcrumbItems = [
       { href: '/settings', name: 'Settings', isLast: false },
-      { href: '/settings', name: 'Account', isLast: true },
-    ];
-  } else if (pathname.startsWith('/settings/')) {
-    // Nested settings pages - show "Settings > [SubPage]"
-
-    breadcrumbItems = [
-      { href: '/settings', name: 'Settings', isLast: false },
-      { href: pathname, name: getDisplayName(pathname), isLast: true },
+      { href: pathname, name: getDisplayName(subPage), isLast: true },
     ];
   } else if (pathname.startsWith('/org/')) {
-    breadcrumbItems = [
-      {
-        href: `/org/${pathSegments[1]}/settings`,
-        name: activeOrganization?.name || 'Organization',
-        isLast: false,
-      },
-      { href: pathname, name: getDisplayName(pathname), isLast: true },
-    ];
-  } else {
-    // Default handling for other routes
-    breadcrumbItems = pathSegments.map((segment, index) => {
-      const href = `/${pathSegments.slice(0, index + 1).join('/')}`;
-      const isLast = index === pathSegments.length - 1;
-      const displayName = routeNames[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+    const orgSlug = pathSegments[1];
 
-      return {
-        href,
-        name: displayName,
-        isLast,
-      };
+    breadcrumbItems.push({
+      href: `/org/${orgSlug}/settings`,
+      name: activeOrganization?.name || 'Organization',
+      isLast: pathSegments.length === 2,
     });
+
+    for (let i = 2; i < pathSegments.length; i++) {
+      const segment = pathSegments[i];
+      const isLast = i === pathSegments.length - 1;
+      const href = `/${pathSegments.slice(0, i + 1).join('/')}`;
+
+      breadcrumbItems.push({
+        href,
+        name: getDisplayName(segment),
+        isLast,
+      });
+    }
   }
 
   return (

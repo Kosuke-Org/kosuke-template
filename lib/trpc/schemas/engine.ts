@@ -6,7 +6,7 @@
 
 import { z } from 'zod';
 
-export const currencyCodeSchema = z.enum(['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY']);
+const currencyCodeSchema = z.enum(['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY']);
 
 export const currencyConvertRequestSchema = z.object({
   amount: z.number().min(0, 'Amount cannot be negative'),

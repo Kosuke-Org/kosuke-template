@@ -3,7 +3,7 @@ import {
   getSubscriptionEligibility,
   getTierInfo,
   getAvailableTiers,
-} from '@/lib/billing/eligibility';
+} from '@/lib/billing';
 import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
 import { SubscriptionState, type UserSubscriptionInfo } from '@/lib/types';
 

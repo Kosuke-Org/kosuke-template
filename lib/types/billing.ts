@@ -1,8 +1,5 @@
 import type { UserSubscription, SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
 
-// Base types extending schema
-export type { UserSubscription, SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
-
 // Enhanced subscription state enum for better state management
 export enum SubscriptionState {
   FREE = 'free',
@@ -44,23 +41,4 @@ export interface OperationResult<T = unknown> {
   message: string;
   data?: T;
   error?: string;
-}
-
-// Subscription action response types (from hooks)
-export interface UpgradeResponse {
-  success: boolean;
-  checkoutUrl?: string;
-  error?: string;
-}
-
-// Subscription information types (merged from use-subscription-data)
-export interface SubscriptionInfo {
-  tier: string;
-  status: string;
-  currentPeriodEnd?: string;
-  activeSubscription?: UserSubscription | null;
-  user?: {
-    localId: string;
-    clerkUserId: string;
-  };
 }

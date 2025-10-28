@@ -7,11 +7,6 @@
 
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
-import type { AppRouter } from '@/lib/trpc/router';
-import type { inferRouterOutputs } from '@trpc/server';
-
-type RouterOutput = inferRouterOutputs<AppRouter>;
-type OrgMember = RouterOutput['organizations']['getOrgMembers'][number];
 
 export function useOrgMembers(organizationId: string | undefined) {
   const { toast } = useToast();
@@ -76,5 +71,3 @@ export function useOrgMembers(organizationId: string | undefined) {
     isUpdatingRole: updateMemberRole.isPending,
   };
 }
-
-export type { OrgMember };

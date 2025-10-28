@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CheckSquare, FileText, LifeBuoy, Send, SquareTerminal } from 'lucide-react';
+import { CheckSquare, FileText, LifeBuoy, ReceiptText, Send, SquareTerminal } from 'lucide-react';
 
 import { NavMain } from '@/components/nav-main';
 import { NavSecondary } from '@/components/nav-secondary';
@@ -16,40 +16,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Generate org-aware navigation items
   const navItems = React.useMemo(() => {
-    if (!activeOrganization) {
-      return {
-        navMain: [
-          {
-            title: 'Dashboard',
-            url: '/dashboard',
-            icon: SquareTerminal,
-            isActive: true,
-          },
-          {
-            title: 'Tasks',
-            url: '/tasks',
-            icon: CheckSquare,
-          },
-          {
-            title: 'Docs',
-            url: '/docs',
-            icon: FileText,
-          },
-        ],
-        navSecondary: [
-          {
-            title: 'Support',
-            url: '#',
-            icon: LifeBuoy,
-          },
-          {
-            title: 'Feedback',
-            url: '#',
-            icon: Send,
-          },
-        ],
-      };
-    }
+    if (!activeOrganization) return { navMain: [], navSecondary: [] };
 
     const orgPrefix = `/org/${activeOrganization.slug}`;
 
@@ -65,6 +32,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           title: 'Tasks',
           url: `${orgPrefix}/tasks`,
           icon: CheckSquare,
+        },
+        {
+          title: 'Orders',
+          url: `${orgPrefix}/orders`,
+          icon: ReceiptText,
         },
         {
           title: 'Docs',
@@ -93,7 +65,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarOrgSwitcher />
       </SidebarHeader>
       <SidebarContent>
-        {isLoading ? (
+        {isLoading || !activeOrganization ? (
           <div className="space-y-2 p-2">
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
