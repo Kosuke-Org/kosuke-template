@@ -1,0 +1,67 @@
+name: Strict Claude Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install Claude Code (base)
+        uses: anthropics/claude-code-action@v1.0.15
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Build strict prompt + diff
+        run: |
+          set -euo pipefail
+          
+          git diff origin/${{ github.base_ref }}...HEAD > pr.diff || true
+          
+          if [ ! -s pr.diff ]; then
+            cat > review.txt <<'BLOCK'
+          ```text
+          GUIDELINE VIOLATIONS
+          
+          POTENTIAL BUGS
+          ```
+          BLOCK
+            exit 0
+          fi
+          
+          {
+            cat .github/claude-system-prompt.txt
+            echo ""
+            echo "--- PROJECT GUIDELINES (CLAUDE.md) ---"
+            cat CLAUDE.md
+            echo "--- END PROJECT GUIDELINES ---"
+            echo ""
+            echo "--- BEGIN DIFF ---"
+            cat pr.diff
+            echo "--- END DIFF ---"
+          } > prompt.txt
+
+      - name: Run Claude and validate format
+        if: success() && ${{ hashFiles('review.txt') == '' }}
+        run: |
+          set -euo pipefail
+          claude -p --model sonnet-4.5 --max-tokens 1500 --system-prompt "$(cat prompt.txt)" > review.txt
+
+          # Strict fence checks
+          head -n1 review.txt | grep -q '^```text$' || { echo "Missing ```text fence"; cat review.txt; exit 1; }
+          tail -n1 review.txt | grep -q '^```$'     || { echo "Missing closing ``` fence"; cat review.txt; exit 1; }
+
+      - name: Post as PR comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file review.txt
