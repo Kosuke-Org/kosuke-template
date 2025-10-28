@@ -20,19 +20,36 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
-      issues: read
+      pull-requests: write
+      issues: write
       id-token: write
-      actions: read # Required for Claude to read CI results on PRs
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
-      - name: Run Claude Code
-        id: claude
-        uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: --system-prompt "$(cat .github/claude-system-prompt.txt)"
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Install Claude Code
+        run: curl https://claude.sh | bash
+
+      - name: Run Claude Review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: |
+          claude -p --system-prompt "$(cat .github/claude-system-prompt.txt)" << 'EOF' > /tmp/review.txt
+          Review this PR and output ONLY this format with no markdown:
+          
+          GUIDELINE VIOLATIONS
+          - file:line-range - Issue
+          
+          POTENTIAL BUGS
+          - file:line-range - Issue
+          EOF
+          
+          gh pr comment $PR_NUMBER --body "$(cat /tmp/review.txt)" || \
+          gh issue comment $PR_NUMBER --body "$(cat /tmp/review.txt)"
