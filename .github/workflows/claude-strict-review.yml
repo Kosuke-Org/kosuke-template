@@ -17,11 +17,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Claude Code (base)
-        uses: anthropics/claude-code-action@v1.0.15
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-
       - name: Build strict prompt + diff
         run: |
           set -euo pipefail
@@ -55,8 +50,8 @@ jobs:
         if: success() && ${{ hashFiles('review.txt') == '' }}
         run: |
           set -euo pipefail
-          claude -p --model sonnet-4.5 --max-tokens 1500 --system-prompt "$(cat prompt.txt)" > review.txt
-
+          npx @anthropic-ai/cli -p --model sonnet-4.5 --max-tokens 1500 --system-prompt "$(cat prompt.txt)" > review.txt
+          
           # Strict fence checks
           head -n1 review.txt | grep -q '^```text$' || { echo "Missing ```text fence"; cat review.txt; exit 1; }
           tail -n1 review.txt | grep -q '^```$'     || { echo "Missing closing ``` fence"; cat review.txt; exit 1; }
