@@ -159,9 +159,6 @@
   "engines": {
     "node": "20.x"
   },
-  "overrides": {
-    "parse5": "^7.1.2"
-  },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
       "prettier --write",
