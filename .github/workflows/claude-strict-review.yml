@@ -3,6 +3,10 @@ name: Strict Claude Review
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  pull_request_review_comment:
+    types: [created]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: read
@@ -11,11 +15,21 @@ permissions:
 
 jobs:
   review:
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Claude CLI
+        run: bun add -g @anthropic-ai/sdk
 
       - name: Build strict prompt + diff
         run: |
@@ -50,7 +64,7 @@ jobs:
         if: success() && ${{ hashFiles('review.txt') == '' }}
         run: |
           set -euo pipefail
-          npx @anthropic-ai/cli -p --model sonnet-4.5 --max-tokens 1500 --system-prompt "$(cat prompt.txt)" > review.txt
+          claude -p --model sonnet-4.5 --max-tokens 1500 --system-prompt "$(cat prompt.txt)" > review.txt
           
           # Strict fence checks
           head -n1 review.txt | grep -q '^```text$' || { echo "Missing ```text fence"; cat review.txt; exit 1; }
