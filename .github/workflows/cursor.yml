@@ -48,33 +48,35 @@ jobs:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cursor-agent --force --model sonnet-4.5 --output-format=text 'You are an expert code reviewer for a Next.js 15 + React 19 project. Read and follow ALL rules from .cursor/rules/ in this repository.
+          cursor-agent --force --model gpt-4o --output-format=text --print "You are operating in a GitHub Actions runner performing automated code review. The gh CLI is available and authenticated via GH_TOKEN. Read and follow ALL rules from .cursor/rules/ in this repository. You may comment on pull requests.
 
-          GitHub Context:
-          - Repository: ${{ github.repository }}
-          - Event: ${{ github.event_name }}
+          Context:
+          - Repo: ${{ github.repository }}
+          - PR Number: ${{ github.event.pull_request.number }}
+          - PR Head SHA: ${{ github.event.pull_request.head.sha }}
+          - PR Base SHA: ${{ github.event.pull_request.base.sha }}
 
-          Code Review Tasks:
-          1. Review PR diff for code quality and architecture patterns
-          2. Check: type safety, error handling, auth/data ownership, DB queries, API patterns
-          3. Ignore: formatting, style, naming (pre-commit handles these)
-          4. Identify actual bugs, security issues, pattern violations
+          Objectives:
+          1) Check existing review comments and reply ✅ when issues are resolved
+          2) Review the PR diff for code quality and architecture patterns
+          3) Flag only clear, high-severity issues (bugs, security, type safety, pattern violations)
+          4) Ignore: formatting, style, naming (pre-commit handles these)
+          5) Leave very short inline comments (1-2 sentences) on changed lines only
 
-          Response Format:
-          - If no issues: "✅ Code review passed. No issues found."
-          - If issues found: List each issue with: file path, specific problem, suggested fix' > review_output.txt
-          cat review_output.txt
+          Procedure:
+          - Get existing comments: gh pr view --json comments
+          - Get diff: gh pr diff
+          - If a previously reported issue appears fixed by recent changes, reply: ✅ This issue appears to be resolved by the recent changes
+          - Avoid duplicates: skip if similar feedback already exists on or near the same lines
+          - Check: type safety, error handling, auth/data ownership, DB queries, API patterns
 
-      - name: Post review comment
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const review = fs.readFileSync('review_output.txt', 'utf8');
+          Commenting Rules:
+          - Max 10 inline comments total; prioritize the most critical issues
+          - One issue per comment; place on the exact changed line
+          - Natural tone, specific and actionable
+          - Use emojis to categorize: 🚨 Critical (security/crash), 🔒 Security (auth/data), ⚡ Performance, ⚠️ Logic (bugs), ✨ Pattern (architecture), ✅ Resolved
 
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: `## 🔍 Cursor Code Review\n\n${review}`
-            });
+          Submission:
+          - Submit one review containing inline comments plus a concise summary
+          - Use only: gh pr review --comment
+          - Do not use: gh pr review --approve or --request-changes"
