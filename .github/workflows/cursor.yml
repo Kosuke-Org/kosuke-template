@@ -48,7 +48,7 @@ jobs:
           CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cursor-agent --force --model gpt-4o --output-format=text --print "You are operating in a GitHub Actions runner performing automated code review. The gh CLI is available and authenticated via GH_TOKEN. Read and follow ALL rules from .cursor/rules/ in this repository. You may comment on pull requests.
+          cursor-agent --force --model sonnet-4.5 --output-format=text --print "You are operating in a GitHub Actions runner performing automated code review. The gh CLI is available and authenticated via GH_TOKEN. Read and follow ALL rules from .cursor/rules/ in this repository. You may comment on pull requests.
 
           Context:
           - Repo: ${{ github.repository }}
