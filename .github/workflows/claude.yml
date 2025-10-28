@@ -12,12 +12,11 @@ on:
 
 jobs:
   claude:
-    if: false
-    # Original condition (disabled):
-    # (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-    # (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-    # (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-    # (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -31,18 +30,9 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Read system prompt
-        id: prompt
-        run: |
-          {
-            echo 'content<<EOF'
-            cat .github/claude-system-prompt.txt
-            echo 'EOF'
-          } >> $GITHUB_OUTPUT
-
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: --system-prompt "${{ steps.prompt.outputs.content }}"
+          claude_args: --system-prompt "$(cat .github/claude-system-prompt.txt)"
