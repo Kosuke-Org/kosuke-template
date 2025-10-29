@@ -7,7 +7,9 @@ WORKDIR /app
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN npm install -g bun@1.3.1
+# Install Bun from .bun-version file
+COPY .bun-version /tmp/.bun-version
+RUN npm install -g bun@$(cat /tmp/.bun-version)
 
 # Copy and set up simplified entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh

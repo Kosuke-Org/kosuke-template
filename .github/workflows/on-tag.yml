@@ -29,8 +29,7 @@ jobs:
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.1
+        # Automatically reads from .bun-version file
 
       - name: Update package.json
         run: |
@@ -126,8 +125,7 @@ jobs:
 
       - name: Setup Bun for Docusaurus
         uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.1
+        # Automatically reads from .bun-version file
 
       - name: Create Docusaurus Version (major/minor only)
         if: ${{ !contains(env.VERSION, 'rc') && !contains(env.VERSION, 'beta') && !contains(env.VERSION, 'alpha') }}
@@ -165,8 +163,7 @@ jobs:
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.1
+        # Automatically reads from .bun-version file
 
       - name: Install Vercel CLI
         run: bun add --global vercel@latest
