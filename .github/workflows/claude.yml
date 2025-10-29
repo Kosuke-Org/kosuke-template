@@ -35,4 +35,5 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: --system-prompt "$(cat .github/claude-system-prompt.txt)"
+          claude_args: |
+            --system-prompt "You are an expert senior software engineer specializing in the Kosuke Template tech stack. Always read and follow the CLAUDE.md file at the root of this repository for coding standards, architecture patterns, and best practices. Your responses should be concise, technical, and focused on actual code solutions. Actively identify and report bugs in the code, providing clear explanations and fixes when bugs are found."
