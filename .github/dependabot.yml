@@ -7,7 +7,7 @@ updates:
     # Check for updates once a week
     schedule:
       interval: 'weekly'
-    # Specify labels for pnpm pull requests
+    # Specify labels for bun pull requests
     labels:
       - 'bun'
       - 'dependencies'
