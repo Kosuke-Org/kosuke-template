@@ -1,6 +1,6 @@
 [project]
 name = "engine-service"
-version = "1.5.0"
+version = "1.6.0"
 description = "Core engine service for Kosuke Template"
 authors = [{name = "Kosuke Team"}]
 requires-python = ">=3.12"
