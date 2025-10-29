@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # Enable version updates for pnpm (using npm ecosystem)
+  # Enable version updates for bun (using npm ecosystem)
   - package-ecosystem: 'npm'
     # Look for `package.json` and `lock` files in the `root` directory
     directory: '/'
@@ -9,7 +9,7 @@ updates:
       interval: 'weekly'
     # Specify labels for pnpm pull requests
     labels:
-      - 'pnpm'
+      - 'bun'
       - 'dependencies'
     # Set reviewers for pull requests
     reviewers:
