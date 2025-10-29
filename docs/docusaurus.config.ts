@@ -46,7 +46,7 @@ const config: Config = {
           // Remove this to remove the "edit this page" links.
           editUrl: 'https://github.com/filopedraz/kosuke-template/tree/main/docs/',
           // Versioning configuration
-          lastVersion: '1.5.0',
+          lastVersion: '1.8.0',
           versions: {
             current: {
               label: 'Next 🚧',
