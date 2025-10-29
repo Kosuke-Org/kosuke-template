@@ -27,14 +27,15 @@ jobs:
           echo "VERSION_NUMBER=${VERSION_NUMBER}" >> $GITHUB_ENV
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        # Automatically reads from .bun-version file
 
       - name: Update package.json
         run: |
-          npm version ${{ env.VERSION_NUMBER }} --no-git-tag-version --allow-same-version
+          # Use jq to update version in package.json
+          jq --arg version "${{ env.VERSION_NUMBER }}" '.version = $version' package.json > package.json.tmp
+          mv package.json.tmp package.json
 
       - name: Update engine/pyproject.toml
         run: |
@@ -122,23 +123,17 @@ jobs:
 
             ${{ github.event.release.body }}
 
-      - name: Setup Node.js for Docusaurus
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-
-      - name: Install Bun
+      - name: Setup Bun for Docusaurus
         uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+        # Automatically reads from .bun-version file
 
       - name: Create Docusaurus Version (major/minor only)
         if: ${{ !contains(env.VERSION, 'rc') && !contains(env.VERSION, 'beta') && !contains(env.VERSION, 'alpha') }}
         run: |
           cd docs
-          pnpm install --frozen-lockfile
+          bun install --frozen-lockfile
           VERSION_NUMBER=${VERSION#v}
-          pnpm run docusaurus docs:version $VERSION_NUMBER
+          bun run docusaurus docs:version $VERSION_NUMBER
 
           if [ -d "versioned_docs/version-$VERSION_NUMBER" ]; then
             # Update lastVersion in docusaurus.config.ts to the new version
@@ -166,8 +161,12 @@ jobs:
         with:
           ref: main
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        # Automatically reads from .bun-version file
+
       - name: Install Vercel CLI
-        run: npm install --global vercel@latest
+        run: bun add --global vercel@latest
 
       - name: Deploy to Production
         run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}

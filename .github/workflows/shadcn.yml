@@ -31,35 +31,28 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'pnpm'
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        # Automatically reads from .bun-version file
 
       - name: Install dependencies
-        run: pnpm install
+        run: bun install
 
       - name: Update shadcn/ui components
         run: |
           echo "🤖 Updating all shadcn/ui components..."
-          npx shadcn@canary add -a -y -o
+          bunx shadcn@canary add -a -y -o
           echo "✅ All components updated successfully!"
 
       - name: Format code with Prettier
         run: |
           echo "🎨 Formatting code with Prettier..."
-          pnpm run format
+          bun run format
 
       - name: Lint code with ESLint
         run: |
           echo "🔍 Linting code with ESLint..."
-          pnpm run lint
+          bun run lint
 
       - name: Check for file changes
         id: check-changes

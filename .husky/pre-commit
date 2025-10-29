@@ -88,6 +88,14 @@ if [ -n "$js_files" ]; then
     exit 1
   fi
 
+  # Run knip
+  echo "🔪 Running Knip..."
+  bun run knip
+  if [ $? -ne 0 ]; then
+    echo "❌ Knip check failed. Please fix unused exports/dependencies before committing."
+    exit 1
+  fi
+
   echo "✅ Next.js checks passed!"
 fi
 
