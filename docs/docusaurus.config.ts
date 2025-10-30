@@ -23,7 +23,7 @@ const config: Config = {
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'filopedraz', // Usually your GitHub org/user name.
+  organizationName: 'Kosuke Org', // Usually your GitHub org/user name.
   projectName: 'kosuke-template', // Usually your repo name.
 
   onBrokenLinks: 'warn', // Temporarily warn instead of throw to complete migration
@@ -44,7 +44,7 @@ const config: Config = {
           sidebarPath: './sidebars.ts',
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl: 'https://github.com/filopedraz/kosuke-template/tree/main/docs/',
+          editUrl: 'https://github.com/Kosuke-Org/kosuke-template/tree/main/docs/',
           // Versioning configuration
           lastVersion: '1.8.0',
           versions: {
@@ -63,7 +63,7 @@ const config: Config = {
           },
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
-          editUrl: 'https://github.com/filopedraz/kosuke-template/tree/main/docs/',
+          editUrl: 'https://github.com/Kosuke-Org/kosuke-template/tree/main/docs/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
@@ -97,7 +97,7 @@ const config: Config = {
         },
         { to: '/blog', label: 'Blog', position: 'left' },
         {
-          href: 'https://github.com/filopedraz/kosuke-template/releases',
+          href: 'https://github.com/Kosuke-Org/kosuke-template/releases',
           label: 'Changelog',
           position: 'left',
         },
@@ -107,7 +107,7 @@ const config: Config = {
           dropdownActiveClassDisabled: true,
         },
         {
-          href: 'https://github.com/filopedraz/kosuke-template',
+          href: 'https://github.com/Kosuke-Org/kosuke-template',
           label: 'GitHub',
           position: 'right',
         },
@@ -134,11 +134,11 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/filopedraz/kosuke-template',
+              href: 'https://github.com/Kosuke-Org/kosuke-template',
             },
             {
               label: 'Contributing',
-              href: 'https://github.com/filopedraz/kosuke-template#-contributing',
+              href: 'https://github.com/Kosuke-Org/kosuke-template#-contributing',
             },
             {
               label: 'Blog',
@@ -146,7 +146,7 @@ const config: Config = {
             },
             {
               label: 'Changelog',
-              href: 'https://github.com/filopedraz/kosuke-template/releases',
+              href: 'https://github.com/Kosuke-Org/kosuke-template/releases',
             },
           ],
         },
@@ -155,11 +155,11 @@ const config: Config = {
           items: [
             {
               label: 'Releases',
-              href: 'https://github.com/filopedraz/kosuke-template/releases',
+              href: 'https://github.com/Kosuke-Org/kosuke-template/releases',
             },
             {
               label: 'License',
-              href: 'https://github.com/filopedraz/kosuke-template/blob/main/LICENSE',
+              href: 'https://github.com/Kosuke-Org/kosuke-template/blob/main/LICENSE',
             },
           ],
         },

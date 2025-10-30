@@ -120,12 +120,12 @@ Sentry integration for production confidence:
 → Follow the [Deployment Guide](deployment-guide) to deploy in 60-90 minutes.
 
 **Want to contribute to Kosuke Template?**  
-→ See the [Contributing Guide](https://github.com/filopedraz/kosuke-template#-contributing) in the README for local development setup.
+→ See the [Contributing Guide](https://github.com/Kosuke-Org/kosuke-template#-contributing) in the README for local development setup.
 
 ## 🤝 Community & Support
 
 - **Documentation**: You're reading it! Explore the sidebar for detailed guides.
-- **GitHub**: [github.com/filopedraz/kosuke-template](https://github.com/filopedraz/kosuke-template)
+- **GitHub**: [github.com/Kosuke-Org/kosuke-template](https://github.com/Kosuke-Org/kosuke-template)
 - **Issues**: Report bugs or request features on GitHub
 
 ## 📄 License

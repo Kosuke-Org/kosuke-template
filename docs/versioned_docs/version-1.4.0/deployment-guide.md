@@ -27,7 +27,7 @@ Create accounts with these services (all have free tiers):
 
 ### Fork to Your Account
 
-1. Visit [github.com/filopedraz/kosuke-template](https://github.com/filopedraz/kosuke-template)
+1. Visit [github.com/Kosuke-Org/kosuke-template](https://github.com/Kosuke-Org/kosuke-template)
 2. Click **Fork** button (top-right)
 3. Configure fork:
    - **Owner**: Your GitHub account
