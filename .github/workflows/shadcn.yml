@@ -160,7 +160,6 @@ jobs:
             shadcn-ui
             enhancement
           draft: false
-          assignees: ${{ github.repository_owner }}
 
       - name: Report results
         if: always()
