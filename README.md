@@ -1,7 +1,7 @@
 # Kosuke Template
 
-[![GitHub Release](https://img.shields.io/github/v/release/filopedraz/kosuke-template?style=flat-square&logo=github&color=blue)](https://github.com/filopedraz/kosuke-template/releases)
-[![License](https://img.shields.io/github/license/filopedraz/kosuke-template?style=flat-square&color=green)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/Kosuke-Org/kosuke-template?style=flat-square&logo=github&color=blue)](https://github.com/Kosuke-Org/kosuke-template/releases)
+[![License](https://img.shields.io/github/license/Kosuke-Org/kosuke-template?style=flat-square&color=green)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-docs--template.kosuke.ai-blue?style=flat-square&logo=docusaurus)](https://docs-template.kosuke.ai)
 
 A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Stripe Billing, Vercel Blob, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
@@ -274,7 +274,7 @@ bun run test:coverage
 ### Getting Help
 
 - **Documentation**: [docs-template.kosuke.ai](https://docs-template.kosuke.ai)
-- **GitHub Issues**: [github.com/filopedraz/kosuke-template/issues](https://github.com/filopedraz/kosuke-template/issues)
+- **GitHub Issues**: [github.com/Kosuke-Org/kosuke-template/issues](https://github.com/Kosuke-Org/kosuke-template/issues)
 - **Discussions**: Use GitHub Discussions for questions
 
 ## 🚀 Releasing (Maintainers)

@@ -20,7 +20,7 @@ const HomepageStructuredData = () => {
     description:
       'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
     url: baseUrl,
-    sameAs: ['https://github.com/filopedraz/kosuke-template'],
+    sameAs: ['https://github.com/Kosuke-Org/kosuke-template'],
   };
 
   const softwareData = {
@@ -42,7 +42,7 @@ const HomepageStructuredData = () => {
     },
     programmingLanguage: ['TypeScript', 'JavaScript', 'React'],
     runtimePlatform: 'Node.js',
-    codeRepository: 'https://github.com/filopedraz/kosuke-template',
+    codeRepository: 'https://github.com/Kosuke-Org/kosuke-template',
   };
 
   return (

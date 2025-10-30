@@ -111,7 +111,7 @@ export function Home() {
             ) : (
               // Logged-out user CTAs
               <Button size="lg" className="w-full sm:w-auto" asChild>
-                <Link href="https://github.com/filopedraz/kosuke-template" target="_blank">
+                <Link href="https://github.com/Kosuke-Org/kosuke-template" target="_blank">
                   <Rocket className="mr-2 h-4 w-4" />
                   git clone kosuke
                 </Link>
@@ -119,7 +119,7 @@ export function Home() {
             )}
 
             <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-              <Link href="https://github.com/filopedraz/kosuke-template#readme" target="_blank">
+              <Link href="https://github.com/Kosuke-Org/kosuke-template#readme" target="_blank">
                 <Code2 className="mr-2 h-4 w-4" />
                 Documentation
               </Link>
@@ -382,7 +382,7 @@ export function Home() {
                     </Link>
                   </Button>
                   <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-                    <Link href="https://github.com/filopedraz/kosuke-template" target="_blank">
+                    <Link href="https://github.com/Kosuke-Org/kosuke-template" target="_blank">
                       <Star className="mr-2 h-4 w-4" />
                       Star on GitHub
                     </Link>
@@ -392,7 +392,7 @@ export function Home() {
                 // Logged-out user final CTA
                 <>
                   <Button size="lg" className="w-full sm:w-auto" asChild>
-                    <Link href="https://github.com/filopedraz/kosuke-template" target="_blank">
+                    <Link href="https://github.com/Kosuke-Org/kosuke-template" target="_blank">
                       <Star className="mr-2 h-4 w-4" />
                       Star on GitHub
                     </Link>
@@ -400,7 +400,7 @@ export function Home() {
 
                   <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
                     <Link
-                      href="https://github.com/filopedraz/kosuke-template/blob/main/cli/README.md"
+                      href="https://github.com/Kosuke-Org/kosuke-template/blob/main/cli/README.md"
                       target="_blank"
                     >
                       Setup Guide
