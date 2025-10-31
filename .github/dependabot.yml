@@ -1,7 +1,7 @@
 version: 2
 updates:
-  # Enable version updates for bun (using npm ecosystem)
-  - package-ecosystem: 'npm'
+  # Enable version updates for bun
+  - package-ecosystem: 'bun'
     # Look for `package.json` and `lock` files in the `root` directory
     directory: '/'
     # Check for updates once a week
@@ -14,7 +14,7 @@ updates:
     # Set reviewers for pull requests
     reviewers:
       - 'kosuke'
-    # Limit the number of open pull requests for npm dependencies
+    # Limit the number of open pull requests for bun dependencies
     open-pull-requests-limit: 10
     # Allow only production dependencies to be updated
     allow:
