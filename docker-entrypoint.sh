@@ -4,8 +4,6 @@ set -e
 # Environment variable defaults
 DEV_MODE=${DEV_MODE:-true}
 
-# Print system information
-echo "🚀 Node version: $(node -v)"
 echo "📦 Bun version: $(bun -v)"
 
 # Check if package.json exists (should exist from GitHub template)
