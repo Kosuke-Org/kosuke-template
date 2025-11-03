@@ -1,0 +1,19 @@
+{
+  "name": "render-deploy",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "dotenv tsx main.ts",
+    "dev": "dotenv tsx main.ts"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "dotenv-cli": "^7.0.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.3",
+    "tsx": "^4.19.2"
+  }
+}
