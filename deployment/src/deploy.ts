@@ -67,7 +67,6 @@ async function deployDatabase(state: DeploymentState): Promise<void> {
       const result = await databaseModule.create();
       state.databaseId = result.id;
       state.connectionString = result.connectionString;
-      await databaseModule.waitForAvailability(state.databaseId);
 
       // Attach database to project environment
       const envId = await projectModule.getEnvironment(state.projectId);
@@ -76,6 +75,7 @@ async function deployDatabase(state: DeploymentState): Promise<void> {
       } else {
         console.log('⚠️  No environment found to attach database to');
       }
+      await databaseModule.waitForAvailability(state.databaseId);
     }
   }
 }
