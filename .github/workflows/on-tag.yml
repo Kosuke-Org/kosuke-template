@@ -151,28 +151,3 @@ jobs:
             git commit -m "docs: add version $VERSION_NUMBER snapshot"
             git push origin HEAD:main
           fi
-
-  deploy-to-vercel-production:
-    name: Deploy to Vercel Production
-    needs: build-and-release
-    runs-on: ubuntu-latest
-    environment: production
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-        with:
-          ref: main
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        # Automatically reads from .bun-version file
-
-      - name: Install Vercel CLI
-        run: bun add --global vercel@latest
-
-      - name: Deploy to Production
-        run: vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }}
