@@ -113,7 +113,16 @@ export function setupMocks() {
   // Mock fetch
   global.fetch = vi.fn() as typeof fetch;
 
-  // Mock file operations
+  // Mock AWS S3 client
+  vi.mock('@aws-sdk/client-s3', () => ({
+    S3Client: vi.fn().mockImplementation(() => ({
+      send: vi.fn(() => Promise.resolve({})),
+    })),
+    PutObjectCommand: vi.fn(),
+    DeleteObjectCommand: vi.fn(),
+  }));
+
+  // Mock file operations (for backwards compatibility during tests)
   vi.mock('@vercel/blob', () => ({
     put: vi.fn(() => Promise.resolve({ url: 'https://blob.vercel-storage.com/file.jpg' })),
     del: vi.fn(() => Promise.resolve()),
