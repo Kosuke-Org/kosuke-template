@@ -2,7 +2,6 @@ const knipConfig = {
   $schema: 'https://unpkg.com/knip@latest/schema.json',
   ignore: [
     'engine/**',
-    'docs/**',
     'cli/**',
     // Shadcn/UI components, we keep them as part of the template
     'components/ui/**',
