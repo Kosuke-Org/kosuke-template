@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/github/license/Kosuke-Org/kosuke-template?style=flat-square&color=green)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-docs--template.kosuke.ai-blue?style=flat-square&logo=docusaurus)](https://docs-template.kosuke.ai)
 
-A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Stripe Billing, Vercel Blob, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
+A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Stripe Billing, DigitalOcean Spaces, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
 
 Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billing, and complete multi-tenant functionality.
 
@@ -14,9 +14,9 @@ Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billin
 - **PostgreSQL** database with Drizzle ORM
 - **Shadcn UI** components with Tailwind CSS
 - **Stripe** billing integration with automated sync (personal & organization subscriptions)
-- **Vercel Cron Jobs** for subscription data synchronization
+- **Cron Jobs** for subscription data synchronization
 - **Resend** email service with **React Email** templates
-- **Profile image uploads** with Vercel Blob
+- **Profile image uploads** with DigitalOcean Spaces or S3-like storage
 - **Multi-tenancy** with organization and team management
 - **Sentry** error monitoring and performance tracking
 - **Plausible Analytics** integration with configurable domains
@@ -41,7 +41,7 @@ Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billin
 - **Database**: PostgreSQL (Neon) + Drizzle ORM
 - **Billing**: Stripe subscriptions
 - **Email**: Resend + React Email
-- **Storage**: Vercel Blob
+- **Storage**: DigitalOcean Spaces
 - **Monitoring**: Sentry
 - **UI**: Tailwind CSS + Shadcn UI
 
@@ -62,12 +62,15 @@ Before contributing, ensure you have:
 
 You'll need accounts with these services (all have free tiers):
 
-| Service    | Purpose        | Sign Up                          | Free Tier       |
-| ---------- | -------------- | -------------------------------- | --------------- |
-| **Clerk**  | Authentication | [clerk.com](https://clerk.com)   | 10k MAUs        |
-| **Stripe** | Billing        | [stripe.com](https://stripe.com) | Test mode       |
-| **Resend** | Email          | [resend.com](https://resend.com) | 100 emails/day  |
-| **Sentry** | Monitoring     | [sentry.io](https://sentry.io)   | 5k events/month |
+| Service          | Purpose        | Sign Up                                          | Free Tier                          |
+| ---------------- | -------------- | ------------------------------------------------ | ---------------------------------- |
+| **Clerk**        | Authentication | [clerk.com](https://clerk.com)                   | 10k MAUs                           |
+| **Stripe**       | Billing        | [stripe.com](https://stripe.com)                 | Test mode                          |
+| **Resend**       | Email          | [resend.com](https://resend.com)                 | 100 emails/day                     |
+| **Sentry**       | Monitoring     | [sentry.io](https://sentry.io)                   | 5k events/month                    |
+| **DigitalOcean** | Storage        | [digitalocean.com](https://www.digitalocean.com) | $5/month (250GB + 1TB transfer) ❌ |
+
+> **Note**: DigitalOcean Spaces is the only paid service. All other services have free tiers sufficient for development and testing.
 
 ### Local Development Setup
 
@@ -126,6 +129,13 @@ NEXT_PUBLIC_SENTRY_DSN=https://...@....ingest.sentry.io/...
 # Application
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 CRON_SECRET=dev_cron_secret
+
+# Digital Ocean
+S3_REGION=nyc3
+S3_ENDPOINT=https://nyc3.digitaloceanspaces.com
+S3_BUCKET=your-bucket-name
+S3_ACCESS_KEY_ID=your_access_key
+S3_SECRET_ACCESS_KEY=your_secret_key
 ```
 
 **Get Your Credentials**:
@@ -134,6 +144,7 @@ CRON_SECRET=dev_cron_secret
 - **Stripe**: Create account at [stripe.com](https://stripe.com) → Get API keys → Create products and prices
 - **Resend**: Sign up → Create API key → Use `onboarding@resend.dev` for testing
 - **Sentry**: Create project → Copy DSN (optional for local development)
+- **DigitalOcean**: Create account → Create Spaces bucket → Generate API key & secret
 
 #### 4. Start Database
 
