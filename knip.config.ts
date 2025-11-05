@@ -1,6 +1,7 @@
 const knipConfig = {
   $schema: 'https://unpkg.com/knip@latest/schema.json',
   ignore: [
+    '.venv/**',
     'engine/**',
     'docs/**',
     'cli/**',
@@ -11,6 +12,8 @@ const knipConfig = {
     'components/charts/**',
     // Library barrel exports, infrastructure for template users
     'lib/**/index.ts',
+    // Queue system - public API for manual job triggering
+    'lib/queue/queues/**',
   ],
   ignoreDependencies: [
     // Shadcn/UI dependencies (only used in components/ui/** which is ignored)
