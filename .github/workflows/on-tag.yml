@@ -128,26 +128,3 @@ jobs:
             ---
 
             ${{ github.event.release.body }}
-
-      - name: Setup Bun for Docusaurus
-        uses: oven-sh/setup-bun@v2
-        # Automatically reads from .bun-version file
-
-      - name: Create Docusaurus Version (major/minor only)
-        if: ${{ !contains(env.VERSION, 'rc') && !contains(env.VERSION, 'beta') && !contains(env.VERSION, 'alpha') }}
-        run: |
-          cd docs
-          bun install --frozen-lockfile
-          VERSION_NUMBER=${VERSION#v}
-          bun run docusaurus docs:version $VERSION_NUMBER
-
-          if [ -d "versioned_docs/version-$VERSION_NUMBER" ]; then
-            # Update lastVersion in docusaurus.config.ts to the new version
-            sed -i "s/lastVersion: '[^']*'/lastVersion: '$VERSION_NUMBER'/" docusaurus.config.ts
-            
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add versioned_docs/ versioned_sidebars/ versions.json docusaurus.config.ts
-            git commit -m "docs: add version $VERSION_NUMBER snapshot"
-            git push origin HEAD:main
-          fi

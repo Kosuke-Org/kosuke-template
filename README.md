@@ -2,7 +2,6 @@
 
 [![GitHub Release](https://img.shields.io/github/v/release/Kosuke-Org/kosuke-template?style=flat-square&logo=github&color=blue)](https://github.com/Kosuke-Org/kosuke-template/releases)
 [![License](https://img.shields.io/github/license/Kosuke-Org/kosuke-template?style=flat-square&color=green)](LICENSE)
-[![Documentation](https://img.shields.io/badge/docs-docs--template.kosuke.ai-blue?style=flat-square&logo=docusaurus)](https://docs-template.kosuke.ai)
 
 A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Stripe Billing, DigitalOcean Spaces, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
 
@@ -22,17 +21,6 @@ Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billin
 - **Plausible Analytics** integration with configurable domains
 - **Responsive design** with dark/light mode
 - **Comprehensive testing** setup with Jest
-
-## 📚 Documentation
-
-**Complete setup guide, architecture, and features documentation:**
-
-👉 **[docs-template.kosuke.ai](https://docs-template.kosuke.ai)**
-
-## 🚀 Quick Links
-
-- [Documentation Overview](https://docs-template.kosuke.ai/docs/) - Architecture, features, and services
-- [Deployment Guide](https://docs-template.kosuke.ai/docs/deployment-guide) - Deploy to production in 60-90 minutes
 
 ## 🛠 Tech Stack
 
@@ -284,7 +272,6 @@ bun run test:coverage
 
 ### Getting Help
 
-- **Documentation**: [docs-template.kosuke.ai](https://docs-template.kosuke.ai)
 - **GitHub Issues**: [github.com/Kosuke-Org/kosuke-template/issues](https://github.com/Kosuke-Org/kosuke-template/issues)
 - **Discussions**: Use GitHub Discussions for questions
 
@@ -305,7 +292,7 @@ GitHub Actions will automatically:
 - Create GitHub Release with changelog
 - Generate documentation version snapshot
 
-See [Contributing Guide](https://docs-template.kosuke.ai/docs/contributing) for full release process.
+See the contributing guidelines in the repository for full release process.
 
 ## 📝 License
 
