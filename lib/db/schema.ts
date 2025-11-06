@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, varchar, pgEnum, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, varchar, pgEnum, uuid, boolean } from 'drizzle-orm/pg-core';
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 
 // Enums
@@ -11,19 +11,74 @@ export const orderStatusEnum = pgEnum('order_status', [
   'delivered',
   'cancelled',
 ]);
-
-// Users - Minimal sync from Clerk for local queries and future expansion
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
-  clerkUserId: text('clerk_user_id').notNull().unique(), // Clerk user ID
-  email: text('email').notNull(),
-  displayName: text('display_name'),
+  clerkUserId: text('clerk_user_id').unique(), // TODO: remove
+  email: text('email').notNull().unique(),
+  emailVerified: boolean('email_verified').default(false).notNull(),
+  displayName: text('display_name').notNull(),
   profileImageUrl: text('profile_image_url'),
   stripeCustomerId: text('stripe_customer_id').unique(), // Stripe customer ID
   notificationSettings: text('notification_settings'), // JSON string for notification preferences
-  lastSyncedAt: timestamp('last_synced_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const sessions = pgTable('sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  expiresAt: timestamp('expires_at').notNull(),
+  token: text('token').notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  orgId: uuid('org_id').references(() => organizations.id, {
+    onDelete: 'set null',
+  }),
+  orgSlug: text('org_slug').references(() => organizations.slug, {
+    onDelete: 'set null',
+  }),
+});
+
+export const accounts = pgTable('accounts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const verifications = pgTable('verifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 // Organizations - Clerk organizations synced to local database
@@ -159,6 +214,10 @@ export enum ActivityType {
 // Types (derive from Drizzle schema to avoid Zod instance mismatches)
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
+export type Session = InferSelectModel<typeof sessions>;
+export type NewSession = InferInsertModel<typeof sessions>;
+export type Verification = InferSelectModel<typeof verifications>;
+export type NewVerification = InferInsertModel<typeof verifications>;
 export type UserSubscription = InferSelectModel<typeof userSubscriptions>;
 export type NewUserSubscription = InferInsertModel<typeof userSubscriptions>;
 export type ActivityLog = InferSelectModel<typeof activityLogs>;

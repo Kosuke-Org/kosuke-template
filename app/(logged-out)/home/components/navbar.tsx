@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Menu, LogOut, Settings, User, CreditCard } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/hooks/use-auth';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
-import { useAuthActions } from '@/hooks/use-auth-actions';
+import { useAuthActions } from '@/hooks/use-auth';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
 
 interface NavbarProps {
@@ -28,9 +28,9 @@ interface NavbarProps {
 }
 
 export default function Navbar({ variant = 'standard', className }: NavbarProps) {
-  const { user, isSignedIn } = useUser();
+  const { user, isSignedIn } = useAuth();
   const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
-  const { handleSignOut } = useAuthActions();
+  const { signOut: handleSignOut } = useAuthActions();
   const { activeOrganization } = useActiveOrganization();
   const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
   const settingsUrl = '/settings';

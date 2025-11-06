@@ -58,6 +58,28 @@ const mockStripeWebhookEvent = {
   },
 };
 
+export const mockedSession = {
+  session: {
+    id: 'session-1',
+    userId: 'user-1',
+    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+    token: 'test-token',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    orgId: '',
+    orgSlug: '',
+  },
+  user: {
+    id: 'user-1',
+    email: 'test@example.com',
+    emailVerified: true,
+    name: 'Test User',
+    image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+};
+
 // Setup mocks
 export function setupMocks() {
   // Mock Clerk

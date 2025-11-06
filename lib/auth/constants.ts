@@ -5,6 +5,8 @@ export const AUTH_ROUTES = {
   ONBOARDING: '/onboarding',
   HOME: '/home',
   SETTINGS: '/settings',
+  ROOT: '/',
+  VERIFY_OTP: '/sign-in/verify',
 } as const;
 
 // Error Messages

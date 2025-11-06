@@ -130,7 +130,6 @@ async function seed() {
       email: janeSmithEmail,
       displayName: 'Jane Smith',
       profileImageUrl: janeClerk.imageUrl,
-      lastSyncedAt: new Date(),
     };
 
     const johnUser: NewUser = {
@@ -138,11 +137,16 @@ async function seed() {
       email: johnDoeEmail,
       displayName: 'John Doe',
       profileImageUrl: johnClerk.imageUrl,
-      lastSyncedAt: new Date(),
+    };
+
+    const sergiUser: NewUser = {
+      email: 'sergi.tantinya@kosuke.ai',
+      displayName: 'Sergi Tantinya',
+      profileImageUrl: null,
     };
 
     // Insert or update users (in case they already exist from previous seed runs)
-    for (const user of [janeUser, johnUser]) {
+    for (const user of [janeUser, johnUser, sergiUser]) {
       await db
         .insert(users)
         .values(user)
@@ -152,7 +156,6 @@ async function seed() {
             email: user.email,
             displayName: user.displayName,
             profileImageUrl: user.profileImageUrl,
-            lastSyncedAt: new Date(),
             updatedAt: new Date(),
           },
         });

@@ -4,22 +4,31 @@
  */
 
 import { initTRPC, TRPCError } from '@trpc/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth } from '@/lib/auth/providers';
 import superjson from 'superjson';
 
 /**
  * Create context for tRPC
  * This runs on every request and provides access to auth state and organization context
  */
-export const createTRPCContext = async () => {
-  const { userId, orgId, orgRole } = await auth();
+export const createTRPCContext = async (opts?: { req?: Request }) => {
+  const sessionData = opts?.req ? await auth.api.getSession({ headers: opts.req.headers }) : null;
+
+  const user = sessionData?.user;
+  const userId = user?.id ?? null;
+  const session = sessionData?.session;
+
+  const orgSlug = session?.orgSlug ?? null;
+  const orgId = session?.orgId ?? null;
+  const orgRole = null; // TODO: Implement org role;
 
   return {
     userId,
-    orgId, // Active organization ID from Clerk (can be null)
+    orgId, // Active organization ID (can be null)
     orgRole, // User's role in active organization (can be null)
+    orgSlug,
     async getUser() {
-      return userId ? await currentUser() : null;
+      return user;
     },
   };
 };
@@ -39,6 +48,11 @@ const t = initTRPC.context<Context>().create({
 export const router = t.router;
 
 /**
+ * Public procedure - does not require authentication
+ */
+export const publicProcedure = t.procedure;
+
+/**
  * Protected procedure - requires authentication
  */
 export const protectedProcedure = t.procedure.use(async (opts) => {
@@ -56,6 +70,7 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
       userId: ctx.userId,
       orgId: ctx.orgId,
       orgRole: ctx.orgRole,
+      orgSlug: ctx.orgSlug,
       getUser: ctx.getUser,
     },
   });

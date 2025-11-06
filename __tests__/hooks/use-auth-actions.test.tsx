@@ -1,7 +1,8 @@
 import { renderHook, act } from '@testing-library/react';
-import { useAuthActions } from '@/hooks/use-auth-actions';
+import { useAuthActions } from '@/hooks/use-auth';
 import { createQueryWrapper, createMockQueryClient } from '../setup/mocks';
 import { vi } from 'vitest';
+import { signOut } from '@/lib/auth/client';
 
 // Create mock query client
 const mockQueryClient = createMockQueryClient();
@@ -14,20 +15,39 @@ vi.mock('@tanstack/react-query', async () => {
   };
 });
 
-// Mock Clerk
-const mockSignOut = vi.fn();
-vi.mock('@clerk/nextjs', () => ({
-  useClerk: () => ({
+vi.mock('@/lib/auth/client', () => {
+  const mockSignOut = vi.fn();
+
+  return {
     signOut: mockSignOut,
+  };
+});
+
+// Mock Next.js router
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    refresh: vi.fn(),
   }),
+  usePathname: () => '/',
 }));
 
-// Mock useToast hook
 vi.mock('@/hooks/use-toast', () => ({
   useToast: () => ({
     toast: vi.fn(),
   }),
 }));
+
+vi.mock('@/lib/trpc/client', () => ({
+  trpc: {
+    signInAttempt: {
+      clear: { useMutation: vi.fn(() => ({ mutateAsync: vi.fn(), mutate: vi.fn() })) },
+      create: { useMutation: vi.fn(() => ({ mutateAsync: vi.fn(), mutate: vi.fn() })) },
+    },
+  },
+}));
+
+const mockSignOut = vi.mocked(signOut);
 
 describe('useAuthActions', () => {
   const wrapper = createQueryWrapper();
@@ -40,10 +60,10 @@ describe('useAuthActions', () => {
   it('should provide handleSignOut function and other state', () => {
     const { result } = renderHook(() => useAuthActions(), { wrapper });
 
-    expect(result.current).toHaveProperty('handleSignOut');
+    expect(result.current).toHaveProperty('signOut');
     expect(result.current).toHaveProperty('isSigningOut');
     expect(result.current).toHaveProperty('signOutError');
-    expect(typeof result.current.handleSignOut).toBe('function');
+    expect(typeof result.current.signOut).toBe('function');
     expect(result.current.isSigningOut).toBe(false);
   });
 
@@ -51,11 +71,15 @@ describe('useAuthActions', () => {
     const { result } = renderHook(() => useAuthActions(), { wrapper });
 
     await act(async () => {
-      result.current.handleSignOut();
+      result.current.signOut();
     });
 
     expect(mockSignOut).toHaveBeenCalled();
-    expect(mockSignOut).toHaveBeenCalledWith({ redirectUrl: '/' });
+    expect(mockSignOut).toHaveBeenCalledWith({
+      fetchOptions: {
+        onSuccess: expect.any(Function),
+      },
+    });
     expect(mockQueryClient.clear).toHaveBeenCalled();
   });
 
@@ -63,11 +87,11 @@ describe('useAuthActions', () => {
     const { result } = renderHook(() => useAuthActions(), { wrapper });
 
     await act(async () => {
-      result.current.handleSignOut();
+      result.current.signOut();
     });
 
     await act(async () => {
-      result.current.handleSignOut();
+      result.current.signOut();
     });
 
     expect(mockSignOut).toHaveBeenCalledTimes(2);

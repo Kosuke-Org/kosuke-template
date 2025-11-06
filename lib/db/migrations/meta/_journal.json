@@ -29,6 +29,13 @@
       "when": 1760969570283,
       "tag": "0003_fearless_newton_destine",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1762350328017,
+      "tag": "0004_cooing_living_lightning",
+      "breakpoints": true
     }
   ]
 }

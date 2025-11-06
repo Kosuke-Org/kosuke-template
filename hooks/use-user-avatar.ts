@@ -1,24 +1,25 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { UserResource } from '@clerk/types';
 import { useProfileImageUrl } from '@/hooks/use-profile-image';
 import { getInitials } from '@/lib/utils';
 
-export function useUserAvatar(user?: UserResource | null) {
+import type { User } from '@/lib/db/schema';
+
+export function useUserAvatar(user?: User) {
   const profileImageUrl = useProfileImageUrl(user);
 
   const displayName = useMemo(() => {
-    return user?.fullName || user?.firstName || 'User';
-  }, [user?.fullName, user?.firstName]);
+    return user?.displayName || 'User';
+  }, [user?.displayName]);
 
   const initials = useMemo(() => {
     return getInitials(displayName);
   }, [displayName]);
 
   const primaryEmail = useMemo(() => {
-    return user?.emailAddresses[0]?.emailAddress || '';
-  }, [user?.emailAddresses]);
+    return user?.email || '';
+  }, [user?.email]);
 
   return {
     profileImageUrl: typeof profileImageUrl === 'string' ? profileImageUrl : '',
