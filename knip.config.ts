@@ -27,6 +27,8 @@ const knipConfig = {
     // TODO: check if we should use these dependencies
     'drizzle-zod',
     '@trpc/next',
+    // AWS SDK - used in lib/storage.ts but knip detection issue
+    '@aws-sdk/client-s3',
   ],
   ignoreBinaries: ['uv'],
   rules: {
