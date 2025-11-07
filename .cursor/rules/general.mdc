@@ -50,7 +50,9 @@ bun run db:seed         # Seed database with initial data
 
 # Development
 bun run dev             # Start development server with hot reload
-docker compose up -d    # Start PostgreSQL database locally
+bun run workers:dev     # Start BullMQ workers with hot reload
+bun run dev:all         # Start both web server and workers together
+docker compose up -d    # Start PostgreSQL + Redis locally
 
 # Testing
 bun run test                # Run Vitest test suite
@@ -147,7 +149,7 @@ const { user, isLoaded } = useUser();
 - **Checkout**: Use Stripe Checkout for subscription management
 - **Tiers**: 'free', 'pro', 'business' - stored in database
 - **Webhooks**: Handle subscription changes via `/api/billing/webhook`
-- **Cron Sync**: Automated subscription sync every 6 hours
+- **Background Jobs**: Automated subscription sync via BullMQ (see Background Jobs section)
 - **Customer Portal**: Stripe manages payment methods and billing history
 
 ```typescript
@@ -156,6 +158,319 @@ import { getUserSubscription } from '@/lib/billing';
 const subscription = await getUserSubscription(userId);
 const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
 ```
+
+### Background Jobs & Task Queue (BullMQ + Redis)
+
+**Use BullMQ for ALL scheduled jobs, recurring tasks, and background processing. NEVER use Vercel Cron or similar alternatives.**
+
+#### **📋 When to Use BullMQ**
+
+- **Scheduled Jobs**: Recurring tasks (daily, hourly, etc.)
+- **Background Processing**: Long-running operations that shouldn't block user requests
+- **Asynchronous Tasks**: Email sending, report generation, data synchronization
+- **Retry Logic**: Operations that need automatic retry on failure
+- **Job Monitoring**: Tasks that require visibility into success/failure states
+
+#### **🏗️ Queue Infrastructure**
+
+```plaintext
+lib/queue/
+├── client.ts                 # Redis connection & queue/worker factory
+├── index.ts                  # Barrel exports
+├── init-workers.ts           # Worker initialization script
+├── queues/
+│   └── subscriptions.ts      # Queue definitions and job scheduling
+├── workers/
+│   └── subscriptions.ts      # Worker processors and event handlers
+└── jobs/
+    └── sync-subscriptions.ts # Job business logic
+```
+
+#### **✅ Creating a New Background Job**
+
+**1. Define Queue and Job Interface:**
+
+```typescript
+// lib/queue/queues/feature.ts
+import { createQueue } from '../client';
+
+export interface FeatureJobData {
+  userId?: string;
+  manual?: boolean;
+  // ... other job-specific data
+}
+
+export const FEATURE_QUEUE = 'feature-queue';
+export const featureQueue = createQueue<FeatureJobData>(FEATURE_QUEUE);
+
+// Add job to queue
+export async function addFeatureJob(data: FeatureJobData) {
+  return await featureQueue.add('feature-job', data, {
+    jobId: data.userId ? `feature-${data.userId}` : 'feature-all',
+    removeOnComplete: true,
+  });
+}
+
+// Schedule recurring job (optional)
+export async function scheduleFeatureJob() {
+  await featureQueue.add('feature-scheduled', {}, {
+    repeat: {
+      pattern: '0 0 * * *', // Daily at midnight (cron format)
+    },
+    jobId: 'feature-scheduled',
+  });
+}
+```
+
+**2. Implement Job Processor:**
+
+```typescript
+// lib/queue/jobs/feature-job.ts
+import type { FeatureJobData } from '../queues/feature';
+
+export async function processFeatureJob(data: FeatureJobData) {
+  console.log('🕐 Processing feature job...', data);
+
+  try {
+    // Implement job logic here
+    const result = await doSomeWork(data);
+
+    console.log('✅ Feature job completed successfully');
+    return { success: true, ...result };
+  } catch (error) {
+    console.error('💥 Feature job failed:', error);
+    throw error; // Re-throw to trigger retry
+  }
+}
+```
+
+**3. Create Worker:**
+
+```typescript
+// lib/queue/workers/feature.ts
+import { createWorker, createQueueEvents } from '../client';
+import { FEATURE_QUEUE } from '../queues/feature';
+import { processFeatureJob } from '../jobs/feature-job';
+import type { FeatureJobData } from '../queues/feature';
+import * as Sentry from '@sentry/nextjs';
+
+export const featureWorker = createWorker<FeatureJobData>(
+  FEATURE_QUEUE,
+  async (job) => {
+    console.log(`🔄 Processing job: ${job.id}`);
+
+    try {
+      const result = await processFeatureJob(job.data);
+      console.log(`✅ Job ${job.id} completed`);
+      return result;
+    } catch (error) {
+      console.error(`❌ Job ${job.id} failed:`, error);
+      
+      // Report to Sentry
+      Sentry.captureException(error, {
+        tags: { jobId: job.id, jobType: 'feature-job' },
+        extra: { jobData: job.data },
+      });
+
+      throw error;
+    }
+  }
+);
+
+// Queue event listeners
+const queueEvents = createQueueEvents(FEATURE_QUEUE);
+
+queueEvents.on('completed', ({ jobId, returnvalue }) => {
+  console.log(`✅ Job ${jobId} completed:`, returnvalue);
+});
+
+queueEvents.on('failed', ({ jobId, failedReason }) => {
+  console.error(`❌ Job ${jobId} failed:`, failedReason);
+});
+
+// Worker error handlers
+featureWorker.on('error', (error) => {
+  console.error('🚨 Worker error:', error);
+  Sentry.captureException(error, {
+    tags: { component: 'feature-worker' },
+  });
+});
+
+console.log('🚀 Feature worker initialized');
+```
+
+**4. Register Worker in init-workers.ts:**
+
+```typescript
+// lib/queue/init-workers.ts
+import { subscriptionWorker } from './workers/subscriptions';
+import { featureWorker } from './workers/feature'; // ADD THIS
+import { scheduleSubscriptionSync } from './queues/subscriptions';
+import { scheduleFeatureJob } from './queues/feature'; // ADD THIS
+import { gracefulShutdown } from './client';
+
+// Schedule recurring jobs
+scheduleSubscriptionSync();
+scheduleFeatureJob(); // ADD THIS
+
+// List of all workers
+const workers = [subscriptionWorker, featureWorker]; // ADD featureWorker
+
+// ... rest of graceful shutdown logic
+```
+
+**5. Export from index.ts:**
+
+```typescript
+// lib/queue/index.ts
+export * from './client';
+export * from './queues/subscriptions';
+export * from './queues/feature'; // ADD THIS
+export * from './workers/subscriptions';
+export * from './workers/feature'; // ADD THIS
+```
+
+#### **🔧 Job Configuration Best Practices**
+
+**Retry Strategy:**
+
+```typescript
+// Default retry: 3 attempts with exponential backoff
+export const featureQueue = createQueue<FeatureJobData>(FEATURE_QUEUE);
+
+// Custom retry for critical jobs
+await featureQueue.add('critical-job', data, {
+  attempts: 5,
+  backoff: {
+    type: 'exponential',
+    delay: 2000, // Start with 2 seconds
+  },
+});
+```
+
+**Job Deduplication:**
+
+```typescript
+// Prevent duplicate jobs with same ID
+await featureQueue.add('unique-job', data, {
+  jobId: `user-${userId}-sync`,
+  removeOnComplete: true,
+  removeOnFail: false, // Keep failed jobs for debugging
+});
+```
+
+**Scheduled Jobs:**
+
+```typescript
+// Cron patterns
+'0 0 * * *'      // Daily at midnight
+'0 */6 * * *'    // Every 6 hours
+'*/15 * * * *'   // Every 15 minutes
+'0 0 * * 0'      // Weekly on Sunday at midnight
+'0 0 1 * *'      // Monthly on the 1st at midnight
+```
+
+#### **📊 Job Monitoring**
+
+- **Console Logs**: Workers log job execution, successes, and failures
+- **Sentry Integration**: All job errors automatically reported to Sentry with full context
+- **Redis CLI**: Direct queue inspection for advanced debugging
+  ```bash
+  docker exec -it kosuke_template_redis redis-cli
+  KEYS *  # View all keys
+  HGETALL bull:subscription-sync:meta  # Check queue status
+  ```
+
+#### **🚀 Development Workflow**
+
+```bash
+# Start Redis locally
+docker compose up -d redis
+
+# Run workers in development (with hot reload)
+bun run workers:dev
+
+# Run app + workers together
+bun run dev:all
+
+# Production worker deployment
+bun run workers:start
+```
+
+#### **⚠️ Common Pitfalls**
+
+**❌ WRONG - Using Vercel Cron:**
+
+```typescript
+// ❌ NO! Don't use Vercel Cron for scheduled jobs
+// vercel.json
+{
+  "crons": [{
+    "path": "/api/cron/sync",
+    "schedule": "0 0 * * *"
+  }]
+}
+```
+
+**✅ CORRECT - Using BullMQ:**
+
+```typescript
+// ✅ YES! Use BullMQ for all scheduled jobs
+await featureQueue.add('scheduled-sync', {}, {
+  repeat: { pattern: '0 0 * * *' }
+});
+```
+
+**❌ WRONG - Blocking API routes:**
+
+```typescript
+// ❌ NO! Don't block API routes with long operations
+export async function POST(req: Request) {
+  await processLargeFile(); // This blocks the request
+  return Response.json({ success: true });
+}
+```
+
+**✅ CORRECT - Queue background jobs:**
+
+```typescript
+// ✅ YES! Queue long operations for background processing
+export async function POST(req: Request) {
+  await addFeatureJob({ userId: 'user-123' });
+  return Response.json({ success: true, message: 'Job queued' });
+}
+```
+
+#### **🔐 Security & Environment**
+
+**Required Environment Variables:**
+
+```env
+# Redis connection (local development)
+REDIS_URL=redis://localhost:6379
+
+# Production (Upstash, Redis Cloud, Render Redis)
+REDIS_URL=redis://user:password@host:port
+```
+
+**Worker Deployment:**
+
+- **Development**: Runs locally via `bun run workers:dev`
+- **Production**: Deploy as separate background worker service
+- Workers need same environment variables as web service (database, Stripe, etc.)
+- Use Render Background Workers or similar for production deployment
+
+#### **📝 Migration from Vercel Cron**
+
+If migrating from Vercel Cron:
+
+1. Create BullMQ queue and job processor
+2. Move cron logic to job processor
+3. Schedule recurring job in `init-workers.ts`
+4. Remove cron configuration from `vercel.json`
+5. Delete old `/api/cron/*` routes
+6. Update environment variables (add `REDIS_URL`)
+7. Deploy workers to production
 
 ### Component Architecture & UI Guidelines
 

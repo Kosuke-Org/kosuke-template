@@ -159,4 +159,14 @@ export const technologies: Technology[] = [
     url: 'https://stripe.com',
     category: 'backend',
   },
+  {
+    name: 'BullMQ',
+    description: 'Premium message queue for NodeJS based on Redis for background jobs',
+    logoPath: {
+      light: '/logos/bullmq.png',
+      dark: '/logos/bullmq.png',
+    },
+    url: 'https://bullmq.io',
+    category: 'backend',
+  },
 ];

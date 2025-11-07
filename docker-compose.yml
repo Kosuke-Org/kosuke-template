@@ -25,5 +25,16 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     restart: unless-stopped
 
+  redis:
+    image: redis:7.4-alpine
+    container_name: kosuke_template_redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - kosuke_template_redis_data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
 volumes:
   kosuke_template_postgres_data:
+  kosuke_template_redis_data:

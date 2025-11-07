@@ -2,6 +2,7 @@
 
 [![GitHub Release](https://img.shields.io/github/v/release/Kosuke-Org/kosuke-template?style=flat-square&logo=github&color=blue)](https://github.com/Kosuke-Org/kosuke-template/releases)
 [![License](https://img.shields.io/github/license/Kosuke-Org/kosuke-template?style=flat-square&color=green)](LICENSE)
+[![Documentation](https://img.shields.io/badge/docs-docs--template.kosuke.ai-blue?style=flat-square&logo=docusaurus)](https://docs-template.kosuke.ai)
 
 A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Stripe Billing, DigitalOcean Spaces, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
 
@@ -13,23 +14,24 @@ Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billin
 - **PostgreSQL** database with Drizzle ORM
 - **Shadcn UI** components with Tailwind CSS
 - **Stripe** billing integration with automated sync (personal & organization subscriptions)
-- **Cron Jobs** for subscription data synchronization
+- **BullMQ + Redis** for background jobs and scheduled tasks
 - **Resend** email service with **React Email** templates
 - **Profile image uploads** with DigitalOcean Spaces or S3-like storage
 - **Multi-tenancy** with organization and team management
 - **Sentry** error monitoring and performance tracking
 - **Plausible Analytics** integration with configurable domains
 - **Responsive design** with dark/light mode
-- **Comprehensive testing** setup with Jest
+- **Comprehensive testing** setup with Vitest
 
 ## 🛠 Tech Stack
 
 - **Framework**: Next.js 15 (App Router) + React 19 + TypeScript
 - **Auth**: Clerk (with Organizations)
 - **Database**: PostgreSQL (Neon) + Drizzle ORM
+- **Queue**: BullMQ + Redis
 - **Billing**: Stripe subscriptions
 - **Email**: Resend + React Email
-- **Storage**: DigitalOcean Spaces
+- **Storage**: Vercel Blob
 - **Monitoring**: Sentry
 - **UI**: Tailwind CSS + Shadcn UI
 
@@ -88,6 +90,9 @@ POSTGRES_DB=postgres
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 
+# Redis (Local Redis via Docker)
+REDIS_URL=redis://localhost:6379
+
 # Clerk Authentication (from dashboard.clerk.com)
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
@@ -116,7 +121,6 @@ NEXT_PUBLIC_SENTRY_DSN=https://...@....ingest.sentry.io/...
 
 # Application
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-CRON_SECRET=dev_cron_secret
 
 # Digital Ocean
 S3_REGION=nyc3
@@ -134,11 +138,16 @@ S3_SECRET_ACCESS_KEY=your_secret_key
 - **Sentry**: Create project → Copy DSN (optional for local development)
 - **DigitalOcean**: Create account → Create Spaces bucket → Generate API key & secret
 
-#### 4. Start Database
+#### 4. Start Services (PostgreSQL + Redis)
 
 ```bash
 docker-compose up -d
 ```
+
+This starts:
+
+- PostgreSQL on port 54321
+- Redis on port 6379
 
 #### 5. Run Migrations
 
@@ -146,16 +155,17 @@ docker-compose up -d
 bun run db:migrate
 ```
 
-## ⚡ Automated Subscription Sync
+## ⚡ Background Jobs with BullMQ
 
-This template includes a robust subscription synchronization system powered by Vercel Cron Jobs:
+This template includes a robust background job system powered by BullMQ and Redis:
 
-- **🕐 Scheduled Sync**: Automatically syncs subscription data from Stripe every 6 hours
-- **🔒 Secure Endpoint**: Protected by `CRON_SECRET` token authentication
-- **🛡️ Webhook Backup**: Ensures data consistency even if webhooks are missed
-- **📊 Monitoring**: Built-in health checks and comprehensive logging
+- **🕐 Scheduled Jobs**: Automatically syncs subscription data from Stripe daily at midnight
+- **♻️ Retry Logic**: Failed jobs automatically retry with exponential backoff
+- **📊 Monitoring**: Jobs tracked via console logs and Sentry error reporting
+- **⚙️ Scalable**: Add workers as needed to process jobs in parallel
+- **🔧 Flexible**: Easy to add new background jobs and scheduled tasks
 
-The sync system runs automatically after deployment, requiring no manual intervention. Monitor sync activities through your Vercel Dashboard under the Functions tab.
+Background workers run alongside your web server in development (`bun run dev:all`) and as separate processes in production.
 
 ## 📧 Email Templates with React Email
 
@@ -166,7 +176,11 @@ This template uses **React Email** for building beautiful, responsive email temp
 #### 6. Start Development Server
 
 ```bash
+# Start web server only
 bun run dev
+
+# OR start web server + background workers together
+bun run dev:all
 ```
 
 Visit [localhost:3000](http://localhost:3000) 🚀
@@ -176,6 +190,8 @@ Visit [localhost:3000](http://localhost:3000) 🚀
 ```bash
 # Development
 bun run dev              # Start dev server (port 3000)
+bun run workers:dev      # Start background workers with hot reload
+bun run dev:all          # Start both web server and workers together
 bun run build            # Build for production
 bun run start            # Start production server
 
@@ -195,7 +211,7 @@ bun run typecheck        # Run TypeScript type checking
 bun run format           # Format code with Prettier
 
 # Testing
-bun run test                # Run all tests
+bun run test             # Run all tests
 bun run test:watch       # Watch mode
 bun run test:coverage    # Coverage report
 ```
