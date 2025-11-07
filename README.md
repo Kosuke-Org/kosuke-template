@@ -52,12 +52,12 @@ Before contributing, ensure you have:
 
 You'll need accounts with these services (all have free tiers):
 
-| Service    | Purpose        | Sign Up                          | Free Tier       |
-| ---------- | -------------- | -------------------------------- | --------------- |
-| **Clerk**  | Authentication | [clerk.com](https://clerk.com)   | 10k MAUs        |
-| **Stripe** | Billing        | [stripe.com](https://stripe.com) | Test mode       |
-| **Resend** | Email          | [resend.com](https://resend.com) | 100 emails/day  |
-| **Sentry** | Monitoring     | [sentry.io](https://sentry.io)   | 5k events/month |
+| Service          | Purpose        | Sign Up                                          | Free Tier                          |
+| ---------------- | -------------- | ------------------------------------------------ | ---------------------------------- |
+| **Clerk**        | Authentication | [clerk.com](https://clerk.com)                   | 10k MAUs                           |
+| **Stripe**       | Billing        | [stripe.com](https://stripe.com)                 | Test mode                          |
+| **Resend**       | Email          | [resend.com](https://resend.com)                 | 100 emails/day                     |
+| **Sentry**       | Monitoring     | [sentry.io](https://sentry.io)                   | 5k events/month                    |
 | **DigitalOcean** | Storage        | [digitalocean.com](https://www.digitalocean.com) | $5/month (250GB + 1TB transfer) ❌ |
 
 > **Note**: DigitalOcean Spaces is the only paid service. All other services have free tiers sufficient for development and testing.
