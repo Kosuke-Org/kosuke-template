@@ -28,14 +28,15 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '@/hooks/use-user';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
-import { useAuthActions } from '@/hooks/use-auth';
+import { useAuth, useAuthActions } from '@/hooks/use-auth';
 import { UserSkeleton } from '@/components/skeletons';
 import { getInitials } from '@/lib/utils';
 
 export function NavUser() {
-  const { user, isSignedIn } = useUser();
+  const { isSignedIn } = useAuth();
+  const { user, isLoading } = useUser();
   const { isMobile } = useSidebar();
   const { profileImageUrl, displayName, primaryEmail } = useUserAvatar(user);
   const { signOut: handleSignOut } = useAuthActions();
@@ -43,7 +44,7 @@ export function NavUser() {
   // Generate initials from display name
   const initials = getInitials(displayName);
 
-  if (!isSignedIn || !user) {
+  if (!isSignedIn || !user || isLoading) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>

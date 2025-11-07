@@ -21,10 +21,9 @@ import { AUTH_ROUTES } from '@/lib/auth/constants';
  *
  * @example
  * ```tsx
- * const { user, session, userId, isAuthenticated, isLoading } = useAuth();
+ * const { user, session, userId, isLoading } = useAuth();
  *
  * if (isLoading) return <Skeleton />;
- * if (!isAuthenticated) return <SignInPrompt />;
  *
  * return <div>Welcome {user.name}</div>;
  * ```
@@ -32,13 +31,17 @@ import { AUTH_ROUTES } from '@/lib/auth/constants';
 export function useAuth() {
   const { data, isPending } = useSession();
 
+  const session = data?.session;
+  const user = data?.user;
+
   return {
-    session: data?.session,
-    user: data?.user,
-    userId: data?.user?.id,
+    session,
+    user,
+    userId: user?.id,
     isLoading: isPending,
-    isAuthenticated: !!data,
-    isSignedIn: !!data?.user,
+    isSignedIn: !!user,
+    activeOrganizationSlug: session?.activeOrganizationSlug,
+    activeOrganizationId: session?.activeOrganizationId,
   };
 }
 

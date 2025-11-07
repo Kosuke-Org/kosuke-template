@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '@/hooks/use-user';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { useProfileUpload } from '@/hooks/use-profile-upload';
 import { ButtonSkeleton } from '@/components/skeletons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 // Page-specific skeleton for profile settings
 function ProfileSettingsSkeleton() {
@@ -58,7 +59,8 @@ function ProfileSettingsSkeleton() {
 }
 
 export default function ProfileSettings() {
-  const { user, isSignedIn } = useUser();
+  const { user } = useUser();
+  const { isSignedIn } = useAuth();
   const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
   const { handleImageUpload, isUploading } = useProfileUpload();
   const { toast } = useToast();
@@ -73,8 +75,6 @@ export default function ProfileSettings() {
         title: 'Profile updated',
         description: 'Your display name has been updated successfully.',
       });
-      // Force Clerk to reload the user data
-      await user?.reload();
     },
     onError: (error) => {
       toast({

@@ -8,44 +8,39 @@
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
 
-interface UpdateOrganizationOptions {
-  onSuccess?: () => void;
-  onError?: (error: unknown) => void;
-}
-
-export function useUpdateOrganization(organizationId: string) {
+export function useUpdateOrganization() {
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
   const updateMutation = trpc.organizations.updateOrganization.useMutation({
     onMutate: (input) => {
-      // Optimistically update organization name and logo
-      const previousData = utils.organizations.getUserOrganizations.getData();
+      const { organizationId } = input;
+      const previousData = utils.organizations.getOrganization.getData({ organizationId });
 
-      utils.organizations.getUserOrganizations.setData(undefined, (old) => {
+      utils.organizations.getOrganization.setData({ organizationId }, (old) => {
         if (!old) return old;
-        return old.map((org) => {
-          if (org.id !== organizationId) return org;
-          return {
-            ...org,
-            name: input?.name ?? org.name,
-            logoUrl: input?.logoUrl !== undefined ? input.logoUrl : org.logoUrl,
-          };
-        });
+        return {
+          ...old,
+          name: input?.name ?? old.name,
+        };
       });
 
       return { previousData };
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      const { organizationId } = variables;
       toast({
         title: 'Success',
         description: 'Organization updated successfully',
       });
+      utils.organizations.getOrganization.invalidate({ organizationId });
     },
-    onError: (error, _input, context) => {
+    onError: (error, input, context) => {
+      const { organizationId } = input;
+
       // Rollback optimistic updates
       if (context?.previousData !== undefined) {
-        utils.organizations.getUserOrganizations.setData(undefined, context.previousData);
+        utils.organizations.getOrganization.setData({ organizationId }, context.previousData);
       }
 
       toast({
@@ -56,28 +51,8 @@ export function useUpdateOrganization(organizationId: string) {
     },
   });
 
-  const updateOrganization = (
-    data: { name?: string; logoUrl?: string | null; settings?: Record<string, unknown> },
-    options?: UpdateOrganizationOptions
-  ) => {
-    updateMutation.mutate(
-      {
-        organizationId,
-        ...data,
-      },
-      {
-        onSuccess: () => {
-          options?.onSuccess?.();
-        },
-        onError: (error) => {
-          options?.onError?.(error);
-        },
-      }
-    );
-  };
-
   return {
-    updateOrganization,
+    updateOrganization: updateMutation.mutate,
     isUpdating: updateMutation.isPending,
   };
 }

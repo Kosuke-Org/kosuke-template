@@ -57,69 +57,45 @@ export async function middleware(req: NextRequest) {
   if (isApiRoute(req)) return NextResponse.next();
 
   const sessionData = await getCookieCache<Session>(req);
-  const orgSlug = sessionData?.session?.orgSlug ?? null;
-
-  // If authenticated user tries to access auth routes (sign-in, sign-up)
-  if (sessionData && isAuthRoute(req)) {
-    // If has orgSlug, redirect to org dashboard
-    if (orgSlug) {
-      return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, req.url));
-    }
-    // If no orgSlug, redirect to onboarding
-    return NextResponse.redirect(new URL('/onboarding', req.url));
-  }
+  const isAuthenticated = !!sessionData?.session;
+  const activeOrganizationSlug = sessionData?.session?.activeOrganizationSlug ?? null;
 
   // Protect /sign-in/verify - requires active sign-in attempt cookie
   if (isSignInVerifyRoute(req)) {
     const attemptEmail = req.cookies.get('sign_in_attempt_email')?.value;
-    if (attemptEmail) {
-      return NextResponse.next();
-    }
+    if (attemptEmail) return NextResponse.next();
     return NextResponse.redirect(new URL('/sign-in', req.url));
   }
 
-  // If no session and trying to access protected route, redirect to sign-in
-  if (!sessionData && !isPublicRoute(req)) {
+  // If user has an organization, redirect to dashboard
+  if (isAuthenticated && activeOrganizationSlug) {
+    if (isProtectedRoute(req)) return NextResponse.next();
+    if (isPublicRoute(req) && !isRootRoute(req) && !isAuthRoute(req)) return NextResponse.next();
+    return NextResponse.redirect(new URL(`/org/${activeOrganizationSlug}/dashboard`, req.url));
+  }
+
+  // Allow authenticated users to access onboarding
+  if (isAuthenticated && isOnboardingRoute(req)) {
+    return NextResponse.next();
+  }
+
+  // Redirect unauthenticated users trying to access protected routes
+  if (!isAuthenticated && !isPublicRoute(req)) {
     const signInUrl = new URL('/sign-in', req.url);
     signInUrl.searchParams.set('redirect', req.nextUrl.pathname);
     return NextResponse.redirect(signInUrl);
   }
 
-  // If has session but no orgSlug
-  if (sessionData && !orgSlug) {
-    // Allow onboarding route (user needs to complete onboarding)
-    if (isOnboardingRoute(req)) {
-      return NextResponse.next();
+  // Redirect authenticated users without organization to onboarding
+  if (isAuthenticated && !activeOrganizationSlug) {
+    // Prevent redirect loop - only redirect if not already on onboarding
+    if (!isOnboardingRoute(req)) {
+      return NextResponse.redirect(new URL('/onboarding', req.url));
     }
-
-    // Allow non-auth public routes (except root and auth routes)
-    if (isPublicRoute(req) && !isRootRoute(req) && !isAuthRoute(req)) {
-      return NextResponse.next();
-    }
-
-    // Redirect to onboarding for all other routes (including protected routes and root)
-    return NextResponse.redirect(new URL('/onboarding', req.url));
+    return NextResponse.next();
   }
 
-  // If has session AND orgSlug
-  if (sessionData && orgSlug) {
-    // Allow access to protected routes
-    if (isProtectedRoute(req)) {
-      return NextResponse.next();
-    }
-
-    // Allow non-auth public routes (except root and auth routes)
-    if (isPublicRoute(req) && !isRootRoute(req) && !isAuthRoute(req)) {
-      return NextResponse.next();
-    }
-
-    // Redirect from root to org dashboard
-    if (isRootRoute(req)) {
-      return NextResponse.redirect(new URL(`/org/${orgSlug}/dashboard`, req.url));
-    }
-  }
-
-  // Allow all public routes for unauthenticated users
+  // Allow all other requests for authenticated users
   return NextResponse.next();
 }
 

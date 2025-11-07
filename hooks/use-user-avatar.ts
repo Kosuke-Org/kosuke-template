@@ -3,14 +3,13 @@
 import { useMemo } from 'react';
 import { useProfileImageUrl } from '@/hooks/use-profile-image';
 import { getInitials } from '@/lib/utils';
-
 import type { User } from '@/lib/db/schema';
 
 export function useUserAvatar(user?: User) {
   const profileImageUrl = useProfileImageUrl(user);
 
   const displayName = useMemo(() => {
-    return user?.displayName || 'User';
+    return user?.displayName ?? 'User';
   }, [user?.displayName]);
 
   const initials = useMemo(() => {

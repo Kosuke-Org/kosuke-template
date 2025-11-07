@@ -13,14 +13,10 @@ import { Button } from '@/components/ui/button';
 import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { getInitials } from '@/lib/utils';
 import { useOrganizationLogo } from '@/hooks/use-organization-logo';
-import type { Organization } from '@/hooks/use-organizations';
+import type { FullOrganizationResponse as Organization } from '@/lib/types/organization';
 
-interface OrgLogoUploadProps {
-  organization: Organization;
-}
-
-export function OrgLogoUpload({ organization }: OrgLogoUploadProps) {
-  const { uploadLogo, deleteLogo, isUploading, isDeleting } = useOrganizationLogo(organization.id);
+export function OrgLogoUpload({ organization }: { organization: Organization }) {
+  const { uploadLogo, deleteLogo: handleDelete, isUploading, isDeleting } = useOrganizationLogo();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,10 +31,7 @@ export function OrgLogoUpload({ organization }: OrgLogoUploadProps) {
     }
   };
 
-  const handleDelete = () => {
-    if (!organization.logoUrl) return;
-    deleteLogo();
-  };
+  if (!organization) return null;
 
   const orgInitials = getInitials(organization.name);
 
@@ -51,9 +44,7 @@ export function OrgLogoUpload({ organization }: OrgLogoUploadProps) {
       <CardContent className="space-y-4">
         <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20 rounded-lg">
-            {organization.logoUrl && (
-              <AvatarImage src={organization.logoUrl} alt={organization.name} />
-            )}
+            {organization.logo && <AvatarImage src={organization.logo} alt={organization.name} />}
             <AvatarFallback className="rounded-lg bg-primary text-primary-foreground text-2xl">
               {orgInitials}
             </AvatarFallback>
@@ -79,7 +70,7 @@ export function OrgLogoUpload({ organization }: OrgLogoUploadProps) {
               )}
             </Button>
 
-            {organization.logoUrl && (
+            {organization.logo && (
               <Button
                 variant="outline"
                 size="sm"

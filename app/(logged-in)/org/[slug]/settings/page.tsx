@@ -7,9 +7,9 @@
 
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
 import { OrgGeneralForm } from './components/org-general-form';
 import { OrgLogoUpload } from './components/org-logo-upload';
+import { useOrganization } from '@/hooks/use-organization';
 
 function OrgGeneralSettingsSkeleton() {
   return (
@@ -42,20 +42,20 @@ function OrgGeneralSettingsSkeleton() {
 }
 
 export default function OrgGeneralSettingsPage() {
-  const { activeOrganization, isLoading } = useActiveOrganization();
+  const { organization, isLoading } = useOrganization();
 
-  if (isLoading || !activeOrganization) {
+  if (isLoading || !organization) {
     return <OrgGeneralSettingsSkeleton />;
   }
 
   return (
     <div className="space-y-6">
       <Card>
-        <OrgLogoUpload organization={activeOrganization} />
+        <OrgLogoUpload organization={organization} />
       </Card>
 
       <Card>
-        <OrgGeneralForm organization={activeOrganization} />
+        <OrgGeneralForm organization={organization} />
       </Card>
     </div>
   );

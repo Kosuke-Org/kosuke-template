@@ -24,29 +24,29 @@ import {
 } from '@/components/ui/form';
 import { orgGeneralFormSchema } from '@/lib/trpc/schemas/organizations';
 import { useUpdateOrganization } from '@/hooks/use-update-organization';
-import type { Organization } from '@/hooks/use-organizations';
+import type { FullOrganizationResponse as Organization } from '@/lib/types/organization';
 
 type OrgFormValues = z.infer<typeof orgGeneralFormSchema>;
 
-interface OrgGeneralFormProps {
-  organization: Organization;
-}
-
-export function OrgGeneralForm({ organization }: OrgGeneralFormProps) {
-  const { updateOrganization, isUpdating } = useUpdateOrganization(organization.id);
+export function OrgGeneralForm({ organization }: { organization: Organization }) {
+  const { updateOrganization, isUpdating } = useUpdateOrganization();
 
   const form = useForm<OrgFormValues>({
     resolver: zodResolver(orgGeneralFormSchema),
     defaultValues: {
-      name: organization.name,
+      name: organization?.name ?? '',
     },
   });
 
   const onSubmit = (data: OrgFormValues) => {
-    updateOrganization({ name: data.name });
+    if (!organization) return;
+
+    updateOrganization({ organizationId: organization.id, name: data.name });
   };
 
-  const hasChanges = form.watch('name') !== organization.name;
+  const hasChanges = form.watch('name') !== organization?.name;
+
+  if (!organization) return null;
 
   return (
     <>

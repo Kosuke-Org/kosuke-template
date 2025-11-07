@@ -75,7 +75,7 @@ describe('middleware', () => {
     expect(res?.url).toContain('/sign-in');
   });
 
-  it('redirects authenticated users without orgSlug to onboarding', async () => {
+  it('redirects authenticated users without activeOrganizationSlug to onboarding', async () => {
     mockSession(mockedSession);
 
     const res = await middleware(makeReq('/settings'));
@@ -83,20 +83,20 @@ describe('middleware', () => {
     expect(res?.url).toContain('/onboarding');
   });
 
-  it('allows authenticated users without orgSlug to access onboarding', async () => {
+  it('allows authenticated users without activeOrganizationSlug to access onboarding', async () => {
     mockSession(mockedSession);
 
     const res = await middleware(makeReq('/onboarding'));
     expect(res).toEqual({ type: 'next' });
   });
 
-  it('redirects authenticated users with orgSlug from root to org dashboard', async () => {
+  it('redirects authenticated users with activeOrganizationSlug from root to org dashboard', async () => {
     mockSession({
       ...mockedSession,
       session: {
         ...mockedSession.session,
-        orgId: 'org-1',
-        orgSlug: 'test-org',
+        activeOrganizationId: 'org-1',
+        activeOrganizationSlug: 'test-org',
       },
     });
 
@@ -105,13 +105,13 @@ describe('middleware', () => {
     expect(res?.url).toContain('/org/test-org/dashboard');
   });
 
-  it('allows authenticated users with orgSlug to access protected routes', async () => {
+  it('allows authenticated users with activeOrganizationSlug to access protected routes', async () => {
     mockSession({
       ...mockedSession,
       session: {
         ...mockedSession.session,
-        orgId: 'org-1',
-        orgSlug: 'test-org',
+        activeOrganizationId: 'org-1',
+        activeOrganizationSlug: 'test-org',
       },
     });
 
@@ -119,13 +119,13 @@ describe('middleware', () => {
     expect(res).toEqual({ type: 'next' });
   });
 
-  it('allows authenticated users with orgSlug to access org routes', async () => {
+  it('allows authenticated users with activeOrganizationSlug to access org routes', async () => {
     mockSession({
       ...mockedSession,
       session: {
         ...mockedSession.session,
-        orgId: 'org-1',
-        orgSlug: 'test-org',
+        activeOrganizationId: 'org-1',
+        activeOrganizationSlug: 'test-org',
       },
     });
 
@@ -138,8 +138,8 @@ describe('middleware', () => {
       ...mockedSession,
       session: {
         ...mockedSession.session,
-        orgId: 'org-1',
-        orgSlug: 'test-org',
+        activeOrganizationId: 'org-1',
+        activeOrganizationSlug: 'test-org',
       },
     });
 
@@ -160,13 +160,13 @@ describe('middleware', () => {
     expect(res).toEqual({ type: 'next' });
   });
 
-  it('allows authenticated users with orgSlug to access public routes', async () => {
+  it('allows authenticated users with activeOrganizationSlug to access public routes', async () => {
     mockSession({
       ...mockedSession,
       session: {
         ...mockedSession.session,
-        orgId: 'org-1',
-        orgSlug: 'test-org',
+        activeOrganizationId: 'org-1',
+        activeOrganizationSlug: 'test-org',
       },
     });
 
@@ -174,7 +174,7 @@ describe('middleware', () => {
     expect(res).toEqual({ type: 'next' });
   });
 
-  it('redirects authenticated users without orgSlug trying to access sign-in to onboarding', async () => {
+  it('redirects authenticated users without activeOrganizationSlug trying to access sign-in to onboarding', async () => {
     mockSession(mockedSession);
 
     const res = await middleware(makeReq('/sign-in'));
@@ -198,7 +198,7 @@ describe('middleware', () => {
     expect(res?.url).toContain('/sign-in');
   });
 
-  it('redirects authenticated users without orgSlug from root to onboarding', async () => {
+  it('redirects authenticated users without activeOrganizationSlug from root to onboarding', async () => {
     mockSession(mockedSession);
 
     const res = await middleware(makeReq('/'));

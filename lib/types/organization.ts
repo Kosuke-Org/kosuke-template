@@ -4,12 +4,9 @@
  */
 
 // Re-export schema types (ALWAYS re-export even if not extending)
-export type {
-  Organization,
-  NewOrganization,
-  OrgMembership,
-  NewOrgMembership,
-} from '@/lib/db/schema';
+export type { Organization } from '@/lib/db/schema';
+
+export type { FullOrganizationResponse } from '@/lib/auth/client';
 
 /**
  * Organization Role Constants

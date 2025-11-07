@@ -6,7 +6,7 @@
 import { db } from '@/lib/db';
 import { organizations, orgMemberships } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
-import type { Organization, OrgMembership, OrgRoleValue } from '@/lib/types';
+import type { Organization, OrgRoleValue } from '@/lib/types';
 
 /**
  * Slug generation
@@ -81,20 +81,6 @@ export async function isUserOrgAdmin(
 }
 
 /**
- * Organization retrieval
- * Get organization by Clerk organization ID
- */
-export async function getOrgByClerkId(clerkOrgId: string): Promise<Organization | null> {
-  const [org] = await db
-    .select()
-    .from(organizations)
-    .where(eq(organizations.clerkOrgId, clerkOrgId))
-    .limit(1);
-
-  return org || null;
-}
-
-/**
  * Get organization by internal ID
  */
 export async function getOrgById(organizationId: string): Promise<Organization | null> {
@@ -105,41 +91,4 @@ export async function getOrgById(organizationId: string): Promise<Organization |
     .limit(1);
 
   return org || null;
-}
-
-/**
- * Get all organizations a user belongs to
- */
-export async function getUserOrganizations(clerkUserId: string): Promise<Organization[]> {
-  const result = await db
-    .select({
-      id: organizations.id,
-      clerkOrgId: organizations.clerkOrgId,
-      name: organizations.name,
-      slug: organizations.slug,
-      logoUrl: organizations.logoUrl,
-      settings: organizations.settings,
-      createdAt: organizations.createdAt,
-      updatedAt: organizations.updatedAt,
-    })
-    .from(organizations)
-    .innerJoin(orgMemberships, eq(orgMemberships.organizationId, organizations.id))
-    .where(eq(orgMemberships.clerkUserId, clerkUserId));
-
-  return result;
-}
-
-/**
- * Get membership by Clerk membership ID
- */
-export async function getMembershipByClerkId(
-  clerkMembershipId: string
-): Promise<OrgMembership | null> {
-  const [membership] = await db
-    .select()
-    .from(orgMemberships)
-    .where(eq(orgMemberships.clerkMembershipId, clerkMembershipId))
-    .limit(1);
-
-  return membership || null;
 }

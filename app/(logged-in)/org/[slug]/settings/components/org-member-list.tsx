@@ -37,7 +37,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useOrgMembers } from '@/hooks/use-org-members';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '@/hooks/use-user';
+
 import { getInitials } from '@/lib/utils';
 
 interface OrgMemberListProps {
@@ -140,18 +141,18 @@ export function OrgMemberList({ organizationId }: OrgMemberListProps) {
           </TableHeader>
           <TableBody>
             {members.map((member) => {
-              const displayName = member.displayName || 'User';
+              const { user } = member;
+              const displayName = user.name || 'User';
+
               const initials = getInitials(displayName);
               const isCurrentUser = member.userId === currentUser?.id;
 
               return (
-                <TableRow key={member.membershipId}>
+                <TableRow key={member.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8 rounded-lg">
-                        {member.profileImageUrl && (
-                          <AvatarImage src={member.profileImageUrl} alt={displayName} />
-                        )}
+                        {user.image && <AvatarImage src={user.image} alt={displayName} />}
                         <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
                           {initials}
                         </AvatarFallback>
@@ -166,7 +167,7 @@ export function OrgMemberList({ organizationId }: OrgMemberListProps) {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{member.email}</TableCell>
+                  <TableCell className="text-muted-foreground">{user.email}</TableCell>
                   <TableCell>
                     <Badge variant={member.role === 'org:admin' ? 'default' : 'secondary'}>
                       {member.role === 'org:admin' ? (

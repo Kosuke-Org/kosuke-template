@@ -4,14 +4,7 @@
  */
 
 // User-related types
-export type {
-  ClerkUserType,
-  LocalUser,
-  UserSyncResult,
-  UserSyncOptions,
-  AuthState,
-  NotificationSettings,
-} from './user';
+export type { NotificationSettings } from './user';
 
 export type { TaskPriority } from './task';
 
@@ -26,9 +19,6 @@ export type {
 export type {
   // Base types
   Organization,
-  NewOrganization,
-  OrgMembership,
-  NewOrgMembership,
 
   // Role types
   OrgRoleValue,
@@ -44,14 +34,6 @@ export type {
 
 // Billing enums
 export { SubscriptionState } from './billing';
-
-// Webhook types
-export type {
-  ClerkWebhookUser,
-  ClerkOrganizationWebhook,
-  ClerkMembershipWebhook,
-  ClerkWebhookEvent,
-} from './webhooks';
 
 // Engine types
 export type { CurrencyCode, CurrencyConvertRequest, CurrencyConvertResponse } from './engine';

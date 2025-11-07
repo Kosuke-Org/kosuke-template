@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckCircle, Loader2, CreditCard, Calendar, XCircle, RotateCcw } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '@/hooks/use-user';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -150,7 +150,7 @@ const PRICING = {
 } as const;
 
 export default function BillingPage() {
-  const { user, isSignedIn } = useUser();
+  const { user } = useUser();
   const { toast } = useToast();
   const { data: subscriptionInfo, isLoading: isLoadingStatus } = useSubscriptionStatus();
   const { data: eligibility, isLoading: isLoadingEligibility } = useCanSubscribe();
@@ -207,7 +207,7 @@ export default function BillingPage() {
     );
   };
 
-  if (!isSignedIn || !user) {
+  if (!user) {
     return null;
   }
 

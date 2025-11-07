@@ -14,7 +14,8 @@ import { trpc } from '@/lib/trpc/client';
 export const OTPVerification = () => {
   const router = useRouter();
   const [otp, setOtp] = useState('');
-  const { verifyOTP, sendOTP, isVerifyingOTP, isSendingOTP, verifyOTPError } = useAuthActions();
+  const { verifyOTP, sendOTP, isVerifyingOTP, isSendingOTP, verifyOTPError, clearSignInAttempt } =
+    useAuthActions();
 
   const { data, isLoading } = trpc.signInAttempt.getCurrent.useQuery(undefined, {});
   const email = data?.email;
@@ -27,7 +28,7 @@ export const OTPVerification = () => {
   };
 
   const handleChangeEmail = async () => {
-    await trpc.signInAttempt.clear.useMutation().mutate();
+    await clearSignInAttempt();
     router.push('/sign-in');
   };
 

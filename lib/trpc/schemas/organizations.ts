@@ -11,12 +11,6 @@ import { z } from 'zod';
  */
 export const createOrganizationSchema = z.object({
   name: z.string().min(1, 'Organization name is required').max(100, 'Name too long'),
-  slug: z
-    .string()
-    .min(1)
-    .max(50)
-    .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens')
-    .optional(),
 });
 
 /**
@@ -33,8 +27,8 @@ export const createOrgFormSchema = z.object({
 export const updateOrganizationSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
   name: z.string().min(1).max(100).optional(),
-  logoUrl: z.url('Invalid URL').nullable().optional(),
-  settings: z.record(z.string(), z.unknown()).optional(),
+  slug: z.string().min(1).max(100).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**
@@ -80,4 +74,13 @@ export const removeMemberSchema = z.object({
 
 export const getOrgMembersSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
+  limit: z.number().int().positive().default(100),
+  offset: z.number().int().positive().default(0),
+  sortBy: z.enum(['createdAt']).default('createdAt'),
+  sortDirection: z.enum(['asc', 'desc']).default('desc'),
+  filterField: z.string().optional(),
+  filterOperator: z
+    .enum(['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'nin', 'contains'] as const)
+    .default('eq'),
+  filterValue: z.string().optional(),
 });

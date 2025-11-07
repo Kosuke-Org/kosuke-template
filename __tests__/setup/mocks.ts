@@ -2,29 +2,28 @@ import { vi } from 'vitest';
 import React, { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Stripe from 'stripe';
-import { ClerkUserType } from '@/lib/types/user';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Mock Clerk auth
-const mockClerkUserType = {
-  id: 'user_123',
-  emailAddresses: [{ emailAddress: 'test@example.com' }],
-  firstName: 'John',
-  lastName: 'Doe',
-  fullName: 'John Doe',
-  imageUrl: 'https://example.com/avatar.jpg',
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
+type MockUserType = {
+  id: string;
+  email: string;
+  emailVerified: boolean;
+  name: string;
+  image?: string | null | undefined;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
-// Export as mockClerkUser for consistency with tests
-export const mockClerkUser = mockClerkUserType;
-
-const mockClerkAuth = {
-  userId: 'user_123',
-  sessionId: 'session_123',
-  user: mockClerkUserType,
+const mockUser: MockUserType = {
+  id: 'user_123',
+  email: 'test@example.com',
+  emailVerified: true,
+  name: 'John Doe',
+  image: 'https://example.com/avatar.jpg',
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 // Mock Stripe responses
@@ -66,8 +65,8 @@ export const mockedSession = {
     token: 'test-token',
     createdAt: new Date(),
     updatedAt: new Date(),
-    orgId: '',
-    orgSlug: '',
+    activeOrganizationId: '',
+    activeOrganizationSlug: '',
   },
   user: {
     id: 'user-1',
@@ -82,16 +81,6 @@ export const mockedSession = {
 
 // Setup mocks
 export function setupMocks() {
-  // Mock Clerk
-  vi.mock('@clerk/nextjs/server', () => ({
-    auth: vi.fn(() => Promise.resolve(mockClerkAuth)),
-    clerkClient: {
-      users: {
-        getUser: vi.fn(() => Promise.resolve(mockClerkUserType)),
-      },
-    },
-  }));
-
   // Mock Stripe client
   vi.mock('@/lib/billing/client', () => ({
     stripe: {
@@ -310,18 +299,19 @@ export function createMockQueryClient() {
 // Helper to create tRPC test context matching createTRPCContext signature
 export function createMockTRPCContext(options?: {
   userId?: string | null;
-  orgId?: string | null;
-  orgRole?: string | null;
-  getUser?: () => Promise<ClerkUserType | null>;
+  activeOrganizationId?: string | null;
+  activeOrganizationSlug?: string | null;
+  getUser?: () => Promise<MockUserType | undefined>;
 }) {
   const userId = options?.userId ?? null;
 
   return {
     userId,
-    orgId: options?.orgId ?? null,
-    orgRole: options?.orgRole ?? null,
+    activeOrganizationId: options?.activeOrganizationId ?? null,
+    orgRole: null, // TODO: Implement org role
+    activeOrganizationSlug: options?.activeOrganizationSlug ?? null,
     async getUser() {
-      return userId ? (mockClerkUserType as ClerkUserType) : null;
+      return Promise.resolve(mockUser);
     },
     ...options,
   };

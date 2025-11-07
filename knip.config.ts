@@ -9,6 +9,8 @@ const knipConfig = {
     // Chart/skeleton components are template examples
     'components/skeletons.tsx',
     'components/charts/**',
+    // React Email templates, scanned by email dev server
+    'emails/**',
     // Library barrel exports, infrastructure for template users
     'lib/**/index.ts',
     // Queue system - public API for manual job triggering
@@ -19,7 +21,6 @@ const knipConfig = {
     '@radix-ui/*',
     'cmdk',
     'embla-carousel-react',
-    'input-otp',
     'react-resizable-panels',
     'tailwindcss',
     'tailwindcss-animate',

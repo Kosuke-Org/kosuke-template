@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TechLogo } from '@/app/(logged-out)/home/components/tech-card';
 import Link from 'next/link';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '@/hooks/use-user';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
 
 const coreFeatures = [

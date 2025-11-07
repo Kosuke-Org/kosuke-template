@@ -21,6 +21,7 @@ import {
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { useAuthActions } from '@/hooks/use-auth';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useUser } from '@/hooks/use-user';
 
 interface NavbarProps {
   variant?: 'standard' | 'transparent';
@@ -28,7 +29,8 @@ interface NavbarProps {
 }
 
 export default function Navbar({ variant = 'standard', className }: NavbarProps) {
-  const { user, isSignedIn } = useAuth();
+  const { isSignedIn } = useAuth();
+  const { user } = useUser();
   const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
   const { signOut: handleSignOut } = useAuthActions();
   const { activeOrganization } = useActiveOrganization();

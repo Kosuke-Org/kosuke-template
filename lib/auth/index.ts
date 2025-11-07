@@ -1,11 +1,5 @@
-// Main auth functionality exports
-export { syncUserFromClerk, syncUserFromWebhook, getUserByClerkId } from './user-sync';
-
-// Auth utilities
-export { isValidEmail } from './utils';
-
 // Better Auth - Client and types
-export { authClient, useSession, signIn, signUp, signOut, emailOtp } from './client';
+export { useSession, signIn, signUp, signOut, emailOtp } from './client';
 
 // Better Auth Types - Re-exported from Better Auth Email OTP plugin
 import type { EmailOTPOptions } from 'better-auth/plugins';
@@ -28,16 +22,6 @@ export type OTPEmailProps = {
   otp: string;
   type: OTPType;
 };
-
-// Legacy Types - Re-export from centralized types
-export type {
-  ClerkUserType,
-  ClerkWebhookUser,
-  LocalUser,
-  UserSyncResult,
-  AuthState,
-  UserSyncOptions,
-} from '@/lib/types';
 
 export { ActivityType } from '@/lib/db/schema';
 

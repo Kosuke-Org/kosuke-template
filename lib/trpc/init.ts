@@ -18,15 +18,15 @@ export const createTRPCContext = async (opts?: { req?: Request }) => {
   const userId = user?.id ?? null;
   const session = sessionData?.session;
 
-  const orgSlug = session?.orgSlug ?? null;
-  const orgId = session?.orgId ?? null;
+  const activeOrganizationSlug = session?.activeOrganizationSlug ?? null;
+  const activeOrganizationId = session?.activeOrganizationId ?? null;
   const orgRole = null; // TODO: Implement org role;
 
   return {
     userId,
-    orgId, // Active organization ID (can be null)
+    activeOrganizationId, // Active organization ID (can be null)
     orgRole, // User's role in active organization (can be null)
-    orgSlug,
+    activeOrganizationSlug,
     async getUser() {
       return user;
     },
@@ -68,9 +68,9 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
   return opts.next({
     ctx: {
       userId: ctx.userId,
-      orgId: ctx.orgId,
+      activeOrganizationId: ctx.activeOrganizationId,
       orgRole: ctx.orgRole,
-      orgSlug: ctx.orgSlug,
+      activeOrganizationSlug: ctx.activeOrganizationSlug,
       getUser: ctx.getUser,
     },
   });

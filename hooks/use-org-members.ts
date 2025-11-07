@@ -13,11 +13,7 @@ export function useOrgMembers(organizationId: string | undefined) {
   const utils = trpc.useUtils();
 
   // Fetch organization members
-  const {
-    data: members,
-    isLoading,
-    error,
-  } = trpc.organizations.getOrgMembers.useQuery(
+  const { data, isLoading, error } = trpc.organizations.getOrgMembers.useQuery(
     { organizationId: organizationId! },
     {
       enabled: !!organizationId,
@@ -62,7 +58,7 @@ export function useOrgMembers(organizationId: string | undefined) {
   });
 
   return {
-    members: members ?? [],
+    members: data?.members ?? [],
     isLoading,
     error,
     removeMember: removeMember.mutate,

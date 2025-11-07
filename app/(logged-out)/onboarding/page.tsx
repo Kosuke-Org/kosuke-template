@@ -5,7 +5,6 @@
 
 'use client';
 
-import { useUser } from '@clerk/nextjs';
 import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,19 +24,17 @@ import {
 } from '@/components/ui/form';
 import { useCreateOrganization } from '@/hooks/use-create-organization';
 import { createOrgFormSchema } from '@/lib/trpc/schemas/organizations';
-import { trpc } from '@/lib/trpc/client';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
 
 type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { isLoaded, user } = useUser();
+  const { isLoading } = useAuth();
   const { createOrganization, isCreating } = useCreateOrganization();
-  const { mutateAsync: updateUserPublicMetadata, isPending } =
-    trpc.user.updateUserPublicMetadata.useMutation();
 
-  const isSubmitting = isCreating || isPending;
+  const isSubmitting = isCreating || isLoading;
 
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(createOrgFormSchema),
@@ -49,14 +46,12 @@ export default function OnboardingPage() {
   const onSubmit = (data: OrganizationFormValues) => {
     createOrganization(data, {
       onSuccess: async (slug) => {
-        await updateUserPublicMetadata({ publicMetadata: { onboardingComplete: true } });
-        await user?.reload(); // Reload user to refresh session with updated metadata
         router.push(`/org/${slug}/dashboard`);
       },
     });
   };
 
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

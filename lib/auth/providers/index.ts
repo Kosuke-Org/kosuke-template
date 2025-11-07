@@ -6,10 +6,13 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { nextCookies } from 'better-auth/next-js';
-import { emailOTP, customSession } from 'better-auth/plugins';
+import { emailOTP, organization } from 'better-auth/plugins';
+
 import { db } from '@/lib/db/drizzle';
 import * as schema from '@/lib/db/schema';
 import { sendOTPEmail } from '@/lib/email/otp';
+import { desc, eq } from 'drizzle-orm';
+import { organizations, orgMemberships } from '@/lib/db/schema';
 
 /**
  * Better Auth instance with Email OTP
@@ -23,11 +26,70 @@ export const auth = betterAuth({
       session: schema.sessions,
       verification: schema.verifications,
       account: schema.accounts,
+      organization: schema.organizations,
+      member: schema.orgMemberships,
+      invitation: schema.invitations,
     },
   }),
   advanced: {
     database: {
       generateId: () => crypto.randomUUID(),
+    },
+  },
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          const [membership] = await db
+            .select({
+              organizationId: orgMemberships.organizationId,
+              organizationSlug: organizations.slug,
+            })
+            .from(orgMemberships)
+            .innerJoin(organizations, eq(orgMemberships.organizationId, organizations.id))
+            .where(eq(orgMemberships.userId, session.userId))
+            .orderBy(desc(orgMemberships.createdAt))
+            .limit(1);
+
+          return {
+            data: {
+              ...session,
+              activeOrganizationId: membership?.organizationId ?? null,
+              activeOrganizationSlug: membership?.organizationSlug ?? null,
+            },
+          };
+        },
+      },
+      update: {
+        before: async (session) => {
+          if (session.activeOrganizationId !== undefined) {
+            const orgId = session.activeOrganizationId as string | null | undefined;
+            if (orgId) {
+              const [org] = await db
+                .select({ slug: organizations.slug })
+                .from(organizations)
+                .where(eq(organizations.id, orgId))
+                .limit(1);
+
+              return {
+                data: {
+                  ...session,
+                  activeOrganizationSlug: org?.slug ?? null,
+                },
+              };
+            } else {
+              return {
+                data: {
+                  ...session,
+                  activeOrganizationSlug: null,
+                },
+              };
+            }
+          }
+
+          return { data: session };
+        },
+      },
     },
   },
   user: {
@@ -39,11 +101,11 @@ export const auth = betterAuth({
   session: {
     storeSessionInDatabase: true,
     additionalFields: {
-      orgId: {
+      activeOrganizationId: {
         type: 'string',
         nullable: true,
       },
-      orgSlug: {
+      activeOrganizationSlug: {
         type: 'string',
         nullable: true,
       },
@@ -57,6 +119,7 @@ export const auth = betterAuth({
   baseURL: process.env.NEXT_PUBLIC_APP_URL,
   secret: process.env.BETTER_AUTH_SECRET,
   plugins: [
+    organization(),
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
         // Server-side check: Better Auth automatically checks if user exists when disableSignUp is true
@@ -69,18 +132,18 @@ export const auth = betterAuth({
       disableSignUp: true,
       allowedAttempts: 5, // Allow 5 attempts before invalidating OTP
     }),
-    customSession(async ({ user, session }) => {
-      // Cast session to access additional fields (they exist in DB but types aren't inferred)
-      const sessionWithFields = session as typeof session & {
-        orgId: string | null;
-        orgSlug: string | null;
-      };
+    // customSession(async ({ user, session }) => {
+    //   // Cast session to access additional fields (they exist in DB but types aren't inferred)
+    //   const sessionWithFields = session as typeof session & {
+    //     activeOrganizationId: string | null;
+    //     activeOrganizationSlug: string | null;
+    //   };
 
-      return {
-        user,
-        session: sessionWithFields,
-      };
-    }),
+    //   return {
+    //     user,
+    //     session: sessionWithFields,
+    //   };
+    // }),
     // nextCookies plugin must be last
     nextCookies(),
   ],
