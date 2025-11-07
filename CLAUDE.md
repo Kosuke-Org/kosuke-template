@@ -303,7 +303,6 @@ import { Github } from 'lucide-react';
 - "Open Modal" (no navigation) → `Button`
 - "Next Page" (pagination) → `Link`
 
-
 ### Loading States & Skeleton Components - MANDATORY
 
 **ALWAYS use Skeleton components for page-level loading states. NEVER use simple "Loading..." text for page content.**
