@@ -129,6 +129,13 @@ NEXT_PUBLIC_SENTRY_DSN=https://...@....ingest.sentry.io/...
 
 # Application
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Digital Ocean
+S3_REGION=nyc3
+S3_ENDPOINT=https://nyc3.digitaloceanspaces.com
+S3_BUCKET=your-bucket-name
+S3_ACCESS_KEY_ID=your_access_key
+S3_SECRET_ACCESS_KEY=your_secret_key
 ```
 
 **Get Your Credentials**:
@@ -137,6 +144,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - **Stripe**: Create account at [stripe.com](https://stripe.com) → Get API keys → Create products and prices
 - **Resend**: Sign up → Create API key → Use `onboarding@resend.dev` for testing
 - **Sentry**: Create project → Copy DSN (optional for local development)
+- **DigitalOcean**: Create account → Create Spaces bucket → Generate API key & secret
 
 #### 4. Start Services (PostgreSQL + Redis)
 

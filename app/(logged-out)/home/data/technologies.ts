@@ -100,13 +100,13 @@ export const technologies: Technology[] = [
     category: 'database',
   },
   {
-    name: 'Vercel',
-    description: 'The platform for frontend developers, providing speed and reliability',
+    name: 'DigitalOcean',
+    description: 'Cloud platform for deploying applications with App Platform and Droplets',
     logoPath: {
-      light: '/logos/vercel_light.svg',
-      dark: '/logos/vercel_dark.svg',
+      light: '/logos/digitalocean.svg',
+      dark: '/logos/digitalocean.svg',
     },
-    url: 'https://vercel.com',
+    url: 'https://www.digitalocean.com',
     category: 'deployment',
   },
   {

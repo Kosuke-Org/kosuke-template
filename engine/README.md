@@ -4,14 +4,13 @@ A lightweight FastAPI microservice for the Kosuke Template.
 
 ## Overview
 
-This service provides a simple health check endpoint and can be extended with additional business logic as needed. It's designed to be deployed on Fly.io for global edge distribution with low latency.
+This service provides a simple health check endpoint and can be extended with additional business logic as needed. It's containerized for easy deployment to any platform.
 
 ## Features
 
 - **Health Monitoring**: Built-in health checks for monitoring and orchestration
 - **FastAPI**: Modern, fast Python web framework
 - **UV Dependency Management**: Fast, reliable Python package management
-- **Auto Scaling**: Scales to zero when not in use on Fly.io
 - **Docker Support**: Containerized for easy deployment
 - **Sentry Integration**: Error tracking and performance monitoring with FastAPI integration
 
@@ -25,8 +24,7 @@ engine/
 │   └── api                    # Example API endpoint
          └── currency.py       # Example algorithm module
 ├── pyproject.toml             # UV project configuration and dependencies
-├── Dockerfile                 # Container configuration for Fly.io
-├── fly.toml                   # Fly.io deployment configuration
+├── Dockerfile                 # Container configuration
 └── README.md                  # This file
 ```
 
@@ -205,26 +203,7 @@ docker compose up engine
 
 ## Deployment
 
-Deploy to Fly.io:
-
-```bash
-fly deploy
-```
-
-Check deployment health:
-
-```bash
-curl https://engine-service.fly.dev/health
-```
-
-Quick deploy:
-
-```bash
-fly launch
-fly secrets set SENTRY_DSN=<your-sentry-dsn>
-fly secrets set FRONTEND_URL=https://your-app.vercel.app
-fly deploy
-```
+Build and push the Docker image to your container registry, then deploy to your preferred platform using the provided Dockerfile and environment variables.
 
 ## Performance
 
