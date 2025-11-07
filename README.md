@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/github/license/Kosuke-Org/kosuke-template?style=flat-square&color=green)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-docs--template.kosuke.ai-blue?style=flat-square&logo=docusaurus)](https://docs-template.kosuke.ai)
 
-A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Stripe Billing, Vercel Blob, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
+A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Stripe Billing, DigitalOcean Spaces, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
 
 Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billing, and complete multi-tenant functionality.
 
@@ -16,23 +16,12 @@ Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billin
 - **Stripe** billing integration with automated sync (personal & organization subscriptions)
 - **BullMQ + Redis** for background jobs and scheduled tasks
 - **Resend** email service with **React Email** templates
-- **Profile image uploads** with Vercel Blob
+- **Profile image uploads** with DigitalOcean Spaces or S3-like storage
 - **Multi-tenancy** with organization and team management
 - **Sentry** error monitoring and performance tracking
 - **Plausible Analytics** integration with configurable domains
 - **Responsive design** with dark/light mode
 - **Comprehensive testing** setup with Vitest
-
-## 📚 Documentation
-
-**Complete setup guide, architecture, and features documentation:**
-
-👉 **[docs-template.kosuke.ai](https://docs-template.kosuke.ai)**
-
-## 🚀 Quick Links
-
-- [Documentation Overview](https://docs-template.kosuke.ai/docs/) - Architecture, features, and services
-- [Deployment Guide](https://docs-template.kosuke.ai/docs/deployment-guide) - Deploy to production in 60-90 minutes
 
 ## 🛠 Tech Stack
 
@@ -69,6 +58,9 @@ You'll need accounts with these services (all have free tiers):
 | **Stripe** | Billing        | [stripe.com](https://stripe.com) | Test mode       |
 | **Resend** | Email          | [resend.com](https://resend.com) | 100 emails/day  |
 | **Sentry** | Monitoring     | [sentry.io](https://sentry.io)   | 5k events/month |
+| **DigitalOcean** | Storage        | [digitalocean.com](https://www.digitalocean.com) | $5/month (250GB + 1TB transfer) ❌ |
+
+> **Note**: DigitalOcean Spaces is the only paid service. All other services have free tiers sufficient for development and testing.
 
 ### Local Development Setup
 
@@ -296,7 +288,6 @@ bun run test:coverage
 
 ### Getting Help
 
-- **Documentation**: [docs-template.kosuke.ai](https://docs-template.kosuke.ai)
 - **GitHub Issues**: [github.com/Kosuke-Org/kosuke-template/issues](https://github.com/Kosuke-Org/kosuke-template/issues)
 - **Discussions**: Use GitHub Discussions for questions
 
@@ -317,7 +308,7 @@ GitHub Actions will automatically:
 - Create GitHub Release with changelog
 - Generate documentation version snapshot
 
-See [Contributing Guide](https://docs-template.kosuke.ai/docs/contributing) for full release process.
+See the contributing guidelines in the repository for full release process.
 
 ## 📝 License
 
