@@ -49,7 +49,10 @@ const isOnboardingRoute = createRouteMatcher(['/onboarding']);
 const isRootRoute = createRouteMatcher(['/']);
 const isProtectedRoute = createRouteMatcher(['/org(.*)', '/settings(.*)']);
 const isApiRoute = createRouteMatcher(['/api(.*)']);
-const isSignInVerifyRoute = createRouteMatcher(['/sign-in/verify']);
+const isSignInVerifyRoute = createRouteMatcher([
+  '/sign-in/verify',
+  '/sign-up/verify-email-address',
+]);
 const isAuthRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)']);
 
 export async function middleware(req: NextRequest) {

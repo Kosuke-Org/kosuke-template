@@ -9,26 +9,26 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthActions } from '@/hooks/use-auth';
 
-export const SignIn = () => {
+export const SignUp = () => {
   const [email, setEmail] = useState('');
-  const { signIn, isSigningIn, signInError } = useAuthActions();
+  const { signUp, isSigningUp, signUpError } = useAuthActions();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    signIn({ email });
+    signUp({ email });
   };
 
   return (
     <Card className="py-8">
       <CardHeader className="text-center px-10">
-        <CardTitle className="text-lg font-bold">Sign in to Kosuke Template</CardTitle>
+        <CardTitle className="text-lg font-bold">Create your account</CardTitle>
         <CardDescription className="text-xs">
-          Welcome back! Please sign in to continue
+          Welcome! Please fill in the details to get started.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-10">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <Field data-invalid={!!signInError}>
+          <Field data-invalid={!!signUpError}>
             <FieldLabel htmlFor="email" className="text-xs">
               Email address
             </FieldLabel>
@@ -41,27 +41,27 @@ export const SignIn = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              aria-invalid={!!signInError}
+              aria-invalid={!!signUpError}
             />
-            {signInError && (
-              <FieldError className="text-xs" errors={[{ message: signInError.message }]}>
-                {signInError.message}
+            {signUpError && (
+              <FieldError className="text-xs" errors={[{ message: signUpError.message }]}>
+                {signUpError.message}
               </FieldError>
             )}
           </Field>
           <Field>
-            <Button type="submit" disabled={isSigningIn} className="text-xs">
-              {isSigningIn && <LoaderCircle className="animate-spin" />}
+            <Button type="submit" disabled={isSigningUp} className="text-xs">
+              {isSigningUp && <LoaderCircle className="animate-spin" />}
               Continue
               <ChevronRight className="size-3" />
             </Button>
             <FieldDescription className="text-center text-xs pt-6">
-              Don&apos;t have an account?{' '}
+              Already have an account?{' '}
               <Link
-                href="/sign-up"
+                href="/sign-in"
                 className="font-bold !underline-offset-2 !no-underline hover:!underline focus:!underline"
               >
-                Sign up
+                Sign in
               </Link>
             </FieldDescription>
           </Field>

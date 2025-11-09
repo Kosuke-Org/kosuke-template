@@ -10,16 +10,16 @@ import { organizationsRouter } from './routers/organizations';
 import { billingRouter } from './routers/billing';
 import { engineRouter } from './routers/engine';
 import { ordersRouter } from './routers/orders';
-import { signInAttemptRouter } from './routers/sign-in-attempt';
+import { authRouter } from './routers/auth';
 
 export const appRouter = router({
+  auth: authRouter,
   tasks: tasksRouter,
   user: userRouter,
   organizations: organizationsRouter,
   billing: billingRouter,
   engine: engineRouter,
   orders: ordersRouter,
-  signInAttempt: signInAttemptRouter,
 });
 
 export type AppRouter = typeof appRouter;

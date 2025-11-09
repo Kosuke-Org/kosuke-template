@@ -45,17 +45,11 @@ if (IS_PRODUCTION) {
   process.exit(1);
 }
 
-if (!process.env.CLERK_SECRET_KEY) {
-  console.error('CLERK_SECRET_KEY environment variable is not set');
-  process.exit(1);
-}
-
 console.log('🔒 Environment check passed: Running in development mode\n');
 
 async function seed() {
   console.log('🌱 Starting database seed...\n');
   console.log('📌 Note: If you encounter duplicate key errors, run `bun run db:reset`');
-  console.log('   or manually delete test users/orgs from Clerk dashboard.\n');
 
   try {
     const janeSmithEmail = 'jane+kosuke_test@example.com';
@@ -67,12 +61,14 @@ async function seed() {
       email: johnDoeEmail,
       displayName: 'John Doe',
       profileImageUrl: null,
+      emailVerified: true,
     };
 
     const janeNewUser: NewUser = {
       email: janeSmithEmail,
       displayName: 'Jane Smith',
       profileImageUrl: null,
+      emailVerified: true,
     };
 
     const [johnUser] = await db

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { ChevronRight, LoaderCircle, Pencil } from 'lucide-react';
@@ -11,17 +11,29 @@ import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useAuthActions } from '@/hooks/use-auth';
 import { trpc } from '@/lib/trpc/client';
 
+/**
+ * Shared OTP Verification Component
+ * Used for both sign-in and sign-up flows
+ * Automatically determines redirect URL based on current route
+ * Sign-up: Uses 'email-verification' to verify newly created unverified user
+ * Sign-in: Uses 'sign-in' to authenticate existing user
+ */
 export const OTPVerification = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const [otp, setOtp] = useState('');
   const { verifyOTP, sendOTP, isVerifyingOTP, isSendingOTP, verifyOTPError, clearSignInAttempt } =
     useAuthActions();
 
-  const { data, isLoading } = trpc.signInAttempt.getCurrent.useQuery(undefined, {});
+  const { data, isLoading } = trpc.auth.getCurrentSignInAttempt.useQuery(undefined, {});
   const email = data?.email;
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    handleSubmit();
+  };
+
+  const handleSubmit = () => {
     if (email && otp.length === 6) {
       verifyOTP({ email, otp });
     }
@@ -29,7 +41,9 @@ export const OTPVerification = () => {
 
   const handleChangeEmail = async () => {
     await clearSignInAttempt();
-    router.push('/sign-in');
+    // Automatically determine redirect URL based on current route
+    const redirectUrl = pathname?.includes('/sign-up') ? '/sign-up' : '/sign-in';
+    router.push(redirectUrl);
   };
 
   const handleResendCode = () => {
@@ -74,7 +88,7 @@ export const OTPVerification = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="px-10">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           <Field data-invalid={!!verifyOTPError} className="text-center">
             <FieldLabel htmlFor="otp" className="text-xs justify-center">
               Verification code
@@ -83,6 +97,7 @@ export const OTPVerification = () => {
             <InputOTP
               value={otp}
               onChange={setOtp}
+              onComplete={handleSubmit}
               containerClassName="justify-center"
               pattern={REGEXP_ONLY_DIGITS}
               maxLength={6}

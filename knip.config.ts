@@ -11,6 +11,7 @@ const knipConfig = {
     'components/charts/**',
     // React Email templates, scanned by email dev server
     'emails/**',
+    'lib/email/otp.ts',
     // Library barrel exports, infrastructure for template users
     'lib/**/index.ts',
     // Queue system - public API for manual job triggering

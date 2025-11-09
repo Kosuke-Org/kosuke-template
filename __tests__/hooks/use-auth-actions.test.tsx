@@ -40,9 +40,9 @@ vi.mock('@/hooks/use-toast', () => ({
 
 vi.mock('@/lib/trpc/client', () => ({
   trpc: {
-    signInAttempt: {
-      clear: { useMutation: vi.fn(() => ({ mutateAsync: vi.fn(), mutate: vi.fn() })) },
-      create: { useMutation: vi.fn(() => ({ mutateAsync: vi.fn(), mutate: vi.fn() })) },
+    auth: {
+      requestOtp: { useMutation: vi.fn(() => ({ mutateAsync: vi.fn(), mutate: vi.fn() })) },
+      clearSignInAttempt: { useMutation: vi.fn(() => ({ mutateAsync: vi.fn(), mutate: vi.fn() })) },
     },
   },
 }));

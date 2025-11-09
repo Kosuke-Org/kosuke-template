@@ -7,7 +7,7 @@
 
 'use client';
 
-import { signUp, signOut, useSession, emailOtp, signIn } from '@/lib/auth/client';
+import { signOut, useSession, emailOtp, signIn } from '@/lib/auth/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, usePathname } from 'next/navigation';
@@ -66,52 +66,35 @@ export function useAuthActions() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const clearSignInAttemptMutation = trpc.signInAttempt.clear.useMutation();
-  const createSignInAttemptMutation = trpc.signInAttempt.create.useMutation();
+  const clearSignInAttemptMutation = trpc.auth.clearSignInAttempt.useMutation();
 
-  const sendOTPMutation = useMutation({
-    mutationFn: async ({ email }: { email: string }) => {
-      const result = await emailOtp.sendVerificationOtp({ email, type: 'sign-in' });
+  const isSignUpFlow = pathname?.includes('/sign-up');
 
-      if (result.error) throw new Error(result.error.message || 'Internal error');
-
-      return { email };
-    },
-    onSuccess: async ({ email }) => {
-      await createSignInAttemptMutation.mutateAsync({ email });
-
-      if (pathname !== AUTH_ROUTES.VERIFY_OTP) {
-        router.push(AUTH_ROUTES.VERIFY_OTP);
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to send verification code',
-        variant: 'destructive',
-      });
-    },
-    // Prevent duplicate submissions
-    retry: false,
-  });
-
-  // Verify OTP mutation
   const verifyOTPMutation = useMutation({
     mutationFn: async ({ email, otp }: { email: string; otp: string }) => {
-      const result = await emailOtp.checkVerificationOtp({ type: 'sign-in', email, otp });
+      if (isSignUpFlow) {
+        const result = await emailOtp.verifyEmail({ email, otp });
 
-      if (result.error) throw new Error(result.error.message || 'Internal error');
+        if (result.error) {
+          throw new Error(result.error.message ?? 'Failed to verify email');
+        }
+      } else {
+        const result = await signIn.emailOtp({ email, otp });
 
-      return { email, otp };
+        if (result.error) {
+          throw new Error(result.error.message ?? 'Failed to sign in');
+        }
+      }
     },
-    onSuccess: async ({ email, otp }) => {
-      const result = await signIn.emailOtp({ email, otp });
-
-      if (result.error) throw new Error(result.error.message || 'Internal error');
-
+    onSuccess: async () => {
       await clearSignInAttemptMutation.mutateAsync();
       queryClient.invalidateQueries();
-      router.push(AUTH_ROUTES.ROOT);
+
+      if (isSignUpFlow) {
+        router.push(AUTH_ROUTES.ONBOARDING);
+      } else {
+        router.push(AUTH_ROUTES.ROOT);
+      }
     },
     onError: (error) => {
       toast({
@@ -122,43 +105,28 @@ export function useAuthActions() {
     },
   });
 
-  // Sign up mutation
-  const signUpMutation = useMutation({
-    mutationFn: async ({
-      email,
-      password,
-      name,
-    }: {
-      email: string;
-      password: string;
-      name: string;
-    }) => {
-      const result = await signUp.email({
-        email,
-        password,
-        name,
-      });
-
-      if (result.error) {
-        throw new Error(result.error.message || 'Sign up failed');
-      }
-
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries();
-      router.push('/onboarding');
-    },
+  const signInMutation = trpc.auth.requestOtp.useMutation({
+    onSuccess: () => router.push(AUTH_ROUTES.VERIFY_OTP),
     onError: (error) => {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to sign up',
+        description: error.message || 'Failed to sign in',
         variant: 'destructive',
       });
     },
   });
 
-  // Sign out mutation
+  const signUpMutation = trpc.auth.requestOtp.useMutation({
+    onSuccess: () => router.push(AUTH_ROUTES.VERIFY_EMAIL),
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to sign up',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const signOutMutation = useMutation({
     mutationFn: async () => {
       await signOut({
@@ -181,29 +149,40 @@ export function useAuthActions() {
     },
   });
 
+  const handleSendSignInOTP = ({ email }: { email: string }) => {
+    return signInMutation.mutate({ email, type: 'sign-in' });
+  };
+
+  const handleSendSignUpOTP = ({ email }: { email: string }) => {
+    return signUpMutation.mutate({ email, type: 'email-verification' });
+  };
+
+  const handleSendOTP = ({ email }: { email: string }) => {
+    if (isSignUpFlow) return handleSendSignUpOTP({ email });
+    return handleSendSignInOTP({ email });
+  };
+
   return {
     // Email OTP actions
-    sendOTP: sendOTPMutation.mutate,
+    sendOTP: handleSendOTP,
+    isSendingOTP: signInMutation.isPending || signUpMutation.isPending,
     verifyOTP: verifyOTPMutation.mutate,
-    isSendingOTP: sendOTPMutation.isPending,
     isVerifyingOTP: verifyOTPMutation.isPending,
-    sendOTPError: sendOTPMutation.error,
     verifyOTPError: verifyOTPMutation.error,
 
-    // Clear sign in attempt stored in a httpOnly cookie
+    // Clear sign in attempt cookie
     clearSignInAttempt: clearSignInAttemptMutation.mutate,
-    isClearingSignInAttempt: clearSignInAttemptMutation.isPending,
-    clearSignInAttemptError: clearSignInAttemptMutation.error,
 
-    // Create sign in attempt stored in a httpOnly cookie
-    createSignInAttempt: createSignInAttemptMutation.mutate,
-    isCreatingSignInAttempt: createSignInAttemptMutation.isPending,
-    createSignInAttemptError: createSignInAttemptMutation.error,
+    signIn: handleSendSignInOTP,
+    isSigningIn: signInMutation.isPending,
+    signInError: signInMutation.error,
 
-    signUp: signUpMutation.mutate,
+    signUp: handleSendSignUpOTP,
+    isSigningUp: signUpMutation.isPending,
+    signUpError: signUpMutation.error,
+
     signOut: signOutMutation.mutate,
     signOutError: signOutMutation.error,
-    isSigningUp: signUpMutation.isPending,
     isSigningOut: signOutMutation.isPending,
   };
 }

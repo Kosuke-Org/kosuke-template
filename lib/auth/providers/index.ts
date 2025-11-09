@@ -10,9 +10,11 @@ import { emailOTP, organization } from 'better-auth/plugins';
 
 import { db } from '@/lib/db/drizzle';
 import * as schema from '@/lib/db/schema';
-import { sendOTPEmail } from '@/lib/email/otp';
 import { desc, eq } from 'drizzle-orm';
 import { organizations, orgMemberships } from '@/lib/db/schema';
+import { sendOTPEmail } from '@/lib/email/otp';
+import { isTestEmail } from '../utils';
+import { TEST_OTP } from '../constants';
 
 /**
  * Better Auth instance with Email OTP
@@ -93,6 +95,7 @@ export const auth = betterAuth({
     },
   },
   user: {
+    // map custom fields displayName and profileImageUrl to match what's expected by Better Auth
     fields: {
       name: 'displayName',
       image: 'profileImageUrl',
@@ -118,18 +121,27 @@ export const auth = betterAuth({
   trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL!],
   baseURL: process.env.NEXT_PUBLIC_APP_URL,
   secret: process.env.BETTER_AUTH_SECRET,
+  emailVerification: {
+    autoSignInAfterVerification: true,
+    sendOnSignUp: true,
+  },
   plugins: [
     organization(),
     emailOTP({
-      async sendVerificationOTP({ email, otp, type }) {
-        // Server-side check: Better Auth automatically checks if user exists when disableSignUp is true
-        // If user doesn't exist and disableSignUp is true, OTP won't be sent
+      overrideDefaultEmailVerification: true,
+      sendVerificationOTP: async ({ email, otp, type }) => {
+        // do nothing — handled by tRPC
         await sendOTPEmail({ email, otp, type });
+      },
+      generateOTP(data) {
+        if (isTestEmail(data.email)) return TEST_OTP;
+
+        // else generate a random OTP
       },
       otpLength: 6,
       expiresIn: 300,
-      sendVerificationOnSignUp: false,
-      disableSignUp: true,
+      sendVerificationOnSignUp: true,
+      disableSignUp: true, // Prevent automatic user creation during sign-in
       allowedAttempts: 5, // Allow 5 attempts before invalidating OTP
     }),
     // customSession(async ({ user, session }) => {

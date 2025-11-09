@@ -70,6 +70,17 @@ export const organizationsRouter = router({
           headers: await headers(),
         });
 
+        // Explicitly set the active organization to refresh the cookie cache
+        // This ensures the session cookie is updated with the new organization
+        if (result?.id) {
+          await auth.api.setActiveOrganization({
+            body: {
+              organizationId: result.id,
+            },
+            headers: await headers(),
+          });
+        }
+
         return result;
       } catch (error) {
         throw new TRPCError({
