@@ -71,11 +71,10 @@ export default function SecurityPage() {
 
     setIsDeleting(true);
     try {
-      // Note: Clerk account deletion should be handled via API route
       // For now, we'll show a message about this limitation
       toast({
         title: 'Feature not available',
-        description: 'Account deletion needs to be implemented via Clerk API routes.',
+        description: 'Feature not available.',
         variant: 'destructive',
       });
     } catch (error) {

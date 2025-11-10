@@ -43,12 +43,3 @@ export type { CurrencyCode, CurrencyConvertRequest, CurrencyConvertResponse } fr
 
 // Note: UI component types are handled by Shadcn UI components
 // Each component exports its own specific props interface
-
-// Custom Jwt Session Claims for Clerk
-declare global {
-  interface CustomJwtSessionClaims {
-    publicMetadata?: {
-      onboardingComplete?: boolean;
-    };
-  }
-}

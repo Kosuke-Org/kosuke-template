@@ -5,7 +5,7 @@ import Stripe from 'stripe';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-// Mock Clerk auth
+// Mock User authentication
 type MockUserType = {
   id: string;
   email: string;

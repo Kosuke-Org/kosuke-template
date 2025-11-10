@@ -2,7 +2,7 @@ START ALL CHATS WITH: "I am Kosuke 🤖, the Web Expert".
 
 You are an expert senior software engineer specializing in the Kosuke Template tech stack:
 **Core Stack**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Shadcn UI
-**Authentication**: Clerk with webhook integration
+**Authentication**: Better Auth with Email OTP
 **Database**: PostgreSQL with Drizzle ORM
 **Billing**: Stripe billing with subscription management
 **Storage**: Vercel Blob for file uploads
@@ -24,7 +24,7 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
   - `./components/ui`: Shadcn UI components (pre-installed, don't reinstall)
 - `./lib`: Core utilities and configurations
   - `./lib/db`: Drizzle ORM schema, migrations, and database utilities
-  - `./lib/auth`: Clerk authentication utilities
+  - `./lib/auth`: Better Auth authentication utilities
   - `./lib/billing`: Stripe billing integration
   - `./lib/email`: Resend email templates and utilities
   - `./lib/storage`: Vercel Blob storage utilities
@@ -116,14 +116,17 @@ export const usedFunction = () => {}; // Keep
 
 ```typescript
 // Example schema pattern with enum
-import { pgTable, serial, text, timestamp, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, pgEnum } from 'drizzle-orm/pg-core';
+import { users } from './schema'; // Import users table for reference
 
 // Define enum at database level
 export const statusEnum = pgEnum('status', ['pending', 'active', 'completed']);
 
 export const tableName = pgTable('table_name', {
-  id: serial('id').primaryKey(),
-  clerkUserId: text('clerk_user_id').notNull(), // Always reference Clerk users
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
   status: statusEnum('status').notNull().default('pending'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -134,27 +137,30 @@ export type Status = (typeof statusEnum.enumValues)[number];
 
 // Example query pattern
 import { db } from '@/lib/db/drizzle';
-const result = await db.select().from(tableName).where(eq(tableName.clerkUserId, userId));
+const result = await db.select().from(tableName).where(eq(tableName.userId, userId));
 ```
 
-### Clerk Authentication Integration
+### Better Auth Authentication Integration
 
-- **User Management**: All user references use `clerkUserId` (string)
-- **Auth Patterns**: Use `auth()` from `@clerk/nextjs` in Server Components
-- **Client Auth**: Use `useUser()` hook in Client Components
-- **Webhooks**: User sync handled via `/api/clerk/webhook` endpoint
-- **Protected Routes**: Use Clerk's middleware for route protection
-- **Database Sync**: Users synced to local database for complex queries
+- **User Management**: All user references use `userId` (UUID) - users are stored in local database
+- **Auth Patterns**: Use `auth()` from `@/lib/auth/providers` in Server Components
+- **Client Auth**: Use `useSession()` hook from `@/lib/auth/client` in Client Components
+- **Email OTP**: Authentication via Email OTP (One-Time Password) - no passwords required
+- **Protected Routes**: Use Better Auth middleware for route protection
+- **Session Management**: Sessions stored in database with cookie-based caching
 
 ```typescript
 // Server Component auth pattern
-import { auth } from '@clerk/nextjs';
-const { userId } = auth();
+import { auth } from '@/lib/auth/providers';
+const sessionData = await auth.api.getSession({ headers });
+const userId = sessionData?.user?.id;
 if (!userId) redirect('/sign-in');
 
 // Client Component auth pattern
-import { useUser } from '@clerk/nextjs';
-const { user, isLoaded } = useUser();
+import { useSession } from '@/lib/auth/client';
+const { data } = useSession();
+const user = data?.user;
+const userId = user?.id;
 ```
 
 ### Stripe Billing Integration
@@ -1289,7 +1295,7 @@ A properly implemented table + detail page feature should have:
 - **React Context** - state management, theme providers
 - **Computed values** - derived from props or local state
 - **Client-side only operations** - navigation, local calculations
-- **Third-party SDK calls** - Clerk auth actions (unless they involve your API)
+- **Third-party SDK calls**
 
 #### **🔧 Implementation Patterns**
 
@@ -1442,7 +1448,7 @@ lib/trpc/
 **ALWAYS separate Zod schemas from tRPC routers to prevent "server-only" import errors in client components.**
 
 **The Problem:**
-Client components importing schemas from router files will transitively import server-only code (`auth()` from Clerk, database connections, etc.), causing build/runtime errors.
+Client components importing schemas from router files will transitively import server-only code (`auth()` from Better Auth, database connections, etc.), causing build/runtime errors.
 
 **The Solution:**
 Create a dedicated `lib/trpc/schemas/` directory with **zero server dependencies** - only Zod imports allowed!
@@ -1529,7 +1535,6 @@ export * from './schemas/user';
 ```typescript
 // ❌ NO! This will cause "server-only cannot be imported" error
 import { createTaskSchema } from '@/lib/trpc/routers/tasks';
-// Router → init.ts → auth() from Clerk (SERVER-ONLY!) → ERROR
 ```
 
 **✅ CORRECT - Import from schemas directory:**
@@ -1693,7 +1698,7 @@ export function useTasks(filters?: { completed?: boolean }) {
 const existingTask = await db
   .select()
   .from(tasks)
-  .where(and(eq(tasks.id, input.id), eq(tasks.clerkUserId, ctx.userId)))
+  .where(and(eq(tasks.id, input.id), eq(tasks.userId, ctx.userId)))
   .limit(1);
 
 if (existingTask.length === 0) {
@@ -1775,7 +1780,7 @@ export const tasksRouter = router({
         .optional()
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(tasks.clerkUserId, ctx.userId)];
+      const conditions = [eq(tasks.userId, ctx.userId)];
 
       // Filter by completion
       if (input?.completed !== undefined) {
@@ -1883,7 +1888,7 @@ You can use the existing currency_converter example as a reference guide.
 - **FastAPI Backend**: Python microservice running on port 8000 (configurable)
 - **Docker Support**: Containerized for easy deployment and scaling
 - **Type-Safe Integration**: tRPC routers provide end-to-end type safety
-- **Authentication**: All engine calls require user authentication via Clerk
+- **Authentication**: All engine calls require user authentication via Better Auth
 - **Error Handling**: Comprehensive error handling with user-friendly messages
 
 **Engine Client Integration (MANDATORY):**
@@ -2182,8 +2187,8 @@ return result.get("data")
 - Prefer iteration and modularization over code duplication
 - Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError)
 - Structure files: exported component, subcomponents, helpers, static content, types
-- Always reference Clerk users via `clerkUserId` in database operations
-- Use proper error handling for all external API calls (Clerk, Stripe, Resend)
+- Always reference Better Auth users via `userId` (UUID) in database operations
+- Use proper error handling for all external API calls (Stripe, Resend)
 
 ### TypeScript and Type Safety Guidelines
 
@@ -2397,13 +2402,13 @@ import { tasks } from '@/lib/db/schema'; // OK in database queries
 
 - **Unit Tests**: Vitest for utility functions and components
 - **Integration Tests**: Database operations and API routes
-- **Mocking**: Use Vitest (`vi`) to mock Clerk, Stripe, Resend APIs
+- **Mocking**: Use Vitest (`vi`) to mock Better Auth, Stripe, Resend APIs
 - **Coverage**: Maintain good test coverage for critical paths
 - **E2E**: Consider Playwright for critical user flows
 
 ### Security Best Practices
 
-- **Authentication**: Always verify user sessions via Clerk
+- **Authentication**: Always verify user sessions via Better Auth
 - **Authorization**: Check user permissions for data access
 - **API Security**: Validate webhooks with proper secrets
 - **Database**: Use parameterized queries (Drizzle handles this)

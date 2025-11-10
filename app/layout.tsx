@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     'React',
     'TypeScript',
     'Tailwind CSS',
-    'Clerk',
+    'Better Auth',
     'PostgreSQL',
     'Drizzle ORM',
     'Vercel',

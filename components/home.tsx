@@ -21,7 +21,7 @@ const coreFeatures = [
   {
     icon: Lock,
     title: 'Auth & Security',
-    description: 'Clerk integration with middleware protection and user management.',
+    description: 'Better Auth integration with middleware protection and user management.',
     metrics: 'SOC 2 compliant',
   },
   {
@@ -296,7 +296,8 @@ export function Home() {
                       <h3 className="text-base sm:text-lg font-semibold">Secure Auth</h3>
                     </div>
                     <p className="text-sm text-muted-foreground font-sans">
-                      Clerk integration with social logins, MFA, and enterprise SSO ready.
+                      Better Auth integration with passwordless authentication and organization
+                      management.
                     </p>
                   </CardContent>
                 </Card>

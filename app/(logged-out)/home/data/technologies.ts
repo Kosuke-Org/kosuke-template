@@ -70,13 +70,13 @@ export const technologies: Technology[] = [
     category: 'styling',
   },
   {
-    name: 'Clerk',
-    description: 'Complete user management with social logins and authentication',
+    name: 'Better Auth',
+    description: 'Complete custom user management',
     logoPath: {
-      light: '/logos/clerk_light.svg',
-      dark: '/logos/clerk_dark.svg',
+      light: '/logos/better_auth_light.svg',
+      dark: '/logos/better_auth_dark.svg',
     },
-    url: 'https://clerk.com',
+    url: 'https://www.better-auth.com',
     category: 'auth',
   },
   {

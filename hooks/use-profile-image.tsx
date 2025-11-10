@@ -4,8 +4,7 @@ import { useMemo, createContext, useContext, ReactNode, useState } from 'react';
 import { User } from '@/lib/db/schema';
 
 /**
- * Hook to handle profile image URLs from Clerk
- * Prioritizes custom uploaded images over Clerk's default images
+ * Hook to handle profile image URLs
  */
 export function useProfileImageUrl(user?: User) {
   const { currentImageUrl } = useProfileImage();

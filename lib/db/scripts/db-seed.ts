@@ -3,7 +3,7 @@
  * Database Seed Script
  *
  * This script populates the database with dummy data for development and testing.
- * It creates users in Clerk, organizations, subscriptions, tasks, and activity logs.
+ * It creates users, organizations, memberships, subscriptions, tasks, and activity logs.
  *
  * ⚠️ WARNING: This script should ONLY be run in development/test environments!
  *
@@ -336,8 +336,8 @@ async function seed() {
 
     console.log('✅ Database seeding completed successfully!\n');
     console.log('📊 Summary:');
-    console.log('  • 2 users created in Clerk and synced');
-    console.log('  • 2 organizations created in Clerk and synced');
+    console.log('  • 2 users created');
+    console.log('  • 2 organizations created');
     console.log('  • 3 organization memberships created');
     console.log('  • 2 subscriptions created');
     console.log('  • 20 tasks created');

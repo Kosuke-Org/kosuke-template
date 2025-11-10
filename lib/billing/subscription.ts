@@ -52,7 +52,7 @@ export function safeSubscriptionStatusCast(
 }
 
 /**
- * Get user's current subscription information using Clerk user ID
+ * Get user's current subscription information using User ID
  * Returns free tier if no paid subscription exists (no record created)
  */
 export async function getUserSubscription(userId: string): Promise<UserSubscriptionInfo> {
