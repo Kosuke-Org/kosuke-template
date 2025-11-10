@@ -1,4 +1,5 @@
 import { createQueue } from '../client';
+import { QUEUE_NAMES, JOB_NAMES } from '../config';
 
 /**
  * Subscription sync queue
@@ -18,17 +19,16 @@ export interface SubscriptionSyncJobData {
   manual?: boolean;
 }
 
-export const SUBSCRIPTION_SYNC_QUEUE = 'subscription-sync';
-
-export const subscriptionQueue = createQueue<SubscriptionSyncJobData>(SUBSCRIPTION_SYNC_QUEUE);
+export const subscriptionQueue = createQueue<SubscriptionSyncJobData>(QUEUE_NAMES.SUBSCRIPTIONS);
 
 /**
  * Add subscription sync job to the queue
  */
 export async function addSubscriptionSyncJob(data: SubscriptionSyncJobData = {}) {
-  return await subscriptionQueue.add('sync-subscriptions', data, {
+  return await subscriptionQueue.add(JOB_NAMES.SYNC_SUBSCRIPTIONS, data, {
     // Remove duplicate jobs - don't queue if already pending
     jobId: data.userId ? `sync-${data.userId}` : 'sync-all',
+    priority: data.manual ? 0 : 1, // Manual jobs get higher priority
     removeOnComplete: true,
   });
 }
@@ -36,25 +36,22 @@ export async function addSubscriptionSyncJob(data: SubscriptionSyncJobData = {})
 /**
  * Schedule recurring subscription sync (daily at midnight)
  * This replaces the Vercel cron job
+ * Idempotent - safe to call multiple times
  */
 export async function scheduleSubscriptionSync() {
-  // Remove existing repeatable jobs first
-  const repeatableJobs = await subscriptionQueue.getRepeatableJobs();
-  for (const job of repeatableJobs) {
-    await subscriptionQueue.removeRepeatableByKey(job.key);
-  }
-
-  // Add new repeatable job - runs daily at midnight
-  await subscriptionQueue.add(
-    'sync-subscriptions-scheduled',
-    {},
+  await subscriptionQueue.upsertJobScheduler(
+    `${JOB_NAMES.SYNC_SUBSCRIPTIONS}-scheduler`,
     {
-      repeat: {
-        pattern: '0 0 * * *', // Every day at midnight (cron format)
+      pattern: '0 0 * * *', // Every day at midnight (cron format)
+    },
+    {
+      name: JOB_NAMES.SYNC_SUBSCRIPTIONS_SCHEDULED,
+      data: {},
+      opts: {
+        priority: 1,
       },
-      jobId: 'sync-scheduled',
     }
   );
 
-  console.log('✅ Scheduled daily subscription sync at midnight');
+  console.log('[QUEUE] ✅ Scheduled subscription sync (daily at midnight)');
 }

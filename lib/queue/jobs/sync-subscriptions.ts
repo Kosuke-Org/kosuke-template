@@ -2,49 +2,46 @@ import { runPeriodicSync } from '@/lib/billing/cron-sync';
 import type { SubscriptionSyncJobData } from '../queues/subscriptions';
 
 /**
- * Subscription sync job processor
- * Migrated from /api/cron/sync-subscriptions
+ * Subscription Sync Job Processor
  *
- * This job runs periodically to sync subscription data from Stripe
- * to the local database, ensuring billing information stays up-to-date
+ * Pure business logic - no worker-specific code.
+ * Returns structured result for worker to handle.
  */
-export async function processSubscriptionSync(data: SubscriptionSyncJobData) {
-  const { userId, manual } = data;
+export async function processSubscriptionSync(data: SubscriptionSyncJobData): Promise<{
+  success: boolean;
+  syncedCount: number;
+  errorCount: number;
+  timestamp: string;
+  duration: number;
+}> {
+  console.log('[JOB] 🔄 Starting subscription sync...', data.manual ? '(manual)' : '(scheduled)');
 
-  console.log(
-    `🕐 BullMQ: Starting subscription sync... ${manual ? '(manual trigger)' : '(scheduled)'}`
-  );
-
-  if (userId) {
-    console.log(`👤 Syncing subscription for user: ${userId}`);
+  if (data.userId) {
+    console.log(`[JOB] 👤 Syncing subscription for user: ${data.userId}`);
   }
 
-  try {
-    // Run the periodic sync (same logic as the original cron job)
-    const result = await runPeriodicSync();
+  const startTime = Date.now();
 
-    // Log the result
-    if (result.success) {
-      console.log(
-        `✅ BullMQ: Sync completed successfully - ${result.syncedCount} synced, ${result.errorCount} errors`
-      );
+  // Business logic here
+  const result = await runPeriodicSync();
 
-      return {
-        success: true,
-        syncedCount: result.syncedCount,
-        errorCount: result.errorCount,
-        timestamp: result.timestamp,
-      };
-    } else {
-      console.error(`💥 BullMQ: Sync failed - ${result.error}`);
+  const duration = Date.now() - startTime;
 
-      // Throw error to trigger retry mechanism
-      throw new Error(result.error);
-    }
-  } catch (error) {
-    console.error('💥 BullMQ: Unexpected error in sync job:', error);
-
-    // Re-throw to mark job as failed and trigger retries
-    throw error;
+  if (!result.success) {
+    throw new Error(result.error); // Throw to trigger retry mechanism
   }
+
+  console.log('[JOB] ✅ Subscription sync completed:', {
+    duration: `${duration}ms`,
+    syncedCount: result.syncedCount,
+    errorCount: result.errorCount,
+  });
+
+  return {
+    success: true,
+    syncedCount: result.syncedCount ?? 0,
+    errorCount: result.errorCount ?? 0,
+    timestamp: result.timestamp,
+    duration,
+  };
 }

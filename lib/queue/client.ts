@@ -1,5 +1,7 @@
 import { Queue, Worker, QueueEvents } from 'bullmq';
+import type { WorkerOptions } from 'bullmq';
 import Redis from 'ioredis';
+import * as Sentry from '@sentry/nextjs';
 
 /**
  * Redis connection configuration
@@ -48,7 +50,7 @@ const defaultQueueOptions = {
  */
 const defaultWorkerOptions = {
   connection: createRedisConnection(),
-  concurrency: 5, // Process 5 jobs concurrently
+  concurrency: 5, // Process 5 jobs concurrently (can be overridden)
   removeOnComplete: { count: 1000 },
   removeOnFail: { count: 5000 },
 };
@@ -61,13 +63,54 @@ export function createQueue<T = unknown>(name: string) {
 }
 
 /**
- * Type-safe worker creation helper
+ * Type-safe worker creation helper with centralized error handling
  */
 export function createWorker<T = unknown>(
   name: string,
-  processor: (job: { data: T; id?: string }) => Promise<unknown>
+  processor: (job: { data: T; id?: string }) => Promise<unknown>,
+  options?: Partial<WorkerOptions>
 ) {
-  return new Worker<T>(name, async (job) => processor(job), defaultWorkerOptions);
+  const worker = new Worker<T>(
+    name,
+    async (job) => {
+      try {
+        console.log(`[WORKER] 🔄 Processing job: ${job.id}`);
+        const result = await processor(job);
+        console.log(`[WORKER] ✅ Job ${job.id} completed`);
+        return result;
+      } catch (error) {
+        console.error(`[WORKER] ❌ Job ${job.id} failed:`, error);
+
+        // Report to Sentry with context
+        Sentry.captureException(error, {
+          tags: {
+            jobId: job.id,
+            queueName: name,
+          },
+          extra: {
+            jobData: job.data,
+            attemptsMade: job.attemptsMade,
+          },
+        });
+
+        throw error; // Re-throw to mark job as failed and trigger retry
+      }
+    },
+    { ...defaultWorkerOptions, ...options }
+  );
+
+  // Worker-level error handler for critical errors
+  worker.on('error', (error) => {
+    console.error(`[WORKER] 🚨 Worker error on ${name}:`, error);
+    Sentry.captureException(error, {
+      tags: {
+        component: 'worker',
+        queueName: name,
+      },
+    });
+  });
+
+  return worker;
 }
 
 /**
@@ -80,17 +123,27 @@ export function createQueueEvents(name: string) {
 }
 
 /**
- * Graceful shutdown handler for workers
+ * Graceful shutdown handler for workers and queues
  * Call this when shutting down the application to ensure jobs are completed
  */
-export async function gracefulShutdown(workers: Worker[]) {
-  console.log('🛑 Gracefully shutting down workers...');
+export async function gracefulShutdown(workers: Worker[], queues: Queue[] = []) {
+  console.log('[WORKER] 🛑 Gracefully shutting down workers and queues...');
 
+  // Close all workers first (stops accepting new jobs)
   await Promise.all(
     workers.map(async (worker) => {
+      console.log(`[WORKER] 📛 Closing worker: ${worker.name}`);
       await worker.close();
     })
   );
 
-  console.log('✅ All workers shut down successfully');
+  // Close all queues (closes Redis connections)
+  await Promise.all(
+    queues.map(async (queue) => {
+      console.log(`[WORKER] 📛 Closing queue: ${queue.name}`);
+      await queue.close();
+    })
+  );
+
+  console.log('[WORKER] ✅ All workers and queues shut down successfully');
 }
