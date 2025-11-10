@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1759328294606,
-      "tag": "0000_smart_kat_farrell",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1760541419806,
-      "tag": "0001_big_namora",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1760620839947,
-      "tag": "0002_lovely_morbius",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1760969570283,
-      "tag": "0003_fearless_newton_destine",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1762420938265,
-      "tag": "0004_misty_lady_bullseye",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1762764811440,
-      "tag": "0005_empty_the_leader",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1762770354753,
-      "tag": "0006_sudden_justice",
+      "when": 1762798174088,
+      "tag": "0000_lame_red_skull",
       "breakpoints": true
     }
   ]

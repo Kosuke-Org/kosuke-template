@@ -13,7 +13,6 @@ export const orderStatusEnum = pgEnum('order_status', [
 ]);
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
-  clerkUserId: text('clerk_user_id').unique(), // TODO: remove
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').default(false).notNull(),
   displayName: text('display_name').notNull(),
@@ -83,13 +82,10 @@ export const verifications = pgTable('verifications', {
 
 export const organizations = pgTable('organizations', {
   id: uuid('id').primaryKey().defaultRandom(),
-  clerkOrgId: text('clerk_org_id').unique(), // TODO remove (Clerk)
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
-  logoUrl: text('logo_url'), // TODO remove
-  settings: text('settings').default('{}'), // TODO remove
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(), // TODO remove?
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
   logo: text('logo'), // TODO make nullable
   metadata: text('metadata'),
 });
@@ -100,15 +96,10 @@ export const orgMemberships = pgTable('org_memberships', {
   organizationId: uuid('organization_id')
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' }),
-  clerkUserId: text('clerk_user_id') // TODO remove (Clerk)
-    .references(() => users.clerkUserId, { onDelete: 'cascade' }),
   userId: uuid('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  clerkMembershipId: text('clerk_membership_id').unique(), // TODO remove (Clerk)
   role: text('role').default('member').notNull(),
-  joinedAt: timestamp('joined_at').defaultNow().notNull(), // TODO remove (Clerk)
-  invitedBy: text('invited_by'), // TODO remove (Clerk)
   createdAt: timestamp('created_at').notNull(),
 });
 
@@ -126,7 +117,7 @@ export const invitations = pgTable('invitations', {
     .references(() => users.id, { onDelete: 'cascade' }),
 });
 
-// User Subscriptions - Links Clerk users/organizations to Stripe subscriptions
+// User Subscriptions
 export const userSubscriptions = pgTable('user_subscriptions', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').notNull(),
@@ -148,7 +139,7 @@ export const userSubscriptions = pgTable('user_subscriptions', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Activity Logs - Optional app-specific logging (references Clerk user IDs)
+// Activity Logs - Optional app-specific logging
 export const activityLogs = pgTable('activity_logs', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').notNull(),
