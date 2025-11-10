@@ -244,10 +244,10 @@ bun run db:seed
 
 **Test Users Created:**
 
-- `jane+clerk_test@example.com` - Admin of "Jane Smith Co." (Free tier)
-- `john+clerk_test@example.com` - Admin of "John Doe Ltd." (Free tier), Member of "Jane Smith Co."
+- `jane+kosuke_test@example.com` - Admin of "Jane Smith Co." (Free tier)
+- `john+kosuke_test@example.com` - Admin of "John Doe Ltd." (Free tier), Member of "Jane Smith Co."
 
-**Clerk Verification Code:**
+**Kosuke Verification Code:**
 
 When signing in with test users in development, use verification code: `424242`
 

@@ -20,7 +20,7 @@ describe('Auth Utils', () => {
       );
 
       expect(result).toEqual({
-        clerkUserId: 'user_123',
+        userId: 'user_123',
         action: ActivityType.SIGN_IN,
         metadata: JSON.stringify(metadata),
         ipAddress: '192.168.1.1',
@@ -32,7 +32,7 @@ describe('Auth Utils', () => {
       const result = createActivityLogData('user_123', ActivityType.SIGN_OUT);
 
       expect(result).toEqual({
-        clerkUserId: 'user_123',
+        userId: 'user_123',
         action: ActivityType.SIGN_OUT,
         metadata: null,
         ipAddress: null,

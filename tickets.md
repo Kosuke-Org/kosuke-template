@@ -459,7 +459,7 @@ describe('User Router', () => {
 
     expect(result.success).toBe(true);
     expect(result.user).toHaveProperty('localId');
-    expect(result.user).toHaveProperty('clerkId');
+    expect(result.user).toHaveProperty('id');
   });
 
   it('should upload profile image', async () => {

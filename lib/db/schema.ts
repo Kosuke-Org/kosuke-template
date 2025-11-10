@@ -129,7 +129,7 @@ export const invitations = pgTable('invitations', {
 // User Subscriptions - Links Clerk users/organizations to Stripe subscriptions
 export const userSubscriptions = pgTable('user_subscriptions', {
   id: uuid('id').defaultRandom().primaryKey(),
-  clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID (owner/admin)
+  userId: uuid('user_id').notNull(),
   organizationId: uuid('organization_id').references(() => organizations.id, {
     onDelete: 'cascade',
   }), // Nullable for personal subscriptions
@@ -151,7 +151,7 @@ export const userSubscriptions = pgTable('user_subscriptions', {
 // Activity Logs - Optional app-specific logging (references Clerk user IDs)
 export const activityLogs = pgTable('activity_logs', {
   id: uuid('id').defaultRandom().primaryKey(),
-  clerkUserId: text('clerk_user_id').notNull(), // TODO remove
+  userId: uuid('user_id').notNull(),
   action: text('action').notNull(),
   timestamp: timestamp('timestamp').notNull().defaultNow(),
   ipAddress: varchar('ip_address', { length: 45 }),
@@ -161,7 +161,7 @@ export const activityLogs = pgTable('activity_logs', {
 // Tasks - Simple todo list functionality with organization support
 export const tasks = pgTable('tasks', {
   id: uuid('id').defaultRandom().primaryKey(),
-  clerkUserId: text('clerk_user_id').notNull(), // TODO remove
+  userId: uuid('user_id').notNull(),
   organizationId: uuid('organization_id').references(() => organizations.id, {
     onDelete: 'cascade',
   }), // Nullable for personal tasks
@@ -178,7 +178,7 @@ export const tasks = pgTable('tasks', {
 export const orders = pgTable('orders', {
   id: uuid('id').defaultRandom().primaryKey(), // Serves as both ID and order number
   customerName: text('customer_name').notNull(),
-  clerkUserId: text('clerk_user_id').notNull(), // TODO remove
+  userId: uuid('user_id').notNull(),
   organizationId: uuid('organization_id')
     .notNull()
     .references(() => organizations.id, {

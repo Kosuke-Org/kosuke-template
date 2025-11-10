@@ -16,13 +16,10 @@ import { eq } from 'drizzle-orm';
 /**
  * Get or create Stripe customer for a user
  */
-async function getOrCreateStripeCustomer(
-  clerkUserId: string,
-  customerEmail: string
-): Promise<string> {
+async function getOrCreateStripeCustomer(userId: string, customerEmail: string): Promise<string> {
   // Check if user already has a Stripe customer ID
   const user = await db.query.users.findFirst({
-    where: eq(users.clerkUserId, clerkUserId),
+    where: eq(users.id, userId),
   });
 
   if (user?.stripeCustomerId) {
@@ -33,7 +30,7 @@ async function getOrCreateStripeCustomer(
   const customer = await stripe.customers.create({
     email: customerEmail,
     metadata: {
-      clerkUserId,
+      userId,
     },
   });
 
@@ -41,7 +38,7 @@ async function getOrCreateStripeCustomer(
   await db
     .update(users)
     .set({ stripeCustomerId: customer.id, updatedAt: new Date() })
-    .where(eq(users.clerkUserId, clerkUserId));
+    .where(eq(users.id, userId));
 
   return customer.id;
 }
@@ -93,14 +90,14 @@ async function createSubscriptionSchedule(
             },
           ],
           metadata: {
-            clerkUserId: userId,
+            userId: userId,
             tier,
             isDowngrade: 'true',
           },
         },
       ],
       metadata: {
-        clerkUserId: userId,
+        userId: userId,
         targetTier: tier,
         isDowngrade: 'true',
         currentSubscriptionId: currentSubscription.activeSubscription.stripeSubscriptionId,
@@ -191,13 +188,13 @@ export async function createCheckoutSession(
       success_url: BILLING_URLS.success,
       cancel_url: BILLING_URLS.cancel,
       metadata: {
-        clerkUserId: userId,
+        userId: userId,
         tier,
         ...metadata,
       },
       subscription_data: {
         metadata: {
-          clerkUserId: userId,
+          userId: userId,
           tier,
         },
       },
@@ -224,13 +221,13 @@ export async function createCheckoutSession(
  * Cancel user's active subscription (mark for cancellation at period end)
  */
 export async function cancelUserSubscription(
-  clerkUserId: string,
+  userId: string,
   stripeSubscriptionId: string
 ): Promise<OperationResult> {
   try {
     console.log('🔄 Canceling subscription via Stripe API:', stripeSubscriptionId);
 
-    const currentSubscription = await getUserSubscription(clerkUserId);
+    const currentSubscription = await getUserSubscription(userId);
     const eligibility = getSubscriptionEligibility(currentSubscription);
 
     if (!eligibility.canCancel) {
@@ -290,13 +287,13 @@ export async function cancelUserSubscription(
  * Reactivate a canceled subscription (remove cancellation)
  */
 export async function reactivateUserSubscription(
-  clerkUserId: string,
+  userId: string,
   stripeSubscriptionId: string
 ): Promise<OperationResult> {
   try {
     console.log('🔄 Reactivating subscription via Stripe API:', stripeSubscriptionId);
 
-    const currentSubscription = await getUserSubscription(clerkUserId);
+    const currentSubscription = await getUserSubscription(userId);
     const eligibility = getSubscriptionEligibility(currentSubscription);
 
     if (!eligibility.canReactivate) {
@@ -356,11 +353,11 @@ export async function reactivateUserSubscription(
  * Create Stripe Customer Portal session for subscription management
  */
 export async function createCustomerPortalSession(
-  clerkUserId: string
+  userId: string
 ): Promise<OperationResult<{ url: string }>> {
   try {
     const user = await db.query.users.findFirst({
-      where: eq(users.clerkUserId, clerkUserId),
+      where: eq(users.id, userId),
     });
 
     if (!user?.stripeCustomerId) {
@@ -394,12 +391,12 @@ export async function createCustomerPortalSession(
 /**
  * Cancel a pending subscription downgrade (cancels the subscription schedule)
  */
-export async function cancelPendingDowngrade(clerkUserId: string): Promise<OperationResult> {
+export async function cancelPendingDowngrade(userId: string): Promise<OperationResult> {
   try {
-    console.log('🔄 Canceling pending downgrade for user:', clerkUserId);
+    console.log('🔄 Canceling pending downgrade for user:', userId);
 
     // Get current subscription
-    const currentSubscription = await getUserSubscription(clerkUserId);
+    const currentSubscription = await getUserSubscription(userId);
 
     if (!currentSubscription.activeSubscription?.scheduledDowngradeTier) {
       return {
@@ -432,12 +429,12 @@ export async function cancelPendingDowngrade(clerkUserId: string): Promise<Opera
     // Find the pending schedule for this user (status can be 'not_started' or 'active')
     const pendingSchedule = schedules.data.find(
       (schedule) =>
-        schedule.metadata?.clerkUserId === clerkUserId &&
+        schedule.metadata?.userId === userId &&
         (schedule.status === 'active' || schedule.status === 'not_started')
     );
 
     if (!pendingSchedule) {
-      console.error('❌ No pending schedule found for user:', clerkUserId);
+      console.error('❌ No pending schedule found for user:', userId);
       console.error(
         'Available schedules:',
         schedules.data.map((s) => ({
@@ -485,7 +482,7 @@ export async function cancelPendingDowngrade(clerkUserId: string): Promise<Opera
         status: SubscriptionStatus.ACTIVE,
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.clerkUserId, clerkUserId));
+      .where(eq(userSubscriptions.userId, userId));
 
     console.log('✅ Successfully canceled pending downgrade');
 

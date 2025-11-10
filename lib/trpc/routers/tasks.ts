@@ -21,7 +21,7 @@ export const tasksRouter = router({
    * Supports both personal tasks and org-scoped tasks
    */
   list: protectedProcedure.input(taskListFiltersSchema).query(async ({ ctx, input }) => {
-    const conditions = [eq(tasks.clerkUserId, ctx.userId)];
+    const conditions = [eq(tasks.userId, ctx.userId)];
 
     // Filter by organization (or personal tasks if null)
     if (input?.organizationId !== undefined) {
@@ -78,7 +78,7 @@ export const tasksRouter = router({
     const [task] = await db
       .insert(tasks)
       .values({
-        clerkUserId: ctx.userId,
+        userId: ctx.userId,
         organizationId: input.organizationId ?? null,
         title: input.title,
         description: input.description ?? null,
@@ -108,7 +108,7 @@ export const tasksRouter = router({
     const existingTask = await db
       .select()
       .from(tasks)
-      .where(and(eq(tasks.id, input.id), eq(tasks.clerkUserId, ctx.userId)))
+      .where(and(eq(tasks.id, input.id), eq(tasks.userId, ctx.userId)))
       .limit(1);
 
     if (existingTask.length === 0) {
@@ -155,7 +155,7 @@ export const tasksRouter = router({
     const existingTask = await db
       .select()
       .from(tasks)
-      .where(and(eq(tasks.id, input.id), eq(tasks.clerkUserId, ctx.userId)))
+      .where(and(eq(tasks.id, input.id), eq(tasks.userId, ctx.userId)))
       .limit(1);
 
     if (existingTask.length === 0) {

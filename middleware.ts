@@ -3,7 +3,7 @@ import { getCookieCache } from 'better-auth/cookies';
 import type { Session } from '@/lib/auth/providers';
 
 /**
- * Create a route matcher function (similar to Clerk's createRouteMatcher)
+ * Create a route matcher function
  * Supports exact matches and wildcard patterns with (.*)
  *
  * @example

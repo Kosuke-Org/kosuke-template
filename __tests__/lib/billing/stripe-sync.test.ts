@@ -53,7 +53,7 @@ describe('Stripe Sync Module', () => {
 
       vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
-        clerkUserId: 'user_123',
+        userId: 'user_123',
         stripeSubscriptionId: 'sub_123',
         tier: SubscriptionTier.PRO,
         status: SubscriptionStatus.ACTIVE,
@@ -90,7 +90,7 @@ describe('Stripe Sync Module', () => {
 
       vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
-        clerkUserId: 'user_123',
+        userId: 'user_123',
         stripeSubscriptionId: 'sub_123',
         tier: SubscriptionTier.PRO,
         status: SubscriptionStatus.ACTIVE,
@@ -126,7 +126,7 @@ describe('Stripe Sync Module', () => {
       const staleSubscriptions = [
         {
           id: '1',
-          clerkUserId: 'user_1',
+          userId: 'user_1',
           stripeSubscriptionId: 'sub_1',
           tier: SubscriptionTier.PRO,
           status: SubscriptionStatus.ACTIVE,

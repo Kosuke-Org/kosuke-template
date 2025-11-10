@@ -33,7 +33,7 @@ const mockStripeCheckoutSession = {
   status: 'open',
   mode: 'subscription',
   customer: 'cus_123',
-  metadata: { clerkUserId: 'user_123', tier: 'pro' },
+  metadata: { userId: 'user_123', tier: 'pro' },
 };
 
 const mockStripeSubscription = {
@@ -46,7 +46,7 @@ const mockStripeSubscription = {
     data: [{ price: { id: 'price_123' } }],
   },
   cancel_at_period_end: false,
-  metadata: { clerkUserId: 'user_123', tier: 'pro' },
+  metadata: { userId: 'user_123', tier: 'pro' },
 };
 
 const mockStripeWebhookEvent = {
@@ -180,7 +180,7 @@ export function createStripeSubscriptionEvent(
           ],
         } as any,
         cancel_at_period_end: false,
-        metadata: { clerkUserId: 'user_123', tier: 'pro' },
+        metadata: { userId: 'user_123', tier: 'pro' },
         ...subscription,
       } as Stripe.Subscription,
       previous_attributes: {},
@@ -234,7 +234,7 @@ export function createStripeSubscriptionScheduleEvent(
         id: `sub_sched_${Math.random().toString(36).substr(2, 9)}`,
         subscription: 'sub_123',
         metadata: {
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           targetTier: 'pro',
           currentSubscriptionId: 'sub_123',
         },

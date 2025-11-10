@@ -55,15 +55,15 @@ export function safeSubscriptionStatusCast(
  * Get user's current subscription information using Clerk user ID
  * Returns free tier if no paid subscription exists (no record created)
  */
-export async function getUserSubscription(clerkUserId: string): Promise<UserSubscriptionInfo> {
+export async function getUserSubscription(userId: string): Promise<UserSubscriptionInfo> {
   const activeSubscription = await db.query.userSubscriptions.findFirst({
-    where: eq(userSubscriptions.clerkUserId, clerkUserId),
+    where: eq(userSubscriptions.userId, userId),
     orderBy: [desc(userSubscriptions.createdAt)],
   });
 
   // If no subscription exists, return free tier (no record created)
   if (!activeSubscription) {
-    console.log('📋 No subscription found, returning free tier for user:', clerkUserId);
+    console.log('📋 No subscription found, returning free tier for user:', userId);
     return {
       tier: SubscriptionTier.FREE,
       status: SubscriptionStatus.ACTIVE,

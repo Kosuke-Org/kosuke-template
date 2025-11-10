@@ -135,7 +135,7 @@ describe('Stripe Webhook Route', () => {
             } as any,
           ],
         } as any,
-        metadata: { clerkUserId: 'user_123', tier: 'pro' },
+        metadata: { userId: 'user_123', tier: 'pro' },
         cancel_at_period_end: false,
       });
 
@@ -187,7 +187,7 @@ describe('Stripe Webhook Route', () => {
         id: 'sub_no_items_123',
         customer: 'cus_123',
         items: { data: [] } as any,
-        metadata: { clerkUserId: 'user_123', tier: 'pro' },
+        metadata: { userId: 'user_123', tier: 'pro' },
       });
 
       vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
@@ -336,7 +336,7 @@ describe('Stripe Webhook Route', () => {
     it('should handle schedule completion events', async () => {
       const event = createStripeSubscriptionScheduleEvent('subscription_schedule.completed', {
         metadata: {
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           targetTier: 'pro',
         },
       });
@@ -375,7 +375,7 @@ describe('Stripe Webhook Route', () => {
     it('should handle schedule cancellation events', async () => {
       const event = createStripeSubscriptionScheduleEvent('subscription_schedule.canceled', {
         metadata: {
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           currentSubscriptionId: 'sub_123',
         },
       });

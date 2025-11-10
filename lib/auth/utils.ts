@@ -6,13 +6,13 @@ import { TEST_EMAIL_SUFFIX } from './constants';
  * Create activity log entry data
  */
 export function createActivityLogData(
-  clerkUserId: string,
+  userId: string,
   action: ActivityType,
   metadata?: Record<string, unknown>,
   ipAddress?: string
 ) {
   return {
-    clerkUserId,
+    userId,
     action,
     metadata: metadata ? JSON.stringify(metadata) : null,
     ipAddress: ipAddress || null,

@@ -11,7 +11,6 @@ import {
 } from '@/lib/billing';
 import { syncUserSubscriptionFromStripe, syncStaleSubscriptions } from '@/lib/billing/stripe-sync';
 import { createCheckoutSchema, syncActionSchema } from '../schemas/billing';
-import { clerkClient } from '@clerk/nextjs/server';
 
 /**
  * Billing Router
@@ -74,10 +73,8 @@ export const billingRouter = router({
         });
       }
 
-      // Get user email from Clerk
-      const clerk = await clerkClient();
-      const user = await clerk.users.getUser(ctx.userId);
-      const customerEmail = user.emailAddresses[0]?.emailAddress;
+      const user = await ctx.getUser();
+      const customerEmail = user?.email;
 
       if (!customerEmail) {
         throw new TRPCError({
@@ -253,7 +250,7 @@ export const billingRouter = router({
       success: true,
       message: 'Sync status retrieved',
       user: {
-        clerkId: ctx.userId,
+        id: ctx.userId,
         currentTier: subscription.tier,
         lastUpdated: subscription.activeSubscription?.updatedAt || new Date(),
       },

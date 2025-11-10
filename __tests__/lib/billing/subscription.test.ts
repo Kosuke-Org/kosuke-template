@@ -43,7 +43,7 @@ describe('Subscription Module', () => {
 
       vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
-        clerkUserId: 'user_123',
+        userId: 'user_123',
         tier: SubscriptionTier.PRO,
         status: SubscriptionStatus.ACTIVE,
         stripeSubscriptionId: 'sub_123',
@@ -73,7 +73,7 @@ describe('Subscription Module', () => {
 
       vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
-        clerkUserId: 'user_123',
+        userId: 'user_123',
         tier: SubscriptionTier.PRO,
         status: SubscriptionStatus.CANCELED,
         stripeSubscriptionId: 'sub_123',
@@ -101,7 +101,7 @@ describe('Subscription Module', () => {
 
       vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
-        clerkUserId: 'user_123',
+        userId: 'user_123',
         tier: SubscriptionTier.PRO,
         status: SubscriptionStatus.ACTIVE,
         stripeSubscriptionId: 'sub_123',

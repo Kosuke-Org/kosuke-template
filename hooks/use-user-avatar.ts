@@ -9,7 +9,7 @@ export function useUserAvatar(user?: User) {
   const profileImageUrl = useProfileImageUrl(user);
 
   const displayName = useMemo(() => {
-    return user?.displayName ?? 'User';
+    return user?.displayName || 'User';
   }, [user?.displayName]);
 
   const initials = useMemo(() => {
