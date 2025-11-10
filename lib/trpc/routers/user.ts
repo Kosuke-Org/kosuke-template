@@ -24,7 +24,6 @@ export const userRouter = router({
     const [user] = await db
       .select({
         id: users.id,
-        clerkUserId: users.clerkUserId,
         email: users.email,
         emailVerified: users.emailVerified,
         displayName: users.displayName,

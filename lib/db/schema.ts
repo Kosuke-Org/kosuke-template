@@ -3,7 +3,7 @@ import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 
 // Enums
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);
-export const orgRoleEnum = pgEnum('org_role', ['org:admin', 'org:member']);
+export const orgRoleEnum = pgEnum('org_role', ['admin', 'member']);
 export const orderStatusEnum = pgEnum('order_status', [
   'pending',
   'processing',

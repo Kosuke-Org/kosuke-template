@@ -15,6 +15,7 @@ import { organizations, orgMemberships } from '@/lib/db/schema';
 import { sendOTPEmail } from '@/lib/email/otp';
 import { isTestEmail } from '../utils';
 import { TEST_OTP } from '../constants';
+import { sendInvitationEmail } from '@/lib/email/invitation';
 
 /**
  * Better Auth instance with Email OTP
@@ -126,7 +127,12 @@ export const auth = betterAuth({
     sendOnSignUp: true,
   },
   plugins: [
-    organization(),
+    organization({
+      async sendInvitationEmail(data) {
+        const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/accept-invitation/${data.id}`;
+        await sendInvitationEmail({ ...data, inviteLink });
+      },
+    }),
     emailOTP({
       overrideDefaultEmailVerification: true,
       sendVerificationOTP: async ({ email, otp, type }) => {
@@ -144,18 +150,6 @@ export const auth = betterAuth({
       disableSignUp: true, // Prevent automatic user creation during sign-in
       allowedAttempts: 5, // Allow 5 attempts before invalidating OTP
     }),
-    // customSession(async ({ user, session }) => {
-    //   // Cast session to access additional fields (they exist in DB but types aren't inferred)
-    //   const sessionWithFields = session as typeof session & {
-    //     activeOrganizationId: string | null;
-    //     activeOrganizationSlug: string | null;
-    //   };
-
-    //   return {
-    //     user,
-    //     session: sessionWithFields,
-    //   };
-    // }),
     // nextCookies plugin must be last
     nextCookies(),
   ],

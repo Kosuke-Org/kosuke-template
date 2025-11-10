@@ -5,7 +5,7 @@ import { useProfileImageUrl } from '@/hooks/use-profile-image';
 import { getInitials } from '@/lib/utils';
 import type { User } from '@/lib/db/schema';
 
-export function useUserAvatar(user?: User) {
+export function useUserAvatar(user?: Omit<User, 'clerkUserId'>) {
   const profileImageUrl = useProfileImageUrl(user);
 
   const displayName = useMemo(() => {

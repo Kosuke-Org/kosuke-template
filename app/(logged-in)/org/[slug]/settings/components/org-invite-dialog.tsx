@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/select';
 import { useOrgInvitation } from '@/hooks/use-org-invitation';
 import { orgInviteFormSchema } from '@/lib/trpc/schemas/organizations';
+import { ORG_ROLES } from '@/lib/types/organization';
 
 type InviteFormValues = z.infer<typeof orgInviteFormSchema>;
 
@@ -54,17 +55,13 @@ export function OrgInviteDialog({ organizationId }: OrgInviteDialogProps) {
     resolver: zodResolver(orgInviteFormSchema),
     defaultValues: {
       email: '',
-      role: 'org:member',
+      role: ORG_ROLES.MEMBER,
     },
   });
 
-  const onSubmit = async (data: InviteFormValues) => {
+  const onSubmit = async ({ email, role }: InviteFormValues) => {
     inviteMember(
-      {
-        organizationId,
-        email: data.email,
-        role: data.role,
-      },
+      { organizationId, email, role },
       {
         onSuccess: () => {
           form.reset();
@@ -131,8 +128,8 @@ export function OrgInviteDialog({ organizationId }: OrgInviteDialogProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="org:member">Member</SelectItem>
-                      <SelectItem value="org:admin">Admin</SelectItem>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormDescription>

@@ -6,7 +6,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MoreHorizontal, Shield, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Shield, ShieldBan, Trash2 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ import { useOrgMembers } from '@/hooks/use-org-members';
 import { useUser } from '@/hooks/use-user';
 
 import { getInitials } from '@/lib/utils';
+import { ORG_ROLES, OrgRoleValue } from '@/lib/types/organization';
 
 interface OrgMemberListProps {
   organizationId: string;
@@ -109,23 +110,23 @@ export function OrgMemberList({ organizationId }: OrgMemberListProps) {
     if (memberToRemove) {
       removeMember({
         organizationId,
-        clerkUserId: memberToRemove,
+        memberId: memberToRemove,
       });
       setMemberToRemove(null);
     }
   };
 
-  const handleRoleChange = (userId: string, newRole: 'org:admin' | 'org:member') => {
+  const handleRoleChange = (memberId: string, newRole: OrgRoleValue) => {
     updateMemberRole({
       organizationId,
-      clerkUserId: userId,
+      memberId,
       role: newRole,
     });
   };
 
   // Find current user's role
   const currentUserMembership = members.find((m) => m.userId === currentUser?.id);
-  const isCurrentUserAdmin = currentUserMembership?.role === 'org:admin';
+  const isCurrentUserAdmin = currentUserMembership?.role === ORG_ROLES.ADMIN;
 
   return (
     <>
@@ -169,8 +170,8 @@ export function OrgMemberList({ organizationId }: OrgMemberListProps) {
                   </TableCell>
                   <TableCell className="text-muted-foreground">{user.email}</TableCell>
                   <TableCell>
-                    <Badge variant={member.role === 'org:admin' ? 'default' : 'secondary'}>
-                      {member.role === 'org:admin' ? (
+                    <Badge variant={member.role === ORG_ROLES.ADMIN ? 'default' : 'secondary'}>
+                      {member.role === ORG_ROLES.ADMIN ? (
                         <>
                           <Shield className="mr-1 h-3 w-3" />
                           Admin
@@ -189,28 +190,29 @@ export function OrgMemberList({ organizationId }: OrgMemberListProps) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          {member.role === 'org:member' ? (
+                          {member.role === ORG_ROLES.MEMBER ? (
                             <DropdownMenuItem
-                              onClick={() => handleRoleChange(member.userId, 'org:admin')}
+                              onClick={() => handleRoleChange(member.id, ORG_ROLES.ADMIN)}
                               disabled={isUpdatingRole}
                             >
-                              <Shield className="mr-2 h-4 w-4" />
+                              <Shield className="h-4 w-4" />
                               Make Admin
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem
-                              onClick={() => handleRoleChange(member.userId, 'org:member')}
+                              onClick={() => handleRoleChange(member.id, ORG_ROLES.MEMBER)}
                               disabled={isUpdatingRole}
                             >
+                              <ShieldBan className="h-4 w-4" />
                               Remove Admin
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem
-                            onClick={() => handleRemove(member.userId)}
+                            onClick={() => handleRemove(member.id)}
                             disabled={isRemoving}
                             className="text-destructive"
                           >
-                            <Trash2 className="mr-2 h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                             Remove Member
                           </DropdownMenuItem>
                         </DropdownMenuContent>

@@ -43,6 +43,13 @@
       "when": 1762764811440,
       "tag": "0005_empty_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1762770354753,
+      "tag": "0006_sudden_justice",
+      "breakpoints": true
     }
   ]
 }

@@ -10,7 +10,7 @@
 import { signOut, useSession, emailOtp, signIn } from '@/lib/auth/client';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/trpc/client';
 import { AUTH_ROUTES } from '@/lib/auth/constants';
 
@@ -65,10 +65,12 @@ export function useAuthActions() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const clearSignInAttemptMutation = trpc.auth.clearSignInAttempt.useMutation();
 
   const isSignUpFlow = pathname?.includes('/sign-up');
+  const redirectUrl = searchParams?.get('redirect');
 
   const verifyOTPMutation = useMutation({
     mutationFn: async ({ email, otp }: { email: string; otp: string }) => {
@@ -90,7 +92,9 @@ export function useAuthActions() {
       await clearSignInAttemptMutation.mutateAsync();
       queryClient.invalidateQueries();
 
-      if (isSignUpFlow) {
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else if (isSignUpFlow) {
         router.push(AUTH_ROUTES.ONBOARDING);
       } else {
         router.push(AUTH_ROUTES.ROOT);
@@ -106,7 +110,14 @@ export function useAuthActions() {
   });
 
   const signInMutation = trpc.auth.requestOtp.useMutation({
-    onSuccess: () => router.push(AUTH_ROUTES.VERIFY_OTP),
+    onSuccess: () => {
+      if (redirectUrl) {
+        const params = new URLSearchParams({ redirect: redirectUrl });
+        router.push(`${AUTH_ROUTES.VERIFY_OTP}?${params.toString()}`);
+      } else {
+        router.push(AUTH_ROUTES.VERIFY_OTP);
+      }
+    },
     onError: (error) => {
       toast({
         title: 'Error',
@@ -117,7 +128,14 @@ export function useAuthActions() {
   });
 
   const signUpMutation = trpc.auth.requestOtp.useMutation({
-    onSuccess: () => router.push(AUTH_ROUTES.VERIFY_EMAIL),
+    onSuccess: () => {
+      if (redirectUrl) {
+        const params = new URLSearchParams({ redirect: redirectUrl });
+        router.push(`${AUTH_ROUTES.VERIFY_EMAIL}?${params.toString()}`);
+      } else {
+        router.push(AUTH_ROUTES.VERIFY_EMAIL);
+      }
+    },
     onError: (error) => {
       toast({
         title: 'Error',

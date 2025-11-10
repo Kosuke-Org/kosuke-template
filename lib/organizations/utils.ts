@@ -7,6 +7,7 @@ import { db } from '@/lib/db';
 import { organizations, orgMemberships } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import type { Organization, OrgRoleValue } from '@/lib/types';
+import { ORG_ROLES } from '../types/organization';
 
 /**
  * Slug generation
@@ -52,17 +53,14 @@ export async function generateUniqueOrgSlug(name: string): Promise<string> {
  * Get user's role in an organization
  */
 async function getUserOrgRole(
-  clerkUserId: string,
+  userId: string,
   organizationId: string
 ): Promise<OrgRoleValue | null> {
   const [membership] = await db
     .select({ role: orgMemberships.role })
     .from(orgMemberships)
     .where(
-      and(
-        eq(orgMemberships.clerkUserId, clerkUserId),
-        eq(orgMemberships.organizationId, organizationId)
-      )
+      and(eq(orgMemberships.userId, userId), eq(orgMemberships.organizationId, organizationId))
     )
     .limit(1);
 
@@ -72,12 +70,9 @@ async function getUserOrgRole(
 /**
  * Check if user is admin of an organization
  */
-export async function isUserOrgAdmin(
-  clerkUserId: string,
-  organizationId: string
-): Promise<boolean> {
-  const role = await getUserOrgRole(clerkUserId, organizationId);
-  return role === 'org:admin';
+export async function isUserOrgAdmin(userId: string, organizationId: string): Promise<boolean> {
+  const role = await getUserOrgRole(userId, organizationId);
+  return role === ORG_ROLES.ADMIN;
 }
 
 /**

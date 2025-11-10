@@ -12,9 +12,9 @@ export type { FullOrganizationResponse } from '@/lib/auth/client';
  * Organization Role Constants
  * Enum-like object for organization roles
  */
-const _ORG_ROLES = {
-  ADMIN: 'org:admin',
-  MEMBER: 'org:member',
+export const ORG_ROLES = {
+  ADMIN: 'admin',
+  MEMBER: 'member',
 } as const;
 
-export type OrgRoleValue = (typeof _ORG_ROLES)[keyof typeof _ORG_ROLES];
+export type OrgRoleValue = (typeof ORG_ROLES)[keyof typeof ORG_ROLES];

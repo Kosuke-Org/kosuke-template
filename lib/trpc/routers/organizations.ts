@@ -3,11 +3,7 @@
  * Handles organization CRUD, member management, and invitations
  */
 
-import { eq, and } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { clerkClient } from '@clerk/nextjs/server';
-import { db } from '@/lib/db/drizzle';
-import { orgMemberships } from '@/lib/db/schema';
 import { router, protectedProcedure } from '../init';
 import { uploadProfileImage, deleteProfileImage } from '@/lib/storage';
 import { getOrgById, isUserOrgAdmin, generateUniqueOrgSlug } from '@/lib/organizations';
@@ -21,7 +17,6 @@ import {
   getOrgMembersSchema,
 } from '../schemas/organizations';
 import { z } from 'zod';
-import { isClerkAPIResponseError } from '@/lib/utils';
 import { auth } from '@/lib/auth/providers';
 import { headers } from 'next/headers';
 
@@ -266,35 +261,24 @@ export const organizationsRouter = router({
       });
     }
 
-    const clerk = await clerkClient();
-
-    // Create invitation in Clerk with redirect URL
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     try {
-      await clerk.organizations.createOrganizationInvitation({
-        organizationId: org.id,
-        emailAddress: input.email,
-        role: input.role,
-        inviterUserId: ctx.userId,
-        // we redirect to sign-in because Clerk's components handle the sign-in and sign-up for new users
-        redirectUrl: `${appUrl}/sign-in`,
+      await auth.api.createInvitation({
+        body: {
+          email: input.email,
+          role: input.role,
+          organizationId: org.id,
+          resend: true,
+        },
+        headers: await headers(),
       });
-
       return {
         success: true,
-        message: `Invitation sent to ${input.email}`,
+        message: 'Member invited successfully',
       };
     } catch (error) {
-      if (isClerkAPIResponseError(error)) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: error.errors?.[0]?.message || error.message,
-        });
-      }
-
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to create organization invitation',
+        message: error instanceof Error ? error.message : 'Failed to invite member',
       });
     }
   }),
@@ -302,67 +286,15 @@ export const organizationsRouter = router({
   /**
    * Remove a member from the organization
    */
-  removeMember: protectedProcedure.input(removeMemberSchema).mutation(async ({ ctx, input }) => {
-    const org = await getOrgById(input.organizationId);
-
-    if (!org) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Organization not found' });
-    }
-
-    // Verify user is admin
-    const isAdmin = await isUserOrgAdmin(ctx.userId, org.id);
-    if (!isAdmin) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: 'Only organization admins can remove members',
-      });
-    }
-
-    // Don't allow removing yourself if you're the only admin
-    if (input.clerkUserId === ctx.userId) {
-      const admins = await db
-        .select()
-        .from(orgMemberships)
-        .where(
-          and(eq(orgMemberships.organizationId, org.id), eq(orgMemberships.role, 'org:admin'))
-        );
-
-      if (admins.length === 1) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Cannot remove yourself as the only admin',
-        });
-      }
-    }
-
-    // Get the membership
-    const [membership] = await db
-      .select()
-      .from(orgMemberships)
-      .where(
-        and(
-          eq(orgMemberships.organizationId, org.id),
-          eq(orgMemberships.clerkUserId, input.clerkUserId)
-        )
-      )
-      .limit(1);
-
-    if (!membership) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Member not found in this organization',
-      });
-    }
-
-    const clerk = await clerkClient();
-
-    // Delete membership in Clerk
-    await clerk.organizations.deleteOrganizationMembership({
-      organizationId: org.id,
-      userId: input.clerkUserId,
+  removeMember: protectedProcedure.input(removeMemberSchema).mutation(async ({ input }) => {
+    await auth.api.removeMember({
+      body: {
+        memberIdOrEmail: input.memberId,
+        organizationId: input.organizationId,
+      },
+      headers: await headers(),
     });
 
-    // The webhook will handle removing from our database
     return {
       success: true,
       message: 'Member removed successfully',
@@ -372,73 +304,19 @@ export const organizationsRouter = router({
   /**
    * Update a member's role
    */
-  updateMemberRole: protectedProcedure
-    .input(updateMemberRoleSchema)
-    .mutation(async ({ ctx, input }) => {
-      const org = await getOrgById(input.organizationId);
-
-      if (!org) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Organization not found' });
-      }
-
-      // Verify user is admin
-      const isAdmin = await isUserOrgAdmin(ctx.userId, org.id);
-      if (!isAdmin) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Only organization admins can update member roles',
-        });
-      }
-
-      // Don't allow changing your own role if you're the only admin
-      if (input.clerkUserId === ctx.userId && input.role === 'org:member') {
-        const admins = await db
-          .select()
-          .from(orgMemberships)
-          .where(
-            and(eq(orgMemberships.organizationId, org.id), eq(orgMemberships.role, 'org:admin'))
-          );
-
-        if (admins.length === 1) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Cannot demote yourself as the only admin',
-          });
-        }
-      }
-
-      // Get the membership
-      const [membership] = await db
-        .select()
-        .from(orgMemberships)
-        .where(
-          and(
-            eq(orgMemberships.organizationId, org.id),
-            eq(orgMemberships.clerkUserId, input.clerkUserId)
-          )
-        )
-        .limit(1);
-
-      if (!membership) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Member not found in this organization',
-        });
-      }
-
-      const clerk = await clerkClient();
-
-      // Update role in Clerk
-      await clerk.organizations.updateOrganizationMembership({
-        organizationId: org.id,
-        userId: input.clerkUserId,
+  updateMemberRole: protectedProcedure.input(updateMemberRoleSchema).mutation(async ({ input }) => {
+    await auth.api.updateMemberRole({
+      body: {
         role: input.role,
-      });
+        memberId: input.memberId,
+        organizationId: input.organizationId,
+      },
+      headers: await headers(),
+    });
 
-      // The webhook will handle updating our database
-      return {
-        success: true,
-        message: 'Member role updated successfully',
-      };
-    }),
+    return {
+      success: true,
+      message: 'Member role updated successfully',
+    };
+  }),
 });

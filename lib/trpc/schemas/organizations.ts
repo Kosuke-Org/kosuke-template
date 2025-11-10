@@ -49,7 +49,7 @@ export const getOrganizationSchema = z.object({
 export const inviteMemberSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
   email: z.email('Invalid email address'),
-  role: z.enum(['org:admin', 'org:member']).default('org:member'),
+  role: z.enum(['admin', 'member']).default('member'),
 });
 
 /**
@@ -58,18 +58,18 @@ export const inviteMemberSchema = z.object({
  */
 export const orgInviteFormSchema = z.object({
   email: z.email('Invalid email address'),
-  role: z.enum(['org:admin', 'org:member']),
+  role: z.enum(['admin', 'member']),
 });
 
 export const updateMemberRoleSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
-  clerkUserId: z.string().min(1, 'User ID is required'),
-  role: z.enum(['org:admin', 'org:member']),
+  memberId: z.string().min(1, 'User ID is required'),
+  role: z.enum(['admin', 'member']),
 });
 
 export const removeMemberSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
-  clerkUserId: z.string().min(1, 'User ID is required'),
+  memberId: z.string().min(1, 'User ID is required'),
 });
 
 export const getOrgMembersSchema = z.object({

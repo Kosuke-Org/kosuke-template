@@ -35,6 +35,7 @@ import {
 } from '../schema';
 
 import type { NewOrder, OrderStatus } from '@/lib/types/order';
+import { ORG_ROLES } from '@/lib/types/organization';
 
 const IS_PRODUCTION =
   process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
@@ -122,21 +123,21 @@ async function seed() {
       organizationId: insertedOrg1.id,
       createdAt: new Date(),
       userId: johnUser.id,
-      role: 'member',
+      role: ORG_ROLES.MEMBER,
     };
 
     const janeMembershipData: NewOrgMembership = {
       organizationId: insertedOrg1.id,
       createdAt: new Date(),
       userId: janeUser.id,
-      role: 'admin',
+      role: ORG_ROLES.ADMIN,
     };
 
     const johnOrg2MembershipData: NewOrgMembership = {
       organizationId: insertedOrg2.id,
       createdAt: new Date(),
       userId: johnUser.id,
-      role: 'admin',
+      role: ORG_ROLES.ADMIN,
     };
 
     // Insert or skip memberships if they already exist
