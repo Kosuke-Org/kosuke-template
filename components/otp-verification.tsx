@@ -8,7 +8,7 @@ import { ChevronRight, LoaderCircle, Pencil } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
-import { useAuthActions } from '@/hooks/use-auth';
+import { useAuth, useAuthActions } from '@/hooks/use-auth';
 import { trpc } from '@/lib/trpc/client';
 
 /**
@@ -24,6 +24,7 @@ export const OTPVerification = () => {
   const [otp, setOtp] = useState('');
   const { verifyOTP, sendOTP, isVerifyingOTP, isSendingOTP, verifyOTPError, clearSignInAttempt } =
     useAuthActions();
+  const { isLoading: isLoadingSession } = useAuth();
 
   const { data, isLoading } = trpc.auth.getCurrentSignInAttempt.useQuery(undefined, {
     staleTime: 0,
@@ -116,8 +117,8 @@ export const OTPVerification = () => {
             )}
           </Field>
           <Field>
-            <Button type="submit" disabled={isVerifyingOTP || otp.length !== 6}>
-              {isVerifyingOTP && <LoaderCircle className="animate-spin" />}
+            <Button type="submit" disabled={isVerifyingOTP || otp.length !== 6 || isLoadingSession}>
+              {(isVerifyingOTP || isLoadingSession) && <LoaderCircle className="animate-spin" />}
               Continue
               <ChevronRight />
             </Button>
