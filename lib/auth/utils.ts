@@ -75,5 +75,6 @@ export async function clearSignInAttempt(): Promise<void> {
 }
 
 export const isTestEmail = (email: string) => {
-  return process.env.NODE_ENV === 'development' && email.endsWith(TEST_EMAIL_SUFFIX);
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  return isDevelopment && email.endsWith(TEST_EMAIL_SUFFIX);
 };
