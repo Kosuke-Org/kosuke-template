@@ -64,7 +64,6 @@ vi.mock('@/hooks/use-toast', () => ({
 const mockRequestOtpMutate = vi.fn();
 const mockRequestOtpMutateAsync = vi.fn();
 const mockClearSignInAttemptMutate = vi.fn();
-const mockClearSignInAttemptMutateAsync = vi.fn();
 
 vi.mock('@/lib/trpc/client', () => ({
   trpc: {
@@ -104,7 +103,6 @@ vi.mock('@/lib/trpc/client', () => ({
       clearSignInAttempt: {
         useMutation: vi.fn(() => ({
           mutate: mockClearSignInAttemptMutate,
-          mutateAsync: mockClearSignInAttemptMutateAsync,
           isPending: false,
           error: null,
         })),
@@ -125,7 +123,7 @@ describe('useAuthActions', () => {
     mockSignOut.mockResolvedValue(undefined);
     mockVerifyEmail.mockResolvedValue({ error: null });
     mockSignInEmailOtp.mockResolvedValue({ error: null });
-    mockClearSignInAttemptMutateAsync.mockResolvedValue(undefined);
+    mockClearSignInAttemptMutate.mockResolvedValue(undefined);
     mockRouterPush.mockClear();
     // Reset to default values
     mockPathname = '/';
@@ -156,7 +154,6 @@ describe('useAuthActions', () => {
           onSuccess: expect.any(Function),
         },
       });
-      expect(mockQueryClient.clear).toHaveBeenCalled();
     });
 
     it('should handle multiple handleSignOut calls', async () => {
@@ -171,7 +168,6 @@ describe('useAuthActions', () => {
       });
 
       expect(mockSignOut).toHaveBeenCalledTimes(2);
-      expect(mockQueryClient.clear).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -250,7 +246,7 @@ describe('useAuthActions', () => {
       });
 
       expect(mockSignInEmailOtp).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
-      expect(mockClearSignInAttemptMutateAsync).toHaveBeenCalled();
+      expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
       expect(mockQueryClient.invalidateQueries).toHaveBeenCalled();
       expect(mockRouterPush).toHaveBeenCalledWith(redirectUrl);
     });
@@ -266,7 +262,7 @@ describe('useAuthActions', () => {
       });
 
       expect(mockSignInEmailOtp).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
-      expect(mockClearSignInAttemptMutateAsync).toHaveBeenCalled();
+      expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
       expect(mockQueryClient.invalidateQueries).toHaveBeenCalled();
       expect(mockRouterPush).toHaveBeenCalledWith(AUTH_ROUTES.ROOT);
     });
@@ -285,7 +281,7 @@ describe('useAuthActions', () => {
       });
 
       expect(mockVerifyEmail).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
-      expect(mockClearSignInAttemptMutateAsync).toHaveBeenCalled();
+      expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
       expect(mockQueryClient.invalidateQueries).toHaveBeenCalled();
       expect(mockRouterPush).toHaveBeenCalledWith(redirectUrl);
     });
@@ -301,7 +297,7 @@ describe('useAuthActions', () => {
       });
 
       expect(mockVerifyEmail).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
-      expect(mockClearSignInAttemptMutateAsync).toHaveBeenCalled();
+      expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
       expect(mockQueryClient.invalidateQueries).toHaveBeenCalled();
       expect(mockRouterPush).toHaveBeenCalledWith(AUTH_ROUTES.ONBOARDING);
     });

@@ -29,7 +29,7 @@ import { AUTH_ROUTES } from '@/lib/auth/constants';
  * ```
  */
 export function useAuth() {
-  const { data, isPending } = useSession();
+  const { data, isPending, isRefetching } = useSession();
 
   const session = data?.session;
   const user = data?.user;
@@ -38,7 +38,7 @@ export function useAuth() {
     session,
     user,
     userId: user?.id,
-    isLoading: isPending,
+    isLoading: isPending || isRefetching,
     isSignedIn: !!user,
     activeOrganizationSlug: session?.activeOrganizationSlug,
     activeOrganizationId: session?.activeOrganizationId,
@@ -88,8 +88,8 @@ export function useAuthActions() {
         }
       }
     },
-    onSuccess: async () => {
-      await clearSignInAttemptMutation.mutateAsync();
+    onSuccess: () => {
+      clearSignInAttemptMutation.mutate();
       queryClient.invalidateQueries();
 
       if (redirectUrl) {
@@ -146,17 +146,14 @@ export function useAuthActions() {
   });
 
   const signOutMutation = useMutation({
-    mutationFn: async () => {
-      await signOut({
+    mutationFn: () => {
+      return signOut({
         fetchOptions: {
           onSuccess: () => {
             router.push(AUTH_ROUTES.ROOT);
           },
         },
       });
-    },
-    onSuccess: () => {
-      queryClient.clear();
     },
     onError: (error) => {
       toast({

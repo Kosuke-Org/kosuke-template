@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useUser } from '@/hooks/use-user';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { useProfileUpload } from '@/hooks/use-profile-upload';
 import { ButtonSkeleton } from '@/components/skeletons';
@@ -59,9 +58,8 @@ function ProfileSettingsSkeleton() {
 }
 
 export default function ProfileSettings() {
-  const { user } = useUser();
   const { isSignedIn } = useAuth();
-  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
+  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar();
   const { handleImageUpload, isUploading } = useProfileUpload();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
@@ -85,7 +83,7 @@ export default function ProfileSettings() {
     },
   });
 
-  if (!isSignedIn || !user) {
+  if (!isSignedIn) {
     return <ProfileSettingsSkeleton />;
   }
 

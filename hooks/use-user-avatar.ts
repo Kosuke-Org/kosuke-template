@@ -3,9 +3,10 @@
 import { useMemo } from 'react';
 import { useProfileImageUrl } from '@/hooks/use-profile-image';
 import { getInitials } from '@/lib/utils';
-import type { User } from '@/lib/db/schema';
+import { useUser } from './use-user';
 
-export function useUserAvatar(user?: Omit<User, 'clerkUserId'>) {
+export function useUserAvatar() {
+  const { user } = useUser();
   const profileImageUrl = useProfileImageUrl(user);
 
   const displayName = useMemo(() => {

@@ -28,7 +28,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useUser } from '@/hooks/use-user';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { useAuth, useAuthActions } from '@/hooks/use-auth';
 import { UserSkeleton } from '@/components/skeletons';
@@ -36,15 +35,14 @@ import { getInitials } from '@/lib/utils';
 
 export function NavUser() {
   const { isSignedIn } = useAuth();
-  const { user, isLoading } = useUser();
   const { isMobile } = useSidebar();
-  const { profileImageUrl, displayName, primaryEmail } = useUserAvatar(user);
+  const { profileImageUrl, displayName, primaryEmail } = useUserAvatar();
   const { signOut: handleSignOut } = useAuthActions();
 
   // Generate initials from display name
   const initials = getInitials(displayName);
 
-  if (!isSignedIn || !user || isLoading) {
+  if (!isSignedIn) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>

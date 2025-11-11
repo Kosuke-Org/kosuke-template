@@ -21,7 +21,6 @@ import {
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { useAuthActions } from '@/hooks/use-auth';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
-import { useUser } from '@/hooks/use-user';
 
 interface NavbarProps {
   variant?: 'standard' | 'transparent';
@@ -30,8 +29,7 @@ interface NavbarProps {
 
 export default function Navbar({ variant = 'standard', className }: NavbarProps) {
   const { isSignedIn } = useAuth();
-  const { user } = useUser();
-  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
+  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar();
   const { signOut: handleSignOut } = useAuthActions();
   const { activeOrganization } = useActiveOrganization();
   const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
@@ -53,7 +51,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
 
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          {isSignedIn && user ? (
+          {isSignedIn ? (
             // Show user profile for logged-in users
             <div className="flex items-center gap-3">
               <DropdownMenu>
@@ -129,7 +127,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
             </SheetTrigger>
             <SheetContent side="right">
               <nav className="flex flex-col gap-4 mt-8">
-                {isSignedIn && user ? (
+                {isSignedIn ? (
                   // Mobile navigation for logged-in users
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-3 p-2 border rounded-lg">

@@ -25,7 +25,9 @@ export const OTPVerification = () => {
   const { verifyOTP, sendOTP, isVerifyingOTP, isSendingOTP, verifyOTPError, clearSignInAttempt } =
     useAuthActions();
 
-  const { data, isLoading } = trpc.auth.getCurrentSignInAttempt.useQuery(undefined, {});
+  const { data, isLoading } = trpc.auth.getCurrentSignInAttempt.useQuery(undefined, {
+    staleTime: 0,
+  });
   const email = data?.email;
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -39,8 +41,8 @@ export const OTPVerification = () => {
     }
   };
 
-  const handleChangeEmail = async () => {
-    await clearSignInAttempt();
+  const handleChangeEmail = () => {
+    clearSignInAttempt();
     // Automatically determine redirect URL based on current route
     const redirectUrl = pathname?.includes('/sign-up') ? '/sign-up' : '/sign-in';
     router.push(redirectUrl);
@@ -61,10 +63,6 @@ export const OTPVerification = () => {
         </CardContent>
       </Card>
     );
-  }
-
-  if (!email) {
-    return null;
   }
 
   return (
