@@ -29,7 +29,7 @@ import { AUTH_ROUTES } from '@/lib/auth/constants';
  * ```
  */
 export function useAuth() {
-  const { data, isPending, isRefetching } = useSession();
+  const { data, isPending, isRefetching, refetch } = useSession();
 
   const session = data?.session;
   const user = data?.user;
@@ -42,6 +42,7 @@ export function useAuth() {
     isSignedIn: !!user,
     activeOrganizationSlug: session?.activeOrganizationSlug,
     activeOrganizationId: session?.activeOrganizationId,
+    refetch,
   };
 }
 

@@ -7,7 +7,7 @@
 
 import { useToast } from '@/hooks/use-toast';
 import { trpc } from '@/lib/trpc/client';
-import { useSession } from '@/lib/auth/client';
+import { useAuth } from './use-auth';
 
 interface CreateOrganizationOptions {
   onSuccess?: (slug: string) => void;
@@ -18,16 +18,16 @@ interface CreateOrganizationOptions {
 export function useCreateOrganization() {
   const { toast } = useToast();
   const utils = trpc.useUtils();
-  const { refetch } = useSession();
+  const { refetch } = useAuth();
 
   const mutation = trpc.organizations.createOrganization.useMutation({
-    onSuccess: async () => {
+    onSuccess: () => {
       toast({
         title: 'Success!',
         description: 'Your workspace has been created.',
       });
       utils.organizations.getUserOrganizations.invalidate();
-      await refetch();
+      refetch();
     },
     onError: (error) => {
       toast({
