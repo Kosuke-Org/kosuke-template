@@ -30,11 +30,3 @@ const authClient = createAuthClient({
 });
 
 export const { useSession, signIn, signOut, emailOtp, organization } = authClient;
-
-// export type Session = typeof auth.$Infer.Session;
-// export type User = typeof auth.$Infer.Session.user;
-// export type Organization = NonNullable<
-//   Awaited<ReturnType<typeof organization.list>>['data']
-// >[number];
-
-export type FullOrganizationResponse = Awaited<ReturnType<typeof auth.api.getFullOrganization>>;

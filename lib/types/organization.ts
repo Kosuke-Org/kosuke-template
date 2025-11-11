@@ -5,8 +5,9 @@
 
 // Re-export schema types (ALWAYS re-export even if not extending)
 export type { Organization } from '@/lib/db/schema';
+import type { auth } from '@/lib/auth/providers';
 
-export type { FullOrganizationResponse } from '@/lib/auth/client';
+export type FullOrganizationResponse = Awaited<ReturnType<typeof auth.api.getFullOrganization>>;
 
 /**
  * Organization Role Constants
