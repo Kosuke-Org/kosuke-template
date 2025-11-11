@@ -10,6 +10,8 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { BreadcrumbSkeleton } from './skeletons';
+import { useAuth } from '@/hooks/use-auth';
 
 // Define human-readable names for routes
 const routeNames: Record<string, string> = {
@@ -27,7 +29,8 @@ const routeNames: Record<string, string> = {
 
 export function DynamicBreadcrumb() {
   const pathname = usePathname();
-  const { activeOrganization } = useActiveOrganization();
+  const { activeOrganization, isLoading } = useActiveOrganization();
+  const { isLoading: isAuthLoading } = useAuth();
 
   // Split the pathname and filter out empty strings
   const pathSegments = pathname.split('/').filter(Boolean);
@@ -55,7 +58,7 @@ export function DynamicBreadcrumb() {
 
     breadcrumbItems.push({
       href: `/org/${orgSlug}/settings`,
-      name: activeOrganization?.name || 'Organization',
+      name: activeOrganization?.name ?? '',
       isLast: pathSegments.length === 2,
     });
 
@@ -70,6 +73,10 @@ export function DynamicBreadcrumb() {
         isLast,
       });
     }
+  }
+
+  if (isAuthLoading || isLoading) {
+    return <BreadcrumbSkeleton items={breadcrumbItems.length} />;
   }
 
   return (
