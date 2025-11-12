@@ -8,12 +8,15 @@ import { useAuth } from './use-auth';
  * Uses tRPC to query user by ID from session
  */
 export function useUser() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, userId } = useAuth();
 
-  const { data: user, isLoading } = trpc.user.getUser.useQuery(undefined, {
-    enabled: isSignedIn,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  const { data: user, isLoading } = trpc.user.getUser.useQuery(
+    { userId: userId! },
+    {
+      enabled: isSignedIn && !!userId,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    }
+  );
 
   return {
     user,

@@ -10,18 +10,21 @@ import { useAuth } from '@/hooks/use-auth';
 import { trpc } from '@/lib/trpc/client';
 
 export function useOrganizations() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, userId } = useAuth();
 
   const {
     data: organizations,
     isLoading,
     error,
     refetch,
-  } = trpc.organizations.getUserOrganizations.useQuery(undefined, {
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 1,
-    enabled: isSignedIn,
-  });
+  } = trpc.organizations.getUserOrganizations.useQuery(
+    { userId: userId! },
+    {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+      enabled: isSignedIn && !!userId,
+    }
+  );
 
   return {
     organizations: organizations ?? [],

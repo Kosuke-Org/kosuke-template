@@ -13,6 +13,7 @@ import {
   notificationSettingsSchema,
   uploadProfileImageSchema,
   updateDisplayNameSchema,
+  getUserSchema,
 } from '../schemas/user';
 import { AUTH_ERRORS } from '@/lib/auth/constants';
 
@@ -20,7 +21,7 @@ export const userRouter = router({
   /**
    * Get current user from database
    */
-  getUser: protectedProcedure.query(async ({ ctx }) => {
+  getUser: protectedProcedure.input(getUserSchema).query(async ({ input }) => {
     const [user] = await db
       .select({
         id: users.id,
@@ -34,7 +35,7 @@ export const userRouter = router({
         updatedAt: users.updatedAt,
       })
       .from(users)
-      .where(eq(users.id, ctx.userId))
+      .where(eq(users.id, input.userId))
       .limit(1);
 
     if (!user) {

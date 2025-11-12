@@ -43,6 +43,10 @@ export const getOrganizationSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
 });
 
+export const getUserOrganizationsSchema = z.object({
+  userId: z.uuid('Invalid user ID'),
+});
+
 /**
  * Membership Schemas
  */

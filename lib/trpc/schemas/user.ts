@@ -21,3 +21,7 @@ export const uploadProfileImageSchema = z.object({
 export const updateDisplayNameSchema = z.object({
   displayName: z.string().min(1, 'Display name is required').max(100),
 });
+
+export const getUserSchema = z.object({
+  userId: z.uuid('Invalid user ID'),
+});

@@ -16,6 +16,7 @@ import {
   updateMemberRoleSchema,
   getOrgMembersSchema,
   leaveOrganizationSchema,
+  getUserOrganizationsSchema,
 } from '../schemas/organizations';
 import { z } from 'zod';
 import { auth } from '@/lib/auth/providers';
@@ -25,13 +26,18 @@ export const organizationsRouter = router({
   /**
    * Get all organizations the current user belongs to
    */
-  getUserOrganizations: protectedProcedure.query(async () => {
-    const result = await auth.api.listOrganizations({
-      headers: await headers(),
-    });
+  getUserOrganizations: protectedProcedure
+    .input(getUserOrganizationsSchema)
+    .query(async ({ input }) => {
+      const result = await auth.api.listOrganizations({
+        query: {
+          userId: input.userId,
+        },
+        headers: await headers(),
+      });
 
-    return result;
-  }),
+      return result;
+    }),
 
   /**
    * Get a single organization by ID
