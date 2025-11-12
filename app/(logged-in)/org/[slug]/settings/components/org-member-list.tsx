@@ -6,7 +6,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MoreHorizontal, Shield, ShieldBan, Trash2, LogOut } from 'lucide-react';
+import { MoreHorizontal, Shield, ShieldBan, Trash2, LogOut, Loader2 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -130,10 +130,7 @@ export function OrgMemberList() {
   const confirmRemove = () => {
     if (!organizationId || !memberToRemove) return;
 
-    removeMember({
-      organizationId,
-      memberIdOrEmail: memberToRemove,
-    });
+    removeMember({ organizationId, memberIdOrEmail: memberToRemove });
     setMemberToRemove(null);
   };
 
@@ -311,7 +308,7 @@ export function OrgMemberList() {
 
       {/* Remove Member Dialog */}
       <AlertDialog
-        open={!!memberToRemove}
+        open={!!memberToRemove || isRemoving}
         onOpenChange={(open) => {
           if (!open) {
             setMemberToRemove(null);
@@ -333,7 +330,8 @@ export function OrgMemberList() {
               className="bg-destructive text-destructive-foreground"
               disabled={isRemoving}
             >
-              {isRemoving ? 'Removing...' : 'Remove Member'}
+              {isRemoving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Remove Member
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -363,7 +361,8 @@ export function OrgMemberList() {
               className="bg-destructive text-destructive-foreground"
               disabled={isLeavingMutation}
             >
-              {isLeavingMutation ? 'Leaving...' : 'Leave Organization'}
+              {isLeavingMutation && <Loader2 className="h-4 w-4 animate-spin" />}
+              Leave organization
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
