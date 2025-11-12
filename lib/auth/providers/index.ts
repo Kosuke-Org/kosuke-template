@@ -16,6 +16,7 @@ import { sendOTPEmail } from '@/lib/email/otp';
 import { isTestEmail } from '../utils';
 import { TEST_OTP } from '../constants';
 import { sendInvitationEmail } from '@/lib/email/invitation';
+import { redis } from '@/lib/redis';
 
 /**
  * Better Auth instance with Email OTP
@@ -34,6 +35,18 @@ export const auth = betterAuth({
       invitation: schema.invitations,
     },
   }),
+  secondaryStorage: {
+    get: async (key) => {
+      return await redis.get(key);
+    },
+    set: async (key, value, ttl) => {
+      if (ttl) await redis.set(key, value, 'EX', ttl);
+      else await redis.set(key, value);
+    },
+    delete: async (key) => {
+      await redis.del(key);
+    },
+  },
   advanced: {
     database: {
       generateId: () => crypto.randomUUID(),
@@ -103,7 +116,7 @@ export const auth = betterAuth({
     },
   },
   session: {
-    storeSessionInDatabase: true,
+    storeSessionInDatabase: false,
     additionalFields: {
       activeOrganizationId: {
         type: 'string',

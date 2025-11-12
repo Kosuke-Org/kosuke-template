@@ -1,30 +1,13 @@
 import { Queue, Worker, QueueEvents } from 'bullmq';
-import Redis from 'ioredis';
 
-/**
- * Redis connection configuration
- * Supports both local development (Redis in Docker) and production (external Redis provider)
- */
-const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
-
-/**
- * Create Redis connection instance
- * Uses IORedis for high-performance Redis client
- * @internal - Used internally by queue/worker factories
- */
-const createRedisConnection = () => {
-  return new Redis(redisUrl, {
-    maxRetriesPerRequest: null, // Required for BullMQ
-    enableReadyCheck: false, // Faster startup
-  });
-};
+import { redis } from '@/lib/redis';
 
 /**
  * Default queue options for consistent behavior across all queues
  * @internal - Used internally by createQueue factory
  */
 const defaultQueueOptions = {
-  connection: createRedisConnection(),
+  connection: redis,
   defaultJobOptions: {
     attempts: 3, // Retry failed jobs 3 times
     backoff: {
@@ -47,7 +30,7 @@ const defaultQueueOptions = {
  * @internal - Used internally by createWorker factory
  */
 const defaultWorkerOptions = {
-  connection: createRedisConnection(),
+  connection: redis,
   concurrency: 5, // Process 5 jobs concurrently
   removeOnComplete: { count: 1000 },
   removeOnFail: { count: 5000 },
@@ -75,7 +58,7 @@ export function createWorker<T = unknown>(
  */
 export function createQueueEvents(name: string) {
   return new QueueEvents(name, {
-    connection: createRedisConnection(),
+    connection: redis,
   });
 }
 
