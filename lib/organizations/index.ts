@@ -4,4 +4,4 @@
  */
 
 // Utility functions
-export { generateUniqueOrgSlug, isUserOrgAdmin, getOrgById } from './utils';
+export { generateUniqueOrgSlug, getOrgById } from './utils';

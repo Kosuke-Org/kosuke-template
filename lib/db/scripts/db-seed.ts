@@ -130,14 +130,14 @@ async function seed() {
       organizationId: insertedOrg1.id,
       createdAt: new Date(),
       userId: janeUser.id,
-      role: ORG_ROLES.ADMIN,
+      role: ORG_ROLES.OWNER,
     };
 
     const johnOrg2MembershipData: NewOrgMembership = {
       organizationId: insertedOrg2.id,
       createdAt: new Date(),
       userId: johnUser.id,
-      role: ORG_ROLES.ADMIN,
+      role: ORG_ROLES.OWNER,
     };
 
     // Insert or skip memberships if they already exist
@@ -145,9 +145,9 @@ async function seed() {
       await db.insert(orgMemberships).values(membership).onConflictDoNothing();
     }
 
-    console.log(`  ✅ Jane is admin of ${org1Name}`);
+    console.log(`  ✅ Jane is owner of ${org1Name}`);
     console.log(`  ✅ John is member of ${org1Name}`);
-    console.log(`  ✅ John is admin of ${org2Name}\n`);
+    console.log(`  ✅ John is owner of ${org2Name}\n`);
 
     // Step 6: Create subscriptions
     console.log('💳 Creating subscriptions...');

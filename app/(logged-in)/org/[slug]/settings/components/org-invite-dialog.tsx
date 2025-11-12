@@ -39,17 +39,25 @@ import {
 } from '@/components/ui/select';
 import { useOrgInvitation } from '@/hooks/use-org-invitation';
 import { orgInviteFormSchema } from '@/lib/trpc/schemas/organizations';
-import { ORG_ROLES } from '@/lib/types/organization';
+import { ORG_ROLES, OrgRoleValue } from '@/lib/types/organization';
+import { useUser } from '@/hooks/use-user';
+import { useOrgMembers } from '@/hooks/use-org-members';
+import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type InviteFormValues = z.infer<typeof orgInviteFormSchema>;
 
-interface OrgInviteDialogProps {
-  organizationId: string;
-}
-
-export function OrgInviteDialog({ organizationId }: OrgInviteDialogProps) {
+export function OrgInviteDialog() {
   const [isOpen, setIsOpen] = useState(false);
+  const { user: currentUser } = useUser();
+  const { activeOrganization: organization, isLoading: isLoadingOrganization } =
+    useActiveOrganization();
+  const organizationId = organization?.id;
   const { inviteMember, isInviting } = useOrgInvitation(organizationId);
+  const { members, isLoading } = useOrgMembers(organizationId);
+
+  const currentUserMembership = members.find((m) => m.userId === currentUser?.id);
+  const currentUserRole = currentUserMembership?.role as OrgRoleValue;
 
   const form = useForm<InviteFormValues>({
     resolver: zodResolver(orgInviteFormSchema),
@@ -60,6 +68,8 @@ export function OrgInviteDialog({ organizationId }: OrgInviteDialogProps) {
   });
 
   const onSubmit = async ({ email, role }: InviteFormValues) => {
+    if (!organizationId) return;
+
     inviteMember(
       { organizationId, email, role },
       {
@@ -71,13 +81,19 @@ export function OrgInviteDialog({ organizationId }: OrgInviteDialogProps) {
     );
   };
 
+  if (currentUserRole === ORG_ROLES.MEMBER) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Invite Member
-        </Button>
+        {isLoadingOrganization || isLoading || !currentUser ? (
+          <Skeleton className="h-8 w-32" />
+        ) : (
+          <Button>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Invite Member
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>

@@ -1,5 +1,5 @@
 {
-  "id": "78bbfd49-0d09-44ec-8d3f-4cc689a0d73e",
+  "id": "0c835167-977a-41b6-a210-40e087eb42fe",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -187,9 +187,10 @@
         },
         "role": {
           "name": "role",
-          "type": "text",
+          "type": "org_role",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "status": {
           "name": "status",
@@ -371,10 +372,10 @@
         },
         "role": {
           "name": "role",
-          "type": "text",
+          "type": "org_role",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'member'"
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -992,6 +993,7 @@
       "name": "org_role",
       "schema": "public",
       "values": [
+        "owner",
         "admin",
         "member"
       ]

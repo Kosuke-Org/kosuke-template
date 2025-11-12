@@ -6,15 +6,16 @@
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { uploadProfileImage, deleteProfileImage } from '@/lib/storage';
-import { getOrgById, isUserOrgAdmin, generateUniqueOrgSlug } from '@/lib/organizations';
+import { generateUniqueOrgSlug } from '@/lib/organizations';
 import {
   createOrganizationSchema,
   updateOrganizationSchema,
   getOrganizationSchema,
-  inviteMemberSchema,
+  createInvitationSchema,
   removeMemberSchema,
   updateMemberRoleSchema,
   getOrgMembersSchema,
+  leaveOrganizationSchema,
 } from '../schemas/organizations';
 import { z } from 'zod';
 import { auth } from '@/lib/auth/providers';
@@ -240,57 +241,38 @@ export const organizationsRouter = router({
     return result;
   }),
 
-  // TODO: Refactor members
-
   /**
    * Invite a member to the organization
    */
-  inviteMember: protectedProcedure.input(inviteMemberSchema).mutation(async ({ ctx, input }) => {
-    const org = await getOrgById(input.organizationId);
+  inviteMember: protectedProcedure.input(createInvitationSchema).mutation(async ({ input }) => {
+    const { role, email, organizationId } = input;
 
-    if (!org) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: 'Organization not found' });
-    }
+    await auth.api.createInvitation({
+      body: {
+        email,
+        role,
+        organizationId,
+        resend: true,
+      },
+      headers: await headers(),
+    });
 
-    // Verify user is admin
-    const isAdmin = await isUserOrgAdmin(ctx.userId, org.id);
-    if (!isAdmin) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: 'Only organization admins can invite members',
-      });
-    }
-
-    try {
-      await auth.api.createInvitation({
-        body: {
-          email: input.email,
-          role: input.role,
-          organizationId: org.id,
-          resend: true,
-        },
-        headers: await headers(),
-      });
-      return {
-        success: true,
-        message: 'Member invited successfully',
-      };
-    } catch (error) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to invite member',
-      });
-    }
+    return {
+      success: true,
+      message: 'Member invited successfully',
+    };
   }),
 
   /**
    * Remove a member from the organization
    */
   removeMember: protectedProcedure.input(removeMemberSchema).mutation(async ({ input }) => {
+    const { memberIdOrEmail, organizationId } = input;
+
     await auth.api.removeMember({
       body: {
-        memberIdOrEmail: input.memberId,
-        organizationId: input.organizationId,
+        memberIdOrEmail,
+        organizationId: organizationId,
       },
       headers: await headers(),
     });
@@ -305,11 +287,13 @@ export const organizationsRouter = router({
    * Update a member's role
    */
   updateMemberRole: protectedProcedure.input(updateMemberRoleSchema).mutation(async ({ input }) => {
+    const { role, memberId, organizationId } = input;
+
     await auth.api.updateMemberRole({
       body: {
-        role: input.role,
-        memberId: input.memberId,
-        organizationId: input.organizationId,
+        role,
+        memberId,
+        organizationId,
       },
       headers: await headers(),
     });
@@ -319,4 +303,20 @@ export const organizationsRouter = router({
       message: 'Member role updated successfully',
     };
   }),
+
+  leaveOrganization: protectedProcedure
+    .input(leaveOrganizationSchema)
+    .mutation(async ({ input }) => {
+      await auth.api.leaveOrganization({
+        body: {
+          organizationId: input.organizationId,
+        },
+        headers: await headers(),
+      });
+
+      return {
+        success: true,
+        message: 'You have left the organization',
+      };
+    }),
 });

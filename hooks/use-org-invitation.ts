@@ -35,7 +35,6 @@ export function useOrgInvitation(organizationId: string | undefined) {
 
   return {
     inviteMember: inviteMember.mutate,
-    inviteMemberAsync: inviteMember.mutateAsync,
     isInviting: inviteMember.isPending,
   };
 }

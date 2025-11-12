@@ -1,5 +1,5 @@
 CREATE TYPE "public"."order_status" AS ENUM('pending', 'processing', 'shipped', 'delivered', 'cancelled');--> statement-breakpoint
-CREATE TYPE "public"."org_role" AS ENUM('admin', 'member');--> statement-breakpoint
+CREATE TYPE "public"."org_role" AS ENUM('owner', 'admin', 'member');--> statement-breakpoint
 CREATE TYPE "public"."task_priority" AS ENUM('low', 'medium', 'high');--> statement-breakpoint
 CREATE TABLE "accounts" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE "invitations" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"organization_id" uuid NOT NULL,
 	"email" text NOT NULL,
-	"role" text,
+	"role" "org_role" NOT NULL,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"expires_at" timestamp NOT NULL,
 	"inviter_id" uuid NOT NULL
@@ -54,7 +54,7 @@ CREATE TABLE "org_memberships" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"organization_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
-	"role" text DEFAULT 'member' NOT NULL,
+	"role" "org_role" NOT NULL,
 	"created_at" timestamp NOT NULL
 );
 --> statement-breakpoint

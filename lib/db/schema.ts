@@ -3,7 +3,7 @@ import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 
 // Enums
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);
-export const orgRoleEnum = pgEnum('org_role', ['admin', 'member']);
+export const orgRoleEnum = pgEnum('org_role', ['owner', 'admin', 'member']);
 export const orderStatusEnum = pgEnum('order_status', [
   'pending',
   'processing',
@@ -99,7 +99,7 @@ export const orgMemberships = pgTable('org_memberships', {
   userId: uuid('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  role: text('role').default('member').notNull(),
+  role: orgRoleEnum('role').notNull(),
   createdAt: timestamp('created_at').notNull(),
 });
 
@@ -109,7 +109,7 @@ export const invitations = pgTable('invitations', {
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' }),
   email: text('email').notNull(),
-  role: text('role'),
+  role: orgRoleEnum('role').notNull(),
   status: text('status').default('pending').notNull(),
   expiresAt: timestamp('expires_at').notNull(),
   inviterId: uuid('inviter_id')
