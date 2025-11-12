@@ -80,6 +80,27 @@ bun run knip      # Must pass with 0 errors
 
 These checks run in pre-commit hooks and CI/CD. Fix all issues before marking work complete.
 
+#### **Knip Guidelines - MANDATORY**
+
+When fixing Knip errors:
+- ✅ **ONLY fix unused exports and imports** - Remove or mark as used
+- ✅ **Fix unused internal code** - Remove dead functions, variables, types
+- ✅ **Fix duplicate exports** - Consolidate or remove duplicates
+- ❌ **NEVER modify package.json** - Ignore dependency-related warnings
+- ❌ **NEVER add or remove packages** - Only fix code-level issues
+- ❌ **NEVER update dependencies** - Leave package versions unchanged
+
+```bash
+# ✅ CORRECT - Fix unused exports
+export const usedFunction = () => {}; // Keep
+// Remove: export const unusedFunction = () => {}; // Delete this
+
+# ❌ WRONG - Don't touch dependencies
+// Don't remove packages from package.json based on Knip warnings
+// Don't update package versions
+// Ignore "unlisted dependencies" warnings
+```
+
 ### Database & Drizzle ORM Best Practices
 
 - **Schema Management**: Always use Drizzle schema definitions in `./lib/db/schema.ts`
@@ -169,6 +190,95 @@ const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
   - Example: `app/(logged-in)/tasks/components/task-item.tsx`
   - Only use `./components/` for truly global, reusable components shared across multiple modules
   - This improves code organization, discoverability, and maintains clear feature boundaries
+
+#### **UI Consistency Guidelines - MANDATORY**
+
+**Border Radius:**
+- ALWAYS use Shadcn UI default border radius values
+- NEVER override border radius with custom values
+- Use Tailwind's standard classes (`rounded`, `rounded-md`, `rounded-lg`) only when needed
+- Default Shadcn components already have proper border radius - don't add extra classes
+
+```typescript
+// ✅ CORRECT - Use Shadcn defaults
+<Card>
+  <CardHeader>...</CardHeader>
+</Card>
+
+// ❌ WRONG - Don't override border radius
+<Card className="rounded-xl">
+  <CardHeader className="rounded-t-xl">...</CardHeader>
+</Card>
+```
+
+**Empty States:**
+- NEVER use icons in empty states
+- Keep empty state messages simple and text-only
+- Use clear, actionable messaging
+
+```typescript
+// ✅ CORRECT - No icon in empty state
+<div className="flex flex-col items-center justify-center py-12 text-center">
+  <h3 className="font-semibold text-lg mb-1">No tasks found</h3>
+  <p className="text-sm text-muted-foreground">
+    Create your first task to get started
+  </p>
+</div>
+
+// ❌ WRONG - Don't add icons to empty states
+<div className="flex flex-col items-center justify-center py-12 text-center">
+  <Inbox className="h-16 w-16 mb-4 text-muted-foreground" />
+  <h3 className="font-semibold text-lg mb-1">No tasks found</h3>
+  <p className="text-sm text-muted-foreground">
+    Create your first task to get started
+  </p>
+</div>
+```
+
+**Confirmation Dialog Icons:**
+- Use standardized icons for dialog types:
+  - Destructive actions → `AlertTriangle` (h-5 w-5)
+  - Delete actions → `Trash` (h-5 w-5)
+  - Info dialogs → `Info` or `AlertCircle` (h-5 w-5)
+  - Success confirmations → `CheckCircle2` (h-5 w-5)
+- Always use consistent sizing (h-5 w-5 for dialog icons)
+
+```typescript
+// ✅ CORRECT - Standardized destructive dialog icon
+<AlertDialogHeader>
+  <div className="flex items-center gap-2">
+    <AlertTriangle className="h-5 w-5 text-destructive" />
+    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+  </div>
+  <AlertDialogDescription>
+    This action cannot be undone.
+  </AlertDialogDescription>
+</AlertDialogHeader>
+```
+
+**UI Component Separators:**
+- NEVER add separators unless explicitly requested by the user
+- Keep components minimal by default
+- Don't add decorative elements that weren't asked for
+
+```typescript
+// ✅ CORRECT - No separator unless needed
+<DropdownMenu>
+  <DropdownMenuContent>
+    <DropdownMenuItem>Edit</DropdownMenuItem>
+    <DropdownMenuItem>Delete</DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
+
+// ❌ WRONG - Don't add separators by default
+<DropdownMenu>
+  <DropdownMenuContent>
+    <DropdownMenuItem>Edit</DropdownMenuItem>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem>Delete</DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
+```
 
 ## Navigation: Links vs Buttons - MANDATORY
 
@@ -2302,11 +2412,6 @@ import { tasks } from '@/lib/db/schema'; // OK in database queries
 - **Monitoring**: Sentry for error tracking and performance
 - **Cron Jobs**: Vercel Cron for subscription synchronization
 
-### Color Rules
-
-- Never use new colors, always use the ones defined in `./app/globals.css` file (following shadcn/ui theme)
-- Use CSS variables for consistent theming across light/dark modes
-
 ### SEO Management - MANDATORY
 
 **When adding new public pages, ALWAYS update:**
@@ -2328,13 +2433,49 @@ For detailed SEO guidelines and examples, use the `seo` rule only when needed.
 - Use Lucide React for icons (from lucide-react package). Do NOT use other UI libraries unless requested
 - Use stock photos from picsum.photos where appropriate, only valid URLs you know exist
 - Configure next.config.ts image remotePatterns to enable stock photos from picsum.photos
-- NEVER USE HARDCODED COLORS. Make sure to use the color tokens
 - Make sure to implement good responsive design
 - Avoid code duplication. Keep the codebase very clean and organized. Avoid having big files
 - Make sure that the code you write is consistent with the rest of the app in terms of UI/UX, code style, naming conventions, and formatting
 - Always run database migrations when schema changes are made
 - Test authentication flows and subscription management thoroughly
 - Implement proper error handling for all external service integrations
+
+#### **Color Usage - MANDATORY**
+
+**NEVER use hardcoded colors. ALWAYS use CSS variables from the design system.**
+
+- ✅ **Use Shadcn color tokens**: `text-primary`, `bg-secondary`, `border-input`, etc.
+- ✅ **Use semantic color classes**: `text-destructive`, `text-muted-foreground`, `bg-accent`
+- ✅ **Support dark mode**: CSS variables automatically adapt to theme
+- ❌ **NEVER use hex colors**: No `#ffffff`, `#000000`, or any hex values
+- ❌ **NEVER use rgb/rgba**: No `rgb(255, 255, 255)` or `rgba(0, 0, 0, 0.5)`
+- ❌ **NEVER use Tailwind color scales**: No `bg-blue-500`, `text-red-600`, `border-gray-200`
+
+```typescript
+// ✅ CORRECT - Use CSS variables and semantic colors
+<div className="bg-card text-card-foreground border-border">
+  <p className="text-muted-foreground">Description</p>
+  <Button variant="destructive">Delete</Button>
+</div>
+
+// ❌ WRONG - Hardcoded colors
+<div className="bg-white text-black border-gray-200">
+  <p className="text-gray-500">Description</p>
+  <Button className="bg-red-500">Delete</Button>
+</div>
+
+// ❌ WRONG - Tailwind color scales
+<div className="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50">
+  <p className="text-slate-600 dark:text-slate-400">Description</p>
+</div>
+```
+
+**Available Shadcn Color Tokens:**
+- **Background**: `bg-background`, `bg-foreground`, `bg-card`, `bg-popover`, `bg-primary`, `bg-secondary`, `bg-muted`, `bg-accent`, `bg-destructive`
+- **Text**: `text-foreground`, `text-primary`, `text-secondary`, `text-muted-foreground`, `text-accent-foreground`, `text-destructive`, `text-destructive-foreground`
+- **Border**: `border-border`, `border-input`, `border-ring`, `border-primary`, `border-destructive`
+
+All color tokens are defined in `./app/globals.css` and support both light and dark themes automatically.
 
 ### Documentation Guidelines - MANDATORY
 
