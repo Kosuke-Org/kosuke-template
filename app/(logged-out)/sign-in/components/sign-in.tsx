@@ -8,10 +8,18 @@ import { ChevronRight, LoaderCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthActions } from '@/hooks/use-auth';
+import { useSearchParams } from 'next/navigation';
 
 export const SignIn = () => {
   const [email, setEmail] = useState('');
   const { signIn, isSigningIn, signInError } = useAuthActions();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams?.get('redirect');
+
+  const signUpLink =
+    redirectUrl && redirectUrl.startsWith('/api/accept-invitation/')
+      ? `/sign-up?redirect=${redirectUrl}`
+      : '/sign-up';
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -58,7 +66,7 @@ export const SignIn = () => {
             <FieldDescription className="text-center text-xs pt-6">
               Don&apos;t have an account?{' '}
               <Link
-                href="/sign-up"
+                href={signUpLink}
                 className="font-bold !underline-offset-2 !no-underline hover:!underline focus:!underline"
               >
                 Sign up

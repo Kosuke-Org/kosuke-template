@@ -267,7 +267,7 @@ export function createQueryWrapper() {
 }
 
 // Mock QueryClient for testing hooks that use useQueryClient
-export function createMockQueryClient() {
+function _createMockQueryClient() {
   return {
     defaultOptions: {
       queries: {

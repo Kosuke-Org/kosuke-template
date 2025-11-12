@@ -8,7 +8,7 @@
 'use client';
 
 import { signOut, useSession, emailOtp, signIn } from '@/lib/auth/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/trpc/client';
@@ -63,10 +63,10 @@ export function useAuth() {
  */
 export function useAuthActions() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { refetch, isRefetching } = useSession();
 
   const clearSignInAttemptMutation = trpc.auth.clearSignInAttempt.useMutation();
 
@@ -89,9 +89,13 @@ export function useAuthActions() {
         }
       }
     },
-    onSuccess: () => {
-      clearSignInAttemptMutation.mutate();
-      queryClient.invalidateQueries();
+    onSuccess: async () => {
+      // ensure session is updated in cookie cache
+      setTimeout(async () => {
+        await refetch({ query: { disableCookieCache: true } });
+      }, 500);
+
+      await clearSignInAttemptMutation.mutate();
 
       if (redirectUrl) {
         router.push(redirectUrl);
@@ -183,7 +187,8 @@ export function useAuthActions() {
     sendOTP: handleSendOTP,
     isSendingOTP: signInMutation.isPending || signUpMutation.isPending,
     verifyOTP: verifyOTPMutation.mutate,
-    isVerifyingOTP: verifyOTPMutation.isPending,
+    isVerifyingOTP:
+      verifyOTPMutation.isPending || clearSignInAttemptMutation.isPending || isRefetching,
     verifyOTPError: verifyOTPMutation.error,
 
     // Clear sign in attempt cookie

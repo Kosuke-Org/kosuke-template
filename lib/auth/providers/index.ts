@@ -11,7 +11,7 @@ import { emailOTP, organization } from 'better-auth/plugins';
 import { db } from '@/lib/db/drizzle';
 import * as schema from '@/lib/db/schema';
 import { desc, eq } from 'drizzle-orm';
-import { organizations, orgMemberships } from '@/lib/db/schema';
+import { organizations, orgMemberships, users } from '@/lib/db/schema';
 import { sendOTPEmail } from '@/lib/email/otp';
 import { isTestEmail } from '../utils';
 import { TEST_OTP } from '../constants';
@@ -129,7 +129,16 @@ export const auth = betterAuth({
   plugins: [
     organization({
       async sendInvitationEmail(data) {
-        const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/accept-invitation/${data.id}`;
+        const [user] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.email, data.invitation.email))
+          .limit(1);
+
+        const acceptInvitationUrl = `/api/accept-invitation/${data.id}`;
+        const inviteLink = user
+          ? `${process.env.NEXT_PUBLIC_APP_URL}${acceptInvitationUrl}`
+          : `${process.env.NEXT_PUBLIC_APP_URL}/sign-up?redirect=${encodeURIComponent(acceptInvitationUrl)}`;
         await sendInvitationEmail({ ...data, inviteLink });
       },
     }),

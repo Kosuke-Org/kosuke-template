@@ -36,7 +36,7 @@ export async function GET(
       await auth.api.setActiveOrganization({
         body: {
           organizationId,
-          ...(org?.slug ? { organizationSlug: org.slug } : {}),
+          organizationSlug: org?.slug,
         },
         headers: await headers(),
       });
