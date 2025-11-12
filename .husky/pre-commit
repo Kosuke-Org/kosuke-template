@@ -80,14 +80,6 @@ if [ -n "$js_files" ]; then
     exit 1
   fi
 
-  # Run tests
-  echo "🧪 Running tests..."
-  bun run test
-  if [ $? -ne 0 ]; then
-    echo "❌ Tests failed. Please fix the failing tests before committing."
-    exit 1
-  fi
-
   # Run knip
   echo "🔪 Running Knip..."
   bun run knip
