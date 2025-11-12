@@ -83,6 +83,7 @@ These checks run in pre-commit hooks and CI/CD. Fix all issues before marking wo
 #### **Knip Guidelines - MANDATORY**
 
 When fixing Knip errors:
+
 - ✅ **ONLY fix unused exports and imports** - Remove or mark as used
 - ✅ **Fix unused internal code** - Remove dead functions, variables, types
 - ✅ **Fix duplicate exports** - Consolidate or remove duplicates
@@ -194,6 +195,7 @@ const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
 #### **UI Consistency Guidelines - MANDATORY**
 
 **Border Radius:**
+
 - ALWAYS use Shadcn UI default border radius values
 - NEVER override border radius with custom values
 - Use Tailwind's standard classes (`rounded`, `rounded-md`, `rounded-lg`) only when needed
@@ -212,6 +214,7 @@ const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
 ```
 
 **Empty States:**
+
 - NEVER use icons in empty states
 - Keep empty state messages simple and text-only
 - Use clear, actionable messaging
@@ -236,6 +239,7 @@ const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
 ```
 
 **Confirmation Dialog Icons:**
+
 - Use standardized icons for dialog types:
   - Destructive actions → `AlertTriangle` (h-5 w-5)
   - Delete actions → `Trash` (h-5 w-5)
@@ -257,6 +261,7 @@ const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
 ```
 
 **UI Component Separators:**
+
 - NEVER add separators unless explicitly requested by the user
 - Keep components minimal by default
 - Don't add decorative elements that weren't asked for
@@ -2471,6 +2476,7 @@ For detailed SEO guidelines and examples, use the `seo` rule only when needed.
 ```
 
 **Available Shadcn Color Tokens:**
+
 - **Background**: `bg-background`, `bg-foreground`, `bg-card`, `bg-popover`, `bg-primary`, `bg-secondary`, `bg-muted`, `bg-accent`, `bg-destructive`
 - **Text**: `text-foreground`, `text-primary`, `text-secondary`, `text-muted-foreground`, `text-accent-foreground`, `text-destructive`, `text-destructive-foreground`
 - **Border**: `border-border`, `border-input`, `border-ring`, `border-primary`, `border-destructive`
