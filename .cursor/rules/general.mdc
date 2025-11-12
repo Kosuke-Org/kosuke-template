@@ -50,9 +50,7 @@ bun run db:seed         # Seed database with initial data
 
 # Development
 bun run dev             # Start development server with hot reload
-bun run workers:dev     # Start BullMQ workers with hot reload
-bun run dev:all         # Start both web server and workers together
-docker compose up -d    # Start PostgreSQL + Redis locally
+docker compose up -d    # Start PostgreSQL database locally
 
 # Testing
 bun run test                # Run Vitest test suite
@@ -86,6 +84,27 @@ bun run knip      # Must pass with 0 errors
 ```
 
 These checks run in pre-commit hooks and CI/CD. Fix all issues before marking work complete.
+
+#### **Knip Guidelines - MANDATORY**
+
+When fixing Knip errors:
+- ✅ **ONLY fix unused exports and imports** - Remove or mark as used
+- ✅ **Fix unused internal code** - Remove dead functions, variables, types
+- ✅ **Fix duplicate exports** - Consolidate or remove duplicates
+- ❌ **NEVER modify package.json** - Ignore dependency-related warnings
+- ❌ **NEVER add or remove packages** - Only fix code-level issues
+- ❌ **NEVER update dependencies** - Leave package versions unchanged
+
+```bash
+# ✅ CORRECT - Fix unused exports
+export const usedFunction = () => {}; // Keep
+// Remove: export const unusedFunction = () => {}; // Delete this
+
+# ❌ WRONG - Don't touch dependencies
+// Don't remove packages from package.json based on Knip warnings
+// Don't update package versions
+// Ignore "unlisted dependencies" warnings
+```
 
 ### Database & Drizzle ORM Best Practices
 
@@ -149,7 +168,7 @@ const { user, isLoaded } = useUser();
 - **Checkout**: Use Stripe Checkout for subscription management
 - **Tiers**: 'free', 'pro', 'business' - stored in database
 - **Webhooks**: Handle subscription changes via `/api/billing/webhook`
-- **Background Jobs**: Automated subscription sync via BullMQ (see Background Jobs section)
+- **Cron Sync**: Automated subscription sync every 6 hours
 - **Customer Portal**: Stripe manages payment methods and billing history
 
 ```typescript
@@ -158,319 +177,6 @@ import { getUserSubscription } from '@/lib/billing';
 const subscription = await getUserSubscription(userId);
 const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
 ```
-
-### Background Jobs & Task Queue (BullMQ + Redis)
-
-**Use BullMQ for ALL scheduled jobs, recurring tasks, and background processing. NEVER use Vercel Cron or similar alternatives.**
-
-#### **📋 When to Use BullMQ**
-
-- **Scheduled Jobs**: Recurring tasks (daily, hourly, etc.)
-- **Background Processing**: Long-running operations that shouldn't block user requests
-- **Asynchronous Tasks**: Email sending, report generation, data synchronization
-- **Retry Logic**: Operations that need automatic retry on failure
-- **Job Monitoring**: Tasks that require visibility into success/failure states
-
-#### **🏗️ Queue Infrastructure**
-
-```plaintext
-lib/queue/
-├── client.ts                 # Redis connection & queue/worker factory
-├── index.ts                  # Barrel exports
-├── init-workers.ts           # Worker initialization script
-├── queues/
-│   └── subscriptions.ts      # Queue definitions and job scheduling
-├── workers/
-│   └── subscriptions.ts      # Worker processors and event handlers
-└── jobs/
-    └── sync-subscriptions.ts # Job business logic
-```
-
-#### **✅ Creating a New Background Job**
-
-**1. Define Queue and Job Interface:**
-
-```typescript
-// lib/queue/queues/feature.ts
-import { createQueue } from '../client';
-
-export interface FeatureJobData {
-  userId?: string;
-  manual?: boolean;
-  // ... other job-specific data
-}
-
-export const FEATURE_QUEUE = 'feature-queue';
-export const featureQueue = createQueue<FeatureJobData>(FEATURE_QUEUE);
-
-// Add job to queue
-export async function addFeatureJob(data: FeatureJobData) {
-  return await featureQueue.add('feature-job', data, {
-    jobId: data.userId ? `feature-${data.userId}` : 'feature-all',
-    removeOnComplete: true,
-  });
-}
-
-// Schedule recurring job (optional)
-export async function scheduleFeatureJob() {
-  await featureQueue.add('feature-scheduled', {}, {
-    repeat: {
-      pattern: '0 0 * * *', // Daily at midnight (cron format)
-    },
-    jobId: 'feature-scheduled',
-  });
-}
-```
-
-**2. Implement Job Processor:**
-
-```typescript
-// lib/queue/jobs/feature-job.ts
-import type { FeatureJobData } from '../queues/feature';
-
-export async function processFeatureJob(data: FeatureJobData) {
-  console.log('🕐 Processing feature job...', data);
-
-  try {
-    // Implement job logic here
-    const result = await doSomeWork(data);
-
-    console.log('✅ Feature job completed successfully');
-    return { success: true, ...result };
-  } catch (error) {
-    console.error('💥 Feature job failed:', error);
-    throw error; // Re-throw to trigger retry
-  }
-}
-```
-
-**3. Create Worker:**
-
-```typescript
-// lib/queue/workers/feature.ts
-import { createWorker, createQueueEvents } from '../client';
-import { FEATURE_QUEUE } from '../queues/feature';
-import { processFeatureJob } from '../jobs/feature-job';
-import type { FeatureJobData } from '../queues/feature';
-import * as Sentry from '@sentry/nextjs';
-
-export const featureWorker = createWorker<FeatureJobData>(
-  FEATURE_QUEUE,
-  async (job) => {
-    console.log(`🔄 Processing job: ${job.id}`);
-
-    try {
-      const result = await processFeatureJob(job.data);
-      console.log(`✅ Job ${job.id} completed`);
-      return result;
-    } catch (error) {
-      console.error(`❌ Job ${job.id} failed:`, error);
-      
-      // Report to Sentry
-      Sentry.captureException(error, {
-        tags: { jobId: job.id, jobType: 'feature-job' },
-        extra: { jobData: job.data },
-      });
-
-      throw error;
-    }
-  }
-);
-
-// Queue event listeners
-const queueEvents = createQueueEvents(FEATURE_QUEUE);
-
-queueEvents.on('completed', ({ jobId, returnvalue }) => {
-  console.log(`✅ Job ${jobId} completed:`, returnvalue);
-});
-
-queueEvents.on('failed', ({ jobId, failedReason }) => {
-  console.error(`❌ Job ${jobId} failed:`, failedReason);
-});
-
-// Worker error handlers
-featureWorker.on('error', (error) => {
-  console.error('🚨 Worker error:', error);
-  Sentry.captureException(error, {
-    tags: { component: 'feature-worker' },
-  });
-});
-
-console.log('🚀 Feature worker initialized');
-```
-
-**4. Register Worker in init-workers.ts:**
-
-```typescript
-// lib/queue/init-workers.ts
-import { subscriptionWorker } from './workers/subscriptions';
-import { featureWorker } from './workers/feature'; // ADD THIS
-import { scheduleSubscriptionSync } from './queues/subscriptions';
-import { scheduleFeatureJob } from './queues/feature'; // ADD THIS
-import { gracefulShutdown } from './client';
-
-// Schedule recurring jobs
-scheduleSubscriptionSync();
-scheduleFeatureJob(); // ADD THIS
-
-// List of all workers
-const workers = [subscriptionWorker, featureWorker]; // ADD featureWorker
-
-// ... rest of graceful shutdown logic
-```
-
-**5. Export from index.ts:**
-
-```typescript
-// lib/queue/index.ts
-export * from './client';
-export * from './queues/subscriptions';
-export * from './queues/feature'; // ADD THIS
-export * from './workers/subscriptions';
-export * from './workers/feature'; // ADD THIS
-```
-
-#### **🔧 Job Configuration Best Practices**
-
-**Retry Strategy:**
-
-```typescript
-// Default retry: 3 attempts with exponential backoff
-export const featureQueue = createQueue<FeatureJobData>(FEATURE_QUEUE);
-
-// Custom retry for critical jobs
-await featureQueue.add('critical-job', data, {
-  attempts: 5,
-  backoff: {
-    type: 'exponential',
-    delay: 2000, // Start with 2 seconds
-  },
-});
-```
-
-**Job Deduplication:**
-
-```typescript
-// Prevent duplicate jobs with same ID
-await featureQueue.add('unique-job', data, {
-  jobId: `user-${userId}-sync`,
-  removeOnComplete: true,
-  removeOnFail: false, // Keep failed jobs for debugging
-});
-```
-
-**Scheduled Jobs:**
-
-```typescript
-// Cron patterns
-'0 0 * * *'      // Daily at midnight
-'0 */6 * * *'    // Every 6 hours
-'*/15 * * * *'   // Every 15 minutes
-'0 0 * * 0'      // Weekly on Sunday at midnight
-'0 0 1 * *'      // Monthly on the 1st at midnight
-```
-
-#### **📊 Job Monitoring**
-
-- **Console Logs**: Workers log job execution, successes, and failures
-- **Sentry Integration**: All job errors automatically reported to Sentry with full context
-- **Redis CLI**: Direct queue inspection for advanced debugging
-  ```bash
-  docker exec -it kosuke_template_redis redis-cli
-  KEYS *  # View all keys
-  HGETALL bull:subscription-sync:meta  # Check queue status
-  ```
-
-#### **🚀 Development Workflow**
-
-```bash
-# Start Redis locally
-docker compose up -d redis
-
-# Run workers in development (with hot reload)
-bun run workers:dev
-
-# Run app + workers together
-bun run dev:all
-
-# Production worker deployment
-bun run workers:start
-```
-
-#### **⚠️ Common Pitfalls**
-
-**❌ WRONG - Using Vercel Cron:**
-
-```typescript
-// ❌ NO! Don't use Vercel Cron for scheduled jobs
-// vercel.json
-{
-  "crons": [{
-    "path": "/api/cron/sync",
-    "schedule": "0 0 * * *"
-  }]
-}
-```
-
-**✅ CORRECT - Using BullMQ:**
-
-```typescript
-// ✅ YES! Use BullMQ for all scheduled jobs
-await featureQueue.add('scheduled-sync', {}, {
-  repeat: { pattern: '0 0 * * *' }
-});
-```
-
-**❌ WRONG - Blocking API routes:**
-
-```typescript
-// ❌ NO! Don't block API routes with long operations
-export async function POST(req: Request) {
-  await processLargeFile(); // This blocks the request
-  return Response.json({ success: true });
-}
-```
-
-**✅ CORRECT - Queue background jobs:**
-
-```typescript
-// ✅ YES! Queue long operations for background processing
-export async function POST(req: Request) {
-  await addFeatureJob({ userId: 'user-123' });
-  return Response.json({ success: true, message: 'Job queued' });
-}
-```
-
-#### **🔐 Security & Environment**
-
-**Required Environment Variables:**
-
-```env
-# Redis connection (local development)
-REDIS_URL=redis://localhost:6379
-
-# Production (Upstash, Redis Cloud, Render Redis)
-REDIS_URL=redis://user:password@host:port
-```
-
-**Worker Deployment:**
-
-- **Development**: Runs locally via `bun run workers:dev`
-- **Production**: Deploy as separate background worker service
-- Workers need same environment variables as web service (database, Stripe, etc.)
-- Use Render Background Workers or similar for production deployment
-
-#### **📝 Migration from Vercel Cron**
-
-If migrating from Vercel Cron:
-
-1. Create BullMQ queue and job processor
-2. Move cron logic to job processor
-3. Schedule recurring job in `init-workers.ts`
-4. Remove cron configuration from `vercel.json`
-5. Delete old `/api/cron/*` routes
-6. Update environment variables (add `REDIS_URL`)
-7. Deploy workers to production
 
 ### Component Architecture & UI Guidelines
 
@@ -483,32 +189,121 @@ If migrating from Vercel Cron:
 - **Layout**: Responsive design with mobile-first approach
 - **Loading States**: Use Shadcn skeleton components for loading
 - **Error Handling**: Implement proper error boundaries
+- **Navigation**: Use Next.js `Link` component for navigation, NOT buttons with onClick
 - **Component Colocation**: Module-specific components should be colocated within their feature directory
   - Place components inside `app/(logged-in)/[module]/components/` for feature modules
   - Example: `app/(logged-in)/tasks/components/task-item.tsx`
   - Only use `./components/` for truly global, reusable components shared across multiple modules
   - This improves code organization, discoverability, and maintains clear feature boundaries
-- **Navigation**: Use Next.js `Link` component for navigation, NOT buttons with onClick
 
-### Navigation: Links vs Buttons - MANDATORY
+#### **UI Consistency Guidelines - MANDATORY**
+
+**Border Radius:**
+- ALWAYS use Shadcn UI default border radius values
+- NEVER override border radius with custom values
+- Use Tailwind's standard classes (`rounded`, `rounded-md`, `rounded-lg`) only when needed
+- Default Shadcn components already have proper border radius - don't add extra classes
+
+```typescript
+// ✅ CORRECT - Use Shadcn defaults
+<Card>
+  <CardHeader>...</CardHeader>
+</Card>
+
+// ❌ WRONG - Don't override border radius
+<Card className="rounded-xl">
+  <CardHeader className="rounded-t-xl">...</CardHeader>
+</Card>
+```
+
+**Empty States:**
+- NEVER use icons in empty states
+- Keep empty state messages simple and text-only
+- Use clear, actionable messaging
+
+```typescript
+// ✅ CORRECT - No icon in empty state
+<div className="flex flex-col items-center justify-center py-12 text-center">
+  <h3 className="font-semibold text-lg mb-1">No tasks found</h3>
+  <p className="text-sm text-muted-foreground">
+    Create your first task to get started
+  </p>
+</div>
+
+// ❌ WRONG - Don't add icons to empty states
+<div className="flex flex-col items-center justify-center py-12 text-center">
+  <Inbox className="h-16 w-16 mb-4 text-muted-foreground" />
+  <h3 className="font-semibold text-lg mb-1">No tasks found</h3>
+  <p className="text-sm text-muted-foreground">
+    Create your first task to get started
+  </p>
+</div>
+```
+
+**Confirmation Dialog Icons:**
+- Use standardized icons for dialog types:
+  - Destructive actions → `AlertTriangle` (h-5 w-5)
+  - Delete actions → `Trash` (h-5 w-5)
+  - Info dialogs → `Info` or `AlertCircle` (h-5 w-5)
+  - Success confirmations → `CheckCircle2` (h-5 w-5)
+- Always use consistent sizing (h-5 w-5 for dialog icons)
+
+```typescript
+// ✅ CORRECT - Standardized destructive dialog icon
+<AlertDialogHeader>
+  <div className="flex items-center gap-2">
+    <AlertTriangle className="h-5 w-5 text-destructive" />
+    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+  </div>
+  <AlertDialogDescription>
+    This action cannot be undone.
+  </AlertDialogDescription>
+</AlertDialogHeader>
+```
+
+**UI Component Separators:**
+- NEVER add separators unless explicitly requested by the user
+- Keep components minimal by default
+- Don't add decorative elements that weren't asked for
+
+```typescript
+// ✅ CORRECT - No separator unless needed
+<DropdownMenu>
+  <DropdownMenuContent>
+    <DropdownMenuItem>Edit</DropdownMenuItem>
+    <DropdownMenuItem>Delete</DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
+
+// ❌ WRONG - Don't add separators by default
+<DropdownMenu>
+  <DropdownMenuContent>
+    <DropdownMenuItem>Edit</DropdownMenuItem>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem>Delete</DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
+```
+
+## Navigation: Links vs Buttons - MANDATORY
 
 **Use semantic HTML for navigation. If it navigates, it should be a link, not a button.**
 
-#### **✅ WHEN TO USE Links (Next.js Link component)**
+### ✅ WHEN TO USE Links (Next.js Link component)
 
 - **Page navigation** - Navigating to internal routes
 - **External URLs** - Links to external websites
 - **Anchor navigation** - Jump to sections on the page
 - **Any action that changes the URL** - Even if styled as a button
 
-#### **✅ WHEN TO USE Buttons**
+### ✅ WHEN TO USE Buttons
 
 - **Form submissions** - Submitting data to server
 - **Data mutations** - Creating, updating, deleting data
 - **Modal/dialog triggers** - Opening/closing UI elements (no URL change)
 - **Client-side actions** - Sorting, filtering, toggling without navigation
 
-#### **🔧 Implementation Patterns**
+### 🔧 Implementation Patterns
 
 **✅ CORRECT - Link styled as button for navigation:**
 
@@ -563,7 +358,7 @@ import { Github } from 'lucide-react';
 </Button>
 ```
 
-#### **🏗️ Best Practices**
+### 🏗️ Best Practices
 
 **Accessibility Benefits:**
 
@@ -607,7 +402,7 @@ import { Github } from 'lucide-react';
 <Link href="/posts?sort=date" shallow>Sort by Date</Link>
 ```
 
-#### **Decision Tree**
+### Decision Tree
 
 **Does this element change the URL or navigate to a different page?**
 
@@ -2622,11 +2417,6 @@ import { tasks } from '@/lib/db/schema'; // OK in database queries
 - **Monitoring**: Sentry for error tracking and performance
 - **Cron Jobs**: Vercel Cron for subscription synchronization
 
-### Color Rules
-
-- Never use new colors, always use the ones defined in `./app/globals.css` file (following shadcn/ui theme)
-- Use CSS variables for consistent theming across light/dark modes
-
 ### SEO Management - MANDATORY
 
 **When adding new public pages, ALWAYS update:**
@@ -2648,13 +2438,49 @@ For detailed SEO guidelines and examples, use the `seo` rule only when needed.
 - Use Lucide React for icons (from lucide-react package). Do NOT use other UI libraries unless requested
 - Use stock photos from picsum.photos where appropriate, only valid URLs you know exist
 - Configure next.config.ts image remotePatterns to enable stock photos from picsum.photos
-- NEVER USE HARDCODED COLORS. Make sure to use the color tokens
 - Make sure to implement good responsive design
 - Avoid code duplication. Keep the codebase very clean and organized. Avoid having big files
 - Make sure that the code you write is consistent with the rest of the app in terms of UI/UX, code style, naming conventions, and formatting
 - Always run database migrations when schema changes are made
 - Test authentication flows and subscription management thoroughly
 - Implement proper error handling for all external service integrations
+
+#### **Color Usage - MANDATORY**
+
+**NEVER use hardcoded colors. ALWAYS use CSS variables from the design system.**
+
+- ✅ **Use Shadcn color tokens**: `text-primary`, `bg-secondary`, `border-input`, etc.
+- ✅ **Use semantic color classes**: `text-destructive`, `text-muted-foreground`, `bg-accent`
+- ✅ **Support dark mode**: CSS variables automatically adapt to theme
+- ❌ **NEVER use hex colors**: No `#ffffff`, `#000000`, or any hex values
+- ❌ **NEVER use rgb/rgba**: No `rgb(255, 255, 255)` or `rgba(0, 0, 0, 0.5)`
+- ❌ **NEVER use Tailwind color scales**: No `bg-blue-500`, `text-red-600`, `border-gray-200`
+
+```typescript
+// ✅ CORRECT - Use CSS variables and semantic colors
+<div className="bg-card text-card-foreground border-border">
+  <p className="text-muted-foreground">Description</p>
+  <Button variant="destructive">Delete</Button>
+</div>
+
+// ❌ WRONG - Hardcoded colors
+<div className="bg-white text-black border-gray-200">
+  <p className="text-gray-500">Description</p>
+  <Button className="bg-red-500">Delete</Button>
+</div>
+
+// ❌ WRONG - Tailwind color scales
+<div className="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-50">
+  <p className="text-slate-600 dark:text-slate-400">Description</p>
+</div>
+```
+
+**Available Shadcn Color Tokens:**
+- **Background**: `bg-background`, `bg-foreground`, `bg-card`, `bg-popover`, `bg-primary`, `bg-secondary`, `bg-muted`, `bg-accent`, `bg-destructive`
+- **Text**: `text-foreground`, `text-primary`, `text-secondary`, `text-muted-foreground`, `text-accent-foreground`, `text-destructive`, `text-destructive-foreground`
+- **Border**: `border-border`, `border-input`, `border-ring`, `border-primary`, `border-destructive`
+
+All color tokens are defined in `./app/globals.css` and support both light and dark themes automatically.
 
 ### Documentation Guidelines - MANDATORY
 
