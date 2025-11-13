@@ -8,13 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useUser } from '@clerk/nextjs';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { useProfileUpload } from '@/hooks/use-profile-upload';
 import { ButtonSkeleton } from '@/components/skeletons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 // Page-specific skeleton for profile settings
 function ProfileSettingsSkeleton() {
@@ -58,8 +58,8 @@ function ProfileSettingsSkeleton() {
 }
 
 export default function ProfileSettings() {
-  const { user, isSignedIn } = useUser();
-  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
+  const { isSignedIn } = useAuth();
+  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar();
   const { handleImageUpload, isUploading } = useProfileUpload();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
@@ -73,8 +73,6 @@ export default function ProfileSettings() {
         title: 'Profile updated',
         description: 'Your display name has been updated successfully.',
       });
-      // Force Clerk to reload the user data
-      await user?.reload();
     },
     onError: (error) => {
       toast({
@@ -85,7 +83,7 @@ export default function ProfileSettings() {
     },
   });
 
-  if (!isSignedIn || !user) {
+  if (!isSignedIn) {
     return <ProfileSettingsSkeleton />;
   }
 

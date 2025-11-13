@@ -12,16 +12,16 @@ import Stripe from 'stripe';
 /**
  * Sync a single user's subscription from Stripe
  */
-export async function syncUserSubscriptionFromStripe(clerkUserId: string): Promise<{
+export async function syncUserSubscriptionFromStripe(userId: string): Promise<{
   success: boolean;
   message: string;
   subscription?: Stripe.Subscription;
 }> {
   try {
-    console.log('🔄 Syncing subscription from Stripe for user:', clerkUserId);
+    console.log('🔄 Syncing subscription from Stripe for user:', userId);
 
     const localSubscription = await db.query.userSubscriptions.findFirst({
-      where: eq(userSubscriptions.clerkUserId, clerkUserId),
+      where: eq(userSubscriptions.userId, userId),
       orderBy: [desc(userSubscriptions.createdAt)],
     });
 
@@ -125,18 +125,18 @@ export async function syncStaleSubscriptions(staleHours: number = 24): Promise<{
 
     for (const subscription of staleSubscriptions) {
       try {
-        const result = await syncUserSubscriptionFromStripe(subscription.clerkUserId);
+        const result = await syncUserSubscriptionFromStripe(subscription.userId);
         if (result.success) {
           syncedCount++;
         } else {
-          errors.push(`${subscription.clerkUserId}: ${result.message}`);
+          errors.push(`${subscription.userId}: ${result.message}`);
         }
 
         // Rate limiting
         await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (error) {
         errors.push(
-          `${subscription.clerkUserId}: ${error instanceof Error ? error.message : 'Unknown'}`
+          `${subscription.userId}: ${error instanceof Error ? error.message : 'Unknown'}`
         );
       }
     }

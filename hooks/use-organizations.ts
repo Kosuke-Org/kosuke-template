@@ -1,31 +1,30 @@
 /**
  * Hook for managing user's organizations
  * Fetches and manages the list of organizations the user belongs to
+ * Uses Better Auth's organization plugin
  */
 
 'use client';
 
-import { useAuth } from '@clerk/nextjs';
+import { useAuth } from '@/hooks/use-auth';
 import { trpc } from '@/lib/trpc/client';
-import type { AppRouter } from '@/lib/trpc/router';
-import type { inferRouterOutputs } from '@trpc/server';
-
-type RouterOutput = inferRouterOutputs<AppRouter>;
-type Organization = RouterOutput['organizations']['getUserOrganizations'][number];
 
 export function useOrganizations() {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, userId } = useAuth();
 
   const {
     data: organizations,
     isLoading,
     error,
     refetch,
-  } = trpc.organizations.getUserOrganizations.useQuery(undefined, {
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 1,
-    enabled: !!isSignedIn,
-  });
+  } = trpc.organizations.getUserOrganizations.useQuery(
+    { userId: userId! },
+    {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+      enabled: isSignedIn && !!userId,
+    }
+  );
 
   return {
     organizations: organizations ?? [],
@@ -34,5 +33,3 @@ export function useOrganizations() {
     refetch,
   };
 }
-
-export type { Organization };

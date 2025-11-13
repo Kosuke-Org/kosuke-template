@@ -2,29 +2,28 @@ import { vi } from 'vitest';
 import React, { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Stripe from 'stripe';
-import { ClerkUserType } from '@/lib/types/user';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-// Mock Clerk auth
-const mockClerkUserType = {
-  id: 'user_123',
-  emailAddresses: [{ emailAddress: 'test@example.com' }],
-  firstName: 'John',
-  lastName: 'Doe',
-  fullName: 'John Doe',
-  imageUrl: 'https://example.com/avatar.jpg',
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
+// Mock User authentication
+type MockUserType = {
+  id: string;
+  email: string;
+  emailVerified: boolean;
+  name: string;
+  image?: string | null | undefined;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
-// Export as mockClerkUser for consistency with tests
-export const mockClerkUser = mockClerkUserType;
-
-const mockClerkAuth = {
-  userId: 'user_123',
-  sessionId: 'session_123',
-  user: mockClerkUserType,
+const mockUser: MockUserType = {
+  id: 'user_123',
+  email: 'test@example.com',
+  emailVerified: true,
+  name: 'John Doe',
+  image: 'https://example.com/avatar.jpg',
+  createdAt: new Date(),
+  updatedAt: new Date(),
 };
 
 // Mock Stripe responses
@@ -34,7 +33,7 @@ const mockStripeCheckoutSession = {
   status: 'open',
   mode: 'subscription',
   customer: 'cus_123',
-  metadata: { clerkUserId: 'user_123', tier: 'pro' },
+  metadata: { userId: 'user_123', tier: 'pro' },
 };
 
 const mockStripeSubscription = {
@@ -47,7 +46,7 @@ const mockStripeSubscription = {
     data: [{ price: { id: 'price_123' } }],
   },
   cancel_at_period_end: false,
-  metadata: { clerkUserId: 'user_123', tier: 'pro' },
+  metadata: { userId: 'user_123', tier: 'pro' },
 };
 
 const mockStripeWebhookEvent = {
@@ -58,18 +57,30 @@ const mockStripeWebhookEvent = {
   },
 };
 
+export const mockedSession = {
+  session: {
+    id: 'session-1',
+    userId: 'user-1',
+    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+    token: 'test-token',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    activeOrganizationId: '',
+    activeOrganizationSlug: '',
+  },
+  user: {
+    id: 'user-1',
+    email: 'test@example.com',
+    emailVerified: true,
+    name: 'Test User',
+    image: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+};
+
 // Setup mocks
 export function setupMocks() {
-  // Mock Clerk
-  vi.mock('@clerk/nextjs/server', () => ({
-    auth: vi.fn(() => Promise.resolve(mockClerkAuth)),
-    clerkClient: {
-      users: {
-        getUser: vi.fn(() => Promise.resolve(mockClerkUserType)),
-      },
-    },
-  }));
-
   // Mock Stripe client
   vi.mock('@/lib/billing/client', () => ({
     stripe: {
@@ -169,7 +180,7 @@ export function createStripeSubscriptionEvent(
           ],
         } as any,
         cancel_at_period_end: false,
-        metadata: { clerkUserId: 'user_123', tier: 'pro' },
+        metadata: { userId: 'user_123', tier: 'pro' },
         ...subscription,
       } as Stripe.Subscription,
       previous_attributes: {},
@@ -223,7 +234,7 @@ export function createStripeSubscriptionScheduleEvent(
         id: `sub_sched_${Math.random().toString(36).substr(2, 9)}`,
         subscription: 'sub_123',
         metadata: {
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           targetTier: 'pro',
           currentSubscriptionId: 'sub_123',
         },
@@ -256,7 +267,7 @@ export function createQueryWrapper() {
 }
 
 // Mock QueryClient for testing hooks that use useQueryClient
-export function createMockQueryClient() {
+function _createMockQueryClient() {
   return {
     defaultOptions: {
       queries: {
@@ -288,18 +299,19 @@ export function createMockQueryClient() {
 // Helper to create tRPC test context matching createTRPCContext signature
 export function createMockTRPCContext(options?: {
   userId?: string | null;
-  orgId?: string | null;
-  orgRole?: string | null;
-  getUser?: () => Promise<ClerkUserType | null>;
+  activeOrganizationId?: string | null;
+  activeOrganizationSlug?: string | null;
+  getUser?: () => Promise<MockUserType | undefined>;
 }) {
   const userId = options?.userId ?? null;
 
   return {
     userId,
-    orgId: options?.orgId ?? null,
-    orgRole: options?.orgRole ?? null,
+    activeOrganizationId: options?.activeOrganizationId ?? null,
+    orgRole: null, // TODO: Implement org role
+    activeOrganizationSlug: options?.activeOrganizationSlug ?? null,
     async getUser() {
-      return userId ? (mockClerkUserType as ClerkUserType) : null;
+      return Promise.resolve(mockUser);
     },
     ...options,
   };

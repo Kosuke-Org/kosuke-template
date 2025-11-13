@@ -102,7 +102,7 @@ describe('Billing Operations', () => {
         activeSubscription: {
           id: '1',
           stripeSubscriptionId: 'sub_123',
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           tier: SubscriptionTier.PRO,
           status: SubscriptionStatus.ACTIVE,
           createdAt: now,
@@ -138,7 +138,7 @@ describe('Billing Operations', () => {
         activeSubscription: {
           id: '1',
           stripeSubscriptionId: 'sub_123',
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           tier: SubscriptionTier.PRO,
           status: SubscriptionStatus.ACTIVE,
           createdAt: now,
@@ -175,7 +175,7 @@ describe('Billing Operations', () => {
     it('should handle missing Stripe customer', async () => {
       vi.mocked(db.query.users.findFirst).mockResolvedValueOnce({
         id: '1',
-        clerkUserId: 'user_123',
+        userId: 'user_123',
         email: 'test@example.com',
         stripeCustomerId: null,
         createdAt: new Date(),
@@ -202,7 +202,7 @@ describe('Billing Operations', () => {
         activeSubscription: {
           id: '1',
           stripeSubscriptionId: 'sub_123',
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           tier: SubscriptionTier.PRO,
           status: SubscriptionStatus.ACTIVE,
           createdAt: now,

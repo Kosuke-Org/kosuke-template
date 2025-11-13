@@ -11,12 +11,6 @@ import { z } from 'zod';
  */
 export const createOrganizationSchema = z.object({
   name: z.string().min(1, 'Organization name is required').max(100, 'Name too long'),
-  slug: z
-    .string()
-    .min(1)
-    .max(50)
-    .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens')
-    .optional(),
 });
 
 /**
@@ -33,8 +27,8 @@ export const createOrgFormSchema = z.object({
 export const updateOrganizationSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
   name: z.string().min(1).max(100).optional(),
-  logoUrl: z.url('Invalid URL').nullable().optional(),
-  settings: z.record(z.string(), z.unknown()).optional(),
+  slug: z.string().min(1).max(100).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**
@@ -49,13 +43,17 @@ export const getOrganizationSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
 });
 
+export const getUserOrganizationsSchema = z.object({
+  userId: z.uuid('Invalid user ID'),
+});
+
 /**
  * Membership Schemas
  */
-export const inviteMemberSchema = z.object({
+export const createInvitationSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
   email: z.email('Invalid email address'),
-  role: z.enum(['org:admin', 'org:member']).default('org:member'),
+  role: z.enum(['owner', 'admin', 'member']).default('member'),
 });
 
 /**
@@ -64,20 +62,33 @@ export const inviteMemberSchema = z.object({
  */
 export const orgInviteFormSchema = z.object({
   email: z.email('Invalid email address'),
-  role: z.enum(['org:admin', 'org:member']),
+  role: z.enum(['owner', 'admin', 'member']),
 });
 
 export const updateMemberRoleSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
-  clerkUserId: z.string().min(1, 'User ID is required'),
-  role: z.enum(['org:admin', 'org:member']),
+  memberId: z.string().min(1, 'User ID is required'),
+  role: z.enum(['owner', 'admin', 'member']),
 });
 
 export const removeMemberSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
-  clerkUserId: z.string().min(1, 'User ID is required'),
+  memberIdOrEmail: z.string().min(1, 'User ID or email is required'),
+});
+
+export const leaveOrganizationSchema = z.object({
+  organizationId: z.uuid('Invalid organization ID'),
 });
 
 export const getOrgMembersSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
+  limit: z.number().int().positive().default(100),
+  offset: z.number().int().positive().default(0),
+  sortBy: z.enum(['createdAt']).default('createdAt'),
+  sortDirection: z.enum(['asc', 'desc']).default('desc'),
+  filterField: z.string().optional(),
+  filterOperator: z
+    .enum(['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in', 'nin', 'contains'] as const)
+    .default('eq'),
+  filterValue: z.string().optional(),
 });

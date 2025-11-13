@@ -29,18 +29,13 @@ import { useOrganizations } from '@/hooks/use-organizations';
 import { getInitials } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CreateOrgDialog } from '@/components/create-org-dialog';
-import { useRouter } from 'next/navigation';
+import { organization } from '@/lib/auth/client';
 
 export function SidebarOrgSwitcher() {
-  const router = useRouter();
   const { isMobile } = useSidebar();
   const { organizations, isLoading } = useOrganizations();
   const { activeOrganization, isLoading: isActivating } = useActiveOrganization();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
-
-  const handleOrganizationCreated = (slug: string) => {
-    router.push(`/org/${slug}/dashboard`);
-  };
 
   // Loading state
   if (isLoading || isActivating || !activeOrganization) {
@@ -71,8 +66,8 @@ export function SidebarOrgSwitcher() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar key={activeOrganization.id} className="h-8 w-8 rounded-lg">
-                {activeOrganization.logoUrl && (
-                  <AvatarImage src={activeOrganization.logoUrl} alt={activeOrganization.name} />
+                {activeOrganization.logo && (
+                  <AvatarImage src={activeOrganization.logo} alt={activeOrganization.name} />
                 )}
                 <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
                   {activeOrgInitials}
@@ -101,13 +96,24 @@ export function SidebarOrgSwitcher() {
               const isActive = org.id === activeOrganization.id;
 
               return (
-                <DropdownMenuItem key={org.id} asChild>
+                <DropdownMenuItem
+                  key={org.id}
+                  asChild
+                  onSelect={async () => {
+                    if (!isActive) {
+                      await organization.setActive({
+                        organizationId: org.id,
+                        organizationSlug: org.slug,
+                      });
+                    }
+                  }}
+                >
                   <Link
                     href={`/org/${org.slug}/dashboard`}
                     className="gap-2 p-2 cursor-pointer flex items-center"
                   >
                     <Avatar className="h-6 w-6 rounded-md">
-                      {org.logoUrl && <AvatarImage src={org.logoUrl} alt={org.name} />}
+                      {org.logo && <AvatarImage src={org.logo} alt={org.name} />}
                       <AvatarFallback className="rounded-md bg-primary text-primary-foreground text-xs">
                         {orgInitials}
                       </AvatarFallback>
@@ -145,11 +151,7 @@ export function SidebarOrgSwitcher() {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
-      <CreateOrgDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        onOrganizationCreated={handleOrganizationCreated}
-      />
+      <CreateOrgDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
     </SidebarMenu>
   );
 }

@@ -58,7 +58,7 @@ describe('useOrdersList', () => {
     {
       id: 'order_1',
       organizationId: 'org_123',
-      clerkUserId: 'user_123',
+      userId: 'user_123',
       customerName: 'John Doe',
       amount: '500.00',
       currency: 'USD',
@@ -71,7 +71,7 @@ describe('useOrdersList', () => {
     {
       id: 'order_2',
       organizationId: 'org_123',
-      clerkUserId: 'user_123',
+      userId: 'user_123',
       customerName: 'Jane Smith',
       amount: '750.00',
       currency: 'USD',
@@ -157,7 +157,7 @@ describe('useOrdersList', () => {
     const mockMutateAsync = vi.fn().mockResolvedValue({
       id: 'order_3',
       organizationId: 'org_123',
-      clerkUserId: 'user_123',
+      userId: 'user_123',
       customerName: 'Bob Johnson',
       amount: '225.00',
       currency: 'USD',
@@ -197,7 +197,7 @@ describe('useOrdersList', () => {
     const mockMutateAsync = vi.fn().mockResolvedValue({
       id: 'order_1',
       organizationId: 'org_123',
-      clerkUserId: 'user_123',
+      userId: 'user_123',
       customerName: 'John Doe Updated',
       amount: '750.00',
       currency: 'USD',

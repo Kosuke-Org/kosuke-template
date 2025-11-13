@@ -1,10 +1,9 @@
-import { AUTH_ROUTES } from '@/lib/auth';
-import { SignUp } from '@clerk/nextjs';
+import { SignUp } from '../components/sign-up';
 
 export default function Page() {
   return (
-    <div className="flex items-center justify-center py-12">
-      <SignUp fallbackRedirectUrl={AUTH_ROUTES.ONBOARDING} signInUrl={AUTH_ROUTES.SIGN_IN} />
+    <div className="self-center my-6 w-full max-w-md py-8 px-4">
+      <SignUp />
     </div>
   );
 }

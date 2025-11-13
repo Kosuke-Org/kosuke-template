@@ -60,7 +60,7 @@ export const WelcomeEmail = ({
 
         {[
           'Next.js 15 with App Router and TypeScript',
-          'Clerk Authentication with user management',
+          'Better Auth Authentication with user management',
           'Stripe Billing integration for subscriptions',
           'Beautiful Shadcn UI components',
           'PostgreSQL database with Drizzle ORM',

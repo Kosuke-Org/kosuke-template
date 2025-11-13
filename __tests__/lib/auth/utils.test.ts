@@ -1,402 +1,30 @@
 import {
-  extractUserData,
-  extractUserDataFromWebhook,
-  hasUserChanges,
-  isValidEmail,
-  getDisplayName,
-  getUserEmail,
   createActivityLogData,
-  isAuthenticated,
+  createSignInAttempt,
+  getCurrentSignInAttempt,
+  clearSignInAttempt,
+  isTestEmail,
 } from '@/lib/auth/utils';
-import { ClerkUserType, ClerkWebhookUser, AuthState } from '@/lib/types';
 import { ActivityType } from '@/lib/db/schema';
-import { vi } from 'vitest';
-import { createClerkWebhookUser } from '../../setup/factories';
-import { EmailAddressJSON } from '@clerk/types';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock external dependencies
-vi.mock('@clerk/nextjs/server');
-vi.mock('next/navigation');
+vi.mock('next/navigation', () => ({
+  redirect: vi.fn(),
+  useRouter: vi.fn(() => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+  })),
+  usePathname: vi.fn(),
+}));
 
-const defaultEmailAddresses: EmailAddressJSON[] = [
-  {
-    id: 'email_123',
-    object: 'email_address',
-    email_address: 'test@example.com',
-    verification: null,
-    linked_to: [],
-    matches_sso_connection: false,
-  },
-];
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(),
+}));
 
 describe('Auth Utils', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  describe('extractUserData', () => {
-    it('should extract user data from Clerk user object with custom profile image', () => {
-      const clerkUser = {
-        id: 'user_123',
-        emailAddresses: [{ emailAddress: 'test@example.com' }],
-        fullName: 'John Doe',
-        firstName: 'John',
-        imageUrl: 'https://example.com/avatar.jpg',
-        publicMetadata: {
-          customProfileImageUrl: 'https://example.com/custom-avatar.jpg',
-        },
-      } as unknown as ClerkUserType;
-
-      const result = extractUserData(clerkUser);
-
-      expect(result).toEqual({
-        clerkUserId: 'user_123',
-        email: 'test@example.com',
-        displayName: 'John Doe',
-        profileImageUrl: 'https://example.com/custom-avatar.jpg',
-        lastSyncedAt: expect.any(Date),
-        updatedAt: expect.any(Date),
-      });
-    });
-
-    it('should extract user data from Clerk user object without custom profile image', () => {
-      const clerkUser = {
-        id: 'user_123',
-        emailAddresses: [{ emailAddress: 'test@example.com' }],
-        fullName: 'John Doe',
-        firstName: 'John',
-        imageUrl: 'https://example.com/avatar.jpg',
-      } as unknown as ClerkUserType;
-
-      const result = extractUserData(clerkUser);
-
-      expect(result).toEqual({
-        clerkUserId: 'user_123',
-        email: 'test@example.com',
-        displayName: 'John Doe',
-        profileImageUrl: null,
-        lastSyncedAt: expect.any(Date),
-        updatedAt: expect.any(Date),
-      });
-    });
-
-    it('should handle user with no full name', () => {
-      const clerkUser = {
-        id: 'user_123',
-        emailAddresses: [{ emailAddress: 'test@example.com' }],
-        fullName: null,
-        firstName: 'John',
-        imageUrl: null,
-      } as unknown as ClerkUserType;
-
-      const result = extractUserData(clerkUser);
-
-      expect(result.displayName).toBe('John');
-      expect(result.profileImageUrl).toBe(null);
-    });
-
-    it('should handle user with no email addresses', () => {
-      const clerkUser = {
-        id: 'user_123',
-        emailAddresses: [],
-        fullName: 'John Doe',
-        firstName: 'John',
-        imageUrl: null,
-      } as unknown as ClerkUserType;
-
-      const result = extractUserData(clerkUser);
-
-      expect(result.email).toBe('');
-    });
-
-    it('should handle user with null names', () => {
-      const clerkUser = {
-        id: 'user_123',
-        emailAddresses: [{ emailAddress: 'test@example.com' }],
-        fullName: null,
-        firstName: null,
-        imageUrl: null,
-      } as unknown as ClerkUserType;
-
-      const result = extractUserData(clerkUser);
-
-      expect(result.displayName).toBe(null);
-    });
-  });
-
-  describe('extractUserDataFromWebhook', () => {
-    it('should extract user data from webhook user object with custom profile image', () => {
-      const webhookUser: ClerkWebhookUser = createClerkWebhookUser({
-        id: 'user_123',
-        first_name: 'John',
-        last_name: 'Doe',
-        image_url: 'https://example.com/avatar.jpg',
-        email_addresses: defaultEmailAddresses,
-        public_metadata: {
-          customProfileImageUrl: 'https://example.com/custom-avatar.jpg',
-        },
-      });
-
-      const result = extractUserDataFromWebhook(webhookUser);
-
-      expect(result).toEqual({
-        clerkUserId: 'user_123',
-        email: 'test@example.com',
-        displayName: 'John Doe',
-        profileImageUrl: 'https://example.com/custom-avatar.jpg',
-        lastSyncedAt: expect.any(Date),
-        updatedAt: expect.any(Date),
-      });
-    });
-
-    it('should extract user data from webhook user object without custom profile image', () => {
-      const webhookUser: ClerkWebhookUser = createClerkWebhookUser({
-        id: 'user_123',
-        first_name: 'John',
-        last_name: 'Doe',
-        image_url: 'https://example.com/avatar.jpg',
-        email_addresses: defaultEmailAddresses,
-      });
-
-      const result = extractUserDataFromWebhook(webhookUser);
-
-      expect(result).toEqual({
-        clerkUserId: 'user_123',
-        email: 'test@example.com',
-        displayName: 'John Doe',
-        profileImageUrl: null,
-        lastSyncedAt: expect.any(Date),
-        updatedAt: expect.any(Date),
-      });
-    });
-
-    it('should handle webhook user with only first name', () => {
-      const webhookUser: ClerkWebhookUser = createClerkWebhookUser({
-        id: 'user_123',
-        first_name: 'John',
-        last_name: null,
-        image_url: '',
-        email_addresses: defaultEmailAddresses,
-      });
-
-      const result = extractUserDataFromWebhook(webhookUser);
-
-      expect(result.displayName).toBe('John');
-    });
-
-    it('should handle webhook user with no names', () => {
-      const webhookUser: ClerkWebhookUser = createClerkWebhookUser({
-        id: 'user_123',
-        first_name: null,
-        last_name: null,
-        image_url: '',
-        email_addresses: defaultEmailAddresses,
-      });
-
-      const result = extractUserDataFromWebhook(webhookUser);
-
-      expect(result.displayName).toBe(null);
-    });
-
-    it('should handle webhook user with no email addresses', () => {
-      const webhookUser: ClerkWebhookUser = createClerkWebhookUser({
-        id: 'user_123',
-        email_addresses: [],
-        first_name: 'John',
-        last_name: 'Doe',
-        image_url: '',
-      });
-
-      const result = extractUserDataFromWebhook(webhookUser);
-
-      expect(result.email).toBe('');
-    });
-  });
-
-  describe('hasUserChanges', () => {
-    const existingUser = {
-      email: 'old@example.com',
-      displayName: 'Old Name',
-      profileImageUrl: 'https://old.com/avatar.jpg',
-    };
-
-    it('should return true when email changes', () => {
-      const newUser = {
-        ...existingUser,
-        email: 'new@example.com',
-      };
-
-      expect(hasUserChanges(existingUser, newUser)).toBe(true);
-    });
-
-    it('should return true when display name changes', () => {
-      const newUser = {
-        ...existingUser,
-        displayName: 'New Name',
-      };
-
-      expect(hasUserChanges(existingUser, newUser)).toBe(true);
-    });
-
-    it('should return true when profile image changes', () => {
-      const newUser = {
-        ...existingUser,
-        profileImageUrl: 'https://new.com/avatar.jpg',
-      };
-
-      expect(hasUserChanges(existingUser, newUser)).toBe(true);
-    });
-
-    it('should return false when no changes', () => {
-      const newUser = { ...existingUser };
-
-      expect(hasUserChanges(existingUser, newUser)).toBe(false);
-    });
-
-    it('should handle null values', () => {
-      const existingUserWithNulls = {
-        email: 'test@example.com',
-        displayName: null,
-        profileImageUrl: null,
-      };
-
-      const newUserWithNulls = {
-        email: 'test@example.com',
-        displayName: null,
-        profileImageUrl: null,
-      };
-
-      expect(hasUserChanges(existingUserWithNulls, newUserWithNulls)).toBe(false);
-    });
-  });
-
-  describe('isValidEmail', () => {
-    it('should return true for valid email addresses', () => {
-      const validEmails = [
-        'test@example.com',
-        'user.name@domain.co.uk',
-        'firstname.lastname@company.org',
-        'user+tag@domain.com',
-        'a@b.co',
-      ];
-
-      validEmails.forEach((email) => {
-        expect(isValidEmail(email)).toBe(true);
-      });
-    });
-
-    it('should return false for invalid email addresses', () => {
-      const invalidEmails = [
-        'invalid',
-        '@domain.com',
-        'user@',
-        'user@domain',
-        'user name@domain.com',
-        'user@domain.',
-        '',
-        'user@@domain.com',
-      ];
-
-      invalidEmails.forEach((email) => {
-        expect(isValidEmail(email)).toBe(false);
-      });
-    });
-  });
-
-  describe('getDisplayName', () => {
-    it('should return full name for Clerk user', () => {
-      const user = {
-        fullName: 'John Doe',
-        firstName: 'John',
-      } as ClerkUserType;
-
-      expect(getDisplayName(user)).toBe('John Doe');
-    });
-
-    it('should return first name when full name is not available', () => {
-      const user = {
-        fullName: null,
-        firstName: 'John',
-      } as ClerkUserType;
-
-      expect(getDisplayName(user)).toBe('John');
-    });
-
-    it('should return "User" when no names available for Clerk user', () => {
-      const user = {
-        fullName: null,
-        firstName: null,
-      } as ClerkUserType;
-
-      expect(getDisplayName(user)).toBe('User');
-    });
-
-    it('should return combined name for webhook user', () => {
-      const user: ClerkWebhookUser = createClerkWebhookUser({
-        id: 'user_123',
-        first_name: 'John',
-        last_name: 'Doe',
-      });
-
-      expect(getDisplayName(user)).toBe('John Doe');
-    });
-
-    it('should return first name only for webhook user', () => {
-      const user: ClerkWebhookUser = createClerkWebhookUser({
-        id: 'user_123',
-        first_name: 'John',
-        last_name: null,
-      });
-
-      expect(getDisplayName(user)).toBe('John');
-    });
-
-    it('should return "User" for webhook user with no names', () => {
-      const user: ClerkWebhookUser = createClerkWebhookUser({
-        id: 'user_123',
-        first_name: null,
-        last_name: null,
-      });
-
-      expect(getDisplayName(user)).toBe('User');
-    });
-  });
-
-  describe('getUserEmail', () => {
-    it('should return email from Clerk user', () => {
-      const user = {
-        emailAddresses: [{ emailAddress: 'test@example.com' }],
-      } as ClerkUserType;
-
-      expect(getUserEmail(user)).toBe('test@example.com');
-    });
-
-    it('should return empty string when no email addresses for Clerk user', () => {
-      const user: ClerkWebhookUser = createClerkWebhookUser({
-        id: 'user_123',
-        email_addresses: [],
-      });
-
-      expect(getUserEmail(user)).toBe('');
-    });
-
-    it('should return email from webhook user', () => {
-      const user: ClerkWebhookUser = createClerkWebhookUser({
-        id: 'user_123',
-        email_addresses: defaultEmailAddresses,
-      });
-
-      expect(getUserEmail(user)).toBe('test@example.com');
-    });
-
-    it('should return empty string when no email addresses for webhook user', () => {
-      const user: ClerkWebhookUser = createClerkWebhookUser({
-        id: 'user_123',
-        email_addresses: [],
-      });
-
-      expect(getUserEmail(user)).toBe('');
-    });
   });
 
   describe('createActivityLogData', () => {
@@ -410,7 +38,7 @@ describe('Auth Utils', () => {
       );
 
       expect(result).toEqual({
-        clerkUserId: 'user_123',
+        userId: 'user_123',
         action: ActivityType.SIGN_IN,
         metadata: JSON.stringify(metadata),
         ipAddress: '192.168.1.1',
@@ -422,7 +50,7 @@ describe('Auth Utils', () => {
       const result = createActivityLogData('user_123', ActivityType.SIGN_OUT);
 
       expect(result).toEqual({
-        clerkUserId: 'user_123',
+        userId: 'user_123',
         action: ActivityType.SIGN_OUT,
         metadata: null,
         ipAddress: null,
@@ -431,67 +59,172 @@ describe('Auth Utils', () => {
     });
   });
 
-  describe('isAuthenticated', () => {
-    it('should return true for authenticated state', () => {
-      const authState: AuthState = {
-        isAuthenticated: true,
-        user: { id: 'user_123' } as ClerkUserType,
-        isLoading: false,
-        localUser: {
-          id: '1',
-          clerkUserId: 'user_123',
-          email: 'test@example.com',
-          displayName: 'Test User',
-          profileImageUrl: null,
-          lastSyncedAt: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      };
+  describe('Sign-in Attempt Management', () => {
+    describe('createSignInAttempt', () => {
+      it('should handle email with special characters', async () => {
+        const { cookies } = await import('next/headers');
+        const mockSet = vi.fn();
+        vi.mocked(cookies).mockResolvedValue({
+          set: mockSet,
+        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
 
-      expect(isAuthenticated(authState)).toBe(true);
+        const email = 'test+tag@example.com';
+        const result = await createSignInAttempt(email);
+
+        expect(result).toBe(email);
+        expect(mockSet).toHaveBeenCalledWith('sign_in_attempt_email', email, expect.any(Object));
+      });
+
+      it('should create a sign-in attempt cookie with correct settings', async () => {
+        const { cookies } = await import('next/headers');
+
+        const mockSet = vi.fn();
+        vi.mocked(cookies).mockResolvedValue({
+          set: mockSet,
+        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+        const email = 'test@example.com';
+        const result = await createSignInAttempt(email);
+
+        expect(result).toBe(email);
+        expect(mockSet).toHaveBeenCalledWith('sign_in_attempt_email', email, {
+          httpOnly: true,
+          secure: false, // NODE_ENV !== 'production' in tests
+          sameSite: 'lax',
+          maxAge: 600, // 10 minutes in seconds
+          path: '/',
+        });
+      });
+
+      it('should use secure flag in production', async () => {
+        vi.stubEnv('NODE_ENV', 'production');
+        const { cookies } = await import('next/headers');
+
+        const mockSet = vi.fn();
+        vi.mocked(cookies).mockResolvedValue({
+          set: mockSet,
+        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+        await createSignInAttempt('test@example.com');
+
+        expect(mockSet).toHaveBeenCalledWith(
+          'sign_in_attempt_email',
+          'test@example.com',
+          expect.objectContaining({
+            secure: true,
+          })
+        );
+      });
     });
 
-    it('should return false when not authenticated', () => {
-      const authState: AuthState = {
-        isAuthenticated: false,
-        user: null,
-        localUser: null,
-        isLoading: false,
-      };
+    describe('getCurrentSignInAttempt', () => {
+      it('should return email when sign-in attempt exists', async () => {
+        const { cookies } = await import('next/headers');
+        const mockGet = vi.fn();
+        vi.mocked(cookies).mockResolvedValue({
+          get: mockGet.mockReturnValue({ value: 'test@example.com' }),
+        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+        const result = await getCurrentSignInAttempt();
 
-      expect(isAuthenticated(authState)).toBe(false);
+        expect(result).toEqual({ email: 'test@example.com' });
+        expect(mockGet).toHaveBeenCalledWith('sign_in_attempt_email');
+      });
+
+      it('should return null when sign-in attempt does not exist', async () => {
+        const { cookies } = await import('next/headers');
+        const mockGet = vi.fn();
+        vi.mocked(cookies).mockResolvedValue({
+          get: mockGet,
+        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+        const result = await getCurrentSignInAttempt();
+
+        expect(result).toBeNull();
+      });
+
+      it('should return null when cookie value is empty', async () => {
+        const { cookies } = await import('next/headers');
+        const mockGet = vi.fn();
+        vi.mocked(cookies).mockResolvedValue({
+          get: mockGet,
+        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+        const result = await getCurrentSignInAttempt();
+
+        expect(result).toBeNull();
+      });
     });
 
-    it('should return false when user is null', () => {
-      const authState: AuthState = {
-        isAuthenticated: true,
-        user: null,
-        isLoading: false,
-        localUser: {
-          id: '1',
-          clerkUserId: 'user_123',
-          email: 'test@example.com',
-          displayName: 'Test User',
-          profileImageUrl: null,
-          lastSyncedAt: new Date(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      };
+    describe('clearSignInAttempt', () => {
+      it('should delete the sign-in attempt cookie', async () => {
+        const { cookies } = await import('next/headers');
+        const mockDelete = vi.fn();
+        vi.mocked(cookies).mockResolvedValue({
+          delete: mockDelete,
+        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
 
-      expect(isAuthenticated(authState)).toBe(false);
+        await clearSignInAttempt();
+
+        expect(mockDelete).toHaveBeenCalledWith('sign_in_attempt_email');
+      });
     });
 
-    it('should return false when localUser is null', () => {
-      const authState: AuthState = {
-        isAuthenticated: true,
-        user: { id: 'user_123' } as ClerkUserType,
-        localUser: null,
-        isLoading: false,
-      };
+    describe('isTestEmail', () => {
+      describe('in development environment', () => {
+        beforeEach(() => {
+          vi.stubEnv('NODE_ENV', 'development');
+        });
 
-      expect(isAuthenticated(authState)).toBe(false);
+        it('should return true for emails matching seed pattern (+kosuke_test@example.com)', () => {
+          expect(isTestEmail('john+kosuke_test@example.com')).toBe(true);
+          expect(isTestEmail('jane+kosuke_test@example.com')).toBe(true);
+          expect(isTestEmail('admin+kosuke_test@example.com')).toBe(true);
+        });
+
+        it('should return false for emails not matching the pattern', () => {
+          expect(isTestEmail('user@example.com')).toBe(false);
+          expect(isTestEmail('test@kosuke.com')).toBe(false);
+          expect(isTestEmail('john+other@example.com')).toBe(false);
+        });
+
+        it('should return false for partial pattern matches', () => {
+          expect(isTestEmail('kosuke_test@example.com')).toBe(false); // Missing '+'
+          expect(isTestEmail('john+kosuke_test@other.com')).toBe(false); // Wrong domain
+          expect(isTestEmail('john+kosuke')).toBe(false); // Incomplete suffix
+        });
+
+        it('should be case-sensitive', () => {
+          expect(isTestEmail('john+KOSUKE_TEST@example.com')).toBe(false);
+          expect(isTestEmail('john+kosuke_test@EXAMPLE.COM')).toBe(false);
+        });
+
+        it('should handle edge cases', () => {
+          expect(isTestEmail('')).toBe(false);
+          expect(isTestEmail('+kosuke_test@example.com')).toBe(true); // Valid - ends with suffix
+          expect(isTestEmail('user+kosuke_test')).toBe(false); // Missing domain
+        });
+
+        it('should handle emails with multiple plus signs', () => {
+          expect(isTestEmail('user+tag+kosuke_test@example.com')).toBe(true);
+          expect(isTestEmail('user++kosuke_test@example.com')).toBe(true);
+        });
+      });
+
+      describe('in production environment', () => {
+        beforeEach(() => {
+          vi.stubEnv('NODE_ENV', 'production');
+        });
+
+        it('should return false for test pattern emails in production', () => {
+          expect(isTestEmail('john+kosuke_test@example.com')).toBe(false);
+          expect(isTestEmail('jane+kosuke_test@example.com')).toBe(false);
+        });
+
+        it('should return false for any email in production', () => {
+          expect(isTestEmail('user@example.com')).toBe(false);
+          expect(isTestEmail('admin@company.com')).toBe(false);
+        });
+      });
     });
   });
 });

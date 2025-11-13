@@ -10,8 +10,10 @@ import { organizationsRouter } from './routers/organizations';
 import { billingRouter } from './routers/billing';
 import { engineRouter } from './routers/engine';
 import { ordersRouter } from './routers/orders';
+import { authRouter } from './routers/auth';
 
 export const appRouter = router({
+  auth: authRouter,
   tasks: tasksRouter,
   user: userRouter,
   organizations: organizationsRouter,

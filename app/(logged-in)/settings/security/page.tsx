@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '@/hooks/use-user';
 import { ButtonSkeleton } from '@/components/skeletons';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -46,12 +46,12 @@ function SecuritySettingsSkeleton() {
 }
 
 export default function SecurityPage() {
-  const { user, isSignedIn } = useUser();
+  const { user } = useUser();
   const { toast } = useToast();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  if (!isSignedIn || !user) {
+  if (!user) {
     return <SecuritySettingsSkeleton />;
   }
 
@@ -71,11 +71,10 @@ export default function SecurityPage() {
 
     setIsDeleting(true);
     try {
-      // Note: Clerk account deletion should be handled via API route
       // For now, we'll show a message about this limitation
       toast({
         title: 'Feature not available',
-        description: 'Account deletion needs to be implemented via Clerk API routes.',
+        description: 'Feature not available.',
         variant: 'destructive',
       });
     } catch (error) {

@@ -1,107 +1,18 @@
-import { ClerkUserType, ClerkWebhookUser, AuthState } from '@/lib/types';
 import { ActivityType } from '@/lib/db/schema';
-
-/**
- * Extract user data from Clerk API user object
- */
-export function extractUserData(clerkUser: ClerkUserType) {
-  // Prioritize custom uploaded image over Clerk's default avatar
-  const customImageUrl = clerkUser.publicMetadata?.customProfileImageUrl as string | undefined;
-
-  return {
-    clerkUserId: clerkUser.id,
-    email: clerkUser.emailAddresses[0]?.emailAddress || '',
-    displayName: clerkUser.fullName || clerkUser.firstName || null,
-    profileImageUrl: customImageUrl || null, // Use custom image or null (don't use Clerk's default)
-    lastSyncedAt: new Date(),
-    updatedAt: new Date(),
-  };
-}
-
-/**
- * Extract user data from Clerk webhook user object
- */
-export function extractUserDataFromWebhook(webhookUser: ClerkWebhookUser) {
-  // Prioritize custom uploaded image over Clerk's default avatar
-  const metadata = webhookUser.public_metadata as Record<string, unknown> | undefined;
-  const customImageUrl = metadata?.customProfileImageUrl as string | undefined;
-
-  return {
-    clerkUserId: webhookUser.id,
-    email: webhookUser.email_addresses?.[0]?.email_address || '',
-    displayName:
-      webhookUser.first_name && webhookUser.last_name
-        ? `${webhookUser.first_name} ${webhookUser.last_name}`.trim()
-        : webhookUser.first_name || null,
-    profileImageUrl: customImageUrl || null, // Use custom image or null (don't use Clerk's default)
-    lastSyncedAt: new Date(),
-    updatedAt: new Date(),
-  };
-}
-
-/**
- * Check if user has changes that need syncing
- */
-export function hasUserChanges(
-  existing: { email: string; displayName: string | null; profileImageUrl: string | null },
-  newData: { email: string; displayName: string | null; profileImageUrl: string | null }
-): boolean {
-  return (
-    existing.email !== newData.email ||
-    existing.displayName !== newData.displayName ||
-    existing.profileImageUrl !== newData.profileImageUrl
-  );
-}
-
-/**
- * Validate email address format
- */
-export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
-
-/**
- * Get display name from user object
- */
-export function getDisplayName(user: ClerkUserType | ClerkWebhookUser): string {
-  if ('fullName' in user) {
-    return (user.fullName || user.firstName || 'User') as string;
-  }
-
-  // Webhook user object
-  const webhookUser = user as ClerkWebhookUser;
-  if (webhookUser.first_name && webhookUser.last_name) {
-    return `${webhookUser.first_name} ${webhookUser.last_name}`.trim();
-  }
-
-  return webhookUser.first_name || 'User';
-}
-
-/**
- * Get email from user object
- */
-export function getUserEmail(user: ClerkUserType | ClerkWebhookUser): string {
-  if ('emailAddresses' in user && user.emailAddresses) {
-    return (user.emailAddresses as Array<{ emailAddress: string }>)[0]?.emailAddress || '';
-  }
-
-  // Webhook user object
-  const webhookUser = user as ClerkWebhookUser;
-  return webhookUser.email_addresses?.[0]?.email_address || '';
-}
+import { cookies } from 'next/headers';
+import { TEST_EMAIL_SUFFIX } from './constants';
 
 /**
  * Create activity log entry data
  */
 export function createActivityLogData(
-  clerkUserId: string,
+  userId: string,
   action: ActivityType,
   metadata?: Record<string, unknown>,
   ipAddress?: string
 ) {
   return {
-    clerkUserId,
+    userId,
     action,
     metadata: metadata ? JSON.stringify(metadata) : null,
     ipAddress: ipAddress || null,
@@ -110,12 +21,60 @@ export function createActivityLogData(
 }
 
 /**
- * Type guard to check if auth state is authenticated
+ * Sign-in Attempt Management
+ * Server-side utilities for managing temporary sign-in state (Clerk-style)
+ *
+ * This provides a secure, server-side way to track sign-in flow state
+ * without exposing email addresses in URLs or client storage.
+ * Uses a single httpOnly cookie for simplicity (no database persistence needed).
  */
-export function isAuthenticated(authState: AuthState): authState is AuthState & {
-  isAuthenticated: true;
-  user: ClerkUserType;
-  localUser: NonNullable<AuthState['localUser']>;
-} {
-  return authState.isAuthenticated && authState.user !== null && authState.localUser !== null;
+
+const SIGN_IN_ATTEMPT_EMAIL_COOKIE = 'sign_in_attempt_email';
+const SIGN_IN_ATTEMPT_EXPIRY_MINUTES = 10; // 10 minutes to complete sign-in flow
+
+/**
+ * Create a new sign-in attempt and store it in a secure cookie
+ * Note: User existence is validated by Better Auth before calling this function
+ */
+export async function createSignInAttempt(email: string): Promise<string> {
+  const cookieStore = await cookies();
+
+  cookieStore.set(SIGN_IN_ATTEMPT_EMAIL_COOKIE, email, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: SIGN_IN_ATTEMPT_EXPIRY_MINUTES * 60,
+    path: '/',
+  });
+
+  return email;
 }
+
+/**
+ * Get the current sign-in attempt from the cookie
+ * Returns the email if an active attempt exists, null otherwise
+ */
+export async function getCurrentSignInAttempt(): Promise<{ email: string } | null> {
+  const cookieStore = await cookies();
+  const email = cookieStore.get(SIGN_IN_ATTEMPT_EMAIL_COOKIE)?.value;
+
+  if (!email) {
+    return null;
+  }
+
+  return { email };
+}
+
+/**
+ * Clear the sign-in attempt cookie
+ * Used when user clicks "Change email", cancels the flow, or completes sign-in
+ */
+export async function clearSignInAttempt(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete(SIGN_IN_ATTEMPT_EMAIL_COOKIE);
+}
+
+export const isTestEmail = (email: string) => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  return isDevelopment && email.endsWith(TEST_EMAIL_SUFFIX);
+};

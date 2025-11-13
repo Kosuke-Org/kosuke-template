@@ -138,7 +138,7 @@ export const ordersRouter = router({
       })
       .from(orders)
       .innerJoin(organizations, eq(orders.organizationId, organizations.id))
-      .innerJoin(users, eq(orders.clerkUserId, users.clerkUserId))
+      .innerJoin(users, eq(orders.userId, users.id))
       .where(and(...conditions))
       .orderBy(orderByClause)
       .limit(limit)
@@ -173,7 +173,7 @@ export const ordersRouter = router({
         userEmail: users.email,
       })
       .from(orders)
-      .innerJoin(users, eq(orders.clerkUserId, users.clerkUserId))
+      .innerJoin(users, eq(orders.userId, users.id))
       .where(and(eq(orders.id, input.id), eq(orders.organizationId, input.organizationId)))
       .limit(1);
 
@@ -210,7 +210,7 @@ export const ordersRouter = router({
       .insert(orders)
       .values({
         customerName: input.customerName,
-        clerkUserId: ctx.userId,
+        userId: ctx.userId,
         organizationId: input.organizationId,
         status: (input.status as OrderStatus | undefined) ?? 'pending',
         amount: input.amount,

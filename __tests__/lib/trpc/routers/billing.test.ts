@@ -21,25 +21,6 @@ vi.mock('@/lib/billing/stripe-sync', () => ({
   syncStaleSubscriptions: vi.fn(),
 }));
 
-vi.mock('@clerk/nextjs/server', async () => {
-  const actual = await vi.importActual('@clerk/nextjs/server');
-  return {
-    ...actual,
-    clerkClient: vi.fn(() =>
-      Promise.resolve({
-        users: {
-          getUser: vi.fn(() =>
-            Promise.resolve({
-              id: 'user_123',
-              emailAddresses: [{ emailAddress: 'test@example.com' }],
-            })
-          ),
-        },
-      })
-    ),
-  };
-});
-
 describe('Billing Router', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -288,7 +269,7 @@ describe('Billing Router', () => {
         activeSubscription: {
           id: 'sub_123',
           stripeSubscriptionId: 'sub_stripe_123',
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           organizationId: null,
           subscriptionType: 'personal' as const,
           stripeCustomerId: 'cus_123',
@@ -365,7 +346,7 @@ describe('Billing Router', () => {
         activeSubscription: {
           id: 'sub_123',
           stripeSubscriptionId: 'sub_stripe_123',
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           organizationId: null,
           subscriptionType: 'personal' as const,
           stripeCustomerId: 'cus_123',
@@ -410,7 +391,7 @@ describe('Billing Router', () => {
         activeSubscription: {
           id: 'sub_123',
           stripeSubscriptionId: 'sub_stripe_123',
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           organizationId: null,
           subscriptionType: 'personal' as const,
           stripeCustomerId: 'cus_123',
@@ -461,7 +442,7 @@ describe('Billing Router', () => {
         activeSubscription: {
           id: 'sub_123',
           stripeSubscriptionId: 'sub_stripe_123',
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           organizationId: null,
           subscriptionType: 'personal' as const,
           stripeCustomerId: 'cus_123',
@@ -571,7 +552,7 @@ describe('Billing Router', () => {
         activeSubscription: {
           id: 'sub_123',
           stripeSubscriptionId: 'sub_stripe_123',
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           organizationId: null,
           subscriptionType: 'personal' as const,
           stripeCustomerId: 'cus_123',
@@ -667,7 +648,7 @@ describe('Billing Router', () => {
             url: '',
           },
           cancel_at_period_end: false,
-          metadata: { clerkUserId: 'user_123', tier: 'pro' },
+          metadata: { userId: 'user_123', tier: 'pro' },
         } as unknown as Stripe.Subscription,
       });
 
@@ -731,7 +712,7 @@ describe('Billing Router', () => {
         currentPeriodEnd: new Date(),
         activeSubscription: {
           id: 'sub_123',
-          clerkUserId: 'user_123',
+          userId: 'user_123',
           organizationId: null,
           subscriptionType: 'personal' as const,
           stripeSubscriptionId: 'sub_stripe_123',
@@ -757,7 +738,7 @@ describe('Billing Router', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('Sync status retrieved');
-      expect(result.user.clerkId).toBe('user_123');
+      expect(result.user.id).toBe('user_123');
       expect(result.user.currentTier).toBe(SubscriptionTier.PRO);
       expect(result.availableActions).toHaveLength(3);
       expect(result.availableActions[0].action).toBe('user');

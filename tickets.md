@@ -60,7 +60,7 @@ export const userRouter = router({
     const user = await db
       .select({ notificationSettings: users.notificationSettings })
       .from(users)
-      .where(eq(users.clerkUserId, ctx.userId))
+      .where(eq(users.id, ctx.userId))
       .limit(1);
 
     if (!user.length) {
@@ -93,7 +93,7 @@ export const userRouter = router({
           notificationSettings: JSON.stringify(input),
           updatedAt: new Date(),
         })
-        .where(eq(users.clerkUserId, ctx.userId));
+        .where(eq(users.id, ctx.userId));
 
       return input;
     }),
@@ -161,18 +161,14 @@ uploadProfileImage: protectedProcedure
     // Upload new image
     const imageUrl = await uploadProfileImage(file, ctx.userId);
 
-    // Update Clerk user metadata
-    const clerk = await clerkClient();
-    await clerk.users.updateUser(ctx.userId, {
-      publicMetadata: {
-        ...ctx.user.publicMetadata,
-        customProfileImageUrl: imageUrl,
-      },
-    });
-
-    // Sync to local DB
-    const updatedUser = await clerk.users.getUser(ctx.userId);
-    await syncUserFromClerk(updatedUser);
+    // Update user in local database
+    await db
+      .update(users)
+      .set({
+        profileImageUrl: imageUrl,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, ctx.userId));
 
     return {
       success: true,
@@ -192,16 +188,14 @@ deleteProfileImage: protectedProcedure
 
     await deleteProfileImage(ctx.user.imageUrl);
 
-    const clerk = await clerkClient();
-    await clerk.users.updateUser(ctx.userId, {
-      publicMetadata: {
-        ...ctx.user.publicMetadata,
-        customProfileImageUrl: null,
-      },
-    });
-
-    const updatedUser = await clerk.users.getUser(ctx.userId);
-    await syncUserFromClerk(updatedUser);
+    // Update user in local database
+    await db
+      .update(users)
+      .set({
+        profileImageUrl: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, ctx.userId));
 
     return {
       success: true,
@@ -419,8 +413,7 @@ describe('User Router', () => {
   it('should get notification settings', async () => {
     const caller = createCaller({
       userId: 'test-user',
-      user: mockClerkUser,
-      localUser: mockLocalUser,
+      user: mockUser,
     });
 
     const result = await caller.user.getNotificationSettings();
@@ -433,8 +426,7 @@ describe('User Router', () => {
   it('should update notification settings', async () => {
     const caller = createCaller({
       userId: 'test-user',
-      user: mockClerkUser,
-      localUser: mockLocalUser,
+      user: mockUser,
     });
 
     const newSettings = {
@@ -451,22 +443,20 @@ describe('User Router', () => {
   it('should sync user data', async () => {
     const caller = createCaller({
       userId: 'test-user',
-      user: mockClerkUser,
-      localUser: mockLocalUser,
+      user: mockUser,
     });
 
     const result = await caller.user.sync();
 
     expect(result.success).toBe(true);
     expect(result.user).toHaveProperty('localId');
-    expect(result.user).toHaveProperty('clerkId');
+    expect(result.user).toHaveProperty('id');
   });
 
   it('should upload profile image', async () => {
     const caller = createCaller({
       userId: 'test-user',
-      user: mockClerkUser,
-      localUser: mockLocalUser,
+      user: mockUser,
     });
 
     const mockBase64 =
@@ -485,8 +475,7 @@ describe('User Router', () => {
   it('should delete profile image', async () => {
     const caller = createCaller({
       userId: 'test-user',
-      user: { ...mockClerkUser, imageUrl: 'https://example.com/image.png' },
-      localUser: mockLocalUser,
+      user: { ...mockUser, imageUrl: 'https://example.com/image.png' },
     });
 
     const result = await caller.user.deleteProfileImage();
@@ -644,8 +633,7 @@ If issues arise:
 3. Send base64 string + metadata to tRPC mutation
 4. Server converts base64 back to buffer
 5. Upload to Vercel Blob storage
-6. Update Clerk user metadata
-7. Sync to local database
+6. Update user in local database
 
 ### Notification Settings Storage
 - Stored as JSON string in database

@@ -4,13 +4,13 @@
 [![License](https://img.shields.io/github/license/Kosuke-Org/kosuke-template?style=flat-square&color=green)](LICENSE)
 [![Documentation](https://img.shields.io/badge/docs-docs--template.kosuke.ai-blue?style=flat-square&logo=docusaurus)](https://docs-template.kosuke.ai)
 
-A modern Next.js 15 template with TypeScript, Clerk authentication with Organizations, Stripe Billing, DigitalOcean Spaces, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
+A modern Next.js 15 template with TypeScript, Better Auth authentication with Organizations, Stripe Billing, DigitalOcean Spaces, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
 
-Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billing, and complete multi-tenant functionality.
+Production-ready Next.js 15 SaaS starter with Better Auth Organizations, Stripe Billing, and complete multi-tenant functionality.
 
 - **Next.js 15** with App Router
 - **TypeScript** for type safety
-- **Clerk Authentication** for user management with **Organizations**
+- **Better Auth Authentication** for user management with **Organizations**
 - **PostgreSQL** database with Drizzle ORM
 - **Shadcn UI** components with Tailwind CSS
 - **Stripe** billing integration with automated sync (personal & organization subscriptions)
@@ -26,7 +26,7 @@ Production-ready Next.js 15 SaaS starter with Clerk Organizations, Stripe Billin
 ## 🛠 Tech Stack
 
 - **Framework**: Next.js 15 (App Router) + React 19 + TypeScript
-- **Auth**: Clerk (with Organizations)
+- **Auth**: Better Auth (with Organizations)
 - **Database**: PostgreSQL (Neon) + Drizzle ORM
 - **Queue**: BullMQ + Redis
 - **Billing**: Stripe subscriptions
@@ -52,13 +52,12 @@ Before contributing, ensure you have:
 
 You'll need accounts with these services (all have free tiers):
 
-| Service          | Purpose        | Sign Up                                          | Free Tier                          |
-| ---------------- | -------------- | ------------------------------------------------ | ---------------------------------- |
-| **Clerk**        | Authentication | [clerk.com](https://clerk.com)                   | 10k MAUs                           |
-| **Stripe**       | Billing        | [stripe.com](https://stripe.com)                 | Test mode                          |
-| **Resend**       | Email          | [resend.com](https://resend.com)                 | 100 emails/day                     |
-| **Sentry**       | Monitoring     | [sentry.io](https://sentry.io)                   | 5k events/month                    |
-| **DigitalOcean** | Storage        | [digitalocean.com](https://www.digitalocean.com) | $5/month (250GB + 1TB transfer) ❌ |
+| Service          | Purpose    | Sign Up                                          | Free Tier                          |
+| ---------------- | ---------- | ------------------------------------------------ | ---------------------------------- |
+| **Stripe**       | Billing    | [stripe.com](https://stripe.com)                 | Test mode                          |
+| **Resend**       | Email      | [resend.com](https://resend.com)                 | 100 emails/day                     |
+| **Sentry**       | Monitoring | [sentry.io](https://sentry.io)                   | 5k events/month                    |
+| **DigitalOcean** | Storage    | [digitalocean.com](https://www.digitalocean.com) | $5/month (250GB + 1TB transfer) ❌ |
 
 > **Note**: DigitalOcean Spaces is the only paid service. All other services have free tiers sufficient for development and testing.
 
@@ -93,15 +92,6 @@ POSTGRES_PASSWORD=postgres
 # Redis (Local Redis via Docker)
 REDIS_URL=redis://localhost:6379
 
-# Clerk Authentication (from dashboard.clerk.com)
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
-CLERK_WEBHOOK_SECRET=whsec_...
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
-
 # Stripe Billing
 STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_SECRET_KEY=sk_test_...
@@ -132,7 +122,6 @@ S3_SECRET_ACCESS_KEY=your_secret_key
 
 **Get Your Credentials**:
 
-- **Clerk**: Create free app at [dashboard.clerk.com](https://dashboard.clerk.com) → Enable Organizations → Get API keys
 - **Stripe**: Create account at [stripe.com](https://stripe.com) → Get API keys → Create products and prices
 - **Resend**: Sign up → Create API key → Use `onboarding@resend.dev` for testing
 - **Sentry**: Create project → Copy DSN (optional for local development)
@@ -244,10 +233,10 @@ bun run db:seed
 
 **Test Users Created:**
 
-- `jane+clerk_test@example.com` - Admin of "Jane Smith Co." (Free tier)
-- `john+clerk_test@example.com` - Admin of "John Doe Ltd." (Free tier), Member of "Jane Smith Co."
+- `jane+kosuke_test@example.com` - Admin of "Jane Smith Co." (Free tier)
+- `john+kosuke_test@example.com` - Admin of "John Doe Ltd." (Free tier), Member of "Jane Smith Co."
 
-**Clerk Verification Code:**
+**Kosuke Verification Code:**
 
 When signing in with test users in development, use verification code: `424242`
 

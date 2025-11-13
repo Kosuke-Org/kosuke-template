@@ -81,10 +81,10 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Helper: Get clerkUserId from subscription metadata
+ * Helper: Get userId from subscription metadata
  */
-function getClerkUserId(subscription: Stripe.Subscription): string | null {
-  return (subscription.metadata?.clerkUserId as string) || null;
+function getuserId(subscription: Stripe.Subscription): string | null {
+  return (subscription.metadata?.userId as string) || null;
 }
 
 /**
@@ -99,10 +99,10 @@ function getTier(subscription: Stripe.Subscription): string | null {
  */
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   try {
-    const clerkUserId = getClerkUserId(subscription);
+    const userId = getuserId(subscription);
     const tier = getTier(subscription);
 
-    if (!clerkUserId || !tier) {
+    if (!userId || !tier) {
       console.error('❌ Missing metadata in subscription.created:', subscription.id);
       return;
     }
@@ -127,7 +127,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     // Before creating new subscription, mark any existing active subscriptions as replaced
     // This prevents duplicate active subscriptions when upgrading
     const existingSubscriptions = await db.query.userSubscriptions.findMany({
-      where: eq(userSubscriptions.clerkUserId, clerkUserId),
+      where: eq(userSubscriptions.userId, userId),
     });
 
     // Cancel existing active subscriptions (except free tier)
@@ -166,7 +166,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     }
 
     await db.insert(userSubscriptions).values({
-      clerkUserId,
+      userId,
       stripeSubscriptionId: subscription.id,
       stripeCustomerId: subscription.customer as string,
       stripePriceId: priceId,
@@ -310,16 +310,16 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
  */
 async function handleSubscriptionScheduleCompleted(schedule: Stripe.SubscriptionSchedule) {
   try {
-    const clerkUserId = schedule.metadata?.clerkUserId;
+    const userId = schedule.metadata?.userId;
     const targetTier = schedule.metadata?.targetTier;
 
-    if (!clerkUserId || !targetTier) {
+    if (!userId || !targetTier) {
       console.error('❌ Missing metadata in subscription_schedule.completed:', schedule.id);
       return;
     }
 
     console.log(
-      `✅ Subscription schedule completed for user ${clerkUserId}, downgrading to ${targetTier}`
+      `✅ Subscription schedule completed for user ${userId}, downgrading to ${targetTier}`
     );
 
     // The schedule automatically creates a new subscription when it completes
@@ -327,7 +327,7 @@ async function handleSubscriptionScheduleCompleted(schedule: Stripe.Subscription
     // We just need to clear the scheduledDowngradeTier field from the old subscription
 
     const currentSub = await db.query.userSubscriptions.findFirst({
-      where: eq(userSubscriptions.clerkUserId, clerkUserId),
+      where: eq(userSubscriptions.userId, userId),
     });
 
     if (currentSub) {
@@ -353,15 +353,15 @@ async function handleSubscriptionScheduleCompleted(schedule: Stripe.Subscription
  */
 async function handleSubscriptionScheduleCanceled(schedule: Stripe.SubscriptionSchedule) {
   try {
-    const clerkUserId = schedule.metadata?.clerkUserId;
+    const userId = schedule.metadata?.userId;
     const currentSubscriptionId = schedule.metadata?.currentSubscriptionId;
 
-    if (!clerkUserId || !currentSubscriptionId) {
+    if (!userId || !currentSubscriptionId) {
       console.error('❌ Missing metadata in subscription_schedule.canceled:', schedule.id);
       return;
     }
 
-    console.log(`✅ Subscription schedule canceled for user ${clerkUserId}`);
+    console.log(`✅ Subscription schedule canceled for user ${userId}`);
 
     // Remove the scheduled downgrade and reactivate the current subscription
     await db

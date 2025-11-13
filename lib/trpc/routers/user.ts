@@ -5,21 +5,46 @@
 
 import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db/drizzle';
 import { users } from '@/lib/db/schema';
 import { router, protectedProcedure } from '../init';
 import { uploadProfileImage, deleteProfileImage } from '@/lib/storage';
-import { syncUserFromClerk } from '@/lib/auth';
 import {
   notificationSettingsSchema,
   uploadProfileImageSchema,
   updateDisplayNameSchema,
-  updateUserPublicMetadataSchema,
+  getUserSchema,
 } from '../schemas/user';
 import { AUTH_ERRORS } from '@/lib/auth/constants';
 
 export const userRouter = router({
+  /**
+   * Get current user from database
+   */
+  getUser: protectedProcedure.input(getUserSchema).query(async ({ input }) => {
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        emailVerified: users.emailVerified,
+        displayName: users.displayName,
+        profileImageUrl: users.profileImageUrl,
+        stripeCustomerId: users.stripeCustomerId,
+        notificationSettings: users.notificationSettings,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(users)
+      .where(eq(users.id, input.userId))
+      .limit(1);
+
+    if (!user) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: AUTH_ERRORS.USER_NOT_FOUND });
+    }
+
+    return user;
+  }),
+
   /**
    * Get user's notification settings
    */
@@ -27,7 +52,7 @@ export const userRouter = router({
     const user = await db
       .select({ notificationSettings: users.notificationSettings })
       .from(users)
-      .where(eq(users.clerkUserId, ctx.userId))
+      .where(eq(users.id, ctx.userId))
       .limit(1);
 
     if (!user.length) {
@@ -63,7 +88,7 @@ export const userRouter = router({
           notificationSettings: JSON.stringify(input),
           updatedAt: new Date(),
         })
-        .where(eq(users.clerkUserId, ctx.userId));
+        .where(eq(users.id, ctx.userId));
 
       return input;
     }),
@@ -92,25 +117,12 @@ export const userRouter = router({
       const user = await ctx.getUser();
 
       // Delete old image if exists
-      if (user?.imageUrl) {
-        await deleteProfileImage(user.imageUrl);
+      if (user?.image) {
+        await deleteProfileImage(user.image);
       }
 
       // Upload new image
       const imageUrl = await uploadProfileImage(file, ctx.userId);
-
-      // Update Clerk user metadata
-      const clerk = await clerkClient();
-      await clerk.users.updateUser(ctx.userId, {
-        publicMetadata: {
-          ...user?.publicMetadata,
-          customProfileImageUrl: imageUrl,
-        },
-      });
-
-      // Sync to local DB
-      const updatedUser = await clerk.users.getUser(ctx.userId);
-      await syncUserFromClerk(updatedUser);
 
       return {
         success: true,
@@ -123,27 +135,18 @@ export const userRouter = router({
    * Delete profile image
    */
   deleteProfileImage: protectedProcedure.mutation(async ({ ctx }) => {
-    const user = await ctx.getUser();
+    const userId = ctx.userId;
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
 
-    if (!user?.imageUrl) {
+    if (!user?.profileImageUrl) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'No profile image to delete',
       });
     }
 
-    await deleteProfileImage(user.imageUrl);
-
-    const clerk = await clerkClient();
-    await clerk.users.updateUser(ctx.userId, {
-      publicMetadata: {
-        ...user?.publicMetadata,
-        customProfileImageUrl: null,
-      },
-    });
-
-    const updatedUser = await clerk.users.getUser(ctx.userId);
-    await syncUserFromClerk(updatedUser);
+    await deleteProfileImage(user.profileImageUrl);
+    await db.update(users).set({ profileImageUrl: null }).where(eq(users.id, userId));
 
     return {
       success: true,
@@ -157,42 +160,18 @@ export const userRouter = router({
   updateDisplayName: protectedProcedure
     .input(updateDisplayNameSchema)
     .mutation(async ({ input, ctx }) => {
-      const clerk = await clerkClient();
-
-      // Parse the display name into first and last name
-      const nameParts = input.displayName.trim().split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
-      // Update user in Clerk
-      await clerk.users.updateUser(ctx.userId, {
-        firstName,
-        lastName,
-      });
-
-      // Get updated user data and sync to local DB
-      const updatedUser = await clerk.users.getUser(ctx.userId);
-      await syncUserFromClerk(updatedUser);
+      await db
+        .update(users)
+        .set({
+          displayName: input.displayName,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, ctx.userId));
 
       return {
         success: true,
         displayName: input.displayName,
         message: 'Display name updated successfully',
-      };
-    }),
-
-  updateUserPublicMetadata: protectedProcedure
-    .input(updateUserPublicMetadataSchema)
-    .mutation(async ({ input, ctx }) => {
-      const clerk = await clerkClient();
-      await clerk.users.updateUserMetadata(ctx.userId, input);
-
-      const updatedUser = await clerk.users.getUser(ctx.userId);
-      await syncUserFromClerk(updatedUser);
-
-      return {
-        success: true,
-        message: 'User public metadata updated successfully',
       };
     }),
 });

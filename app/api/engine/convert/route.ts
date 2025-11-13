@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { ApiResponseHandler } from '@/lib/api';
 import { convertCurrency, EngineError } from '@/lib/engine';
 import type { 
   CurrencyConvertRequest
 } from '@/lib/types';
+import { auth } from '@/lib/auth/providers';
 
 export async function POST(request: NextRequest) {
   try {
+    const sessionData = await auth.api.getSession({ headers: request.headers });
+    
     // Check authentication
-    const { userId } = await auth();
-    if (!userId) {
+    if (!sessionData) {
       return NextResponse.json(
         { 
           success: false, 

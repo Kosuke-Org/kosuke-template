@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Menu, LogOut, Settings, User, CreditCard } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
+import { useAuth } from '@/hooks/use-auth';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
-import { useAuthActions } from '@/hooks/use-auth-actions';
+import { useAuthActions } from '@/hooks/use-auth';
 import { useActiveOrganization } from '@/hooks/use-active-organization';
 
 interface NavbarProps {
@@ -28,9 +28,9 @@ interface NavbarProps {
 }
 
 export default function Navbar({ variant = 'standard', className }: NavbarProps) {
-  const { user, isSignedIn } = useUser();
-  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar(user);
-  const { handleSignOut } = useAuthActions();
+  const { isSignedIn } = useAuth();
+  const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar();
+  const { signOut: handleSignOut } = useAuthActions();
   const { activeOrganization } = useActiveOrganization();
   const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
   const settingsUrl = '/settings';
@@ -51,7 +51,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
 
         {/* Desktop navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          {isSignedIn && user ? (
+          {isSignedIn ? (
             // Show user profile for logged-in users
             <div className="flex items-center gap-3">
               <DropdownMenu>
@@ -127,7 +127,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
             </SheetTrigger>
             <SheetContent side="right">
               <nav className="flex flex-col gap-4 mt-8">
-                {isSignedIn && user ? (
+                {isSignedIn ? (
                   // Mobile navigation for logged-in users
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-3 p-2 border rounded-lg">

@@ -1,25 +1,19 @@
 'use client';
 
 import { useMemo, createContext, useContext, ReactNode, useState } from 'react';
-import type { UserResource } from '@clerk/types';
+import { User } from '@/lib/db/schema';
 
 /**
- * Hook to handle profile image URLs from Clerk
- * Prioritizes custom uploaded images over Clerk's default images
+ * Hook to handle profile image URLs
  */
-export function useProfileImageUrl(user?: UserResource | null) {
+export function useProfileImageUrl(user?: Omit<User, 'clerkUserId'>) {
   const { currentImageUrl } = useProfileImage();
 
   return useMemo(() => {
-    // Priority order:
-    // 1. Current image URL from context (newly uploaded)
-    // 2. Custom profile image from user metadata
-    // 3. Return null to show initials fallback (don't use Clerk's default avatar)
     if (currentImageUrl) return currentImageUrl;
-    if (user?.publicMetadata?.customProfileImageUrl)
-      return user.publicMetadata.customProfileImageUrl as string;
+    if (user?.profileImageUrl) return user.profileImageUrl;
     return null;
-  }, [currentImageUrl, user?.publicMetadata?.customProfileImageUrl]);
+  }, [currentImageUrl, user?.profileImageUrl]);
 }
 
 // Profile Image Context for managing profile image state

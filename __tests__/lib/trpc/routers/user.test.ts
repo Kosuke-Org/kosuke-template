@@ -1,175 +1,139 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createCaller } from '@/lib/trpc/server';
-import { createMockTRPCContext, mockClerkUser } from '@/__tests__/setup/mocks';
-import type { ClerkUserType } from '@/lib/types';
+import { createMockTRPCContext } from '@/__tests__/setup/mocks';
+import { appRouter } from '@/lib/trpc/router';
+
+vi.mock('@/lib/auth/providers', () => ({
+  auth: {
+    api: {
+      getActiveMemberRole: vi.fn(),
+      getFullOrganization: vi.fn(),
+      updateOrganization: vi.fn(),
+    },
+  },
+}));
 
 vi.mock('@/lib/storage', () => ({
   uploadProfileImage: vi.fn(),
   deleteProfileImage: vi.fn(),
 }));
 
-vi.mock('@/lib/auth', () => ({
-  syncUserFromClerk: vi.fn(),
+vi.mock('next/headers', () => ({
+  headers: vi.fn(() => ({})),
 }));
 
-vi.mock('@clerk/nextjs/server', async () => {
-  const actual = await vi.importActual('@clerk/nextjs/server');
-  return {
-    ...actual,
-    clerkClient: vi.fn(() =>
-      Promise.resolve({
-        users: {
-          getUser: vi.fn(() =>
-            Promise.resolve({
-              id: 'user_123',
-              emailAddresses: [{ emailAddress: 'test@example.com' }],
-              publicMetadata: {},
-              imageUrl: 'https://example.com/old-avatar.jpg',
-            })
-          ),
-          updateUser: vi.fn(() => Promise.resolve({ id: 'user_123' })),
-        },
-      })
-    ),
-  };
-});
-
 describe('User Router', () => {
-  beforeEach(() => {
+  const mockOrgId = '123e4567-e89b-12d3-a456-426614174000';
+  const base64Image =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+  let caller: ReturnType<typeof appRouter.createCaller>;
+  let auth: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  let uploadProfileImage: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  let deleteProfileImage: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+
+  beforeEach(async () => {
     vi.clearAllMocks();
+
+    // Dynamically import after mocks are applied
+    ({ auth } = await import('@/lib/auth/providers'));
+    ({ uploadProfileImage, deleteProfileImage } = await import('@/lib/storage'));
+
+    // Default happy-path mocks
+    auth.api.getActiveMemberRole.mockResolvedValue({ role: 'admin' });
+    auth.api.updateOrganization.mockResolvedValue({});
+    auth.api.getFullOrganization.mockResolvedValue({
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      logo: 'http://localhost:3000/uploads/old-logo.png',
+    });
+    uploadProfileImage.mockResolvedValue('http://localhost:3000/uploads/new-logo.png');
+    deleteProfileImage.mockResolvedValue(undefined);
+
+    const ctx = await createMockTRPCContext({
+      userId: 'user_123',
+    });
+    caller = await appRouter.createCaller(ctx);
   });
 
-  describe('uploadProfileImage', () => {
-    it('should upload profile image successfully', async () => {
-      const { uploadProfileImage } = await import('@/lib/storage');
-      const { syncUserFromClerk } = await import('@/lib/auth');
-
-      vi.mocked(uploadProfileImage).mockResolvedValue(
-        'https://blob.vercel-storage.com/new-avatar.jpg'
-      );
-      vi.mocked(syncUserFromClerk).mockResolvedValue({
-        id: 'local_user_123',
-        clerkUserId: 'user_123',
-        wasUpdated: true,
-      });
-
-      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
-
-      // Create a small base64 image (1x1 pixel PNG)
-      const base64Image =
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-
-      const result = await caller.user.uploadProfileImage({
+  describe('uploadOrganizationLogo', () => {
+    it('uploads a logo successfully for admin/owner', async () => {
+      const result = await caller.organizations.uploadOrganizationLogo({
         fileBase64: base64Image,
-        fileName: 'avatar.png',
+        fileName: 'logo.png',
         mimeType: 'image/png',
       });
 
-      expect(result.success).toBe(true);
-      expect(result.imageUrl).toBe('https://blob.vercel-storage.com/new-avatar.jpg');
-      expect(result.message).toContain('updated successfully');
-      expect(uploadProfileImage).toHaveBeenCalled();
-      expect(syncUserFromClerk).toHaveBeenCalled();
+      expect(uploadProfileImage).toHaveBeenCalledWith(expect.any(File), mockOrgId);
+      expect(result).toEqual({
+        success: true,
+        message: 'Organization logo uploaded successfully',
+      });
     });
 
-    it('should throw error when file is too large', async () => {
-      const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
+    it('throws FORBIDDEN when role is not admin or owner', async () => {
+      auth.api.getActiveMemberRole.mockResolvedValueOnce({ role: 'member' });
 
-      // Create a large base64 string (simulating > 5MB file)
-      const largeBase64 = 'data:image/png;base64,' + 'A'.repeat(7 * 1024 * 1024);
-
-      await expect(
-        caller.user.uploadProfileImage({
-          fileBase64: largeBase64,
-          fileName: 'large-avatar.png',
+      expect(
+        caller.organizations.uploadOrganizationLogo({
+          fileBase64: base64Image,
+          fileName: 'logo.png',
           mimeType: 'image/png',
         })
-      ).rejects.toThrow('File too large');
+      ).rejects.toThrow(/Only organization admins and owners can upload the logo/);
     });
 
-    it('should delete old image before uploading new one', async () => {
-      const { uploadProfileImage, deleteProfileImage } = await import('@/lib/storage');
-      const { syncUserFromClerk } = await import('@/lib/auth');
+    it('throws BAD_REQUEST when file size exceeds 2MB', async () => {
+      const largeBase64 = 'data:image/png;base64,' + 'A'.repeat(3 * 1024 * 1024);
 
-      vi.mocked(uploadProfileImage).mockResolvedValue('https://blob.vercel-storage.com/new.jpg');
-      vi.mocked(deleteProfileImage).mockResolvedValue(undefined);
-      vi.mocked(syncUserFromClerk).mockResolvedValue({
-        id: 'local_user_123',
-        clerkUserId: 'user_123',
-        wasUpdated: true,
-      });
-
-      const caller = await createCaller(
-        createMockTRPCContext({
-          userId: 'user_123',
-          getUser: () =>
-            Promise.resolve({
-              ...mockClerkUser,
-              imageUrl: 'https://blob.vercel-storage.com/old.jpg',
-              publicMetadata: {},
-            } as unknown as ClerkUserType),
+      expect(
+        caller.organizations.uploadOrganizationLogo({
+          fileBase64: largeBase64,
+          fileName: 'big-logo.png',
+          mimeType: 'image/png',
         })
-      );
+      ).rejects.toThrow(/File size must be less than 2MB/);
+    });
 
-      const base64Image =
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
-
-      await caller.user.uploadProfileImage({
-        fileBase64: base64Image,
-        fileName: 'avatar.png',
-        mimeType: 'image/png',
-      });
-
-      expect(deleteProfileImage).toHaveBeenCalledWith('https://blob.vercel-storage.com/old.jpg');
+    it('throws INTERNAL_SERVER_ERROR when upload fails', async () => {
+      uploadProfileImage.mockRejectedValueOnce(new Error('Upload failed'));
+      await expect(
+        caller.organizations.uploadOrganizationLogo({
+          fileBase64: base64Image,
+          fileName: 'logo.png',
+          mimeType: 'image/png',
+        })
+      ).rejects.toThrow(/Upload failed/);
     });
   });
 
-  describe('deleteProfileImage', () => {
-    it('should delete profile image successfully', async () => {
-      const { deleteProfileImage } = await import('@/lib/storage');
-      const { syncUserFromClerk } = await import('@/lib/auth');
+  describe('deleteOrganizationLogo', () => {
+    it('deletes an existing logo successfully', async () => {
+      const result = await caller.organizations.deleteOrganizationLogo();
 
-      vi.mocked(deleteProfileImage).mockResolvedValue(undefined);
-      vi.mocked(syncUserFromClerk).mockResolvedValue({
-        id: 'local_user_123',
-        clerkUserId: 'user_123',
-        wasUpdated: true,
+      expect(auth.api.getActiveMemberRole).toHaveBeenCalled();
+      expect(auth.api.getFullOrganization).toHaveBeenCalled();
+      expect(deleteProfileImage).toHaveBeenCalledWith('http://localhost:3000/uploads/old-logo.png');
+      expect(auth.api.updateOrganization).toHaveBeenCalledWith({
+        body: { data: { logo: '' } },
+        headers: expect.any(Object),
       });
-
-      const caller = await createCaller(
-        createMockTRPCContext({
-          userId: 'user_123',
-          getUser: () =>
-            Promise.resolve({
-              ...mockClerkUser,
-              imageUrl: 'https://blob.vercel-storage.com/avatar.jpg',
-              publicMetadata: {},
-            } as unknown as ClerkUserType),
-        })
-      );
-
-      const result = await caller.user.deleteProfileImage();
-
-      expect(result.success).toBe(true);
-      expect(result.message).toContain('deleted successfully');
-      expect(deleteProfileImage).toHaveBeenCalledWith('https://blob.vercel-storage.com/avatar.jpg');
-      expect(syncUserFromClerk).toHaveBeenCalled();
+      expect(result).toEqual({
+        success: true,
+        message: 'Organization logo deleted successfully',
+      });
     });
 
-    it('should throw error when no profile image to delete', async () => {
-      const caller = await createCaller(
-        createMockTRPCContext({
-          userId: 'user_123',
-          getUser: () =>
-            Promise.resolve({
-              ...mockClerkUser,
-              imageUrl: null,
-              publicMetadata: {},
-            } as unknown as ClerkUserType),
-        })
+    it('throws BAD_REQUEST when no logo exists', async () => {
+      auth.api.getFullOrganization.mockResolvedValueOnce();
+      await expect(caller.organizations.deleteOrganizationLogo()).rejects.toThrow(
+        /Organization logo not found/
       );
+    });
 
-      await expect(caller.user.deleteProfileImage()).rejects.toThrow('No profile image to delete');
+    it('throws FORBIDDEN when role is not admin or owner', async () => {
+      auth.api.getActiveMemberRole.mockResolvedValueOnce({ role: 'member' });
+      await expect(caller.organizations.deleteOrganizationLogo()).rejects.toThrow(
+        /Only organization admins and owners can delete the logo/
+      );
     });
   });
 });

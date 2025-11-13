@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { useUser } from '@clerk/nextjs';
+import { useUser } from '@/hooks/use-user';
 import { useNotificationSettings } from '@/hooks/use-notification-settings';
 import { ToggleSkeleton, ButtonSkeleton } from '@/components/skeletons';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,10 +38,10 @@ function NotificationsSettingsSkeleton() {
 }
 
 export default function NotificationsPage() {
-  const { user, isSignedIn } = useUser();
+  const { user } = useUser();
   const { settings, updateSetting, isUpdating, isLoading } = useNotificationSettings();
 
-  if (!isSignedIn || !user) {
+  if (!user) {
     return <NotificationsSettingsSkeleton />;
   }
 

@@ -65,12 +65,13 @@ interface OrderDetailPageProps {
 export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { activeOrgId } = useActiveOrganization();
+  const { activeOrganization } = useActiveOrganization();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const utils = trpc.useUtils();
+  const activeOrgId = activeOrganization?.id;
 
   const { data: order, isLoading } = trpc.orders.get.useQuery(
     {

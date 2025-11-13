@@ -30,21 +30,18 @@ import {
 } from '@/components/ui/form';
 import { useCreateOrganization } from '@/hooks/use-create-organization';
 import { createOrgFormSchema } from '@/lib/trpc/schemas/organizations';
+import { useRouter } from 'next/navigation';
 
 type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 
 interface CreateOrgDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onOrganizationCreated?: (slug: string) => void;
 }
 
-export function CreateOrgDialog({
-  open,
-  onOpenChange,
-  onOrganizationCreated,
-}: CreateOrgDialogProps) {
+export function CreateOrgDialog({ open, onOpenChange }: CreateOrgDialogProps) {
   const { createOrganization, isCreating } = useCreateOrganization();
+  const router = useRouter();
 
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(createOrgFormSchema),
@@ -58,8 +55,7 @@ export function CreateOrgDialog({
       onSuccess: (slug) => {
         onOpenChange(false);
         form.reset();
-
-        onOrganizationCreated?.(slug);
+        router.push(`/org/${slug}/dashboard`);
       },
     });
   };

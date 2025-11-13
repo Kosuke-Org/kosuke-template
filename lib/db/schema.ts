@@ -1,9 +1,9 @@
-import { pgTable, text, timestamp, varchar, pgEnum, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, varchar, pgEnum, uuid, boolean } from 'drizzle-orm/pg-core';
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 
 // Enums
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);
-export const orgRoleEnum = pgEnum('org_role', ['org:admin', 'org:member']);
+export const orgRoleEnum = pgEnum('org_role', ['owner', 'admin', 'member']);
 export const orderStatusEnum = pgEnum('order_status', [
   'pending',
   'processing',
@@ -11,31 +11,83 @@ export const orderStatusEnum = pgEnum('order_status', [
   'delivered',
   'cancelled',
 ]);
-
-// Users - Minimal sync from Clerk for local queries and future expansion
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
-  clerkUserId: text('clerk_user_id').notNull().unique(), // Clerk user ID
-  email: text('email').notNull(),
-  displayName: text('display_name'),
+  email: text('email').notNull().unique(),
+  emailVerified: boolean('email_verified').default(false).notNull(),
+  displayName: text('display_name').notNull(),
   profileImageUrl: text('profile_image_url'),
   stripeCustomerId: text('stripe_customer_id').unique(), // Stripe customer ID
   notificationSettings: text('notification_settings'), // JSON string for notification preferences
-  lastSyncedAt: timestamp('last_synced_at').defaultNow().notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
-// Organizations - Clerk organizations synced to local database
+export const sessions = pgTable('sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  expiresAt: timestamp('expires_at').notNull(),
+  token: text('token').notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  activeOrganizationId: uuid('active_organization_id').references(() => organizations.id, {
+    onDelete: 'set null',
+  }),
+  activeOrganizationSlug: text('active_organization_slug').references(() => organizations.slug, {
+    onDelete: 'set null',
+  }),
+});
+
+export const accounts = pgTable('accounts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: timestamp('access_token_expires_at'),
+  refreshTokenExpiresAt: timestamp('refresh_token_expires_at'),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const verifications = pgTable('verifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
 export const organizations = pgTable('organizations', {
   id: uuid('id').primaryKey().defaultRandom(),
-  clerkOrgId: text('clerk_org_id').notNull().unique(), // Clerk organization ID
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
-  logoUrl: text('logo_url'),
-  settings: text('settings').default('{}'), // JSON string for org-wide settings
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  logo: text('logo'), // TODO make nullable
+  metadata: text('metadata'),
 });
 
 // Organization Memberships - Links users to organizations
@@ -44,19 +96,31 @@ export const orgMemberships = pgTable('org_memberships', {
   organizationId: uuid('organization_id')
     .notNull()
     .references(() => organizations.id, { onDelete: 'cascade' }),
-  clerkUserId: text('clerk_user_id')
+  userId: uuid('user_id')
     .notNull()
-    .references(() => users.clerkUserId, { onDelete: 'cascade' }),
-  clerkMembershipId: text('clerk_membership_id').notNull().unique(), // Clerk membership ID
-  role: orgRoleEnum('role').notNull().default('org:member'),
-  joinedAt: timestamp('joined_at').defaultNow().notNull(),
-  invitedBy: text('invited_by'), // clerkUserId of inviter
+    .references(() => users.id, { onDelete: 'cascade' }),
+  role: orgRoleEnum('role').notNull(),
+  createdAt: timestamp('created_at').notNull(),
 });
 
-// User Subscriptions - Links Clerk users/organizations to Stripe subscriptions
+export const invitations = pgTable('invitations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  email: text('email').notNull(),
+  role: orgRoleEnum('role').notNull(),
+  status: text('status').default('pending').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  inviterId: uuid('inviter_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+});
+
+// User Subscriptions
 export const userSubscriptions = pgTable('user_subscriptions', {
   id: uuid('id').defaultRandom().primaryKey(),
-  clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID (owner/admin)
+  userId: uuid('user_id').notNull(),
   organizationId: uuid('organization_id').references(() => organizations.id, {
     onDelete: 'cascade',
   }), // Nullable for personal subscriptions
@@ -75,10 +139,10 @@ export const userSubscriptions = pgTable('user_subscriptions', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-// Activity Logs - Optional app-specific logging (references Clerk user IDs)
+// Activity Logs - Optional app-specific logging
 export const activityLogs = pgTable('activity_logs', {
   id: uuid('id').defaultRandom().primaryKey(),
-  clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID
+  userId: uuid('user_id').notNull(),
   action: text('action').notNull(),
   timestamp: timestamp('timestamp').notNull().defaultNow(),
   ipAddress: varchar('ip_address', { length: 45 }),
@@ -88,7 +152,7 @@ export const activityLogs = pgTable('activity_logs', {
 // Tasks - Simple todo list functionality with organization support
 export const tasks = pgTable('tasks', {
   id: uuid('id').defaultRandom().primaryKey(),
-  clerkUserId: text('clerk_user_id').notNull(), // Clerk user ID (creator)
+  userId: uuid('user_id').notNull(),
   organizationId: uuid('organization_id').references(() => organizations.id, {
     onDelete: 'cascade',
   }), // Nullable for personal tasks
@@ -105,7 +169,7 @@ export const tasks = pgTable('tasks', {
 export const orders = pgTable('orders', {
   id: uuid('id').defaultRandom().primaryKey(), // Serves as both ID and order number
   customerName: text('customer_name').notNull(),
-  clerkUserId: text('clerk_user_id').notNull(), // User who created/manages the order
+  userId: uuid('user_id').notNull(),
   organizationId: uuid('organization_id')
     .notNull()
     .references(() => organizations.id, {
@@ -159,6 +223,10 @@ export enum ActivityType {
 // Types (derive from Drizzle schema to avoid Zod instance mismatches)
 export type User = InferSelectModel<typeof users>;
 export type NewUser = InferInsertModel<typeof users>;
+export type Session = InferSelectModel<typeof sessions>;
+export type NewSession = InferInsertModel<typeof sessions>;
+export type Verification = InferSelectModel<typeof verifications>;
+export type NewVerification = InferInsertModel<typeof verifications>;
 export type UserSubscription = InferSelectModel<typeof userSubscriptions>;
 export type NewUserSubscription = InferInsertModel<typeof userSubscriptions>;
 export type ActivityLog = InferSelectModel<typeof activityLogs>;
