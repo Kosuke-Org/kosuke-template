@@ -52,6 +52,9 @@ jobs:
       - name: Run Knip
         run: bun run knip
 
+      - name: Build application
+        run: bun run build
+
   test-engine:
     name: Test and Lint Engine Service
     runs-on: ubuntu-latest
