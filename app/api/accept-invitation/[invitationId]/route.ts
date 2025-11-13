@@ -9,6 +9,8 @@ export async function GET(
 ) {
   const { invitationId } = await params;
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+
   try {
     const session = await auth.api.getSession({
       headers: await headers(),
@@ -16,7 +18,7 @@ export async function GET(
 
     if (!session?.user) {
       // Not signed in, redirect to sign-in and preserve this API URL as redirect target
-      const signInUrl = new URL('/sign-in', request.url);
+      const signInUrl = new URL('/sign-in', baseUrl);
       signInUrl.searchParams.set('redirect', request.nextUrl.pathname);
       return NextResponse.redirect(signInUrl);
     }
@@ -43,9 +45,9 @@ export async function GET(
     }
 
     // Redirect to root – middleware will route to active org dashboard if available
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/', baseUrl));
   } catch (error) {
     console.error(error);
-    return NextResponse.redirect(new URL('/', request.url));
+    return NextResponse.redirect(new URL('/', baseUrl));
   }
 }
