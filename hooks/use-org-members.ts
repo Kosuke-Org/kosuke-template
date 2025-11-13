@@ -5,15 +5,13 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
-import { organization } from '@/lib/auth/client';
+import { AUTH_ROUTES } from '@/lib/auth';
+import { useState } from 'react';
 
 export function useOrgMembers(organizationId: string | undefined) {
   const { toast } = useToast();
-  const router = useRouter();
   const utils = trpc.useUtils();
   const [isLeavingComplete, setIsLeavingComplete] = useState(true);
 
@@ -67,31 +65,19 @@ export function useOrgMembers(organizationId: string | undefined) {
     onMutate: () => {
       setIsLeavingComplete(false);
     },
-    onSuccess: async (data) => {
-      try {
-        await utils.organizations.getOrgMembers.invalidate({ organizationId: organizationId! });
-        await utils.organizations.getUserOrganizations.invalidate();
-        const otherOrgs = await utils.organizations.getUserOrganizations.getData();
+    onSuccess: (data) => {
+      toast({
+        title: 'Success',
+        description: data.message,
+      });
 
-        if (otherOrgs?.length) {
-          const nextOrg = otherOrgs[0];
-
-          await organization.setActive({
-            organizationId: nextOrg.id,
-            organizationSlug: nextOrg.slug,
-          });
-        } else {
-          await organization.setActive({ organizationId: null, organizationSlug: undefined });
-        }
-
-        toast({
-          title: 'Success',
-          description: data.message,
-        });
-        // Navigate to root - middleware will redirect based on new session state
-        router.push('/');
-      } finally {
-        setIsLeavingComplete(true);
+      if (data.nextOrganization) {
+        setTimeout(() => {
+          setIsLeavingComplete(true);
+          window.location.href = `/org/${data.nextOrganization?.slug}/dashboard`;
+        }, 500);
+      } else {
+        window.location.href = AUTH_ROUTES.ONBOARDING;
       }
     },
     onError: (error) => {
