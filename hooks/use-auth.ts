@@ -10,7 +10,7 @@
 import { signOut, useSession, emailOtp, signIn } from '@/lib/auth/client';
 import { useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { trpc } from '@/lib/trpc/client';
 import { AUTH_ROUTES } from '@/lib/auth/constants';
 
@@ -65,13 +65,16 @@ export function useAuthActions() {
   const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { refetch, isRefetching } = useSession();
 
   const clearSignInAttemptMutation = trpc.auth.clearSignInAttempt.useMutation();
 
   const isSignUpFlow = pathname?.includes('/sign-up');
-  const redirectUrl = searchParams?.get('redirect');
+  let redirectUrl: string | null = null;
+
+  if (typeof window !== 'undefined') {
+    redirectUrl = new URLSearchParams(window.location.search).get('redirect');
+  }
 
   const verifyOTPMutation = useMutation({
     mutationFn: async ({ email, otp }: { email: string; otp: string }) => {

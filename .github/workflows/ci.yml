@@ -16,12 +16,8 @@ jobs:
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
-        # Automatically reads from .bun-version file
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          bun-version-file: '.bun-version'
 
       - name: Cache Bun
         uses: actions/cache@v4
@@ -37,6 +33,9 @@ jobs:
       - name: Copy environment variables
         run: cp .env.example .env
 
+      - name: Start Docker services
+        run: docker compose up -d postgres
+
       - name: Run ESLint
         run: bun run lint
 
@@ -51,6 +50,9 @@ jobs:
 
       - name: Run Knip
         run: bun run knip
+
+      - name: Build application
+        run: bun run build
 
   test-engine:
     name: Test and Lint Engine Service

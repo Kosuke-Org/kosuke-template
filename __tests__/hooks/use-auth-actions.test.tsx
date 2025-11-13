@@ -12,12 +12,9 @@ const mockUseRouter = vi.fn(() => ({
   refresh: vi.fn(),
 }));
 
-// Mock pathname and search params
+// Mock pathname
 let mockPathname = '/';
-let mockSearchParams = new URLSearchParams();
-
 const mockUsePathname = vi.fn(() => mockPathname);
-const mockUseSearchParams = vi.fn(() => mockSearchParams);
 
 vi.mock('@/lib/auth/client', () => {
   const mockSignOut = vi.fn();
@@ -49,7 +46,6 @@ vi.mock('@/lib/auth/client', () => {
 vi.mock('next/navigation', () => ({
   useRouter: () => mockUseRouter(),
   usePathname: () => mockUsePathname(),
-  useSearchParams: () => mockUseSearchParams(),
 }));
 
 vi.mock('@/hooks/use-toast', () => ({
@@ -113,6 +109,13 @@ const mockSignOut = vi.mocked(signOut);
 const mockVerifyEmail = vi.mocked(emailOtp.verifyEmail);
 const mockSignInEmailOtp = vi.mocked(signIn.emailOtp);
 
+function setLocationSearch(redirectUrl: string | null) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).location.search = redirectUrl
+    ? `?redirect=${encodeURIComponent(redirectUrl)}`
+    : '';
+}
+
 describe('useAuthActions', () => {
   const wrapper = createQueryWrapper();
 
@@ -123,9 +126,16 @@ describe('useAuthActions', () => {
     mockSignInEmailOtp.mockResolvedValue({ error: null });
     mockClearSignInAttemptMutate.mockResolvedValue(undefined);
     mockRouterPush.mockClear();
-    // Reset to default values
+
+    // Reset global location.search
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (window as any).location;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).location = {
+      search: '',
+    };
+
     mockPathname = '/';
-    mockSearchParams = new URLSearchParams();
   });
 
   describe('signOut', () => {
@@ -172,7 +182,7 @@ describe('useAuthActions', () => {
   describe('signIn redirect behavior', () => {
     it('should redirect to verify OTP page with redirect param when redirectUrl is present', () => {
       const redirectUrl = '/accept-invitation/123';
-      mockSearchParams = new URLSearchParams({ redirect: redirectUrl });
+      setLocationSearch(redirectUrl);
       mockPathname = '/sign-in';
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
@@ -187,7 +197,7 @@ describe('useAuthActions', () => {
     });
 
     it('should redirect to verify OTP page without redirect param when redirectUrl is not present', () => {
-      mockSearchParams = new URLSearchParams();
+      setLocationSearch(null);
       mockPathname = '/sign-in';
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
@@ -203,7 +213,7 @@ describe('useAuthActions', () => {
   describe('signUp redirect behavior', () => {
     it('should redirect to verify email page with redirect param when redirectUrl is present', () => {
       const redirectUrl = '/accept-invitation/123';
-      mockSearchParams = new URLSearchParams({ redirect: redirectUrl });
+      setLocationSearch(redirectUrl);
       mockPathname = '/sign-up';
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
@@ -218,7 +228,7 @@ describe('useAuthActions', () => {
     });
 
     it('should redirect to verify email page without redirect param when redirectUrl is not present', () => {
-      mockSearchParams = new URLSearchParams();
+      setLocationSearch(null);
       mockPathname = '/sign-up';
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
@@ -234,7 +244,7 @@ describe('useAuthActions', () => {
   describe('OTP verification redirect behavior - sign-in flow', () => {
     it('should redirect to redirectUrl when OTP verification succeeds and redirectUrl is present', async () => {
       const redirectUrl = '/accept-invitation/123';
-      mockSearchParams = new URLSearchParams({ redirect: redirectUrl });
+      setLocationSearch(redirectUrl);
       mockPathname = '/sign-in/verify';
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
@@ -249,7 +259,7 @@ describe('useAuthActions', () => {
     });
 
     it('should redirect to root when OTP verification succeeds and redirectUrl is not present', async () => {
-      mockSearchParams = new URLSearchParams();
+      setLocationSearch(null);
       mockPathname = '/sign-in/verify';
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
@@ -267,7 +277,7 @@ describe('useAuthActions', () => {
   describe('OTP verification redirect behavior - sign-up flow', () => {
     it('should redirect to redirectUrl when email verification succeeds and redirectUrl is present', async () => {
       const redirectUrl = '/accept-invitation/123';
-      mockSearchParams = new URLSearchParams({ redirect: redirectUrl });
+      setLocationSearch(redirectUrl);
       mockPathname = '/sign-up/verify-email-address';
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
@@ -282,7 +292,7 @@ describe('useAuthActions', () => {
     });
 
     it('should redirect to onboarding when email verification succeeds and redirectUrl is not present', async () => {
-      mockSearchParams = new URLSearchParams();
+      setLocationSearch(null);
       mockPathname = '/sign-up/verify-email-address';
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
@@ -300,7 +310,8 @@ describe('useAuthActions', () => {
   describe('sendOTP redirect behavior', () => {
     it('should use sign-up flow when pathname includes /sign-up', () => {
       mockPathname = '/sign-up';
-      mockSearchParams = new URLSearchParams({ redirect: '/accept-invitation/123' });
+      const redirectUrl = '/accept-invitation/123';
+      setLocationSearch(redirectUrl);
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
 
@@ -310,13 +321,14 @@ describe('useAuthActions', () => {
 
       // Should call signUp mutation which redirects to verify email
       expect(mockRouterPush).toHaveBeenCalledWith(
-        `${AUTH_ROUTES.VERIFY_EMAIL}?redirect=${encodeURIComponent('/accept-invitation/123')}`
+        `${AUTH_ROUTES.VERIFY_EMAIL}?redirect=${encodeURIComponent(redirectUrl)}`
       );
     });
 
     it('should use sign-in flow when pathname does not include /sign-up', () => {
       mockPathname = '/sign-in';
-      mockSearchParams = new URLSearchParams({ redirect: '/accept-invitation/123' });
+      const redirectUrl = '/accept-invitation/123';
+      setLocationSearch(redirectUrl);
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
 
@@ -326,7 +338,7 @@ describe('useAuthActions', () => {
 
       // Should call signIn mutation which redirects to verify OTP
       expect(mockRouterPush).toHaveBeenCalledWith(
-        `${AUTH_ROUTES.VERIFY_OTP}?redirect=${encodeURIComponent('/accept-invitation/123')}`
+        `${AUTH_ROUTES.VERIFY_OTP}?redirect=${encodeURIComponent(redirectUrl)}`
       );
     });
   });
