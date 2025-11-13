@@ -11,6 +11,7 @@ export default defineConfig({
     include: ['__tests__/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/.next/**', '__tests__/setup/**', '**/engine/**'],
     unstubEnvs: true,
+    unstubGlobals: true,
     coverage: {
       provider: 'v8', // Faster than istanbul
       include: [
