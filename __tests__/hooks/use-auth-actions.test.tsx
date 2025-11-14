@@ -243,7 +243,7 @@ describe('useAuthActions', () => {
 
   describe('OTP verification redirect behavior - sign-in flow', () => {
     it('should redirect to redirectUrl when OTP verification succeeds and redirectUrl is present', async () => {
-      const redirectUrl = '/accept-invitation/123';
+      const redirectUrl = 'http://localhost:3000/accept-invitation/123';
       setLocationSearch(redirectUrl);
       mockPathname = '/sign-in/verify';
 
@@ -255,7 +255,7 @@ describe('useAuthActions', () => {
 
       expect(mockSignInEmailOtp).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
       expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
-      expect(mockRouterPush).toHaveBeenCalledWith(redirectUrl);
+      expect(window.location.href).toBe(redirectUrl);
     });
 
     it('should redirect to root when OTP verification succeeds and redirectUrl is not present', async () => {
@@ -270,16 +270,15 @@ describe('useAuthActions', () => {
 
       expect(mockSignInEmailOtp).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
       expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
-      expect(mockRouterPush).toHaveBeenCalledWith(AUTH_ROUTES.ROOT);
+      expect(window.location.href).toBe('/');
     });
   });
 
   describe('OTP verification redirect behavior - sign-up flow', () => {
     it('should redirect to redirectUrl when email verification succeeds and redirectUrl is present', async () => {
-      const redirectUrl = '/accept-invitation/123';
+      const redirectUrl = 'http://localhost:3000/accept-invitation/123';
       setLocationSearch(redirectUrl);
       mockPathname = '/sign-up/verify-email-address';
-
       const { result } = renderHook(() => useAuthActions(), { wrapper });
 
       await act(async () => {
@@ -288,13 +287,12 @@ describe('useAuthActions', () => {
 
       expect(mockVerifyEmail).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
       expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
-      expect(mockRouterPush).toHaveBeenCalledWith(redirectUrl);
+      expect(window.location.href).toBe(redirectUrl);
     });
 
     it('should redirect to onboarding when email verification succeeds and redirectUrl is not present', async () => {
       setLocationSearch(null);
       mockPathname = '/sign-up/verify-email-address';
-
       const { result } = renderHook(() => useAuthActions(), { wrapper });
 
       await act(async () => {
@@ -303,7 +301,7 @@ describe('useAuthActions', () => {
 
       expect(mockVerifyEmail).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
       expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
-      expect(mockRouterPush).toHaveBeenCalledWith(AUTH_ROUTES.ONBOARDING);
+      expect(window.location.href).toBe(AUTH_ROUTES.ROOT);
     });
   });
 
@@ -327,7 +325,7 @@ describe('useAuthActions', () => {
 
     it('should use sign-in flow when pathname does not include /sign-up', () => {
       mockPathname = '/sign-in';
-      const redirectUrl = '/accept-invitation/123';
+      const redirectUrl = 'http://localhost:3000/accept-invitation/123';
       setLocationSearch(redirectUrl);
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
