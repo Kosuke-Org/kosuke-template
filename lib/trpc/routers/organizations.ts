@@ -16,6 +16,7 @@ import {
   updateMemberRoleSchema,
   getOrgMembersSchema,
   leaveOrganizationSchema,
+  cancelInvitationSchema,
   getUserOrganizationsSchema,
 } from '../schemas/organizations';
 import { z } from 'zod';
@@ -266,6 +267,20 @@ export const organizationsRouter = router({
     return {
       success: true,
       message: 'Member invited successfully',
+    };
+  }),
+
+  cancelInvitation: protectedProcedure.input(cancelInvitationSchema).mutation(async ({ input }) => {
+    await auth.api.cancelInvitation({
+      body: {
+        invitationId: input.invitationId,
+      },
+      headers: await headers(),
+    });
+
+    return {
+      success: true,
+      message: 'Invitation cancelled successfully',
     };
   }),
 
