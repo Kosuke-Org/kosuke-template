@@ -7,7 +7,6 @@
 
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
-import { AUTH_ROUTES } from '@/lib/auth';
 import { useState } from 'react';
 
 export function useOrgMembers(organizationId: string | undefined) {
@@ -71,14 +70,10 @@ export function useOrgMembers(organizationId: string | undefined) {
         description: data.message,
       });
 
-      if (data.nextOrganization) {
-        setTimeout(() => {
-          setIsLeavingComplete(true);
-          window.location.href = `/org/${data.nextOrganization?.slug}/dashboard`;
-        }, 500);
-      } else {
-        window.location.href = AUTH_ROUTES.ONBOARDING;
-      }
+      setTimeout(() => {
+        setIsLeavingComplete(true);
+        window.location.href = process.env.NEXT_PUBLIC_APP_URL!;
+      }, 500);
     },
     onError: (error) => {
       setIsLeavingComplete(true);

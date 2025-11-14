@@ -352,7 +352,6 @@ export const organizationsRouter = router({
       return {
         success: true,
         message: 'You have left the organization',
-        nextOrganization: otherOrgs.length ? otherOrgs[0] : null,
       };
     }),
 });
