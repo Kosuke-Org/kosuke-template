@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 import { useAuthActions } from '@/hooks/use-auth';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useOrganization } from '@/hooks/use-organization';
 
 interface NavbarProps {
   variant?: 'standard' | 'transparent';
@@ -31,7 +31,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
   const { isSignedIn } = useAuth();
   const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar();
   const { signOut: handleSignOut } = useAuthActions();
-  const { activeOrganization } = useActiveOrganization();
+  const { organization: activeOrganization } = useOrganization();
   const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
   const settingsUrl = '/settings';
   const billingUrl = '/settings/billing';

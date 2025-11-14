@@ -24,7 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useOrganization } from '@/hooks/use-organization';
 import { useOrganizations } from '@/hooks/use-organizations';
 import { getInitials } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,7 +34,7 @@ import { organization } from '@/lib/auth/client';
 export function SidebarOrgSwitcher() {
   const { isMobile } = useSidebar();
   const { organizations, isLoading } = useOrganizations();
-  const { activeOrganization, isLoading: isActivating } = useActiveOrganization();
+  const { organization: activeOrganization, isLoading: isActivating } = useOrganization();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
 
   // Loading state

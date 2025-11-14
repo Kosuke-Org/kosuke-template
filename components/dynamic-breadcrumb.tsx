@@ -9,7 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useOrganization } from '@/hooks/use-organization';
 import { BreadcrumbSkeleton } from './skeletons';
 import { useAuth } from '@/hooks/use-auth';
 
@@ -29,7 +29,7 @@ const routeNames: Record<string, string> = {
 
 export function DynamicBreadcrumb() {
   const pathname = usePathname();
-  const { activeOrganization, isLoading } = useActiveOrganization();
+  const { organization: activeOrganization, isLoading } = useOrganization();
   const { isLoading: isAuthLoading } = useAuth();
 
   // Split the pathname and filter out empty strings
