@@ -10,19 +10,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { AUTH_ROUTES } from '@/lib/auth/constants';
 
-export function useOrgMembers(organizationId: string | undefined) {
+export function useOrgMembers() {
   const { toast } = useToast();
   const utils = trpc.useUtils();
   const [isLeavingComplete, setIsLeavingComplete] = useState(true);
-
-  // Fetch organization members
-  const { data, isLoading, error } = trpc.organizations.getOrgMembers.useQuery(
-    { organizationId: organizationId! },
-    {
-      enabled: !!organizationId,
-      staleTime: 1000 * 60 * 2, // 2 minutes
-    }
-  );
 
   // Remove member mutation
   const removeMember = trpc.organizations.removeMember.useMutation({
@@ -31,7 +22,7 @@ export function useOrgMembers(organizationId: string | undefined) {
         title: 'Success',
         description: data.message,
       });
-      utils.organizations.getOrgMembers.invalidate({ organizationId: organizationId! });
+      utils.organizations.getOrganization.invalidate();
     },
     onError: (error) => {
       toast({
@@ -49,7 +40,7 @@ export function useOrgMembers(organizationId: string | undefined) {
         title: 'Success',
         description: data.message,
       });
-      utils.organizations.getOrgMembers.invalidate({ organizationId: organizationId! });
+      utils.organizations.getOrganization.invalidate();
     },
     onError: (error) => {
       toast({
@@ -88,9 +79,6 @@ export function useOrgMembers(organizationId: string | undefined) {
   });
 
   return {
-    members: data?.members ?? [],
-    isLoading,
-    error,
     removeMember: removeMember.mutate,
     isRemoving: removeMember.isPending,
     updateMemberRole: updateMemberRole.mutate,

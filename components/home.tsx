@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { TechLogo } from '@/app/(logged-out)/home/components/tech-card';
 import Link from 'next/link';
 import { useUser } from '@/hooks/use-user';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useOrganization } from '@/hooks/use-organization';
 
 const coreFeatures = [
   {
@@ -40,9 +40,9 @@ const coreFeatures = [
 
 export function Home() {
   const { user } = useUser();
-  const { activeOrganization } = useActiveOrganization();
+  const { organization } = useOrganization();
 
-  const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
+  const dashboardUrl = organization ? `/org/${organization.slug}/dashboard` : '/';
 
   return (
     <div className="w-full min-h-screen bg-background">

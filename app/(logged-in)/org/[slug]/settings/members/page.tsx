@@ -7,6 +7,7 @@
 
 import { OrgMemberList } from '../components/org-member-list';
 import { OrgInviteDialog } from '../components/org-invite-dialog';
+import { OrgInvitationList } from '../components/org-invitation-list';
 
 export default function OrgMembersPage() {
   return (
@@ -14,6 +15,7 @@ export default function OrgMembersPage() {
       <div className="flex items-center justify-end">
         <OrgInviteDialog />
       </div>
+      <OrgInvitationList />
       <OrgMemberList />
     </div>
   );

@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTasks } from '@/hooks/use-tasks';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useOrganization } from '@/hooks/use-organization';
 import { TaskItem } from '@/app/(logged-in)/org/[slug]/tasks/components/task-item';
 import { TaskDialog } from '@/app/(logged-in)/org/[slug]/tasks/components/task-dialog';
 import { KanbanBoard } from './components/kanban-board';
@@ -80,7 +80,7 @@ function TasksPageSkeleton() {
 }
 
 export default function OrgTasksPage() {
-  const { activeOrganization, isLoading: isLoadingOrg } = useActiveOrganization();
+  const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
