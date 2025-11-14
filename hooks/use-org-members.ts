@@ -8,6 +8,7 @@
 import { trpc } from '@/lib/trpc/client';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { AUTH_ROUTES } from '@/lib/auth/constants';
 
 export function useOrgMembers(organizationId: string | undefined) {
   const { toast } = useToast();
@@ -72,7 +73,8 @@ export function useOrgMembers(organizationId: string | undefined) {
 
       setTimeout(() => {
         setIsLeavingComplete(true);
-        window.location.href = process.env.NEXT_PUBLIC_APP_URL!;
+        // middleware will handle the redirects
+        window.location.href = AUTH_ROUTES.ROOT;
       }, 500);
     },
     onError: (error) => {

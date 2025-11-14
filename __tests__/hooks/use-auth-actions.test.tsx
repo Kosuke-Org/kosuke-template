@@ -246,6 +246,7 @@ describe('useAuthActions', () => {
       const redirectUrl = '/accept-invitation/123';
       setLocationSearch(redirectUrl);
       mockPathname = '/sign-in/verify';
+      vi.stubEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000/');
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
 
@@ -255,12 +256,13 @@ describe('useAuthActions', () => {
 
       expect(mockSignInEmailOtp).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
       expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
-      expect(mockRouterPush).toHaveBeenCalledWith(redirectUrl);
+      expect(window.location.href).toBe(process.env.NEXT_PUBLIC_APP_URL);
     });
 
     it('should redirect to root when OTP verification succeeds and redirectUrl is not present', async () => {
       setLocationSearch(null);
       mockPathname = '/sign-in/verify';
+      vi.stubEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000/');
 
       const { result } = renderHook(() => useAuthActions(), { wrapper });
 
@@ -270,7 +272,7 @@ describe('useAuthActions', () => {
 
       expect(mockSignInEmailOtp).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
       expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
-      expect(mockRouterPush).toHaveBeenCalledWith(AUTH_ROUTES.ROOT);
+      expect(window.location.href).toBe(process.env.NEXT_PUBLIC_APP_URL);
     });
   });
 
@@ -279,7 +281,7 @@ describe('useAuthActions', () => {
       const redirectUrl = '/accept-invitation/123';
       setLocationSearch(redirectUrl);
       mockPathname = '/sign-up/verify-email-address';
-
+      vi.stubEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000/');
       const { result } = renderHook(() => useAuthActions(), { wrapper });
 
       await act(async () => {
@@ -288,13 +290,13 @@ describe('useAuthActions', () => {
 
       expect(mockVerifyEmail).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
       expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
-      expect(mockRouterPush).toHaveBeenCalledWith(redirectUrl);
+      expect(window.location.href).toBe(process.env.NEXT_PUBLIC_APP_URL);
     });
 
     it('should redirect to onboarding when email verification succeeds and redirectUrl is not present', async () => {
       setLocationSearch(null);
       mockPathname = '/sign-up/verify-email-address';
-
+      vi.stubEnv('NEXT_PUBLIC_APP_URL', 'http://localhost:3000/');
       const { result } = renderHook(() => useAuthActions(), { wrapper });
 
       await act(async () => {
@@ -303,7 +305,7 @@ describe('useAuthActions', () => {
 
       expect(mockVerifyEmail).toHaveBeenCalledWith({ email: 'test@example.com', otp: '123456' });
       expect(mockClearSignInAttemptMutate).toHaveBeenCalled();
-      expect(mockRouterPush).toHaveBeenCalledWith(AUTH_ROUTES.ONBOARDING);
+      expect(window.location.href).toBe(process.env.NEXT_PUBLIC_APP_URL);
     });
   });
 

@@ -65,7 +65,6 @@ export function useAuthActions() {
   const { toast } = useToast();
   const router = useRouter();
   const pathname = usePathname();
-  const { refetch, isRefetching } = useSession();
 
   const clearSignInAttemptMutation = trpc.auth.clearSignInAttempt.useMutation();
 
@@ -93,19 +92,14 @@ export function useAuthActions() {
       }
     },
     onSuccess: async () => {
-      // ensure session is updated in cookie cache
-      setTimeout(async () => {
-        await refetch({ query: { disableCookieCache: true } });
-      }, 500);
-
       await clearSignInAttemptMutation.mutate();
 
+      // do page refresh to avoid stale session
       if (redirectUrl) {
-        router.push(redirectUrl);
-      } else if (isSignUpFlow) {
-        router.push(AUTH_ROUTES.ONBOARDING);
+        window.location.href = redirectUrl;
       } else {
-        router.push(AUTH_ROUTES.ROOT);
+        // middleware will redirect to onboarding if no organization is found
+        window.location.href = AUTH_ROUTES.ROOT;
       }
     },
     onError: (error) => {
@@ -190,8 +184,7 @@ export function useAuthActions() {
     sendOTP: handleSendOTP,
     isSendingOTP: signInMutation.isPending || signUpMutation.isPending,
     verifyOTP: verifyOTPMutation.mutate,
-    isVerifyingOTP:
-      verifyOTPMutation.isPending || clearSignInAttemptMutation.isPending || isRefetching,
+    isVerifyingOTP: verifyOTPMutation.isPending || clearSignInAttemptMutation.isPending,
     verifyOTPError: verifyOTPMutation.error,
 
     // Clear sign in attempt cookie
