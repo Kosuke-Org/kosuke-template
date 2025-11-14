@@ -22,6 +22,9 @@ import {
 import { z } from 'zod';
 import { auth } from '@/lib/auth/providers';
 import { headers } from 'next/headers';
+import { db } from '@/lib/db';
+import { and, eq } from 'drizzle-orm';
+import { invitations } from '@/lib/db/schema';
 
 export const organizationsRouter = router({
   /**
@@ -253,6 +256,23 @@ export const organizationsRouter = router({
    */
   inviteMember: protectedProcedure.input(createInvitationSchema).mutation(async ({ input }) => {
     const { role, email, organizationId } = input;
+    const pendingInvitations = await db
+      .select()
+      .from(invitations)
+      .where(
+        and(
+          eq(invitations.email, email),
+          eq(invitations.organizationId, organizationId),
+          eq(invitations.status, 'pending')
+        )
+      );
+
+    if (pendingInvitations.length) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'User already has an invitation to this organization',
+      });
+    }
 
     await auth.api.createInvitation({
       body: {

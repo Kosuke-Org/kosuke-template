@@ -48,9 +48,9 @@ export function useOrgInvitation() {
   });
 
   return {
-    inviteMember: inviteMember.mutateAsync,
+    inviteMember: inviteMember.mutate,
     isInviting: inviteMember.isPending,
-    cancelInvitation: cancelInvitation.mutateAsync,
+    cancelInvitation: cancelInvitation.mutate,
     isCancellingInvitation: cancelInvitation.isPending,
   };
 }

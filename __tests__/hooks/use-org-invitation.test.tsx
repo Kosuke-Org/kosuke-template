@@ -22,7 +22,7 @@ vi.mock('@/lib/trpc/client', () => ({
             onSuccess?: (data: { message: string }) => void;
             onError?: (error: { message: string }) => void;
           }) => ({
-            mutateAsync: vi.fn(),
+            mutate: vi.fn(),
             isPending: false,
           })
         ),
@@ -33,7 +33,7 @@ vi.mock('@/lib/trpc/client', () => ({
             onSuccess?: (data: { message: string }) => void;
             onError?: (error: { message: string }) => void;
           }) => ({
-            mutateAsync: vi.fn(),
+            mutate: vi.fn(),
             isPending: false,
           })
         ),
@@ -72,7 +72,7 @@ describe('useOrgInvitation', () => {
 
   it('should call toast and invalidate queries on successful invite', async () => {
     (trpc.organizations.inviteMember.useMutation as Mock).mockReturnValue({
-      mutateAsync: () => {
+      mutate: () => {
         const options = (trpc.organizations.inviteMember.useMutation as Mock).mock.calls[0][0];
         options.onSuccess({ message: 'Member invited successfully' });
       },
@@ -93,7 +93,7 @@ describe('useOrgInvitation', () => {
 
   it('should show destructive toast on inviteMember error', () => {
     (trpc.organizations.inviteMember.useMutation as Mock).mockReturnValue({
-      mutateAsync: () => {
+      mutate: () => {
         const options = (trpc.organizations.inviteMember.useMutation as Mock).mock.calls[0][0];
         options.onError(new Error('Invitation failed'));
       },
@@ -113,7 +113,7 @@ describe('useOrgInvitation', () => {
 
   it('should call toast and invalidate queries on successful cancelInvitation', () => {
     (trpc.organizations.cancelInvitation.useMutation as Mock).mockReturnValue({
-      mutateAsync: () => {
+      mutate: () => {
         const options = (trpc.organizations.cancelInvitation.useMutation as Mock).mock.calls[0][0];
         options.onSuccess({ message: 'Invitation cancelled successfully' });
       },
@@ -133,7 +133,7 @@ describe('useOrgInvitation', () => {
 
   it('should show destructive toast on cancelInvitation error', () => {
     (trpc.organizations.cancelInvitation.useMutation as Mock).mockReturnValue({
-      mutateAsync: () => {
+      mutate: () => {
         const options = (trpc.organizations.cancelInvitation.useMutation as Mock).mock.calls[0][0];
         options.onError(new Error('Cancel failed'));
       },
