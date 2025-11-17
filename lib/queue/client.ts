@@ -2,7 +2,7 @@ import { Queue, Worker, QueueEvents } from 'bullmq';
 import type { WorkerOptions } from 'bullmq';
 import * as Sentry from '@sentry/nextjs';
 
-import { redis } from '@/lib/redis';
+import { redis, closeRedis } from '@/lib/redis';
 
 /**
  * Default queue options for consistent behavior across all queues
@@ -129,4 +129,7 @@ export async function gracefulShutdown(workers: Worker[], queues: Queue[] = []) 
   );
 
   console.log('[WORKER] ✅ All workers and queues shut down successfully');
+
+  // Close Redis connection after workers are closed
+  await closeRedis();
 }
