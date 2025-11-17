@@ -1,5 +1,7 @@
-import { ActivityType } from '@/lib/db/schema';
 import { cookies } from 'next/headers';
+
+import { ActivityType } from '@/lib/db/schema';
+
 import { TEST_EMAIL_SUFFIX } from './constants';
 
 /**

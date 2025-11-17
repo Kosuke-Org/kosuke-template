@@ -3,7 +3,6 @@
  * Zod validation schemas for organization operations (client-safe)
  * NO SERVER DEPENDENCIES - only Zod imports allowed!
  */
-
 import { z } from 'zod';
 
 /**

@@ -5,16 +5,18 @@
 
 'use client';
 
+import { useOrganization } from '@/hooks/use-organization';
+
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+
 import { OrgGeneralForm } from './components/org-general-form';
 import { OrgLogoUpload } from './components/org-logo-upload';
-import { useOrganization } from '@/hooks/use-organization';
 
 function OrgGeneralSettingsSkeleton() {
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border p-6 space-y-6">
+      <div className="space-y-6 rounded-lg border p-6">
         <div className="space-y-2">
           <Skeleton className="h-5 w-32" />
           <Skeleton className="h-4 w-64" />
@@ -29,7 +31,7 @@ function OrgGeneralSettingsSkeleton() {
         <Skeleton className="h-3 w-full max-w-md" />
       </div>
 
-      <div className="rounded-lg border p-6 space-y-6">
+      <div className="space-y-6 rounded-lg border p-6">
         <div className="space-y-2">
           <Skeleton className="h-4 w-32" />
           <Skeleton className="h-10 w-full" />

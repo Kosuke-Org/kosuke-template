@@ -1,3 +1,6 @@
+import type { auth } from '@/lib/auth/providers';
+import type { OrgRole } from '@/lib/db/schema';
+
 /**
  * Organization Domain Types
  * Centralized type definitions for organizations, and memberships
@@ -5,8 +8,6 @@
 
 // Re-export schema types (ALWAYS re-export even if not extending)
 export type { Organization } from '@/lib/db/schema';
-import type { OrgRole } from '@/lib/db/schema';
-import type { auth } from '@/lib/auth/providers';
 
 export type FullOrganizationResponse = Awaited<ReturnType<typeof auth.api.getFullOrganization>>;
 

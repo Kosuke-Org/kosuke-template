@@ -2,20 +2,21 @@
  * tRPC router for user operations
  * Handles user settings and profile management
  */
-
-import { eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
+import { eq } from 'drizzle-orm';
+
+import { AUTH_ERRORS } from '@/lib/auth/constants';
 import { db } from '@/lib/db/drizzle';
 import { users } from '@/lib/db/schema';
-import { router, protectedProcedure } from '../init';
-import { uploadProfileImage, deleteProfileImage } from '@/lib/storage';
+import { deleteProfileImage, uploadProfileImage } from '@/lib/storage';
+
+import { protectedProcedure, router } from '../init';
 import {
-  notificationSettingsSchema,
-  uploadProfileImageSchema,
-  updateDisplayNameSchema,
   getUserSchema,
+  notificationSettingsSchema,
+  updateDisplayNameSchema,
+  uploadProfileImageSchema,
 } from '../schemas/user';
-import { AUTH_ERRORS } from '@/lib/auth/constants';
 
 export const userRouter = router({
   /**

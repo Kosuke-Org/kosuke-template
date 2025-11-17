@@ -6,10 +6,17 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { z } from 'zod';
+
+import { createOrderSchema } from '@/lib/trpc/schemas/orders';
+import { cn } from '@/lib/utils';
+
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -18,11 +25,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Field, FieldContent, FieldError, FieldLabel } from '@/components/ui/field';
 import { Form, FormField } from '@/components/ui/form';
-import { Field, FieldContent, FieldLabel, FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -30,10 +36,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import { createOrderSchema } from '@/lib/trpc/schemas/orders';
+import { Textarea } from '@/components/ui/textarea';
 
 // Client-side form schema - transform amount to number for better UX
 const orderFormSchema = createOrderSchema.omit({ organizationId: true }).extend({

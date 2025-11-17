@@ -2,11 +2,17 @@
 
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
+import { CalendarIcon } from 'lucide-react';
+import { z } from 'zod';
+
 import { createTaskSchema } from '@/lib/trpc/schemas/tasks';
+import { cn } from '@/lib/utils';
+
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -24,8 +30,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -33,9 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
 
 // Reuse the exact Zod schema from tRPC router - single source of truth!
 type TaskFormValues = z.infer<typeof createTaskSchema>;
@@ -87,7 +90,7 @@ export function TaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[525px] w-full mx-4 sm:mx-auto">
+      <DialogContent className="mx-4 w-full max-w-[525px] sm:mx-auto">
         <DialogHeader>
           <DialogTitle>{mode === 'create' ? 'Create Task' : 'Edit Task'}</DialogTitle>
           <DialogDescription>

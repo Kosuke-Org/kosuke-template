@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { createMockTRPCContext } from '@/__tests__/setup/mocks';
+
 import { appRouter } from '@/lib/trpc/router';
 
 vi.mock('@/lib/auth/providers', () => ({

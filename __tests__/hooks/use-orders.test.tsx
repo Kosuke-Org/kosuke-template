@@ -1,13 +1,15 @@
 /**
  * Tests for use-orders hook
  */
-
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
-import { useOrderActions, useOrdersList } from '@/hooks/use-orders';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import { type Mock, vi } from 'vitest';
+
 import { trpc } from '@/lib/trpc/client';
-import { vi, type Mock } from 'vitest';
+
+import { useOrderActions, useOrdersList } from '@/hooks/use-orders';
 
 // Mock toast
 const mockToast = vi.fn();

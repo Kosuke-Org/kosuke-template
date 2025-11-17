@@ -6,27 +6,16 @@
 'use client';
 
 import { useState } from 'react';
-import { MoreHorizontal, Shield, ShieldBan, Trash2, LogOut, Loader2 } from 'lucide-react';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { Loader2, LogOut, MoreHorizontal, Shield, ShieldBan, Trash2 } from 'lucide-react';
+
+import { ORG_ROLES, OrgRoleValue } from '@/lib/types/organization';
+import { getInitials } from '@/lib/utils';
+
+import { useOrgMembers } from '@/hooks/use-org-members';
+import { useOrganization } from '@/hooks/use-organization';
+import { useUser } from '@/hooks/use-user';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,14 +26,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useOrgMembers } from '@/hooks/use-org-members';
-import { useUser } from '@/hooks/use-user';
-
-import { getInitials } from '@/lib/utils';
-import { ORG_ROLES, OrgRoleValue } from '@/lib/types/organization';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 import { ACTIONS, getAllowedActionsForOthers } from '../utils';
-import { useOrganization } from '@/hooks/use-organization';
 
 function MemberListSkeleton() {
   return (
@@ -74,7 +76,7 @@ function MemberListSkeleton() {
                 <Skeleton className="h-5 w-16 rounded-full" />
               </TableCell>
               <TableCell className="text-right">
-                <Skeleton className="h-8 w-8 ml-auto" />
+                <Skeleton className="ml-auto h-8 w-8" />
               </TableCell>
             </TableRow>
           ))}
@@ -109,7 +111,7 @@ export function OrgMemberList() {
 
   if (members.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="py-12 text-center">
         <p className="text-muted-foreground">No members yet</p>
       </div>
     );
@@ -198,7 +200,7 @@ export function OrgMemberList() {
         <div className="space-y-4">
           <div>
             <h3 className="text-lg font-semibold">Members</h3>
-            <p className="text-sm text-muted-foreground">Members of the organization</p>
+            <p className="text-muted-foreground text-sm">Members of the organization</p>
           </div>
           <div className="rounded-md border">
             <Table>
@@ -224,7 +226,7 @@ export function OrgMemberList() {
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8 rounded-lg">
                             {user.image && <AvatarImage src={user.image} alt={displayName} />}
-                            <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                            <AvatarFallback className="bg-primary text-primary-foreground rounded-lg">
                               {initials}
                             </AvatarFallback>
                           </Avatar>
@@ -232,7 +234,7 @@ export function OrgMemberList() {
                             <div className="font-medium">
                               {displayName}
                               {isCurrentUser && (
-                                <span className="ml-2 text-xs text-muted-foreground">(You)</span>
+                                <span className="text-muted-foreground ml-2 text-xs">(You)</span>
                               )}
                             </div>
                           </div>

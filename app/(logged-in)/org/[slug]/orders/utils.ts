@@ -2,7 +2,6 @@
  * Order utilities
  * Shared constants and helper functions for orders feature
  */
-
 import type { OrderStatus } from '@/lib/types';
 
 export const statusOptions: { value: OrderStatus; label: string }[] = [

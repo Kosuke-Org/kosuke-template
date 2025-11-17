@@ -8,12 +8,11 @@
  *   - Development: bun run workers:dev
  *   - Production: bun run workers:start
  */
-
 import {
-  subscriptionWorker,
-  subscriptionQueue,
-  scheduleAllJobs,
   gracefulShutdown,
+  scheduleAllJobs,
+  subscriptionQueue,
+  subscriptionWorker,
 } from './lib/queue';
 
 async function main() {

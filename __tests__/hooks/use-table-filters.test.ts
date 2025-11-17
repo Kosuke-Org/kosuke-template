@@ -1,8 +1,8 @@
 /**
  * Tests for useTableFilters hook
  */
+import { act, renderHook } from '@testing-library/react';
 
-import { renderHook, act } from '@testing-library/react';
 import { useTableFilters } from '@/hooks/use-table-filters';
 
 interface TestFilters extends Record<string, unknown> {

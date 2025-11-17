@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+
 import { getCookieCache } from 'better-auth/cookies';
+
 import type { Session } from '@/lib/auth/providers';
 
 /**

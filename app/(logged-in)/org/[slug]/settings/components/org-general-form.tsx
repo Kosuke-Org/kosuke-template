@@ -6,13 +6,18 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
+import { z } from 'zod';
+
+import { orgGeneralFormSchema } from '@/lib/trpc/schemas/organizations';
+import type { FullOrganizationResponse as Organization } from '@/lib/types/organization';
+
+import { useUpdateOrganization } from '@/hooks/use-update-organization';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -22,9 +27,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { orgGeneralFormSchema } from '@/lib/trpc/schemas/organizations';
-import { useUpdateOrganization } from '@/hooks/use-update-organization';
-import type { FullOrganizationResponse as Organization } from '@/lib/types/organization';
+import { Input } from '@/components/ui/input';
 
 type OrgFormValues = z.infer<typeof orgGeneralFormSchema>;
 

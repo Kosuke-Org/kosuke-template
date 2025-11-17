@@ -6,9 +6,18 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronsUpDown, Plus, Settings } from 'lucide-react';
+
 import Link from 'next/link';
 
+import { ChevronsUpDown, Plus, Settings } from 'lucide-react';
+
+import { organization } from '@/lib/auth/client';
+import { getInitials } from '@/lib/utils';
+
+import { useOrganization } from '@/hooks/use-organization';
+import { useOrganizations } from '@/hooks/use-organizations';
+
+import { CreateOrgDialog } from '@/components/create-org-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -24,12 +33,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useOrganization } from '@/hooks/use-organization';
-import { useOrganizations } from '@/hooks/use-organizations';
-import { getInitials } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CreateOrgDialog } from '@/components/create-org-dialog';
-import { organization } from '@/lib/auth/client';
 
 export function SidebarOrgSwitcher() {
   const { isMobile } = useSidebar();
@@ -69,13 +73,13 @@ export function SidebarOrgSwitcher() {
                 {activeOrganization.logo && (
                   <AvatarImage src={activeOrganization.logo} alt={activeOrganization.name} />
                 )}
-                <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                <AvatarFallback className="bg-primary text-primary-foreground rounded-lg">
                   {activeOrgInitials}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{activeOrganization.name}</span>
-                <span className="truncate text-xs text-muted-foreground">
+                <span className="text-muted-foreground truncate text-xs">
                   {organizations.length} {organizations.length === 1 ? 'workspace' : 'workspaces'}
                 </span>
               </div>
@@ -88,7 +92,7 @@ export function SidebarOrgSwitcher() {
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
+            <DropdownMenuLabel className="text-muted-foreground text-xs">
               Workspaces
             </DropdownMenuLabel>
             {organizations.map((org) => {
@@ -110,20 +114,20 @@ export function SidebarOrgSwitcher() {
                 >
                   <Link
                     href={`/org/${org.slug}/dashboard`}
-                    className="gap-2 p-2 cursor-pointer flex items-center"
+                    className="flex cursor-pointer items-center gap-2 p-2"
                   >
                     <Avatar className="h-6 w-6 rounded-md">
                       {org.logo && <AvatarImage src={org.logo} alt={org.name} />}
-                      <AvatarFallback className="rounded-md bg-primary text-primary-foreground text-xs">
+                      <AvatarFallback className="bg-primary text-primary-foreground rounded-md text-xs">
                         {orgInitials}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <div className="font-medium text-sm">{org.name}</div>
+                      <div className="text-sm font-medium">{org.name}</div>
                     </div>
                     {isActive && (
                       <div
-                        className="h-2 w-2 rounded-full bg-primary"
+                        className="bg-primary h-2 w-2 rounded-full"
                         aria-label="Active workspace"
                       />
                     )}
@@ -135,7 +139,7 @@ export function SidebarOrgSwitcher() {
             <DropdownMenuItem asChild>
               <Link
                 href={`/org/${activeOrganization.slug}/settings`}
-                className="gap-2 p-2 cursor-pointer"
+                className="cursor-pointer gap-2 p-2"
               >
                 <Settings className="h-4 w-4" />
                 <span>Organization Settings</span>
@@ -143,7 +147,7 @@ export function SidebarOrgSwitcher() {
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setIsCreateDialogOpen(true)}
-              className="gap-2 p-2 cursor-pointer"
+              className="cursor-pointer gap-2 p-2"
             >
               <Plus className="h-4 w-4" />
               <span>Create Workspace</span>

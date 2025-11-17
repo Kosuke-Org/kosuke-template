@@ -2,9 +2,8 @@
  * tRPC server-side configuration
  * Used in server components and API routes
  */
-
+import { type Context, createTRPCContext } from './init';
 import { appRouter } from './router';
-import { createTRPCContext, type Context } from './init';
 
 /**
  * Create a server-side caller for tRPC

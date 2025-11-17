@@ -1,5 +1,5 @@
 import { createQueue } from '../client';
-import { QUEUE_NAMES, JOB_NAMES } from '../config';
+import { JOB_NAMES, QUEUE_NAMES } from '../config';
 
 /**
  * Subscription sync queue

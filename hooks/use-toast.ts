@@ -1,8 +1,10 @@
 'use client';
 
 import { useCallback } from 'react';
+
 import { toast as sonnerToast } from 'sonner';
-import type { ToastOptions, ToastHook } from '@/lib/api';
+
+import type { ToastHook, ToastOptions } from '@/lib/api';
 
 // Toast hook implementation using sonner
 export function useToast(): ToastHook {

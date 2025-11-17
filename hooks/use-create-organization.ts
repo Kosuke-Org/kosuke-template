@@ -5,8 +5,10 @@
 
 'use client';
 
-import { useToast } from '@/hooks/use-toast';
 import { trpc } from '@/lib/trpc/client';
+
+import { useToast } from '@/hooks/use-toast';
+
 import { useAuth } from './use-auth';
 
 interface CreateOrganizationOptions {

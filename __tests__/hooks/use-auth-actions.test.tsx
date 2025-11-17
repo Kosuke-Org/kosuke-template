@@ -1,9 +1,12 @@
-import { renderHook, act } from '@testing-library/react';
-import { useAuthActions } from '@/hooks/use-auth';
-import { createQueryWrapper } from '../setup/mocks';
+import { act, renderHook } from '@testing-library/react';
 import { vi } from 'vitest';
-import { signOut, emailOtp, signIn } from '@/lib/auth/client';
+
+import { emailOtp, signIn, signOut } from '@/lib/auth/client';
 import { AUTH_ROUTES } from '@/lib/auth/constants';
+
+import { useAuthActions } from '@/hooks/use-auth';
+
+import { createQueryWrapper } from '../setup/mocks';
 
 // Mock router functions
 const mockRouterPush = vi.fn();

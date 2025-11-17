@@ -1,9 +1,10 @@
-import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
+import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 import {
-  SubscriptionState,
   type SubscriptionEligibility,
+  SubscriptionState,
   type UserSubscriptionInfo,
 } from '@/lib/types';
+
 import { PRICING } from './config';
 
 /**

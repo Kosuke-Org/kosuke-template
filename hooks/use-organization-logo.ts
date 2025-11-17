@@ -6,8 +6,9 @@
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
-import { useToast } from '@/hooks/use-toast';
 import { fileToBase64 } from '@/lib/utils';
+
+import { useToast } from '@/hooks/use-toast';
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];

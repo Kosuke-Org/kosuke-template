@@ -6,14 +6,17 @@
 'use client';
 
 import { useRef } from 'react';
-import { Upload, Loader2, X } from 'lucide-react';
+
+import { Loader2, Upload, X } from 'lucide-react';
+
+import type { FullOrganizationResponse as Organization } from '@/lib/types/organization';
+import { getInitials } from '@/lib/utils';
+
+import { useOrganizationLogo } from '@/hooks/use-organization-logo';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { getInitials } from '@/lib/utils';
-import { useOrganizationLogo } from '@/hooks/use-organization-logo';
-import type { FullOrganizationResponse as Organization } from '@/lib/types/organization';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function OrgLogoUpload({ organization }: { organization: Organization }) {
   const { uploadLogo, deleteLogo: handleDelete, isUploading, isDeleting } = useOrganizationLogo();
@@ -45,7 +48,7 @@ export function OrgLogoUpload({ organization }: { organization: Organization }) 
         <div className="flex items-center gap-4">
           <Avatar className="h-20 w-20 rounded-lg">
             {organization.logo && <AvatarImage src={organization.logo} alt={organization.name} />}
-            <AvatarFallback className="rounded-lg bg-primary text-primary-foreground text-2xl">
+            <AvatarFallback className="bg-primary text-primary-foreground rounded-lg text-2xl">
               {orgInitials}
             </AvatarFallback>
           </Avatar>
@@ -101,7 +104,7 @@ export function OrgLogoUpload({ organization }: { organization: Organization }) 
           />
         </div>
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           Recommended: Square image, at least 256x256px. Max size: 2MB. Formats: JPEG, PNG, WebP,
           SVG.
         </p>

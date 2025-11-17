@@ -1,6 +1,7 @@
+import InvitationEmail from '@/emails/invitation';
+
 import { type InvitationEmailParams } from '../auth';
 import { sendEmail } from './index';
-import InvitationEmail from '@/emails/invitation';
 
 /**
  * Send OTP email using Resend

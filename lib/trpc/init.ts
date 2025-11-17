@@ -2,10 +2,10 @@
  * tRPC initialization
  * Core tRPC configuration for type-safe API routes
  */
-
-import { initTRPC, TRPCError } from '@trpc/server';
-import { auth } from '@/lib/auth/providers';
+import { TRPCError, initTRPC } from '@trpc/server';
 import superjson from 'superjson';
+
+import { auth } from '@/lib/auth/providers';
 
 /**
  * Create context for tRPC

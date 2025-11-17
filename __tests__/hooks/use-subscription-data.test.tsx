@@ -1,11 +1,14 @@
-import { renderHook } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useSubscriptionStatus, useCanSubscribe } from '@/hooks/use-subscription-data';
-import { vi } from 'vitest';
-import { httpBatchLink } from '@trpc/client';
-import { trpc } from '@/lib/trpc/client';
-import superjson from 'superjson';
 import React from 'react';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook } from '@testing-library/react';
+import { httpBatchLink } from '@trpc/client';
+import superjson from 'superjson';
+import { vi } from 'vitest';
+
+import { trpc } from '@/lib/trpc/client';
+
+import { useCanSubscribe, useSubscriptionStatus } from '@/hooks/use-subscription-data';
 
 // Mock useToast hook
 const mockToast = vi.fn();

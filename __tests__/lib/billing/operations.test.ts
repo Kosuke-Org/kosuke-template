@@ -1,11 +1,15 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
-  createCheckoutSession,
-  cancelUserSubscription,
-  reactivateUserSubscription,
-  createCustomerPortalSession,
   cancelPendingDowngrade,
+  cancelUserSubscription,
+  createCheckoutSession,
+  createCustomerPortalSession,
+  reactivateUserSubscription,
 } from '@/lib/billing/operations';
+import { getUserSubscription } from '@/lib/billing/subscription';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { db } from '@/lib/db';
 import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 
 // Mock dependencies
@@ -60,10 +64,6 @@ vi.mock('@/lib/billing/eligibility', () => ({
     canReactivate: true,
   })),
 }));
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { db } from '@/lib/db';
-import { getUserSubscription } from '@/lib/billing/subscription';
 
 describe('Billing Operations', () => {
   beforeEach(() => {

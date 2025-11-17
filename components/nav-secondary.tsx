@@ -1,6 +1,8 @@
 import * as React from 'react';
-import { type LucideIcon } from 'lucide-react';
+
 import Link from 'next/link';
+
+import { type LucideIcon } from 'lucide-react';
 
 import {
   SidebarGroup,

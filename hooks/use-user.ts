@@ -1,6 +1,7 @@
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
+
 import { useAuth } from './use-auth';
 
 /**

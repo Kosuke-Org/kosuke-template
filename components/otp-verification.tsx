@@ -1,15 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
-import { ChevronRight, LoaderCircle, Pencil } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+
+import { usePathname, useRouter } from 'next/navigation';
+
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
-import { useAuth, useAuthActions } from '@/hooks/use-auth';
+import { ChevronRight, LoaderCircle, Pencil } from 'lucide-react';
+
 import { trpc } from '@/lib/trpc/client';
+
+import { useAuth, useAuthActions } from '@/hooks/use-auth';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 /**
  * Shared OTP Verification Component
@@ -60,7 +65,7 @@ export const OTPVerification = () => {
     return (
       <Card className="py-8">
         <CardContent className="flex items-center justify-center py-12">
-          <LoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
+          <LoaderCircle className="text-muted-foreground h-8 w-8 animate-spin" />
         </CardContent>
       </Card>
     );
@@ -68,11 +73,11 @@ export const OTPVerification = () => {
 
   return (
     <Card className="py-8">
-      <CardHeader className="text-center px-10">
+      <CardHeader className="px-10 text-center">
         <CardTitle className="text-lg font-bold">Check your email</CardTitle>
-        <CardDescription className="text-xs flex flex-col gap-1">
+        <CardDescription className="flex flex-col gap-1 text-xs">
           <span>We sent a verification code to</span>
-          <div className="font-medium text-foreground flex justify-center items-center">
+          <div className="text-foreground flex items-center justify-center font-medium">
             <span>{email}</span>
             <Button
               type="button"
@@ -89,7 +94,7 @@ export const OTPVerification = () => {
       <CardContent className="px-10">
         <form onSubmit={handleFormSubmit} className="space-y-4">
           <Field data-invalid={!!verifyOTPError} className="text-center">
-            <FieldLabel htmlFor="otp" className="text-xs justify-center">
+            <FieldLabel htmlFor="otp" className="justify-center text-xs">
               Verification code
             </FieldLabel>
 
@@ -124,13 +129,13 @@ export const OTPVerification = () => {
             </Button>
           </Field>
 
-          <FieldDescription className="text-center text-xs pt-2">
+          <FieldDescription className="pt-2 text-center text-xs">
             Didn&apos;t receive the code?{' '}
             <button
               type="button"
               onClick={handleResendCode}
               disabled={isSendingOTP}
-              className="font-bold !underline-offset-2 !no-underline hover:!underline focus:!underline disabled:opacity-50"
+              className="font-bold !no-underline !underline-offset-2 hover:!underline focus:!underline disabled:opacity-50"
             >
               {isSendingOTP ? 'Sending...' : 'Resend code'}
             </button>

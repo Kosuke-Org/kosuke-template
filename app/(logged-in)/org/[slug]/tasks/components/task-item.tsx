@@ -1,22 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { MoreVertical, Pencil, Trash2, Calendar, AlertCircle } from 'lucide-react';
+
+import type { inferRouterInputs } from '@trpc/server';
+import { format } from 'date-fns';
+import { AlertCircle, Calendar, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+
+import type { AppRouter } from '@/lib/trpc/router';
+import type { TaskPriority } from '@/lib/types';
+import { cn } from '@/lib/utils';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
-import type { TaskPriority } from '@/lib/types';
-import type { AppRouter } from '@/lib/trpc/router';
-import type { inferRouterInputs } from '@trpc/server';
 
 type RouterInput = inferRouterInputs<AppRouter>;
 type UpdateTaskInput = RouterInput['tasks']['update'];
@@ -73,14 +76,14 @@ export function TaskItem({
         <div className="flex-1 space-y-1">
           <h3
             className={cn(
-              'font-medium leading-none',
-              completed && 'line-through text-muted-foreground'
+              'leading-none font-medium',
+              completed && 'text-muted-foreground line-through'
             )}
           >
             {title}
           </h3>
           {description && (
-            <p className={cn('text-sm text-muted-foreground', completed && 'line-through')}>
+            <p className={cn('text-muted-foreground text-sm', completed && 'line-through')}>
               {description}
             </p>
           )}
@@ -91,7 +94,7 @@ export function TaskItem({
             {dueDate && (
               <div
                 className={cn(
-                  'flex items-center gap-1 text-xs text-muted-foreground',
+                  'text-muted-foreground flex items-center gap-1 text-xs',
                   isOverdue && !completed && 'text-red-600 dark:text-red-400'
                 )}
               >

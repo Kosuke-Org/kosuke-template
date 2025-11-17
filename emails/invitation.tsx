@@ -1,7 +1,8 @@
-import { Section, Text, Hr, Button } from '@react-email/components';
-import { BaseLayout } from '@/lib/email/templates';
-import { type InvitationEmailParams } from '@/lib/auth';
+import { Button, Hr, Section, Text } from '@react-email/components';
 import { formatDistanceToNow } from 'date-fns';
+
+import { type InvitationEmailParams } from '@/lib/auth';
+import { BaseLayout } from '@/lib/email/templates';
 
 export default function InvitationEmail({
   inviter,
@@ -13,23 +14,23 @@ export default function InvitationEmail({
     <BaseLayout preview="You have been invited to join an organization">
       {/* Heading */}
 
-      <Section className="bg-stone-50 rounded-lg p-8 mb-8 text-center">
-        <Text className="text-xl font-bold text-stone-900 mb-6 mt-0">
+      <Section className="mb-8 rounded-lg bg-stone-50 p-8 text-center">
+        <Text className="mt-0 mb-6 text-xl font-bold text-stone-900">
           {inviter.user.name} invited you to join {organization.name}
         </Text>
-        <Button href={inviteLink} className="bg-stone-900 text-white px-4 py-2 mb-6 rounded-md">
+        <Button href={inviteLink} className="mb-6 rounded-md bg-stone-900 px-4 py-2 text-white">
           Accept Invitation
         </Button>
-        <Text className="text-stone-500 text-center m-0">
+        <Text className="m-0 text-center text-stone-500">
           This invitation will expire in {formatDistanceToNow(invitation.expiresAt)}.
         </Text>
       </Section>
 
-      <Hr className="border-stone-200 my-6" />
+      <Hr className="my-6 border-stone-200" />
 
       {/* Security Notice */}
       <Section>
-        <Text className="text-xs text-stone-500 text-center">
+        <Text className="text-center text-xs text-stone-500">
           If you didn&apos;t request this invitation, you can safely ignore this email.
         </Text>
       </Section>

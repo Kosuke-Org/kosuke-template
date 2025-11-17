@@ -1,11 +1,18 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { NextRequest } from 'next/server';
+
 import Stripe from 'stripe';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
-  createStripeSubscriptionEvent,
   createStripeInvoiceEvent,
+  createStripeSubscriptionEvent,
   createStripeSubscriptionScheduleEvent,
 } from '@/__tests__/setup/mocks';
+
+// Now we can import the route
+import { POST } from '@/app/api/billing/webhook/route';
+
+import { stripe } from '@/lib/billing/client';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -40,10 +47,6 @@ vi.mock('@/lib/db', () => ({
     },
   },
 }));
-
-// Now we can import the route
-import { POST } from '@/app/api/billing/webhook/route';
-import { stripe } from '@/lib/billing/client';
 
 describe('Stripe Webhook Route', () => {
   beforeEach(() => {

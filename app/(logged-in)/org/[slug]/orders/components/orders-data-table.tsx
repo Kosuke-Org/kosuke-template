@@ -5,16 +5,27 @@
 
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
+
 import {
-  flexRender,
-  getCoreRowModel,
   RowSelectionState,
   Updater,
+  flexRender,
+  getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { Search, X, Loader2, Download, Trash2 } from 'lucide-react';
+import type { inferRouterOutputs } from '@trpc/server';
+import { Download, Loader2, Search, Trash2, X } from 'lucide-react';
 
+import type { AppRouter } from '@/lib/trpc/router';
+import { type ExportType, exportTypeEnum } from '@/lib/trpc/schemas/orders';
+import type { OrderStatus } from '@/lib/types';
+import { cn } from '@/lib/utils';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -23,19 +34,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import type { AppRouter } from '@/lib/trpc/router';
-import type { inferRouterOutputs } from '@trpc/server';
-import type { OrderStatus } from '@/lib/types';
-import { exportTypeEnum, type ExportType } from '@/lib/trpc/schemas/orders';
-import { getOrderColumns } from './orders-columns';
-import { DataTablePagination } from './data-table-pagination';
-import { OrderFilters, ActiveFilterBadges } from './order-filters';
+
 import { MAX_AMOUNT } from '../utils';
-import { cn } from '@/lib/utils';
+import { DataTablePagination } from './data-table-pagination';
+import { ActiveFilterBadges, OrderFilters } from './order-filters';
+import { getOrderColumns } from './orders-columns';
 
 // Infer OrderWithDetails from tRPC router output
 type RouterOutput = inferRouterOutputs<AppRouter>;
@@ -187,18 +190,18 @@ export function OrdersDataTable({
     <>
       {/* Bulk Actions Bar */}
       {hasSelectedRows && (
-        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-md border">
+        <div className="bg-muted/50 flex items-center gap-2 rounded-md border p-3">
           <span className="text-sm font-medium">
             {selectedRows.length} row{selectedRows.length > 1 ? 's' : ''} selected
           </span>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             {onBulkDelete && (
               <Button
                 variant="destructive"
                 size="sm"
                 onClick={() => onBulkDelete(selectedRows.map((row) => row.original.id))}
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <Trash2 className="mr-2 h-4 w-4" />
                 Delete
               </Button>
             )}
@@ -208,7 +211,7 @@ export function OrdersDataTable({
 
       <div className="flex items-center gap-3">
         <div className="relative w-full sm:w-[400px] lg:w-[500px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
           <Input
             placeholder="Search by customer name or order ID..."
             value={searchQuery}
@@ -238,7 +241,7 @@ export function OrdersDataTable({
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" disabled={isExporting}>
-                <Loader2 className={cn('animate-spin hidden', isExporting && 'block')} />
+                <Loader2 className={cn('hidden animate-spin', isExporting && 'block')} />
                 <Download className={cn('block', isExporting && 'hidden')} />
                 Export
               </Button>
@@ -276,8 +279,8 @@ export function OrdersDataTable({
         <TableSkeleton />
       ) : orders.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <h3 className="font-semibold text-lg mb-1">No orders found</h3>
-          <p className="text-sm text-muted-foreground">
+          <h3 className="mb-1 text-lg font-semibold">No orders found</h3>
+          <p className="text-muted-foreground text-sm">
             {searchQuery || activeFiltersCount > 0
               ? 'Try adjusting your filters'
               : 'Create your first order to get started'}

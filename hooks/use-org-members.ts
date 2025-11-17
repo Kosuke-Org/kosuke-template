@@ -5,10 +5,12 @@
 
 'use client';
 
-import { trpc } from '@/lib/trpc/client';
-import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+
 import { AUTH_ROUTES } from '@/lib/auth/constants';
+import { trpc } from '@/lib/trpc/client';
+
+import { useToast } from '@/hooks/use-toast';
 
 export function useOrgMembers() {
   const { toast } = useToast();

@@ -1,8 +1,10 @@
 'use client';
 
-import { User, Bell, Shield, CreditCard, Monitor } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
+
+import { usePathname, useRouter } from 'next/navigation';
+
+import { Bell, CreditCard, Monitor, Shield, User } from 'lucide-react';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -16,7 +18,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   };
 
   return (
-    <div className="flex flex-col space-y-6 max-w-4xl">
+    <div className="flex max-w-4xl flex-col space-y-6">
       <div className="flex flex-col space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">Manage your account settings and preferences.</p>
@@ -50,7 +52,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       <Suspense
         fallback={
           <div className="space-y-4">
-            <div className="h-32 w-full rounded bg-muted/50" />
+            <div className="bg-muted/50 h-32 w-full rounded" />
           </div>
         }
       >

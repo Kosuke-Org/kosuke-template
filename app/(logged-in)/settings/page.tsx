@@ -1,33 +1,37 @@
 'use client';
 
-import { Check, Loader2, Upload, Edit, X } from 'lucide-react';
-import Image from 'next/image';
 import { useState } from 'react';
 
+import Image from 'next/image';
+
+import { Check, Edit, Loader2, Upload, X } from 'lucide-react';
+
+import { trpc } from '@/lib/trpc/client';
+
+import { useAuth } from '@/hooks/use-auth';
+import { useProfileUpload } from '@/hooks/use-profile-upload';
+import { useToast } from '@/hooks/use-toast';
+import { useUserAvatar } from '@/hooks/use-user-avatar';
+
+import { ButtonSkeleton } from '@/components/skeletons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useUserAvatar } from '@/hooks/use-user-avatar';
-import { useProfileUpload } from '@/hooks/use-profile-upload';
-import { ButtonSkeleton } from '@/components/skeletons';
 import { Skeleton } from '@/components/ui/skeleton';
-import { trpc } from '@/lib/trpc/client';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
 
 // Page-specific skeleton for profile settings
 function ProfileSettingsSkeleton() {
   return (
     <div className="space-y-6">
       <div className="rounded-lg border p-6">
-        <div className="flex items-center space-x-4 mb-4">
+        <div className="mb-4 flex items-center space-x-4">
           <Skeleton className="h-5 w-5 rounded" />
           <Skeleton className="h-5 w-16" />
         </div>
-        <Skeleton className="h-4 w-48 mb-4" />
+        <Skeleton className="mb-4 h-4 w-48" />
 
-        <div className="flex flex-col md:flex-row gap-8">
+        <div className="flex flex-col gap-8 md:flex-row">
           {/* Profile Image Section */}
           <div className="flex flex-col items-center gap-4">
             <Skeleton className="h-32 w-32 rounded-lg" />
@@ -115,10 +119,10 @@ export default function ProfileSettings() {
           <CardDescription>Manage your account settings and profile information.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col md:flex-row gap-8">
+          <div className="flex flex-col gap-8 md:flex-row">
             {/* Profile Image */}
             <div className="flex flex-col items-center gap-4">
-              <div className="relative h-32 w-32 rounded-lg overflow-hidden border border-border bg-muted">
+              <div className="border-border bg-muted relative h-32 w-32 overflow-hidden rounded-lg border">
                 {profileImageUrl ? (
                   <Image
                     src={profileImageUrl}
@@ -128,8 +132,8 @@ export default function ProfileSettings() {
                     unoptimized={profileImageUrl.includes('localhost')}
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-primary">
-                    <span className="text-2xl font-medium text-primary-foreground">{initials}</span>
+                  <div className="bg-primary flex h-full w-full items-center justify-center">
+                    <span className="text-primary-foreground text-2xl font-medium">{initials}</span>
                   </div>
                 )}
               </div>
@@ -160,7 +164,7 @@ export default function ProfileSettings() {
                 <div className="space-y-2">
                   <Label
                     htmlFor="displayName"
-                    className="text-sm font-medium text-muted-foreground"
+                    className="text-muted-foreground text-sm font-medium"
                   >
                     Display Name
                   </Label>
@@ -192,7 +196,7 @@ export default function ProfileSettings() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <p className="text-base flex-1">{displayName}</p>
+                      <p className="flex-1 text-base">{displayName}</p>
                       <Button
                         onClick={() => {
                           setEditDisplayName(displayName);
@@ -207,7 +211,7 @@ export default function ProfileSettings() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                  <Label className="text-muted-foreground text-sm font-medium">Email</Label>
                   <p className="text-base">{primaryEmail}</p>
                 </div>
               </div>

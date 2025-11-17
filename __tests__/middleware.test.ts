@@ -1,10 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NextRequest } from 'next/server';
-import { middleware } from '@/middleware';
-import type { Session } from '@/lib/auth/providers';
 import { RequestCookie } from 'next/dist/compiled/@edge-runtime/cookies';
-import { mockedSession } from './setup/mocks';
+import { NextRequest } from 'next/server';
+
+import { middleware } from '@/middleware';
 import { getCookieCache } from 'better-auth/cookies';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { Session } from '@/lib/auth/providers';
+
+import { mockedSession } from './setup/mocks';
 
 vi.mock('next/server', async () => {
   const actual = await vi.importActual<typeof import('next/server')>('next/server');

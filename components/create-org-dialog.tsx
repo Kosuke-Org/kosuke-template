@@ -5,13 +5,19 @@
 
 'use client';
 
-import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+
+import { useRouter } from 'next/navigation';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
 
+import { createOrgFormSchema } from '@/lib/trpc/schemas/organizations';
+
+import { useCreateOrganization } from '@/hooks/use-create-organization';
+
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -28,9 +34,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useCreateOrganization } from '@/hooks/use-create-organization';
-import { createOrgFormSchema } from '@/lib/trpc/schemas/organizations';
-import { useRouter } from 'next/navigation';
+import { Input } from '@/components/ui/input';
 
 type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 

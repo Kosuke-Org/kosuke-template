@@ -1,8 +1,9 @@
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
-import { useToast } from '@/hooks/use-toast';
 import type { NotificationSettings } from '@/lib/types';
+
+import { useToast } from '@/hooks/use-toast';
 
 export function useNotificationSettings() {
   const { toast } = useToast();

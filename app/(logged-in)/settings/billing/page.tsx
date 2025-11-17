@@ -1,14 +1,15 @@
 'use client';
 
-import { CheckCircle, Loader2, CreditCard, Calendar, XCircle, RotateCcw } from 'lucide-react';
+import { Calendar, CheckCircle, CreditCard, Loader2, RotateCcw, XCircle } from 'lucide-react';
+
+import { trpc } from '@/lib/trpc/client';
+
+import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
+import { useCanSubscribe, useSubscriptionStatus } from '@/hooks/use-subscription-data';
+import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { BadgeSkeleton, ButtonSkeleton } from '@/components/skeletons';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,10 +21,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useSubscriptionStatus, useCanSubscribe } from '@/hooks/use-subscription-data';
-import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
-import { trpc } from '@/lib/trpc/client';
-import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Page-specific skeleton for billing page
 function BillingSkeleton() {
@@ -31,24 +33,24 @@ function BillingSkeleton() {
     <div className="space-y-6">
       {/* Page header */}
       <div>
-        <Skeleton className="h-6 w-48 mb-2" />
+        <Skeleton className="mb-2 h-6 w-48" />
         <Skeleton className="h-4 w-72" />
       </div>
 
       {/* Current Plan Card */}
-      <div className="rounded-lg border p-6 space-y-4">
-        <div className="flex items-center gap-2 mb-4">
+      <div className="space-y-4 rounded-lg border p-6">
+        <div className="mb-4 flex items-center gap-2">
           <Skeleton className="h-5 w-5" />
           <Skeleton className="h-5 w-24" />
         </div>
-        <Skeleton className="h-4 w-32 mb-2" />
+        <Skeleton className="mb-2 h-4 w-32" />
 
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <Skeleton className="h-6 w-16" />
             <Skeleton className="h-4 w-40" />
           </div>
-          <div className="text-right space-y-1">
+          <div className="space-y-1 text-right">
             <Skeleton className="h-8 w-12" />
             <Skeleton className="h-4 w-20" />
           </div>
@@ -65,7 +67,7 @@ function BillingSkeleton() {
           </div>
         </div>
 
-        <Skeleton className="h-px w-full bg-border" />
+        <Skeleton className="bg-border h-px w-full" />
 
         {/* Features skeleton */}
         <div className="space-y-3">
@@ -78,7 +80,7 @@ function BillingSkeleton() {
           ))}
         </div>
 
-        <Skeleton className="h-px w-full bg-border" />
+        <Skeleton className="bg-border h-px w-full" />
 
         {/* Action buttons skeleton */}
         <div className="flex gap-2">
@@ -88,13 +90,13 @@ function BillingSkeleton() {
       </div>
 
       {/* Choose Your Plan */}
-      <div className="rounded-lg border p-6 space-y-4">
+      <div className="space-y-4 rounded-lg border p-6">
         <Skeleton className="h-5 w-32" />
         <Skeleton className="h-4 w-56" />
 
         <div className="grid gap-4 md:grid-cols-2">
           {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="relative rounded-lg border p-6 space-y-4">
+            <div key={i} className="relative space-y-4 rounded-lg border p-6">
               {i === 0 && <BadgeSkeleton className="absolute top-4 right-4" />}
               <div className="space-y-2">
                 <Skeleton className="h-6 w-20" />
@@ -119,7 +121,7 @@ function BillingSkeleton() {
       </div>
 
       {/* Billing Information */}
-      <div className="rounded-lg border p-6 space-y-4">
+      <div className="space-y-4 rounded-lg border p-6">
         <Skeleton className="h-5 w-36" />
         <Skeleton className="h-4 w-48" />
         <Skeleton className="h-4 w-3/4" />
@@ -243,7 +245,7 @@ export default function BillingPage() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Billing & Subscription</h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Manage your subscription and billing information.
         </p>
       </div>
@@ -260,17 +262,17 @@ export default function BillingPage() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-lg">{String(currentPlan.name)}</h3>
-              <p className="text-sm text-muted-foreground">{String(currentPlan.description)}</p>
+              <h3 className="text-lg font-semibold">{String(currentPlan.name)}</h3>
+              <p className="text-muted-foreground text-sm">{String(currentPlan.description)}</p>
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold">${currentPlan.price}</div>
-              <div className="text-sm text-muted-foreground">per month</div>
+              <div className="text-muted-foreground text-sm">per month</div>
             </div>
           </div>
 
           {subscriptionInfo?.status && (
-            <div className="flex items-center flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Status:</span>
                 {getStatusBadge(subscriptionInfo.status)}
@@ -290,7 +292,7 @@ export default function BillingPage() {
 
           {/* Pending Downgrade Alert */}
           {subscriptionInfo?.activeSubscription?.scheduledDowngradeTier && (
-            <div className="rounded-lg border border-yellow-500 bg-yellow-50 dark:bg-yellow-950 p-4">
+            <div className="rounded-lg border border-yellow-500 bg-yellow-50 p-4 dark:bg-yellow-950">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
                   <div className="h-5 w-5 text-yellow-600 dark:text-yellow-400">⏱️</div>
@@ -298,7 +300,7 @@ export default function BillingPage() {
                     <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
                       Scheduled Downgrade
                     </h4>
-                    <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                    <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
                       Your subscription will downgrade to{' '}
                       <strong>
                         {PRICING[
@@ -316,16 +318,16 @@ export default function BillingPage() {
                   disabled={isCancelingDowngrade}
                   variant="outline"
                   size="sm"
-                  className="border-yellow-600 text-yellow-800 hover:bg-yellow-100 dark:border-yellow-500 dark:text-yellow-200 dark:hover:bg-yellow-900 shrink-0"
+                  className="shrink-0 border-yellow-600 text-yellow-800 hover:bg-yellow-100 dark:border-yellow-500 dark:text-yellow-200 dark:hover:bg-yellow-900"
                 >
                   {isCancelingDowngrade ? (
                     <>
-                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                       Canceling...
                     </>
                   ) : (
                     <>
-                      <XCircle className="h-3 w-3 mr-2" />
+                      <XCircle className="mr-2 h-3 w-3" />
                       Cancel Downgrade
                     </>
                   )}
@@ -337,7 +339,7 @@ export default function BillingPage() {
           <Separator />
 
           <div>
-            <h4 className="font-medium mb-2">Features included:</h4>
+            <h4 className="mb-2 font-medium">Features included:</h4>
             <ul className="space-y-1">
               {currentPlan.features.map((feature, index) => (
                 <li key={index} className="flex items-center gap-2 text-sm">
@@ -364,12 +366,12 @@ export default function BillingPage() {
                   >
                     {isReactivating ? (
                       <>
-                        <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                         Reactivating...
                       </>
                     ) : (
                       <>
-                        <RotateCcw className="h-3 w-3 mr-2" />
+                        <RotateCcw className="mr-2 h-3 w-3" />
                         Reactivate
                       </>
                     )}
@@ -383,12 +385,12 @@ export default function BillingPage() {
                       <Button variant="outline" size="sm" disabled={isCanceling}>
                         {isCanceling ? (
                           <>
-                            <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
                             Cancelling...
                           </>
                         ) : (
                           <>
-                            <XCircle className="h-3 w-3 mr-2" />
+                            <XCircle className="mr-2 h-3 w-3" />
                             Cancel Subscription
                           </>
                         )}
@@ -466,11 +468,11 @@ export default function BillingPage() {
                     </CardTitle>
                     <CardDescription>{plan.description}</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4 flex-1 flex flex-col">
+                  <CardContent className="flex flex-1 flex-col space-y-4">
                     <div className="text-3xl font-bold">${plan.price}</div>
-                    <div className="text-sm text-muted-foreground">per month</div>
+                    <div className="text-muted-foreground text-sm">per month</div>
 
-                    <ul className="space-y-2 flex-1">
+                    <ul className="flex-1 space-y-2">
                       {plan.features.map((feature, index) => (
                         <li key={index} className="flex items-center gap-2 text-sm">
                           <CheckCircle className="h-4 w-4 text-green-500" />
@@ -485,13 +487,13 @@ export default function BillingPage() {
                         disabled={
                           !canUpgradeToThisPlan || upgradeLoading === tier || isScheduledDowngrade
                         }
-                        className="w-full mt-auto"
+                        className="mt-auto w-full"
                       >
                         {isScheduledDowngrade ? (
                           <>Scheduled for {formatDate(subscriptionInfo?.currentPeriodEnd)}</>
                         ) : upgradeLoading === tier ? (
                           <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Processing...
                           </>
                         ) : currentTier === 'free' ? (
@@ -528,19 +530,19 @@ export default function BillingPage() {
               >
                 {createPortalSession.isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Loading...
                   </>
                 ) : (
                   <>
-                    <CreditCard className="h-4 w-4 mr-2" />
+                    <CreditCard className="mr-2 h-4 w-4" />
                     Manage Billing in Stripe
                   </>
                 )}
               </Button>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               You&apos;re currently on the free plan. Upgrade to a paid plan to access advanced
               features and premium support.
             </p>

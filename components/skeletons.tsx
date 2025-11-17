@@ -1,5 +1,6 @@
-import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+
+import { Skeleton } from '@/components/ui/skeleton';
 
 // ===============================
 // REUSABLE SKELETON COMPONENTS
@@ -8,7 +9,7 @@ import { cn } from '@/lib/utils';
 // Card skeleton for subscription cards, settings cards, etc.
 export function CardSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn('rounded-lg border p-6 space-y-4', className)}>
+    <div className={cn('space-y-4 rounded-lg border p-6', className)}>
       <div className="flex items-center space-x-4">
         <Skeleton className="h-5 w-5 rounded" />
         <Skeleton className="h-5 w-32" />
@@ -107,7 +108,7 @@ export function StatsSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn('grid gap-4 md:grid-cols-3', className)}>
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="rounded-xl bg-muted/50 p-6 space-y-2">
+        <div key={i} className="bg-muted/50 space-y-2 rounded-xl p-6">
           <Skeleton className="h-4 w-16" />
           <Skeleton className="h-8 w-20" />
         </div>

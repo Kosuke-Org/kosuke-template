@@ -1,17 +1,19 @@
-import { auth } from '@/lib/auth/providers';
-import { eq, like } from 'drizzle-orm';
-import { db } from '@/lib/db/drizzle';
-import { users, verifications } from '@/lib/db/schema';
-import { publicProcedure, router } from '../init';
 import { TRPCError } from '@trpc/server';
+import { eq, like } from 'drizzle-orm';
 import z from 'zod';
+
 import { AUTH_ERRORS, TEST_OTP } from '@/lib/auth/constants';
+import { auth } from '@/lib/auth/providers';
 import {
+  clearSignInAttempt,
   createSignInAttempt,
   getCurrentSignInAttempt,
-  clearSignInAttempt,
   isTestEmail,
 } from '@/lib/auth/utils';
+import { db } from '@/lib/db/drizzle';
+import { users, verifications } from '@/lib/db/schema';
+
+import { publicProcedure, router } from '../init';
 
 export const authRouter = router({
   requestOtp: publicProcedure

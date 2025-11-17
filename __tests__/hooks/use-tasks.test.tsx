@@ -1,13 +1,15 @@
 /**
  * Tests for use-tasks hook
  */
-
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
-import { useTasks } from '@/hooks/use-tasks';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import { type Mock, vi } from 'vitest';
+
 import { trpc } from '@/lib/trpc/client';
-import { vi, type Mock } from 'vitest';
+
+import { useTasks } from '@/hooks/use-tasks';
 
 // Mock toast
 const mockToast = vi.fn();

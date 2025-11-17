@@ -1,5 +1,6 @@
-import { Home } from '@/components/home';
 import Script from 'next/script';
+
+import { Home } from '@/components/home';
 
 export default function RootPage() {
   return (

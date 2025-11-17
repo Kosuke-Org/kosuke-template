@@ -1,8 +1,11 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useProfileImageUrl } from '@/hooks/use-profile-image';
+
 import { getInitials } from '@/lib/utils';
+
+import { useProfileImageUrl } from '@/hooks/use-profile-image';
+
 import { useUser } from './use-user';
 
 export function useUserAvatar() {

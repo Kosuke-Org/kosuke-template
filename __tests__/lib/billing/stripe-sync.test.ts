@@ -1,5 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { syncUserSubscriptionFromStripe, syncStaleSubscriptions } from '@/lib/billing/stripe-sync';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { stripe } from '@/lib/billing/client';
+import { syncStaleSubscriptions, syncUserSubscriptionFromStripe } from '@/lib/billing/stripe-sync';
+import { db } from '@/lib/db';
 import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -28,9 +31,6 @@ vi.mock('@/lib/billing/client', () => ({
     },
   },
 }));
-
-import { db } from '@/lib/db';
-import { stripe } from '@/lib/billing/client';
 
 describe('Stripe Sync Module', () => {
   beforeEach(() => {

@@ -1,9 +1,11 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+
 import { useTheme } from 'next-themes';
+import Image from 'next/image';
+
+import { motion } from 'framer-motion';
 
 interface TechLogoProps {
   name: string;
@@ -53,15 +55,15 @@ export function TechLogo({ name, logoPath, url, size = 'md', className = '' }: T
           alt={`${name} logo`}
           width={size === 'sm' ? 32 : size === 'md' ? 48 : 64}
           height={size === 'sm' ? 32 : size === 'md' ? 48 : 64}
-          className="object-contain w-full h-full hover:drop-shadow-lg transition-all duration-300"
+          className="h-full w-full object-contain transition-all duration-300 hover:drop-shadow-lg"
           onError={() => setImageError(true)}
           priority
         />
       ) : (
         <div
-          className={`${sizeClasses[size]} bg-muted rounded-lg flex items-center justify-center hover:bg-muted/80 transition-colors`}
+          className={`${sizeClasses[size]} bg-muted hover:bg-muted/80 flex items-center justify-center rounded-lg transition-colors`}
         >
-          <span className="text-sm font-bold text-muted-foreground">
+          <span className="text-muted-foreground text-sm font-bold">
             {name.charAt(0).toUpperCase()}
           </span>
         </div>

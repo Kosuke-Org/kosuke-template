@@ -1,9 +1,9 @@
 /**
  * Tests for useTableSearch hook
  */
-
-import { renderHook, act } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import { vi } from 'vitest';
+
 import { useTableSearch } from '@/hooks/use-table-search';
 
 // Mock timers for debounce testing

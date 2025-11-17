@@ -6,14 +6,22 @@
 'use client';
 
 import { use, useState } from 'react';
+
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Trash, Calendar, User, CircleDollarSign, Info, Hash } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+
+import { format } from 'date-fns';
+import { ArrowLeft, Calendar, CircleDollarSign, Hash, Info, Trash, User } from 'lucide-react';
+import type { z } from 'zod';
+
+import { type OrderStatus, orderStatusEnum } from '@/lib/db/schema';
+import { trpc } from '@/lib/trpc/client';
+import { updateOrderSchema } from '@/lib/trpc/schemas/orders';
+import { cn } from '@/lib/utils';
+
+import { useOrderActions } from '@/hooks/use-orders';
+import { useOrganization } from '@/hooks/use-organization';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,19 +32,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Field, FieldContent, FieldError } from '@/components/ui/field';
-import { trpc } from '@/lib/trpc/client';
-import { useOrganization } from '@/hooks/use-organization';
-import { useOrderActions } from '@/hooks/use-orders';
-import { orderStatusEnum, type OrderStatus } from '@/lib/db/schema';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+
 import { statusColors } from '../utils';
-import { format } from 'date-fns';
-import { updateOrderSchema } from '@/lib/trpc/schemas/orders';
-import type { z } from 'zod';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
 
 // Skeleton for loading state
 function OrderDetailSkeleton() {
@@ -167,8 +173,8 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   if (!order) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <h3 className="font-semibold text-lg mb-1">Order not found</h3>
-        <p className="text-sm text-muted-foreground mb-4">
+        <h3 className="mb-1 text-lg font-semibold">Order not found</h3>
+        <p className="text-muted-foreground mb-4 text-sm">
           The order you&apos;re looking for doesn&apos;t exist, has been deleted, or you don&apos;t
           have permission to view it.
         </p>
@@ -186,7 +192,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
       <Button
         asChild
         variant="ghost"
-        className="text-sm text-muted-foreground hover:text-muted-foreground"
+        className="text-muted-foreground hover:text-muted-foreground text-sm"
       >
         <Link href={`/org/${resolvedParams.slug}/orders`}>
           <ArrowLeft className="h-4 w-4" />
@@ -199,18 +205,18 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
       <div className="mt-4">
         {/* Order ID */}
         <div className="flex items-center gap-4 py-1.5">
-          <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
-          <div className="text-sm text-muted-foreground w-28 shrink-0">Order ID</div>
-          <div className="flex-1 min-w-0 px-3 -mx-3">
-            <div className="text-sm text-muted-foreground truncate">{order.id}</div>
+          <Hash className="text-muted-foreground h-4 w-4 shrink-0" />
+          <div className="text-muted-foreground w-28 shrink-0 text-sm">Order ID</div>
+          <div className="-mx-3 min-w-0 flex-1 px-3">
+            <div className="text-muted-foreground truncate text-sm">{order.id}</div>
           </div>
         </div>
 
         {/* Customer Name */}
         <Field data-invalid={!!fieldErrors.customerName}>
           <div className="flex items-start gap-4 py-1.5">
-            <User className="h-4 w-4 text-muted-foreground shrink-0 mt-2" />
-            <div className="text-sm text-muted-foreground w-28 shrink-0 pt-2">Customer</div>
+            <User className="text-muted-foreground mt-2 h-4 w-4 shrink-0" />
+            <div className="text-muted-foreground w-28 shrink-0 pt-2 text-sm">Customer</div>
             <FieldContent className="flex-1">
               <div className="hover:bg-muted/50 rounded-md transition-colors">
                 <Input
@@ -225,7 +231,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                   }}
                   aria-invalid={!!fieldErrors.customerName}
                   className={cn(
-                    'h-9 text-sm border-0 cursor-text bg-transparent dark:bg-transparent',
+                    'h-9 cursor-text border-0 bg-transparent text-sm dark:bg-transparent',
                     'focus:border-input dark:focus:border-input'
                   )}
                   placeholder="Enter customer name"
@@ -238,14 +244,14 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
 
         {/* Status */}
         <div className="group flex items-center gap-4 py-1.5">
-          <Info className="h-4 w-4 text-muted-foreground shrink-0" />
-          <div className="text-sm text-muted-foreground w-28 shrink-0">Status</div>
-          <div className="flex-1 hover:bg-muted/50 rounded-md transition-colors">
+          <Info className="text-muted-foreground h-4 w-4 shrink-0" />
+          <div className="text-muted-foreground w-28 shrink-0 text-sm">Status</div>
+          <div className="hover:bg-muted/50 flex-1 rounded-md transition-colors">
             <Select
               value={order.status}
               onValueChange={(value) => handleUpdate('status', value as OrderStatus)}
             >
-              <SelectTrigger className="[&>svg]:hidden w-full border-0 bg-transparent dark:bg-transparent dark:hover:bg-transparent hover:bg-transparent">
+              <SelectTrigger className="w-full border-0 bg-transparent hover:bg-transparent dark:bg-transparent dark:hover:bg-transparent [&>svg]:hidden">
                 <Badge className={statusColors[order.status]}>{order.status}</Badge>
               </SelectTrigger>
               <SelectContent>
@@ -262,8 +268,8 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         {/* Amount */}
         <Field data-invalid={!!fieldErrors.amount}>
           <div className="flex items-start gap-4 py-1.5">
-            <CircleDollarSign className="h-4 w-4 text-muted-foreground shrink-0 mt-2" />
-            <div className="text-sm text-muted-foreground w-28 shrink-0 pt-2">Amount</div>
+            <CircleDollarSign className="text-muted-foreground mt-2 h-4 w-4 shrink-0" />
+            <div className="text-muted-foreground w-28 shrink-0 pt-2 text-sm">Amount</div>
             <FieldContent className="flex-1">
               <div className="hover:bg-muted/50 rounded-md transition-colors">
                 <Input
@@ -281,7 +287,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                   }}
                   aria-invalid={!!fieldErrors.amount}
                   className={cn(
-                    'h-9 text-sm border-0 cursor-text bg-transparent dark:bg-transparent',
+                    'h-9 cursor-text border-0 bg-transparent text-sm dark:bg-transparent',
                     'focus:border-input dark:focus:border-input'
                   )}
                   placeholder="0.00"
@@ -294,14 +300,14 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
 
         {/* Order Date */}
         <div className="group flex items-center gap-4 py-1.5">
-          <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-          <div className="text-sm text-muted-foreground w-28 shrink-0">Date</div>
+          <Calendar className="text-muted-foreground h-4 w-4 shrink-0" />
+          <div className="text-muted-foreground w-28 shrink-0 text-sm">Date</div>
           <div className="flex-1">
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="h-auto w-full px-3 justify-start text-left hover:bg-muted/50 focus:bg-muted/50 dark:hover:bg-muted/50 dark:focus:bg-muted/50"
+                  className="hover:bg-muted/50 focus:bg-muted/50 dark:hover:bg-muted/50 dark:focus:bg-muted/50 h-auto w-full justify-start px-3 text-left"
                 >
                   {format(order.orderDate, 'PPP')}
                 </Button>
@@ -326,8 +332,8 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         {/* Notes */}
         <Field data-invalid={!!fieldErrors.notes}>
           <div className="flex items-start gap-4 py-1.5">
-            <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-2" />
-            <div className="text-sm text-muted-foreground w-28 shrink-0 pt-2">Notes</div>
+            <Info className="text-muted-foreground mt-2 h-4 w-4 shrink-0" />
+            <div className="text-muted-foreground w-28 shrink-0 pt-2 text-sm">Notes</div>
             <FieldContent className="flex-1">
               <div className="hover:bg-muted/50 rounded-md transition-colors">
                 <Textarea
@@ -341,7 +347,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                   }}
                   aria-invalid={!!fieldErrors.notes}
                   className={cn(
-                    'min-h-10 max-w-full text-sm resize-none flex-1 transition-all border-transparent px-3 cursor-text',
+                    'min-h-10 max-w-full flex-1 cursor-text resize-none border-transparent px-3 text-sm transition-all',
                     'bg-transparent dark:bg-transparent',
                     'focus:border-input dark:focus:border-input hover:bg-muted/50'
                   )}
@@ -354,13 +360,13 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         </Field>
 
         {/* Metadata */}
-        <div className="pt-6 space-y-1">
-          <div className="flex items-center py-1.5  text-xs text-muted-foreground">
+        <div className="space-y-1 pt-6">
+          <div className="text-muted-foreground flex items-center py-1.5 text-xs">
             <span>Created by {order.userDisplayName || order.userEmail}</span>
             <span className="mx-2">•</span>
             <span>{format(order.createdAt, 'PPP')}</span>
           </div>
-          <div className="flex items-center py-1.5  text-xs text-muted-foreground">
+          <div className="text-muted-foreground flex items-center py-1.5 text-xs">
             <span>Last updated {format(order.updatedAt, 'PPP')}</span>
           </div>
         </div>

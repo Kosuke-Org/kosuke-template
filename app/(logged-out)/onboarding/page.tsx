@@ -5,13 +5,20 @@
 
 'use client';
 
-import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+
+import { useRouter } from 'next/navigation';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
 
+import { createOrgFormSchema } from '@/lib/trpc/schemas/organizations';
+
+import { useAuth } from '@/hooks/use-auth';
+import { useCreateOrganization } from '@/hooks/use-create-organization';
+
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
@@ -22,10 +29,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useCreateOrganization } from '@/hooks/use-create-organization';
-import { createOrgFormSchema } from '@/lib/trpc/schemas/organizations';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/hooks/use-auth';
+import { Input } from '@/components/ui/input';
 
 type OrganizationFormValues = z.infer<typeof createOrgFormSchema>;
 
@@ -54,13 +58,13 @@ export default function OnboardingPage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center mx-4">
+    <div className="mx-4 flex flex-1 items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl">Create your workspace</CardTitle>

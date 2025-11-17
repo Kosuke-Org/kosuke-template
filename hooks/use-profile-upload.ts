@@ -1,9 +1,10 @@
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
-import { useToast } from '@/hooks/use-toast';
-import { useProfileImage } from '@/hooks/use-profile-image';
 import { fileToBase64 } from '@/lib/utils';
+
+import { useProfileImage } from '@/hooks/use-profile-image';
+import { useToast } from '@/hooks/use-toast';
 
 export function useProfileUpload() {
   const { toast } = useToast();

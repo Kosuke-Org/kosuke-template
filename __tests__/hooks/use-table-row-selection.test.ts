@@ -1,9 +1,9 @@
 /**
  * Tests for useTableRowSelection hook
  */
+import { act, renderHook } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 
-import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
 import { useTableRowSelection } from '@/hooks/use-table-row-selection';
 
 describe('useTableRowSelection', () => {

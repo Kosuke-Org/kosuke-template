@@ -16,6 +16,7 @@ const knipConfig = {
     'lib/**/index.ts',
     // Queue system - public API for manual job triggering
     'lib/queue/queues/**',
+    'lib/queue/init-workers.ts',
   ],
   ignoreDependencies: [
     // Shadcn/UI dependencies (only used in components/ui/** which is ignored)

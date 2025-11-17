@@ -2,17 +2,18 @@
  * tRPC router for task operations
  * Handles CRUD operations for the todo list with server-side filtering
  */
+import { TRPCError } from '@trpc/server';
+import { and, desc, eq, ilike, isNull, or } from 'drizzle-orm';
 
-import { eq, and, desc, or, ilike, isNull } from 'drizzle-orm';
 import { db } from '@/lib/db/drizzle';
 import { tasks } from '@/lib/db/schema';
-import { router, protectedProcedure } from '../init';
-import { TRPCError } from '@trpc/server';
+
+import { protectedProcedure, router } from '../init';
 import {
   createTaskSchema,
-  updateTaskSchema,
-  taskListFiltersSchema,
   deleteTaskSchema,
+  taskListFiltersSchema,
+  updateTaskSchema,
 } from '../schemas/tasks';
 
 export const tasksRouter = router({

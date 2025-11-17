@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+import { eq } from 'drizzle-orm';
+import Stripe from 'stripe';
+
 import { stripe } from '@/lib/billing/client';
 import { db } from '@/lib/db';
 import { userSubscriptions } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
-import Stripe from 'stripe';
 
 /**
  * Stripe Webhook Handler

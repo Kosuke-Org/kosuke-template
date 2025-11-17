@@ -2,11 +2,12 @@
  * tRPC router for engine operations
  * Handles more complex operations like algorithmic functionalities, calculations, etc.
  */
-
 import { TRPCError } from '@trpc/server';
-import { router, protectedProcedure } from '../init';
+
+import { EngineError, convertCurrency } from '@/lib/engine';
+
+import { protectedProcedure, router } from '../init';
 import { currencyConvertRequestSchema, currencyConvertResponseSchema } from '../schemas/engine';
-import { convertCurrency, EngineError } from '@/lib/engine';
 
 export const engineRouter = router({
   convert: protectedProcedure

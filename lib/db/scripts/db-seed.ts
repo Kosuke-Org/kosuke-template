@@ -11,31 +11,31 @@
  *
  * Usage: bun run db:seed
  */
-
 import { faker } from '@faker-js/faker';
-import { db } from '@/lib/db/drizzle';
-import {
-  users,
-  organizations,
-  orgMemberships,
-  userSubscriptions,
-  tasks,
-  activityLogs,
-  orders,
-  ActivityType,
-  SubscriptionTier,
-  SubscriptionStatus,
-  type NewUser,
-  type NewOrganization,
-  type NewOrgMembership,
-  type NewUserSubscription,
-  type NewTask,
-  type NewActivityLog,
-  type TaskPriority,
-} from '../schema';
 
+import { db } from '@/lib/db/drizzle';
 import type { NewOrder, OrderStatus } from '@/lib/types/order';
 import { ORG_ROLES } from '@/lib/types/organization';
+
+import {
+  ActivityType,
+  type NewActivityLog,
+  type NewOrgMembership,
+  type NewOrganization,
+  type NewTask,
+  type NewUser,
+  type NewUserSubscription,
+  SubscriptionStatus,
+  SubscriptionTier,
+  type TaskPriority,
+  activityLogs,
+  orders,
+  orgMemberships,
+  organizations,
+  tasks,
+  userSubscriptions,
+  users,
+} from '../schema';
 
 const IS_PRODUCTION =
   process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';

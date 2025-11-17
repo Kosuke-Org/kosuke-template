@@ -1,14 +1,16 @@
 'use client';
 
 import * as React from 'react';
+
 import { CheckSquare, LifeBuoy, ReceiptText, Send, SquareTerminal } from 'lucide-react';
+
+import { useOrganization } from '@/hooks/use-organization';
 
 import { NavMain } from '@/components/nav-main';
 import { NavSecondary } from '@/components/nav-secondary';
 import { NavUser } from '@/components/nav-user';
 import { SidebarOrgSwitcher } from '@/components/sidebar-org-switcher';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
-import { useOrganization } from '@/hooks/use-organization';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

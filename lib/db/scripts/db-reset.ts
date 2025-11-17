@@ -5,7 +5,6 @@
  * This script drops all tables and schemas, then pushes the fresh schema and seeds data.
  * ⚠️ WARNING: This will delete ALL data in the database!
  */
-
 import postgres from 'postgres';
 
 const IS_PRODUCTION =

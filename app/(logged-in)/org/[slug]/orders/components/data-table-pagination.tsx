@@ -2,7 +2,6 @@
  * DataTable Pagination Component
  * Provides pagination controls with server-side page size and navigation
  */
-
 import { Table } from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
@@ -36,8 +35,8 @@ export function DataTablePagination<TData>({
   const endIndex = Math.min(currentPage * pageSize, totalRecords);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div className="text-sm text-muted-foreground">
+    <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+      <div className="text-muted-foreground text-sm">
         Showing {startIndex} to {endIndex} of {totalRecords} orders
       </div>
       <div className="flex items-center gap-2">
@@ -81,7 +80,7 @@ export function DataTablePagination<TData>({
             <span className="sr-only">Go to previous page</span>
             <ChevronLeft />
           </Button>
-          <div className="text-sm px-2">
+          <div className="px-2 text-sm">
             Page {currentPage} of {totalPages}
           </div>
           <Button

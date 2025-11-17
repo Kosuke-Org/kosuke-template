@@ -4,23 +4,24 @@
  */
 
 'use client';
-import { format } from 'date-fns';
-
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
+import { format } from 'date-fns';
 import { AlertCircle, Calendar, MoreVertical, Pencil, Trash2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+
+import type { AppRouter } from '@/lib/trpc/router';
+import { cn } from '@/lib/utils';
+
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
-import type { AppRouter } from '@/lib/trpc/router';
-import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
-import { Checkbox } from '@/components/ui/checkbox';
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type RouterInput = inferRouterInputs<AppRouter>;
@@ -51,7 +52,7 @@ export function KanbanTaskCard({ task, onEdit, onDelete, onToggleComplete }: Kan
       ref={setNodeRef}
       style={style}
       className={cn(
-        'cursor-grab active:cursor-grabbing transition-all duration-200 py-4 relative',
+        'relative cursor-grab py-4 transition-all duration-200 active:cursor-grabbing',
         isDragging && 'opacity-50 shadow-lg',
         isCompleted && 'opacity-60',
         'hover:shadow-md'
@@ -61,7 +62,7 @@ export function KanbanTaskCard({ task, onEdit, onDelete, onToggleComplete }: Kan
     >
       <CardContent className="px-4">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild className="absolute mt-2 top-0 right-2 mb-0">
+          <DropdownMenuTrigger asChild className="absolute top-0 right-2 mt-2 mb-0">
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
               <MoreVertical className="h-4 w-4" />
               <span className="sr-only">Open menu</span>
@@ -85,10 +86,10 @@ export function KanbanTaskCard({ task, onEdit, onDelete, onToggleComplete }: Kan
             checked={task.completed}
             onCheckedChange={() => onToggleComplete({ id: task.id, completed: !task.completed })}
           />
-          <h4 className={cn('font-medium text-sm leading-tight')}>{task.title}</h4>
+          <h4 className={cn('text-sm leading-tight font-medium')}>{task.title}</h4>
         </div>
         {task.description && (
-          <p className={cn('text-xs text-muted-foreground line-clamp-2 pt-2')}>
+          <p className={cn('text-muted-foreground line-clamp-2 pt-2 text-xs')}>
             {task.description}
           </p>
         )}
@@ -97,7 +98,7 @@ export function KanbanTaskCard({ task, onEdit, onDelete, onToggleComplete }: Kan
         {task.dueDate && (
           <div
             className={cn(
-              'flex items-center gap-1 text-xs text-muted-foreground mt-2',
+              'text-muted-foreground mt-2 flex items-center gap-1 text-xs',
               isOverdue && !task.completed && 'text-red-600 dark:text-red-400'
             )}
           >
