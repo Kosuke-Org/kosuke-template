@@ -312,13 +312,42 @@ export const organizationsRouter = router({
 
   leaveOrganization: protectedProcedure
     .input(leaveOrganizationSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       await auth.api.leaveOrganization({
         body: {
           organizationId: input.organizationId,
         },
         headers: await headers(),
       });
+
+      // Check if the user has other organizations to set as active in the session
+      // If not, set the active organization to null - the user will be redirected to the /onboarding route
+      const otherOrgs = await auth.api.listOrganizations({
+        query: {
+          userId: ctx.userId,
+        },
+        headers: await headers(),
+      });
+
+      if (otherOrgs.length) {
+        const nextOrg = otherOrgs[0];
+        const { id, slug } = nextOrg;
+
+        await auth.api.setActiveOrganization({
+          body: {
+            organizationId: id,
+            organizationSlug: slug,
+          },
+          headers: await headers(),
+        });
+      } else {
+        await auth.api.setActiveOrganization({
+          body: {
+            organizationId: null,
+          },
+          headers: await headers(),
+        });
+      }
 
       return {
         success: true,
