@@ -37,14 +37,29 @@ export const auth = betterAuth({
   }),
   secondaryStorage: {
     get: async (key) => {
-      return await redis.get(key);
+      try {
+        return await redis.get(key);
+      } catch (error) {
+        console.error('Redis GET error:', error);
+        return null;
+      }
     },
     set: async (key, value, ttl) => {
-      if (ttl) await redis.set(key, value, 'EX', ttl);
-      else await redis.set(key, value);
+      try {
+        if (ttl) await redis.set(key, value, 'EX', ttl);
+        else await redis.set(key, value);
+      } catch (error) {
+        console.error('Redis SET error:', error);
+        return null;
+      }
     },
     delete: async (key) => {
-      await redis.del(key);
+      try {
+        await redis.del(key);
+      } catch (error) {
+        console.error('Redis DEL error:', error);
+        return null;
+      }
     },
   },
   advanced: {
@@ -129,7 +144,7 @@ export const auth = betterAuth({
     },
     cookieCache: {
       enabled: true,
-      maxAge: 60 * 5, // 5 minutes - cache session in cookie to avoid DB queries
+      maxAge: 60 * 5, // 5 minutes - cache session in cookie to avoid Redis lookups
     },
   },
   trustedOrigins: [process.env.NEXT_PUBLIC_APP_URL!],

@@ -1,6 +1,6 @@
 import { Queue, Worker, QueueEvents } from 'bullmq';
 
-import { redis } from '@/lib/redis';
+import { redis, closeRedis } from '@/lib/redis';
 
 /**
  * Default queue options for consistent behavior across all queues
@@ -63,7 +63,7 @@ export function createQueueEvents(name: string) {
 }
 
 /**
- * Graceful shutdown handler for workers
+ * Graceful shutdown handler for workers and Redis connection
  * Call this when shutting down the application to ensure jobs are completed
  */
 export async function gracefulShutdown(workers: Worker[]) {
@@ -76,4 +76,7 @@ export async function gracefulShutdown(workers: Worker[]) {
   );
 
   console.log('✅ All workers shut down successfully');
+
+  // Close Redis connection after workers are closed
+  await closeRedis();
 }
