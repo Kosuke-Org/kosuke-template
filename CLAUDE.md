@@ -2698,31 +2698,6 @@ All color tokens are defined in `./app/globals.css` and support both light and d
 - Only create documentation files if **explicitly requested** by the user
 - Focus on implementing the feature code, not documenting it
 
-### Service Integration & Documentation Updates - MANDATORY
-
-**When integrating, migrating, or updating third-party services, ALWAYS update the documentation accordingly.**
-
-Examples of service changes that require documentation updates:
-
-- Billing provider migrations (e.g., Polar → Stripe)
-- Authentication provider changes
-- Database or ORM updates
-- Email service migrations
-- Storage provider changes
-- Monitoring/error tracking service changes
-- API endpoint removals or restructuring
-
-**Documentation files to review and update:**
-
-- `./docs/docs/intro.md` - Update service descriptions and tech stack overview
-- `./docs/docs/deployment-guide.md` - Update deployment instructions and environment variables
-- `./docs/blog/` - Add migration notes or release information if applicable
-- `./emails/` - Update any service references in email templates
-- `./components/home.tsx` - Update home page service descriptions
-- `.env.example` - Update environment variable names and requirements
-
-When a service change occurs, automatically identify and update all affected documentation files, environment examples, and service references across the codebase.
-
 ### Schema and Seed Synchronization (MANDATORY)
 
 **Whenever the database schema file (@schema.ts) is updated, the seed file MUST be updated accordingly.**
