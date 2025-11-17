@@ -14,3 +14,6 @@ pnpm-lock.yaml
 bun.lock
 lib/db/migrations
 engine
+
+# Shadcn/UI components, we ignore them because they are auto-generated
+components/ui
