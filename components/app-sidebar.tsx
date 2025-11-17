@@ -8,11 +8,11 @@ import { NavSecondary } from '@/components/nav-secondary';
 import { NavUser } from '@/components/nav-user';
 import { SidebarOrgSwitcher } from '@/components/sidebar-org-switcher';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from '@/components/ui/sidebar';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useOrganization } from '@/hooks/use-organization';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { activeOrganization, isLoading } = useActiveOrganization();
+  const { organization: activeOrganization, isLoading } = useOrganization();
 
   // Generate org-aware navigation items
   const navItems = React.useMemo(() => {

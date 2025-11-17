@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { trpc } from '@/lib/trpc/client';
 
 export function useOrganization() {
-  const { isSignedIn, activeOrganizationId } = useAuth();
+  const { isSignedIn, activeOrganizationId, user: currentUser } = useAuth();
 
   const {
     data: organization,
@@ -26,8 +26,18 @@ export function useOrganization() {
     }
   );
 
+  const pendingInvitations =
+    organization?.invitations.filter((invitation) => invitation.status === 'pending') ?? [];
+
+  const members = organization?.members ?? [];
+  const currentUserMembership = members.find((m) => m.userId === currentUser?.id);
+
   return {
     organization: organization ?? null,
+    invitations: pendingInvitations,
+    members,
+    currentUserRole: currentUserMembership?.role,
+    currentUserMembership,
     isLoading,
     error,
     refetch,

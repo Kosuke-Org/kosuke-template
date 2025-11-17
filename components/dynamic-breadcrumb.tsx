@@ -9,9 +9,10 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useOrganization } from '@/hooks/use-organization';
 import { BreadcrumbSkeleton } from './skeletons';
 import { useAuth } from '@/hooks/use-auth';
+import Link from 'next/link';
 
 // Define human-readable names for routes
 const routeNames: Record<string, string> = {
@@ -29,7 +30,7 @@ const routeNames: Record<string, string> = {
 
 export function DynamicBreadcrumb() {
   const pathname = usePathname();
-  const { activeOrganization, isLoading } = useActiveOrganization();
+  const { organization: activeOrganization, isLoading } = useOrganization();
   const { isLoading: isAuthLoading } = useAuth();
 
   // Split the pathname and filter out empty strings
@@ -88,7 +89,9 @@ export function DynamicBreadcrumb() {
               {item.isLast || item.href === null ? (
                 <BreadcrumbPage>{item.name}</BreadcrumbPage>
               ) : (
-                <BreadcrumbLink href={item.href}>{item.name}</BreadcrumbLink>
+                <BreadcrumbLink asChild>
+                  <Link href={item.href}>{item.name}</Link>
+                </BreadcrumbLink>
               )}
             </BreadcrumbItem>
             {!item.isLast && <BreadcrumbSeparator className="hidden md:block" />}

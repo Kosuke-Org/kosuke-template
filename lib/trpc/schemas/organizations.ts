@@ -56,6 +56,10 @@ export const createInvitationSchema = z.object({
   role: z.enum(['owner', 'admin', 'member']).default('member'),
 });
 
+export const cancelInvitationSchema = z.object({
+  invitationId: z.uuid('Invalid invitation ID'),
+});
+
 /**
  * Form-specific schema for inviting members
  * Used for client-side form validation (organizationId provided separately)

@@ -28,7 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Field, FieldContent, FieldError } from '@/components/ui/field';
 import { trpc } from '@/lib/trpc/client';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useOrganization } from '@/hooks/use-organization';
 import { useOrderActions } from '@/hooks/use-orders';
 import { orderStatusEnum, type OrderStatus } from '@/lib/db/schema';
 import { statusColors } from '../utils';
@@ -65,7 +65,7 @@ interface OrderDetailPageProps {
 export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { activeOrganization } = useActiveOrganization();
+  const { organization: activeOrganization } = useOrganization();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});

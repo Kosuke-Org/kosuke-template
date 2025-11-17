@@ -1051,7 +1051,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Trash, Calendar, User, CircleDollarSign, Info, Hash } from 'lucide-react';
 // ... other imports
 import { trpc } from '@/lib/trpc/client';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useOrganization } from '@/hooks/use-organization';
 import { useFeature } from '@/hooks/use-feature';
 import { featureStatusEnum, type FeatureStatus } from '@/lib/db/schema';
 import { statusColors } from '../utils';
@@ -1088,7 +1088,7 @@ interface FeatureDetailPageProps {
 export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { activeOrganization, isLoading: isLoadingOrg } = useActiveOrganization();
+  const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});

@@ -11,7 +11,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useOrderActions, useOrdersList } from '@/hooks/use-orders';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
+import { useOrganization } from '@/hooks/use-organization';
 import { useTableSearch } from '@/hooks/use-table-search';
 import { useTableSorting } from '@/hooks/use-table-sorting';
 import { useTablePagination } from '@/hooks/use-table-pagination';
@@ -49,7 +49,7 @@ function OrdersPageSkeleton() {
 
 export default function OrgOrdersPage() {
   const router = useRouter();
-  const { activeOrganization, isLoading: isLoadingOrg } = useActiveOrganization();
+  const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
 
   // Reusable table hooks
   const { searchValue, setSearchValue } = useTableSearch({

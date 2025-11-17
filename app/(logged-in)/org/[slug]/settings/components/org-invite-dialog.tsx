@@ -39,25 +39,20 @@ import {
 } from '@/components/ui/select';
 import { useOrgInvitation } from '@/hooks/use-org-invitation';
 import { orgInviteFormSchema } from '@/lib/trpc/schemas/organizations';
-import { ORG_ROLES, OrgRoleValue } from '@/lib/types/organization';
+import { ORG_ROLES } from '@/lib/types/organization';
 import { useUser } from '@/hooks/use-user';
-import { useOrgMembers } from '@/hooks/use-org-members';
-import { useActiveOrganization } from '@/hooks/use-active-organization';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useOrganization } from '@/hooks/use-organization';
 
 type InviteFormValues = z.infer<typeof orgInviteFormSchema>;
 
 export function OrgInviteDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const { user: currentUser } = useUser();
-  const { activeOrganization: organization, isLoading: isLoadingOrganization } =
-    useActiveOrganization();
-  const organizationId = organization?.id;
-  const { inviteMember, isInviting } = useOrgInvitation(organizationId);
-  const { members, isLoading } = useOrgMembers(organizationId);
+  const { organization, isLoading, currentUserRole } = useOrganization();
+  const { inviteMember, isInviting } = useOrgInvitation();
 
-  const currentUserMembership = members.find((m) => m.userId === currentUser?.id);
-  const currentUserRole = currentUserMembership?.role as OrgRoleValue;
+  const organizationId = organization?.id;
 
   const form = useForm<InviteFormValues>({
     resolver: zodResolver(orgInviteFormSchema),
@@ -86,7 +81,7 @@ export function OrgInviteDialog() {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        {isLoadingOrganization || isLoading || !currentUser ? (
+        {isLoading || !currentUser ? (
           <Skeleton className="h-8 w-32" />
         ) : (
           <Button>
