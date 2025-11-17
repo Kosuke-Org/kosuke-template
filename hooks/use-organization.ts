@@ -30,13 +30,14 @@ export function useOrganization() {
     organization?.invitations.filter((invitation) => invitation.status === 'pending') ?? [];
 
   const members = organization?.members ?? [];
-  const currentUserRole = members.find((m) => m.userId === currentUser?.id)?.role;
+  const currentUserMembership = members.find((m) => m.userId === currentUser?.id);
 
   return {
     organization: organization ?? null,
     invitations: pendingInvitations,
     members,
-    currentUserRole,
+    currentUserRole: currentUserMembership?.role,
+    currentUserMembership,
     isLoading,
     error,
     refetch,

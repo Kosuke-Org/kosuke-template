@@ -94,10 +94,12 @@ export function OrgMemberList() {
     leaveOrganization,
     isLeaving: isLeavingMutation,
   } = useOrgMembers();
-  const { members, isLoading, organization, currentUserRole } = useOrganization();
+  const { members, isLoading, organization, currentUserRole, currentUserMembership } =
+    useOrganization();
 
   const [memberToRemove, setMemberToRemove] = useState<string | null>(null);
   const [isLeavingDialogOpen, setIsLeavingDialogOpen] = useState(false);
+  const [memberToTransferOwnership, setMemberToTransferOwnership] = useState<string | null>(null);
 
   const organizationId = organization?.id;
 
@@ -135,20 +137,60 @@ export function OrgMemberList() {
     setIsLeavingDialogOpen(false);
   };
 
-  const handleRoleChange = (memberId: string, newRole: OrgRoleValue) => {
-    if (!organizationId) return;
+  const handleTransferOwnership = (memberId: string) => {
+    setMemberToTransferOwnership(memberId);
+  };
 
-    updateMemberRole({
-      organizationId,
-      memberId,
-      role: newRole,
+  const confirmTransferOwnership = () => {
+    if (!memberToTransferOwnership) return;
+
+    handleRoleChange(memberToTransferOwnership, ORG_ROLES.OWNER, () => {
+      // on transfer ownership success, demote current user to admin
+      if (currentUserMembership?.id && currentUserMembership.id !== memberToTransferOwnership) {
+        handleRoleChange(currentUserMembership.id, ORG_ROLES.ADMIN);
+      }
+      setMemberToTransferOwnership(null);
     });
   };
 
-  const getActionsForMember = (isCurrentUser: boolean): string[] => {
-    if (isCurrentUser) return [ACTIONS.LEAVE_ORGANIZATION];
-    return getAllowedActionsForOthers(currentUserRole);
+  const handleRoleChange = (memberId: string, newRole: OrgRoleValue, onSuccess?: () => void) => {
+    if (!organizationId) return;
+
+    updateMemberRole(
+      {
+        organizationId,
+        memberId,
+        role: newRole,
+      },
+      {
+        onSuccess,
+      }
+    );
   };
+
+  const getActionsForMember = (isCurrentUser: boolean, memberRole?: OrgRoleValue) => {
+    if (isCurrentUser) {
+      // Current user can always leave
+      const actions: string[] = [ACTIONS.LEAVE_ORGANIZATION];
+
+      // Admins can demote themselves to member
+      if (currentUserRole === ORG_ROLES.ADMIN) {
+        actions.push(ACTIONS.UPDATE_MEMBER_ROLE);
+      }
+      return actions;
+    }
+
+    return getAllowedActionsForOthers(currentUserRole, memberRole);
+  };
+
+  // Current user always appears first
+  const sortedMembers = [...members].sort((a, b) => {
+    const aIsCurrentUser = a.userId === currentUser?.id;
+    const bIsCurrentUser = b.userId === currentUser?.id;
+    if (aIsCurrentUser && !bIsCurrentUser) return -1;
+    if (!aIsCurrentUser && bIsCurrentUser) return 1;
+    return 0;
+  });
 
   return (
     <>
@@ -169,7 +211,7 @@ export function OrgMemberList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {members.map((member) => {
+                {sortedMembers.map((member) => {
                   const { user } = member;
                   const displayName = user.name || 'User';
 
@@ -207,7 +249,7 @@ export function OrgMemberList() {
                       </TableCell>
                       <TableCell className="text-right">
                         {(() => {
-                          const actionsForMember = getActionsForMember(isCurrentUser);
+                          const actionsForMember = getActionsForMember(isCurrentUser, member.role);
                           if (actionsForMember.length === 0) return null;
 
                           return (
@@ -219,6 +261,17 @@ export function OrgMemberList() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 {isCurrentUser &&
+                                  currentUserRole === ORG_ROLES.ADMIN &&
+                                  actionsForMember.includes(ACTIONS.UPDATE_MEMBER_ROLE) && (
+                                    <DropdownMenuItem
+                                      onClick={() => handleRoleChange(member.id, ORG_ROLES.MEMBER)}
+                                      disabled={isUpdatingRole}
+                                    >
+                                      <ShieldBan className="h-4 w-4" />
+                                      Demote to Member
+                                    </DropdownMenuItem>
+                                  )}
+                                {isCurrentUser &&
                                   actionsForMember.includes(ACTIONS.LEAVE_ORGANIZATION) && (
                                     <DropdownMenuItem
                                       onClick={handleLeave}
@@ -229,10 +282,11 @@ export function OrgMemberList() {
                                       Leave Organization
                                     </DropdownMenuItem>
                                   )}
+
                                 {!isCurrentUser &&
                                   actionsForMember.includes(ACTIONS.UPDATE_MEMBER_ROLE) && (
                                     <>
-                                      {member.role === ORG_ROLES.MEMBER ? (
+                                      {member.role !== ORG_ROLES.ADMIN ? (
                                         <DropdownMenuItem
                                           onClick={() =>
                                             handleRoleChange(member.id, ORG_ROLES.ADMIN)
@@ -271,11 +325,8 @@ export function OrgMemberList() {
                                     <>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem
-                                        onClick={() => {
-                                          // TODO: Implement transfer ownership
-                                          console.log('Transfer ownership to', member.id);
-                                        }}
-                                        disabled
+                                        onClick={() => handleTransferOwnership(member.id)}
+                                        disabled={isUpdatingRole}
                                       >
                                         <Shield className="h-4 w-4" />
                                         Transfer Ownership
@@ -340,19 +391,47 @@ export function OrgMemberList() {
           <AlertDialogHeader>
             <AlertDialogTitle>Leave organization?</AlertDialogTitle>
             <AlertDialogDescription>
-              You will lose access to this organization and all its resources. This action cannot be
-              undone.
+              {currentUserRole === ORG_ROLES.OWNER
+                ? 'You are the owner of this organization and cannot leave. You can transfer ownership to another member.'
+                : 'You will lose access to this organization and all its resources. This action cannot be undone.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isLeavingMutation}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmLeave}
-              className="bg-destructive text-destructive-foreground"
-              disabled={isLeavingMutation}
-            >
-              {isLeavingMutation && <Loader2 className="h-4 w-4 animate-spin" />}
-              Leave organization
+            {currentUserRole !== ORG_ROLES.OWNER && (
+              <AlertDialogAction
+                onClick={confirmLeave}
+                className="bg-destructive text-destructive-foreground"
+                disabled={isLeavingMutation}
+              >
+                {isLeavingMutation && <Loader2 className="h-4 w-4 animate-spin" />}
+                Leave organization
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Transfer Ownership Dialog */}
+      <AlertDialog
+        open={!!memberToTransferOwnership || (!!memberToTransferOwnership && isUpdatingRole)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Transfer ownership?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {(() => {
+                const member = members.find((m) => m.id === memberToTransferOwnership);
+                const memberName = member?.user.name || member?.user.email || 'this member';
+                return `You are about to transfer ownership of this organization to ${memberName}. You will be demoted to admin. This action cannot be undone.`;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isUpdatingRole}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmTransferOwnership} disabled={isUpdatingRole}>
+              {isUpdatingRole && <Loader2 className="h-4 w-4 animate-spin" />}
+              Transfer Ownership
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
