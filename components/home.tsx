@@ -1,15 +1,19 @@
 'use client';
 
-import { Star, Zap, Rocket, ArrowRight, Code2, Database, Lock, Sparkles } from 'lucide-react';
-import { technologies } from '@/app/(logged-out)/home/data/technologies';
+import Link from 'next/link';
+
 import { motion } from 'framer-motion';
+import { ArrowRight, Code2, Database, Lock, Rocket, Sparkles, Star, Zap } from 'lucide-react';
+
+import { TechLogo } from '@/app/(logged-out)/home/components/tech-card';
+import { technologies } from '@/app/(logged-out)/home/data/technologies';
+
+import { useOrganization } from '@/hooks/use-organization';
+import { useUser } from '@/hooks/use-user';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { TechLogo } from '@/app/(logged-out)/home/components/tech-card';
-import Link from 'next/link';
-import { useUser } from '@/hooks/use-user';
-import { useOrganization } from '@/hooks/use-organization';
 
 const coreFeatures = [
   {
@@ -45,13 +49,13 @@ export function Home() {
   const dashboardUrl = organization ? `/org/${organization.slug}/dashboard` : '/';
 
   return (
-    <div className="w-full min-h-screen bg-background">
+    <div className="bg-background min-h-screen w-full">
       {/* Hero Section - Terminal First */}
-      <section className="pt-12 sm:pt-20 pb-16 sm:pb-32 px-4 sm:px-6">
+      <section className="px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-32">
         <div className="container mx-auto max-w-6xl">
           {/* Main headline */}
           <motion.div
-            className="text-center mb-8 sm:mb-16"
+            className="mb-8 text-center sm:mb-16"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -63,7 +67,7 @@ export function Home() {
             >
               <Badge
                 variant="outline"
-                className="mb-4 sm:mb-6 px-2 sm:px-3 py-1 text-xs cursor-default relative overflow-hidden"
+                className="relative mb-4 cursor-default overflow-hidden px-2 py-1 text-xs sm:mb-6 sm:px-3"
               >
                 {/* Shine effect */}
                 <motion.div
@@ -77,25 +81,25 @@ export function Home() {
                     ease: 'easeInOut',
                   }}
                 />
-                <Sparkles className="w-3 h-3 mr-1" />
+                <Sparkles className="mr-1 h-3 w-3" />
                 Production Ready
               </Badge>
             </motion.div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-7xl font-bold mb-4 sm:mb-6 leading-tight tracking-tight px-2">
+            <h1 className="mb-4 px-2 text-3xl leading-tight font-bold tracking-tight sm:mb-6 sm:text-5xl lg:text-7xl">
               Skip the boilerplate
               <br />
               Ship features
             </h1>
 
-            <p className="text-base sm:text-lg lg:text-xl text-muted-foreground mb-6 sm:mb-8 max-w-2xl mx-auto font-sans px-2">
+            <p className="text-muted-foreground mx-auto mb-6 max-w-2xl px-2 font-sans text-base sm:mb-8 sm:text-lg lg:text-xl">
               Production-ready Next.js template with auth, billing, database, and deployment.
             </p>
           </motion.div>
 
           {/* CTA Buttons */}
           <motion.div
-            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-2"
+            className="flex flex-col items-center justify-center gap-3 px-2 sm:flex-row sm:gap-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
@@ -129,24 +133,24 @@ export function Home() {
       </section>
 
       {/* Core Features */}
-      <section className="py-12 sm:py-20 bg-background">
+      <section className="bg-background py-12 sm:py-20">
         <div className="container mx-auto px-4 sm:px-6">
           <motion.div
-            className="text-center mb-12 sm:mb-16"
+            className="mb-12 text-center sm:mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">
+            <h2 className="mb-3 text-2xl font-bold sm:mb-4 sm:text-3xl lg:text-4xl">
               # Everything you need
             </h2>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto font-sans px-2">
+            <p className="text-muted-foreground mx-auto max-w-2xl px-2 font-sans text-base sm:text-lg">
               Carefully chosen technologies that work together seamlessly
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-5xl mx-auto">
+          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 sm:gap-8 md:grid-cols-2">
             {coreFeatures.map((feature, index) => (
               <motion.div
                 key={feature.title}
@@ -157,8 +161,8 @@ export function Home() {
               >
                 <Card className="h-full py-4 transition-colors">
                   <CardContent className="py-0">
-                    <div className="flex items-start justify-between mb-3 sm:mb-4">
-                      <div className="p-2 rounded-lg bg-muted text-muted-foreground">
+                    <div className="mb-3 flex items-start justify-between sm:mb-4">
+                      <div className="bg-muted text-muted-foreground rounded-lg p-2">
                         <feature.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                       </div>
                       <Badge variant="outline" className="text-xs">
@@ -166,11 +170,11 @@ export function Home() {
                       </Badge>
                     </div>
 
-                    <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3">
+                    <h3 className="mb-2 text-lg font-semibold sm:mb-3 sm:text-xl">
                       {feature.title}
                     </h3>
 
-                    <p className="text-sm sm:text-base text-muted-foreground font-sans leading-relaxed">
+                    <p className="text-muted-foreground font-sans text-sm leading-relaxed sm:text-base">
                       {feature.description}
                     </p>
                   </CardContent>
@@ -185,19 +189,19 @@ export function Home() {
       <section className="py-24 sm:py-48">
         <div className="container mx-auto px-4 sm:px-6">
           <motion.div
-            className="text-center mb-12 sm:mb-16"
+            className="mb-12 text-center sm:mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">
+            <h2 className="mb-3 text-2xl font-bold sm:mb-4 sm:text-3xl lg:text-4xl">
               # built with
             </h2>
           </motion.div>
 
           <motion.div
-            className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4 sm:gap-8 max-w-4xl mx-auto"
+            className="mx-auto grid max-w-4xl grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-8 md:grid-cols-7"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -206,14 +210,14 @@ export function Home() {
             {technologies.map((tech, index) => (
               <motion.div
                 key={index}
-                className="flex flex-col items-center group cursor-pointer"
+                className="group flex cursor-pointer flex-col items-center"
                 whileHover={{ y: -2 }}
                 transition={{ type: 'spring', stiffness: 300 }}
               >
-                <div className="p-2 sm:p-3 rounded-lg bg-card/30 border border-border/30 transition-all duration-300">
+                <div className="bg-card/30 border-border/30 rounded-lg border p-2 transition-all duration-300 sm:p-3">
                   <TechLogo name={tech.name} logoPath={tech.logoPath} url={tech.url} size="md" />
                 </div>
-                <span className="text-xs mt-2 text-muted-foreground group-hover:text-foreground transition-colors text-center">
+                <span className="text-muted-foreground group-hover:text-foreground mt-2 text-center text-xs transition-colors">
                   {tech.name.toLowerCase()}
                 </span>
               </motion.div>
@@ -223,25 +227,25 @@ export function Home() {
       </section>
 
       {/* Bento Grid Features */}
-      <section className="py-12 sm:py-20 bg-background">
+      <section className="bg-background py-12 sm:py-20">
         <div className="container mx-auto px-4 sm:px-6">
           <motion.div
-            className="text-center mb-12 sm:mb-16"
+            className="mb-12 text-center sm:mb-16"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">
+            <h2 className="mb-3 text-2xl font-bold sm:mb-4 sm:text-3xl lg:text-4xl">
               # Why developers choose this
             </h2>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto font-sans px-2">
+            <p className="text-muted-foreground mx-auto max-w-2xl px-2 font-sans text-base sm:text-lg">
               Every component designed for speed, security, and scale
             </p>
           </motion.div>
 
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <div className="mx-auto max-w-6xl">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
               {/* Large feature card */}
               <motion.div
                 className="lg:col-span-2 lg:row-span-2"
@@ -250,16 +254,16 @@ export function Home() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
               >
-                <Card className="h-full p-6 sm:p-8 bg-card border border-border hover:bg-card/80 transition-all duration-300">
-                  <CardContent className="p-0 h-full flex flex-col justify-between">
+                <Card className="bg-card border-border hover:bg-card/80 h-full border p-6 transition-all duration-300 sm:p-8">
+                  <CardContent className="flex h-full flex-col justify-between p-0">
                     <div>
-                      <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                        <div className="p-2 rounded-lg bg-muted">
-                          <Rocket className="h-5 w-5 sm:h-6 sm:w-6 text-foreground" />
+                      <div className="mb-4 flex items-center gap-3 sm:mb-6">
+                        <div className="bg-muted rounded-lg p-2">
+                          <Rocket className="text-foreground h-5 w-5 sm:h-6 sm:w-6" />
                         </div>
-                        <h3 className="text-lg sm:text-xl font-semibold">Ship in Minutes</h3>
+                        <h3 className="text-lg font-semibold sm:text-xl">Ship in Minutes</h3>
                       </div>
-                      <p className="text-sm sm:text-base text-muted-foreground font-sans mb-4 sm:mb-6 leading-relaxed">
+                      <p className="text-muted-foreground mb-4 font-sans text-sm leading-relaxed sm:mb-6 sm:text-base">
                         Complete full-stack application with authentication, database, billing, and
                         deployment. Everything integrated and configured - just clone and ship.
                       </p>
@@ -289,13 +293,13 @@ export function Home() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.1 }}
               >
-                <Card className="h-full p-4 sm:p-6 bg-card/50 border border-border hover:bg-card/80 transition-all duration-300">
+                <Card className="bg-card/50 border-border hover:bg-card/80 h-full border p-4 transition-all duration-300 sm:p-6">
                   <CardContent className="p-0">
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                      <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
-                      <h3 className="text-base sm:text-lg font-semibold">Secure Auth</h3>
+                    <div className="mb-3 flex items-center gap-2 sm:mb-4">
+                      <Lock className="text-foreground h-4 w-4 sm:h-5 sm:w-5" />
+                      <h3 className="text-base font-semibold sm:text-lg">Secure Auth</h3>
                     </div>
-                    <p className="text-sm text-muted-foreground font-sans">
+                    <p className="text-muted-foreground font-sans text-sm">
                       Better Auth integration with passwordless authentication and organization
                       management.
                     </p>
@@ -310,13 +314,13 @@ export function Home() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.2 }}
               >
-                <Card className="h-full p-4 sm:p-6 bg-card/50 border border-border hover:bg-card/80 transition-all duration-300">
+                <Card className="bg-card/50 border-border hover:bg-card/80 h-full border p-4 transition-all duration-300 sm:p-6">
                   <CardContent className="p-0">
-                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                      <Database className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
-                      <h3 className="text-base sm:text-lg font-semibold">Type-Safe DB</h3>
+                    <div className="mb-3 flex items-center gap-2 sm:mb-4">
+                      <Database className="text-foreground h-4 w-4 sm:h-5 sm:w-5" />
+                      <h3 className="text-base font-semibold sm:text-lg">Type-Safe DB</h3>
                     </div>
-                    <p className="text-sm text-muted-foreground font-sans">
+                    <p className="text-muted-foreground font-sans text-sm">
                       Drizzle ORM with PostgreSQL. Migrations, relations, and full TypeScript
                       support.
                     </p>
@@ -332,18 +336,18 @@ export function Home() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: 0.3 }}
               >
-                <Card className="h-full p-4 sm:p-6 bg-card border border-border hover:bg-card/80 transition-all duration-300">
+                <Card className="bg-card border-border hover:bg-card/80 h-full border p-4 transition-all duration-300 sm:p-6">
                   <CardContent className="p-0">
-                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <div className="mb-3 flex items-center justify-between sm:mb-4">
                       <div className="flex items-center gap-2">
-                        <Rocket className="h-4 w-4 sm:h-5 sm:w-5 text-foreground" />
-                        <h3 className="text-base sm:text-lg font-semibold">Revenue Ready</h3>
+                        <Rocket className="text-foreground h-4 w-4 sm:h-5 sm:w-5" />
+                        <h3 className="text-base font-semibold sm:text-lg">Revenue Ready</h3>
                       </div>
                       <Badge variant="outline" className="text-xs">
                         Stripe
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground font-sans">
+                    <p className="text-muted-foreground font-sans text-sm">
                       Complete subscription management with webhooks, usage tracking, and analytics.
                       Start monetizing from day one.
                     </p>
@@ -356,23 +360,23 @@ export function Home() {
       </section>
 
       {/* Final CTA */}
-      <section className="py-16 sm:py-32 px-4 sm:px-6 bg-background">
-        <div className="container mx-auto text-center max-w-3xl">
+      <section className="bg-background px-4 py-16 sm:px-6 sm:py-32">
+        <div className="container mx-auto max-w-3xl text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">
+            <h2 className="mb-4 text-3xl font-bold sm:mb-6 sm:text-4xl lg:text-5xl">
               Ready to ship?
             </h2>
 
-            <p className="text-base sm:text-lg text-muted-foreground mb-8 sm:mb-12 font-sans px-2">
+            <p className="text-muted-foreground mb-8 px-2 font-sans text-base sm:mb-12 sm:text-lg">
               Join developers building the next generation of web applications
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+            <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
               {user ? (
                 // Logged-in user final CTA
                 <>

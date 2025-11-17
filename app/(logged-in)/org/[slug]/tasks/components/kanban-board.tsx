@@ -6,25 +6,29 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+
 import {
   DndContext,
   DragEndEvent,
   DragOverEvent,
+  DragOverlay,
   DragStartEvent,
   PointerSensor,
-  useSensor,
-  useSensors,
-  DragOverlay,
   closestCorners,
   useDroppable,
+  useSensor,
+  useSensors,
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { KanbanTaskCard } from '@/app/(logged-in)/org/[slug]/tasks/components/kanban-task-card';
-import type { TaskPriority } from '@/lib/types';
-import type { AppRouter } from '@/lib/trpc/router';
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
+
+import { KanbanTaskCard } from '@/app/(logged-in)/org/[slug]/tasks/components/kanban-task-card';
+
+import type { AppRouter } from '@/lib/trpc/router';
+import type { TaskPriority } from '@/lib/types';
+
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type Task = RouterOutput['tasks']['list'][number];
@@ -71,7 +75,7 @@ function DroppableColumn({
     <Card
       ref={setNodeRef}
       className={`min-h-[500px] transition-all duration-200 ${
-        isOver && activeId ? 'ring-1 ring-primary ring-offset-1 bg-primary/5' : ''
+        isOver && activeId ? 'ring-primary bg-primary/5 ring-1 ring-offset-1' : ''
       }`}
     >
       <CardHeader>
@@ -92,7 +96,7 @@ function DroppableColumn({
       </CardHeader>
       <CardContent className="space-y-3">
         {tasks.length === 0 ? (
-          <p className="text-center py-4 text-sm text-muted-foreground">
+          <p className="text-muted-foreground py-4 text-center text-sm">
             No {column.title.toLowerCase()} tasks
           </p>
         ) : (
@@ -204,7 +208,7 @@ export function KanbanBoard({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {PRIORITY_COLUMNS.map((column) => {
           const columnTasks = tasksByPriority[column.id] || [];
           const draggedTask = activeId ? tasks.find((t) => t.id === activeId) : null;
@@ -235,19 +239,19 @@ export function KanbanBoard({
 
       <DragOverlay dropAnimation={null}>
         {activeTask ? (
-          <Card className="opacity-90 shadow-lg cursor-grabbing">
+          <Card className="cursor-grabbing opacity-90 shadow-lg">
             <CardContent className="px-4">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded border border-muted-foreground/30" />
-                <h4 className="font-medium text-sm leading-tight">{activeTask.title}</h4>
+                <div className="border-muted-foreground/30 h-4 w-4 rounded border" />
+                <h4 className="text-sm leading-tight font-medium">{activeTask.title}</h4>
               </div>
               {activeTask.description && (
-                <p className="text-xs text-muted-foreground line-clamp-2 pt-2">
+                <p className="text-muted-foreground line-clamp-2 pt-2 text-xs">
                   {activeTask.description}
                 </p>
               )}
               {activeTask.dueDate && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
+                <div className="text-muted-foreground mt-2 flex items-center gap-1 text-xs">
                   <span>Due: {new Date(activeTask.dueDate).toLocaleDateString()}</span>
                 </div>
               )}

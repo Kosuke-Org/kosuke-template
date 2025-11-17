@@ -2,21 +2,21 @@
  * Better Auth Configuration with Email OTP
  * See: https://www.better-auth.com/docs/plugins/email-otp
  */
-
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { nextCookies } from 'better-auth/next-js';
 import { emailOTP, organization } from 'better-auth/plugins';
+import { desc, eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db/drizzle';
 import * as schema from '@/lib/db/schema';
-import { desc, eq } from 'drizzle-orm';
-import { organizations, orgMemberships, users } from '@/lib/db/schema';
-import { sendOTPEmail } from '@/lib/email/otp';
-import { isTestEmail } from '../utils';
-import { TEST_OTP } from '../constants';
+import { orgMemberships, organizations, users } from '@/lib/db/schema';
 import { sendInvitationEmail } from '@/lib/email/invitation';
+import { sendOTPEmail } from '@/lib/email/otp';
 import { redis } from '@/lib/redis';
+
+import { TEST_OTP } from '../constants';
+import { isTestEmail } from '../utils';
 
 /**
  * Better Auth instance with Email OTP

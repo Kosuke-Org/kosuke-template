@@ -1,13 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+
+import Link from 'next/link';
+
+import { ChevronRight, LoaderCircle } from 'lucide-react';
+
+import { useAuthActions } from '@/hooks/use-auth';
+
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { ChevronRight, LoaderCircle } from 'lucide-react';
-import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuthActions } from '@/hooks/use-auth';
 
 export const SignUp = () => {
   const [email, setEmail] = useState('');
@@ -20,7 +24,7 @@ export const SignUp = () => {
 
   return (
     <Card className="py-8">
-      <CardHeader className="text-center px-10">
+      <CardHeader className="px-10 text-center">
         <CardTitle className="text-lg font-bold">Create your account</CardTitle>
         <CardDescription className="text-xs">
           Welcome! Please fill in the details to get started.
@@ -55,11 +59,11 @@ export const SignUp = () => {
               Continue
               <ChevronRight className="size-3" />
             </Button>
-            <FieldDescription className="text-center text-xs pt-6">
+            <FieldDescription className="pt-6 text-center text-xs">
               Already have an account?{' '}
               <Link
                 href="/sign-in"
-                className="font-bold !underline-offset-2 !no-underline hover:!underline focus:!underline"
+                className="font-bold !no-underline !underline-offset-2 hover:!underline focus:!underline"
               >
                 Sign in
               </Link>

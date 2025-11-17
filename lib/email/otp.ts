@@ -1,6 +1,8 @@
-import { sendEmail } from './index';
 import OTPEmail from '@/emails/otp';
+
 import type { OTPType, SendOTPEmailParams } from '@/lib/auth';
+
+import { sendEmail } from './index';
 
 const OTPTypeSubjects: Record<OTPType, string> = {
   'sign-in': 'Your sign-in code',

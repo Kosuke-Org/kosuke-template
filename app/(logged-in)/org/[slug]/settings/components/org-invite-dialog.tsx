@@ -7,9 +7,17 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2, UserPlus } from 'lucide-react';
 import { z } from 'zod';
-import { UserPlus, Loader2 } from 'lucide-react';
+
+import { orgInviteFormSchema } from '@/lib/trpc/schemas/organizations';
+import { ORG_ROLES } from '@/lib/types/organization';
+
+import { useOrgInvitation } from '@/hooks/use-org-invitation';
+import { useOrganization } from '@/hooks/use-organization';
+import { useUser } from '@/hooks/use-user';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -20,7 +28,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
@@ -30,6 +37,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -37,12 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useOrgInvitation } from '@/hooks/use-org-invitation';
-import { orgInviteFormSchema } from '@/lib/trpc/schemas/organizations';
-import { ORG_ROLES } from '@/lib/types/organization';
-import { useUser } from '@/hooks/use-user';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useOrganization } from '@/hooks/use-organization';
 
 type InviteFormValues = z.infer<typeof orgInviteFormSchema>;
 

@@ -1,4 +1,4 @@
-import type { UserSubscription, SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
+import type { SubscriptionStatus, SubscriptionTier, UserSubscription } from '@/lib/db/schema';
 
 // Enhanced subscription state enum for better state management
 export enum SubscriptionState {

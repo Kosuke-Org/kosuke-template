@@ -6,18 +6,22 @@
 'use client';
 
 import { ColumnDef } from '@tanstack/react-table';
+import type { inferRouterOutputs } from '@trpc/server';
 import {
-  MoreHorizontal,
-  Edit,
-  Trash,
-  Hash,
-  User,
-  Info,
   Calendar,
   CircleDollarSign,
+  Edit,
   Eye,
+  Hash,
+  Info,
+  MoreHorizontal,
+  Trash,
+  User,
 } from 'lucide-react';
 
+import type { AppRouter } from '@/lib/trpc/router';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -26,11 +30,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import type { AppRouter } from '@/lib/trpc/router';
-import type { inferRouterOutputs } from '@trpc/server';
-import { DataTableColumnHeader } from './data-table-column-header';
+
 import { statusColors } from '../utils';
+import { DataTableColumnHeader } from './data-table-column-header';
 
 // Infer OrderWithDetails from tRPC router output
 type RouterOutput = inferRouterOutputs<AppRouter>;

@@ -1,8 +1,8 @@
 /**
  * Tests for useTablePagination hook
  */
+import { act, renderHook } from '@testing-library/react';
 
-import { renderHook, act } from '@testing-library/react';
 import { useTablePagination } from '@/hooks/use-table-pagination';
 
 describe('useTablePagination', () => {

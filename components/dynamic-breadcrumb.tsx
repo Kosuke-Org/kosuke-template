@@ -1,6 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
+import { useAuth } from '@/hooks/use-auth';
+import { useOrganization } from '@/hooks/use-organization';
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,10 +14,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { useOrganization } from '@/hooks/use-organization';
+
 import { BreadcrumbSkeleton } from './skeletons';
-import { useAuth } from '@/hooks/use-auth';
-import Link from 'next/link';
 
 // Define human-readable names for routes
 const routeNames: Record<string, string> = {

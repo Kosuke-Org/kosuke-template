@@ -1,7 +1,8 @@
 /// <reference types="vitest/globals" />
 import '@testing-library/jest-dom';
-import { setupMocks } from './__tests__/setup/mocks';
 import { vi } from 'vitest';
+
+import { setupMocks } from './__tests__/setup/mocks';
 
 // Setup mocks before all tests
 setupMocks();

@@ -1,8 +1,11 @@
 'use client';
 
-import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
+
+import { useTheme } from 'next-themes';
+
 import { Monitor, Moon, Sun } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 const themes = [
@@ -40,7 +43,7 @@ export function ThemeSwitcher() {
         {themes.map((themeOption) => (
           <div
             key={themeOption.value}
-            className="h-32 rounded-lg border bg-muted/50 animate-pulse"
+            className="bg-muted/50 h-32 animate-pulse rounded-lg border"
           />
         ))}
       </div>
@@ -49,7 +52,7 @@ export function ThemeSwitcher() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {themes.map((themeOption) => {
           const Icon = themeOption.icon;
           const isSelected = theme === themeOption.value;
@@ -59,7 +62,7 @@ export function ThemeSwitcher() {
               key={themeOption.value}
               className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
                 isSelected
-                  ? 'ring-2 ring-primary border-primary shadow-md'
+                  ? 'ring-primary border-primary shadow-md ring-2'
                   : 'hover:border-primary/50'
               }`}
               onClick={() => setTheme(themeOption.value)}
@@ -69,11 +72,11 @@ export function ThemeSwitcher() {
                   <Icon
                     className={`h-5 w-5 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}
                   />
-                  {isSelected && <div className="h-2 w-2 rounded-full bg-primary" />}
+                  {isSelected && <div className="bg-primary h-2 w-2 rounded-full" />}
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <CardTitle className="text-sm font-medium mb-1">{themeOption.name}</CardTitle>
+                <CardTitle className="mb-1 text-sm font-medium">{themeOption.name}</CardTitle>
                 <CardDescription className="text-xs">{themeOption.description}</CardDescription>
               </CardContent>
             </Card>
@@ -81,7 +84,7 @@ export function ThemeSwitcher() {
         })}
       </div>
 
-      <div className="text-sm text-muted-foreground">
+      <div className="text-muted-foreground text-sm">
         <p>Choose how the interface looks. Select a single theme, or sync with your system.</p>
       </div>
     </div>

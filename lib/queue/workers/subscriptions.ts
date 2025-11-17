@@ -4,8 +4,7 @@
  * Thin wrapper - only handles worker lifecycle and events.
  * Business logic is in jobs/sync-subscriptions.ts
  */
-
-import { createWorker, createQueueEvents } from '../client';
+import { createQueueEvents, createWorker } from '../client';
 import { QUEUE_NAMES } from '../config';
 import { processSubscriptionSync } from '../jobs/sync-subscriptions';
 import type { SubscriptionSyncJobData } from '../queues/subscriptions';

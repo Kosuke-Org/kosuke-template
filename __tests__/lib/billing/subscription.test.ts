@@ -1,11 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
   getUserSubscription,
   hasFeatureAccess,
-  safeSubscriptionTierCast,
   safeSubscriptionStatusCast,
+  safeSubscriptionTierCast,
 } from '@/lib/billing';
-import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
+import { db } from '@/lib/db';
+import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 
 // Mock database
 vi.mock('@/lib/db', () => ({
@@ -17,8 +19,6 @@ vi.mock('@/lib/db', () => ({
     },
   },
 }));
-
-import { db } from '@/lib/db';
 
 describe('Subscription Module', () => {
   beforeEach(() => {

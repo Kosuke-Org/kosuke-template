@@ -5,9 +5,9 @@
 
 'use client';
 
-import { OrgMemberList } from '../components/org-member-list';
-import { OrgInviteDialog } from '../components/org-invite-dialog';
 import { OrgInvitationList } from '../components/org-invitation-list';
+import { OrgInviteDialog } from '../components/org-invite-dialog';
+import { OrgMemberList } from '../components/org-member-list';
 
 export default function OrgMembersPage() {
   return (

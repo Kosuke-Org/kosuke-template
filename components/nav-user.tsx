@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import {
   BadgeCheck,
   Bell,
@@ -10,8 +12,13 @@ import {
   Shield,
   Sparkles,
 } from 'lucide-react';
-import Link from 'next/link';
 
+import { getInitials } from '@/lib/utils';
+
+import { useAuth, useAuthActions } from '@/hooks/use-auth';
+import { useUserAvatar } from '@/hooks/use-user-avatar';
+
+import { UserSkeleton } from '@/components/skeletons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -28,10 +35,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { useUserAvatar } from '@/hooks/use-user-avatar';
-import { useAuth, useAuthActions } from '@/hooks/use-auth';
-import { UserSkeleton } from '@/components/skeletons';
-import { getInitials } from '@/lib/utils';
 
 export function NavUser() {
   const { isSignedIn } = useAuth();
@@ -65,7 +68,7 @@ export function NavUser() {
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage src={profileImageUrl} alt={displayName} />
-                <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                <AvatarFallback className="bg-primary text-primary-foreground rounded-lg">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -86,7 +89,7 @@ export function NavUser() {
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarImage src={profileImageUrl} alt={displayName} />
-                  <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                  <AvatarFallback className="bg-primary text-primary-foreground rounded-lg">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -106,13 +109,13 @@ export function NavUser() {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/settings" className="cursor-pointer flex w-full items-center">
+                <Link href="/settings" className="flex w-full cursor-pointer items-center">
                   <BadgeCheck className="mr-2 h-4 w-4" />
                   Account
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings/security" className="cursor-pointer flex w-full items-center">
+                <Link href="/settings/security" className="flex w-full cursor-pointer items-center">
                   <Shield className="mr-2 h-4 w-4" />
                   Security
                 </Link>
@@ -120,14 +123,14 @@ export function NavUser() {
               <DropdownMenuItem asChild>
                 <Link
                   href="/settings/notifications"
-                  className="cursor-pointer flex w-full items-center"
+                  className="flex w-full cursor-pointer items-center"
                 >
                   <Bell className="mr-2 h-4 w-4" />
                   Alerts
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings/billing" className="cursor-pointer flex w-full items-center">
+                <Link href="/settings/billing" className="flex w-full cursor-pointer items-center">
                   <CreditCard className="mr-2 h-4 w-4" />
                   Billing
                 </Link>
@@ -135,7 +138,7 @@ export function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/home" className="cursor-pointer flex w-full items-center">
+              <Link href="/home" className="flex w-full cursor-pointer items-center">
                 <House className="mr-2 h-4 w-4" />
                 Public Homepage
               </Link>

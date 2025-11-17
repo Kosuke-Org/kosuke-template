@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 export function useTableFilters<T extends Record<string, unknown>>(initialFilters: T) {
   const [filters, setFilters] = useState<T>(initialFilters);

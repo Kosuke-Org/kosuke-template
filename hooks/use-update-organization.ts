@@ -6,6 +6,7 @@
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
+
 import { useToast } from '@/hooks/use-toast';
 
 export function useUpdateOrganization() {

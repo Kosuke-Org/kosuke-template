@@ -1,12 +1,13 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
+  clearSignInAttempt,
   createActivityLogData,
   createSignInAttempt,
   getCurrentSignInAttempt,
-  clearSignInAttempt,
   isTestEmail,
 } from '@/lib/auth/utils';
 import { ActivityType } from '@/lib/db/schema';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(),

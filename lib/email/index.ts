@@ -1,6 +1,7 @@
-import { Resend } from 'resend';
-import { render } from '@react-email/components';
 import React from 'react';
+
+import { render } from '@react-email/components';
+import { Resend } from 'resend';
 
 // Initialize Resend client
 const resend = new Resend(process.env.RESEND_API_KEY);

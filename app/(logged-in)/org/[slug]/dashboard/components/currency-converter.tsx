@@ -6,7 +6,16 @@
 'use client';
 
 import { useState } from 'react';
+
+import { Loader2 } from 'lucide-react';
+
+import { trpc } from '@/lib/trpc/client';
+import type { CurrencyCode } from '@/lib/types';
+
+import { useToast } from '@/hooks/use-toast';
+
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -15,11 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
-import { trpc } from '@/lib/trpc/client';
-import { useToast } from '@/hooks/use-toast';
-import type { CurrencyCode } from '@/lib/types';
 
 const CURRENCIES: CurrencyCode[] = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY'];
 
@@ -122,8 +126,8 @@ export function CurrencyConverter() {
         </Button>
 
         {convertMutation.error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <div className="text-sm text-red-800 font-medium">Error</div>
+          <div className="rounded-md border border-red-200 bg-red-50 p-3">
+            <div className="text-sm font-medium text-red-800">Error</div>
             <div className="text-sm text-red-700">{convertMutation.error.message}</div>
           </div>
         )}

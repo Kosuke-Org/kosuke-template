@@ -1,8 +1,8 @@
-import { Queue, Worker, QueueEvents } from 'bullmq';
-import type { WorkerOptions } from 'bullmq';
 import * as Sentry from '@sentry/nextjs';
+import { Queue, QueueEvents, Worker } from 'bullmq';
+import type { WorkerOptions } from 'bullmq';
 
-import { redis, closeRedis } from '@/lib/redis';
+import { closeRedis, redis } from '@/lib/redis';
 
 /**
  * Default queue options for consistent behavior across all queues

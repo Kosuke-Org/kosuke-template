@@ -1,6 +1,7 @@
-import { Section, Text, Hr } from '@react-email/components';
+import { Hr, Section, Text } from '@react-email/components';
+
+import type { OTPEmailProps, OTPType } from '@/lib/auth';
 import { BaseLayout } from '@/lib/email/templates';
-import type { OTPType, OTPEmailProps } from '@/lib/auth';
 
 type OTPTypeContent = { subject: string; heading: string; description: string };
 
@@ -29,33 +30,33 @@ export default function OTPEmail({ otp, type }: OTPEmailProps) {
     <BaseLayout preview={content.description}>
       {/* Heading */}
       <Section className="mb-8">
-        <Text className="text-3xl font-bold text-stone-900 mb-4 mt-0 text-center">
+        <Text className="mt-0 mb-4 text-center text-3xl font-bold text-stone-900">
           {content.heading}
         </Text>
-        <Text className="text-base text-stone-600 mb-0 leading-relaxed text-center">
+        <Text className="mb-0 text-center text-base leading-relaxed text-stone-600">
           {content.description}
         </Text>
       </Section>
 
       {/* OTP Code Section */}
-      <Section className="bg-stone-50 rounded-lg p-8 mb-8 text-center">
-        <Text className="text-5xl font-bold text-stone-900 tracking-widest m-0 font-mono">
+      <Section className="mb-8 rounded-lg bg-stone-50 p-8 text-center">
+        <Text className="m-0 font-mono text-5xl font-bold tracking-widest text-stone-900">
           {otp}
         </Text>
       </Section>
 
       {/* Expiration Notice */}
       <Section className="mb-8">
-        <Text className="text-sm text-stone-500 text-center mb-0">
+        <Text className="mb-0 text-center text-sm text-stone-500">
           ⏱️ This code will expire in 5 minutes.
         </Text>
       </Section>
 
-      <Hr className="border-stone-200 my-6" />
+      <Hr className="my-6 border-stone-200" />
 
       {/* Security Notice */}
       <Section>
-        <Text className="text-xs text-stone-500 text-center">
+        <Text className="text-center text-xs text-stone-500">
           If you didn&apos;t request this code, you can safely ignore this email.
         </Text>
       </Section>

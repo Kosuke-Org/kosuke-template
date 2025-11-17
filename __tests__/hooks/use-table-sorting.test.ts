@@ -1,8 +1,8 @@
 /**
  * Tests for useTableSorting hook
  */
+import { act, renderHook } from '@testing-library/react';
 
-import { renderHook, act } from '@testing-library/react';
 import { useTableSorting } from '@/hooks/use-table-sorting';
 
 describe('useTableSorting', () => {

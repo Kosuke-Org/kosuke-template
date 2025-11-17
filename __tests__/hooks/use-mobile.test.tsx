@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { vi } from 'vitest';
+
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Mock window.matchMedia
 const mockMatchMedia = (matches: boolean) => {

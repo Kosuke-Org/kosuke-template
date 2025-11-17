@@ -6,9 +6,26 @@
 'use client';
 
 import { useState } from 'react';
-import { MoreHorizontal, Trash2, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
 
+import { format } from 'date-fns';
+import { Loader2, MoreHorizontal, Trash2 } from 'lucide-react';
+
+import { ORG_ROLES } from '@/lib/types/organization';
+
+import { useOrgInvitation } from '@/hooks/use-org-invitation';
+import { useOrganization } from '@/hooks/use-organization';
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,22 +41,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
-import { ORG_ROLES } from '@/lib/types/organization';
-import { useOrgInvitation } from '@/hooks/use-org-invitation';
 import { ACTIONS, getAllowedActionsForOthers } from '../utils';
-import { useOrganization } from '@/hooks/use-organization';
 
 export function OrgInvitationList() {
   const { invitations, currentUserRole } = useOrganization();
@@ -65,7 +68,7 @@ export function OrgInvitationList() {
           <div className="space-y-4">
             <div>
               <h3 className="text-lg font-semibold">Pending invitations</h3>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 Invitations that are waiting to be accepted
               </p>
             </div>

@@ -1,5 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThemeSwitcher } from '@/components/theme-switcher';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AppearancePage() {
   return (
@@ -25,7 +25,7 @@ export default function AppearancePage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-sm">
             More appearance settings coming soon...
           </div>
         </CardContent>

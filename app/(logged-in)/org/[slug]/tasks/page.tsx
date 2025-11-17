@@ -5,20 +5,21 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Plus, LayoutGrid, List } from 'lucide-react';
+import { useMemo, useState } from 'react';
+
+import { useViewModeStore } from '@/store/use-view-mode';
+import { LayoutGrid, List, Plus } from 'lucide-react';
 import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+
+import { TaskDialog } from '@/app/(logged-in)/org/[slug]/tasks/components/task-dialog';
+import { TaskItem } from '@/app/(logged-in)/org/[slug]/tasks/components/task-item';
+
+import { createTaskSchema, updateTaskSchema } from '@/lib/trpc/schemas/tasks';
+import type { TaskPriority } from '@/lib/types';
+
+import { useOrganization } from '@/hooks/use-organization';
+import { useTasks } from '@/hooks/use-tasks';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,15 +30,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTasks } from '@/hooks/use-tasks';
-import { useOrganization } from '@/hooks/use-organization';
-import { TaskItem } from '@/app/(logged-in)/org/[slug]/tasks/components/task-item';
-import { TaskDialog } from '@/app/(logged-in)/org/[slug]/tasks/components/task-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { KanbanBoard } from './components/kanban-board';
-import type { TaskPriority } from '@/lib/types';
-import { useViewModeStore } from '@/store/use-view-mode';
-import { createTaskSchema, updateTaskSchema } from '@/lib/trpc/schemas/tasks';
 
 type TaskFilter = 'all' | 'active' | 'completed';
 
@@ -66,7 +72,7 @@ function TasksPageSkeleton() {
       </div>
       <div className="flex items-center gap-4 overflow-x-auto">
         <Skeleton className="h-10 w-80" />
-        <Skeleton className="h-10 flex-1 max-w-sm" />
+        <Skeleton className="h-10 max-w-sm flex-1" />
         <Skeleton className="h-10 w-32" />
         <Skeleton className="h-10 w-28" />
       </div>
@@ -163,7 +169,7 @@ export default function OrgTasksPage() {
             <TabsTrigger value="active">Active</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
-          <div className="relative flex-1 max-w-sm">
+          <div className="relative max-w-sm flex-1">
             <Input
               placeholder="Search tasks..."
               value={searchQuery}
@@ -188,7 +194,7 @@ export default function OrgTasksPage() {
             <Plus className="mr-2 h-4 w-4" />
             New Task
           </Button>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="ml-auto flex items-center gap-2">
             <Button
               variant={viewMode === 'list' ? 'default' : 'secondary'}
               onClick={() => setViewMode('list')}
@@ -211,8 +217,8 @@ export default function OrgTasksPage() {
           {tasks.length === 0 ? (
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <h3 className="font-semibold text-lg mb-1">No tasks found</h3>
-                <p className="text-sm text-muted-foreground mb-4">
+                <h3 className="mb-1 text-lg font-semibold">No tasks found</h3>
+                <p className="text-muted-foreground mb-4 text-sm">
                   {searchQuery || priorityFilter !== 'all'
                     ? 'Try adjusting your filters'
                     : 'Create your first task to get started'}

@@ -1,10 +1,10 @@
 import {
   calculateSubscriptionState,
+  getAvailableTiers,
   getSubscriptionEligibility,
   getTierInfo,
-  getAvailableTiers,
 } from '@/lib/billing';
-import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
+import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 import { SubscriptionState, type UserSubscriptionInfo } from '@/lib/types';
 
 describe('Subscription Eligibility Business Logic', () => {

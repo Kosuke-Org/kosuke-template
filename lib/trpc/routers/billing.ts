@@ -1,15 +1,17 @@
-import { router, protectedProcedure } from '../init';
 import { TRPCError } from '@trpc/server';
+
 import {
-  getUserSubscription,
-  getSubscriptionEligibility,
-  createCheckoutSession,
-  cancelUserSubscription,
-  reactivateUserSubscription,
-  createCustomerPortalSession,
   cancelPendingDowngrade,
+  cancelUserSubscription,
+  createCheckoutSession,
+  createCustomerPortalSession,
+  getSubscriptionEligibility,
+  getUserSubscription,
+  reactivateUserSubscription,
 } from '@/lib/billing';
-import { syncUserSubscriptionFromStripe, syncStaleSubscriptions } from '@/lib/billing/stripe-sync';
+import { syncStaleSubscriptions, syncUserSubscriptionFromStripe } from '@/lib/billing/stripe-sync';
+
+import { protectedProcedure, router } from '../init';
 import { createCheckoutSchema, syncActionSchema } from '../schemas/billing';
 
 /**

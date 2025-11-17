@@ -2,8 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl pt-12 sm:pt-20 pb-16 px-4 sm:px-6">
+    <div className="bg-background min-h-screen">
+      <div className="container max-w-4xl px-4 pt-12 pb-16 sm:px-6 sm:pt-20">
         <div className="mb-8">
           <h1 className="text-4xl font-bold tracking-tight">Privacy Policy</h1>
           <p className="text-muted-foreground mt-2">
@@ -27,8 +27,8 @@ export default function PrivacyPage() {
                 automatically when you use our services, and information from other sources as
                 described below.
               </p>
-              <h4 className="text-lg font-semibold mt-4 mb-2">Account Information</h4>
-              <ul className="list-disc pl-6 space-y-1">
+              <h4 className="mt-4 mb-2 text-lg font-semibold">Account Information</h4>
+              <ul className="list-disc space-y-1 pl-6">
                 <li>Name and email address</li>
                 <li>Profile information you choose to provide</li>
                 <li>Billing and payment information</li>
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
             </CardHeader>
             <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
               <p>We use the information we collect to:</p>
-              <ul className="list-disc pl-6 space-y-1">
+              <ul className="list-disc space-y-1 pl-6">
                 <li>Provide, maintain, and improve our services</li>
                 <li>Process transactions and send related information</li>
                 <li>Send technical notices and support messages</li>
@@ -81,7 +81,7 @@ export default function PrivacyPage() {
             </CardHeader>
             <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
               <p>You have the right to:</p>
-              <ul className="list-disc pl-6 space-y-1">
+              <ul className="list-disc space-y-1 pl-6">
                 <li>Access your personal information</li>
                 <li>Correct inaccurate information</li>
                 <li>Delete your account and personal information</li>

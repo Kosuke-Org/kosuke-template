@@ -7,12 +7,15 @@
 
 'use client';
 
-import { signOut, useSession, emailOtp, signIn } from '@/lib/auth/client';
+import { usePathname, useRouter } from 'next/navigation';
+
 import { useMutation } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter, usePathname } from 'next/navigation';
-import { trpc } from '@/lib/trpc/client';
+
+import { emailOtp, signIn, signOut, useSession } from '@/lib/auth/client';
 import { AUTH_ROUTES } from '@/lib/auth/constants';
+import { trpc } from '@/lib/trpc/client';
+
+import { useToast } from '@/hooks/use-toast';
 
 /**
  * Primary authentication hook - use this for all auth needs

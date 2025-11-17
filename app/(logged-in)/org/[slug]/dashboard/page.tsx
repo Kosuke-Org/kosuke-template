@@ -1,54 +1,51 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { CurrencyConverter } from './components/currency-converter';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
+import { useState } from 'react';
+
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Progress } from '@/components/ui/progress';
+  AlertCircle,
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  BarChart3,
+  Bold,
+  Calendar as CalendarIcon,
+  CheckCircle,
+  Edit,
+  Eye,
+  FileText,
+  Info,
+  Italic,
+  MoreHorizontal,
+  Plus,
+  Trash2,
+  Underline,
+  Users,
+} from 'lucide-react';
+
+import { useAuth } from '@/hooks/use-auth';
+
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  AreaChartDemo,
+  GradientAreaChart,
+  LinearAreaChart,
+  MixedBarChart,
+  StackedAreaChart,
+  StackedBarChart,
+} from '@/components/charts/shadcn-charts';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Toggle } from '@/components/ui/toggle';
-import {
-  AreaChartDemo,
-  StackedAreaChart,
-  LinearAreaChart,
-  GradientAreaChart,
-  StackedBarChart,
-  MixedBarChart,
-} from '@/components/charts/shadcn-charts';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -57,8 +54,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,6 +62,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Progress } from '@/components/ui/progress';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Sheet,
   SheetContent,
@@ -75,30 +84,24 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-
+import { Skeleton } from '@/components/ui/skeleton';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import {
-  Calendar as CalendarIcon,
-  FileText,
-  BarChart3,
-  Users,
-  MoreHorizontal,
-  Plus,
-  Edit,
-  Trash2,
-  Eye,
-  CheckCircle,
-  AlertCircle,
-  Info,
-  Bold,
-  Italic,
-  Underline,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-} from 'lucide-react';
-import { useState } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { Toggle } from '@/components/ui/toggle';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+import { CurrencyConverter } from './components/currency-converter';
 
 const users = [
   {
@@ -267,11 +270,11 @@ export default function Page() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <Users className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">2,350</div>
-                <p className="text-xs text-muted-foreground">+12% from last month</p>
+                <p className="text-muted-foreground text-xs">+12% from last month</p>
                 <Progress value={progress} className="mt-2" />
               </CardContent>
             </Card>
@@ -279,22 +282,22 @@ export default function Page() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <BarChart3 className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">$45,231</div>
-                <p className="text-xs text-muted-foreground">+8% from last month</p>
+                <p className="text-muted-foreground text-xs">+8% from last month</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
+                <FileText className="text-muted-foreground h-4 w-4" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">24</div>
-                <p className="text-xs text-muted-foreground">+3 new this week</p>
+                <p className="text-muted-foreground text-xs">+3 new this week</p>
               </CardContent>
             </Card>
           </div>
@@ -340,8 +343,8 @@ export default function Page() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <p className="text-sm leading-none font-medium">{user.name}</p>
+                      <p className="text-muted-foreground text-sm">{user.email}</p>
                     </div>
                     <div className="ml-auto">
                       <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
@@ -474,17 +477,17 @@ export default function Page() {
                     <TabsTrigger value="reports">Reports</TabsTrigger>
                   </TabsList>
                   <TabsContent value="overview" className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       Overview of your dashboard metrics and recent activity.
                     </p>
                   </TabsContent>
                   <TabsContent value="analytics" className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       Detailed analytics and performance insights.
                     </p>
                   </TabsContent>
                   <TabsContent value="reports" className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       Generate and download custom reports.
                     </p>
                   </TabsContent>
@@ -572,7 +575,7 @@ export default function Page() {
                       <SheetTitle>Settings</SheetTitle>
                       <SheetDescription>Configure your application settings.</SheetDescription>
                     </SheetHeader>
-                    <div className="space-y-4 mt-4">
+                    <div className="mt-4 space-y-4">
                       <div className="flex items-center space-x-2">
                         <Switch id="dark-mode" />
                         <Label htmlFor="dark-mode">Dark mode</Label>
@@ -644,7 +647,7 @@ export default function Page() {
                       </p>
                       <div className="flex items-center pt-2">
                         <CalendarIcon className="mr-2 h-4 w-4 opacity-70" />
-                        <span className="text-xs text-muted-foreground">Joined December 2021</span>
+                        <span className="text-muted-foreground text-xs">Joined December 2021</span>
                       </div>
                     </div>
                   </div>
@@ -751,7 +754,7 @@ export default function Page() {
                       </Avatar>
                       <div className="space-y-1">
                         <p className="text-sm font-medium">User {i + 1} performed an action</p>
-                        <p className="text-xs text-muted-foreground">{i + 1} minutes ago</p>
+                        <p className="text-muted-foreground text-xs">{i + 1} minutes ago</p>
                       </div>
                     </div>
                   ))}

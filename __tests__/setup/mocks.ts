@@ -1,7 +1,8 @@
-import { vi } from 'vitest';
 import React, { ReactNode } from 'react';
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Stripe from 'stripe';
+import { vi } from 'vitest';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

@@ -43,11 +43,13 @@ Migrate user-facing REST API endpoints (non-billing) to tRPC for end-to-end type
 
 ```typescript
 // lib/trpc/routers/user.ts
-import { router, protectedProcedure } from '../init';
+import { eq } from 'drizzle-orm';
 import { z } from 'zod';
+
 import { db } from '@/lib/db/drizzle';
 import { users } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+
+import { protectedProcedure, router } from '../init';
 
 const notificationSettingsSchema = z.object({
   emailNotifications: z.boolean(),
@@ -252,6 +254,7 @@ export function fileToBase64(file: File): Promise<string> {
 ```typescript
 // hooks/use-notification-settings.ts
 import { trpc } from '@/lib/trpc/client';
+
 import { useToast } from './use-toast';
 
 export function useNotificationSettings() {
@@ -310,8 +313,9 @@ export function useNotificationSettings() {
 ```typescript
 // hooks/use-profile-upload.ts
 import { trpc } from '@/lib/trpc/client';
-import { useToast } from './use-toast';
 import { fileToBase64 } from '@/lib/utils';
+
+import { useToast } from './use-toast';
 
 export function useProfileUpload() {
   const { toast } = useToast();
@@ -404,8 +408,9 @@ export function useProfileUpload() {
 
 ```typescript
 // __tests__/lib/trpc/routers/user.test.ts
-import { appRouter } from '@/lib/trpc/router';
 import { createCallerFactory } from '@trpc/server';
+
+import { appRouter } from '@/lib/trpc/router';
 
 describe('User Router', () => {
   const createCaller = createCallerFactory(appRouter);

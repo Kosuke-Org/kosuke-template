@@ -5,9 +5,11 @@
 
 'use client';
 
-import { Settings, Users } from 'lucide-react';
-import { useParams, usePathname, useRouter } from 'next/navigation';
 import { Suspense } from 'react';
+
+import { useParams, usePathname, useRouter } from 'next/navigation';
+
+import { Settings, Users } from 'lucide-react';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -25,7 +27,7 @@ export default function OrgSettingsLayout({ children }: { children: React.ReactN
   };
 
   return (
-    <div className="flex flex-col space-y-6 max-w-4xl">
+    <div className="flex max-w-4xl flex-col space-y-6">
       <div className="flex flex-col space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Organization Settings</h1>
         <p className="text-muted-foreground">
@@ -49,7 +51,7 @@ export default function OrgSettingsLayout({ children }: { children: React.ReactN
       <Suspense
         fallback={
           <div className="space-y-4">
-            <div className="h-32 w-full rounded bg-muted/50" />
+            <div className="bg-muted/50 h-32 w-full rounded" />
           </div>
         }
       >

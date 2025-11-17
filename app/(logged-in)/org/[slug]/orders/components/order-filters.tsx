@@ -6,21 +6,25 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { CalendarIcon, ListFilter, X } from 'lucide-react';
+import type { DateRange } from 'react-day-picker';
+
 import { format } from 'date-fns';
+import { CalendarIcon, ListFilter, X } from 'lucide-react';
+
+import type { OrderStatus } from '@/lib/types';
+import { cn } from '@/lib/utils';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
-import type { OrderStatus } from '@/lib/types';
-import type { DateRange } from 'react-day-picker';
-import { statusOptions, statusColors, MAX_AMOUNT } from '../utils';
+import { Slider } from '@/components/ui/slider';
+
+import { MAX_AMOUNT, statusColors, statusOptions } from '../utils';
 
 interface OrderFiltersProps {
   selectedStatuses: OrderStatus[];
@@ -117,12 +121,12 @@ export function OrderFilters({
           <ListFilter />
           Filters
           {activeFiltersCount > 0 && (
-            <Badge className="w-5 h-5 p-0 text-xs">{activeFiltersCount}</Badge>
+            <Badge className="h-5 w-5 p-0 text-xs">{activeFiltersCount}</Badge>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[380px] p-0" align="start" side="bottom" sideOffset={4}>
-        <div className="p-4 space-y-4">
+        <div className="space-y-4 p-4">
           {/* Status Filter */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">Status</Label>
@@ -136,7 +140,7 @@ export function OrderFilters({
                   />
                   <label
                     htmlFor={`status-${option.value}`}
-                    className="text-sm leading-none cursor-pointer flex-1"
+                    className="flex-1 cursor-pointer text-sm leading-none"
                   >
                     {option.label}
                   </label>
@@ -155,7 +159,7 @@ export function OrderFilters({
                 <Button
                   variant="outline"
                   className={cn(
-                    'w-full justify-start text-left font-normal h-9',
+                    'h-9 w-full justify-start text-left font-normal',
                     !pendingDateRange?.from && !pendingDateRange?.to && 'text-muted-foreground'
                   )}
                 >
@@ -190,7 +194,7 @@ export function OrderFilters({
             <div className="flex items-center gap-2">
               <div className="flex-1">
                 <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  <span className="text-muted-foreground absolute top-1/2 left-2.5 -translate-y-1/2 text-xs">
                     $
                   </span>
                   <Input
@@ -203,7 +207,7 @@ export function OrderFilters({
                       );
                       setPendingAmountRange([value, pendingAmountRange[1]]);
                     }}
-                    className="pl-6 h-9 text-sm"
+                    className="h-9 pl-6 text-sm"
                     placeholder="Min"
                   />
                 </div>
@@ -211,7 +215,7 @@ export function OrderFilters({
               <span className="text-muted-foreground text-sm">—</span>
               <div className="flex-1">
                 <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  <span className="text-muted-foreground absolute top-1/2 left-2.5 -translate-y-1/2 text-xs">
                     $
                   </span>
                   <Input
@@ -224,7 +228,7 @@ export function OrderFilters({
                       );
                       setPendingAmountRange([pendingAmountRange[0], value]);
                     }}
-                    className="pl-6 h-9 text-sm"
+                    className="h-9 pl-6 text-sm"
                     placeholder="Max"
                   />
                 </div>
@@ -234,7 +238,7 @@ export function OrderFilters({
         </div>
 
         {/* Footer Actions */}
-        <div className="border-t px-3 py-2 flex items-center justify-between bg-muted/30">
+        <div className="bg-muted/30 flex items-center justify-between border-t px-3 py-2">
           <Button variant="ghost" size="sm" onClick={handleCancel} className="h-8">
             Cancel
           </Button>
@@ -283,12 +287,12 @@ export function ActiveFilterBadges({
   if (!hasActiveFilters) return null;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex flex-wrap items-center gap-2">
       {selectedStatuses.map((status) => (
         <Badge
           key={status}
           variant="outline"
-          className={cn('gap-1 pl-2 pr-1', statusColors[status])}
+          className={cn('gap-1 pr-1 pl-2', statusColors[status])}
         >
           {status}
           <Button
@@ -302,7 +306,7 @@ export function ActiveFilterBadges({
         </Badge>
       ))}
       {(dateFrom || dateTo) && (
-        <Badge variant="secondary" className="gap-2 pl-2 pr-1">
+        <Badge variant="secondary" className="gap-2 pr-1 pl-2">
           <CalendarIcon />
           {dateFrom && dateTo
             ? `${format(dateFrom, 'MMM d')} - ${format(dateTo, 'MMM d')}`
@@ -323,7 +327,7 @@ export function ActiveFilterBadges({
         </Badge>
       )}
       {(minAmount > 0 || maxAmount < MAX_AMOUNT) && (
-        <Badge variant="secondary" className="h-7 gap-1 pl-2 pr-1">
+        <Badge variant="secondary" className="h-7 gap-1 pr-1 pl-2">
           ${minAmount} - ${maxAmount}
           <Button
             variant="ghost"

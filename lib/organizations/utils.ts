@@ -2,10 +2,10 @@
  * Organization Utilities
  * Helper functions for organization operations
  */
+import { eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { organizations } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 import type { Organization } from '@/lib/types';
 
 /**

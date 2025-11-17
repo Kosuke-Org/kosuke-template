@@ -1,10 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createCaller } from '@/lib/trpc/server';
-import { createMockTRPCContext } from '@/__tests__/setup/mocks';
-import type { UserSubscriptionInfo, SubscriptionEligibility } from '@/lib/types';
-import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
-import { SubscriptionState } from '@/lib/types';
 import type Stripe from 'stripe';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { createMockTRPCContext } from '@/__tests__/setup/mocks';
+
+import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
+import { createCaller } from '@/lib/trpc/server';
+import type { SubscriptionEligibility, UserSubscriptionInfo } from '@/lib/types';
+import { SubscriptionState } from '@/lib/types';
 
 vi.mock('@/lib/billing', () => ({
   getUserSubscription: vi.fn(),

@@ -2,7 +2,6 @@
 // owner: Full control - can perform any action (transfer ownership, remove members, update roles)
 // admin: Can manage members and admins, but cannot manage owners - can remove members/admins, update their roles
 // member: Limited control - can create projects, invite users, manage their own projects (no member management)
-
 import { ORG_ROLES, OrgRoleValue } from '@/lib/types/organization';
 
 export const ACTIONS = {

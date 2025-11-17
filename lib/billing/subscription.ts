@@ -1,7 +1,8 @@
+import { desc, eq } from 'drizzle-orm';
+
 import { db } from '@/lib/db';
 import { userSubscriptions } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
-import { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
+import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 import { type UserSubscriptionInfo } from '@/lib/types';
 
 /**

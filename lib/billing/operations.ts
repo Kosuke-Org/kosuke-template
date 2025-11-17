@@ -1,12 +1,14 @@
-import { stripe } from './client';
-import { PRICE_IDS, BILLING_URLS, PRICING } from '@/lib/billing';
-import { type CheckoutSessionParams, type OperationResult } from '@/lib/types';
-import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
-import { getUserSubscription } from './subscription';
-import { getSubscriptionEligibility } from './eligibility';
-import { db } from '@/lib/db';
-import { users, userSubscriptions } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+
+import { BILLING_URLS, PRICE_IDS, PRICING } from '@/lib/billing';
+import { db } from '@/lib/db';
+import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
+import { userSubscriptions, users } from '@/lib/db/schema';
+import { type CheckoutSessionParams, type OperationResult } from '@/lib/types';
+
+import { stripe } from './client';
+import { getSubscriptionEligibility } from './eligibility';
+import { getUserSubscription } from './subscription';
 
 /**
  * Billing operations: checkout, cancel, reactivate

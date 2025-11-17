@@ -3,7 +3,6 @@
  * Zod validation schemas for engine operations (client-safe)
  * NO SERVER DEPENDENCIES - only Zod imports allowed!
  */
-
 import { z } from 'zod';
 
 const currencyCodeSchema = z.enum(['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY']);

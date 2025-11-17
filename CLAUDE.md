@@ -118,8 +118,14 @@ export const usedFunction = () => {}; // Keep
 
 ```typescript
 // Example schema pattern with enum
-import { pgTable, uuid, text, timestamp, pgEnum } from 'drizzle-orm/pg-core';
-import { users } from './schema'; // Import users table for reference
+import { pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+
+// Example query pattern
+import { db } from '@/lib/db/drizzle';
+
+import { users } from './schema';
+
+// Import users table for reference
 
 // Define enum at database level
 export const statusEnum = pgEnum('status', ['pending', 'active', 'completed']);
@@ -137,8 +143,6 @@ export const tableName = pgTable('table_name', {
 // Export inferred type - automatically syncs with enum values
 export type Status = (typeof statusEnum.enumValues)[number];
 
-// Example query pattern
-import { db } from '@/lib/db/drizzle';
 const result = await db.select().from(tableName).where(eq(tableName.userId, userId));
 ```
 
@@ -178,6 +182,7 @@ const userId = user?.id;
 ```typescript
 // Subscription check pattern
 import { getUserSubscription } from '@/lib/billing';
+
 const subscription = await getUserSubscription(userId);
 const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
 ```
@@ -609,10 +614,10 @@ return <PageContent data={data} />;
 // hooks/use-feature-table.ts
 'use client';
 
-import { useTableSearch } from '@/hooks/use-table-search';
 import { useTableFilters } from '@/hooks/use-table-filters';
-import { useTableSorting } from '@/hooks/use-table-sorting';
 import { useTablePagination } from '@/hooks/use-table-pagination';
+import { useTableSearch } from '@/hooks/use-table-search';
+import { useTableSorting } from '@/hooks/use-table-sorting';
 
 export function useFeatureTable() {
   const search = useTableSearch();
@@ -1306,6 +1311,7 @@ A properly implemented table + detail page feature should have:
 ```typescript
 // hooks/use-user-settings.ts
 import { useQuery } from '@tanstack/react-query';
+
 import type { UserSettings } from '@/lib/types';
 
 export function useUserSettings() {
@@ -1328,8 +1334,10 @@ export function useUserSettings() {
 ```typescript
 // hooks/use-update-profile.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
+
 import type { UserProfile } from '@/lib/types';
+
+import { useToast } from '@/hooks/use-toast';
 
 export function useUpdateProfile() {
   const { toast } = useToast();
@@ -1412,8 +1420,8 @@ useEffect(() => {
 
 ```typescript
 // Always import types from centralized locations
-import type { UserProfile, NotificationSettings } from '@/lib/types';
 import type { ApiResponse } from '@/lib/api';
+import type { NotificationSettings, UserProfile } from '@/lib/types';
 
 // Use proper TypeScript generics with TanStack Query
 const query = useQuery<UserProfile, Error>({
@@ -1681,7 +1689,7 @@ export const updateTaskSchema = z.object({
 
 ```typescript
 // lib/trpc/routers/tasks.ts (SERVER-ONLY)
-import { router, protectedProcedure } from '../init';
+import { protectedProcedure, router } from '../init';
 import { createTaskSchema, updateTaskSchema } from '../schemas/tasks';
 
 export const tasksRouter = router({
@@ -1771,7 +1779,7 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
 
 ```typescript
 // lib/trpc/routers/tasks.ts
-import { router, protectedProcedure } from '../init';
+import { protectedProcedure, router } from '../init';
 import { createTaskSchema, taskListFiltersSchema } from '../schemas/tasks';
 
 export const tasksRouter = router({
@@ -1837,6 +1845,7 @@ export function Providers({ children }: { children: ReactNode }) {
 'use client';
 
 import { trpc } from '@/lib/trpc/client';
+
 import { useToast } from '@/hooks/use-toast';
 
 export function useTasks(filters?: { completed?: boolean }) {
@@ -2105,7 +2114,7 @@ You can use the existing currency_converter example as a reference guide.
 
 ```typescript
 // ✅ CORRECT - Use engine client
-import { convertCurrency, EngineError } from '@/lib/engine/client';
+import { EngineError, convertCurrency } from '@/lib/engine/client';
 
 export const engineRouter = router({
   convert: protectedProcedure.input(currencyConvertRequestSchema).mutation(async ({ input }) => {
@@ -2481,6 +2490,12 @@ return result.get("data")
 **✅ CORRECT - Type inference and centralization:**
 
 ```typescript
+// hooks/use-tasks.ts - Infer types from tRPC router
+import type { inferRouterInputs } from '@trpc/server';
+
+import { trpc } from '@/lib/trpc/client';
+import type { AppRouter } from '@/lib/trpc/router';
+
 // lib/db/schema.ts - Define enum at database level
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);
 export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];
@@ -2502,11 +2517,6 @@ export interface AsyncOperationOptions {
   onSuccess?: () => void;
   onError?: (error: Error) => void;
 }
-
-// hooks/use-tasks.ts - Infer types from tRPC router
-import { trpc } from '@/lib/trpc/client';
-import type { AppRouter } from '@/lib/trpc/router';
-import type { inferRouterInputs } from '@trpc/server';
 
 type RouterInput = inferRouterInputs<AppRouter>;
 type CreateTaskInput = RouterInput['tasks']['create'];
@@ -2749,6 +2759,9 @@ After any schema change, follow this workflow:
 **✅ CORRECT - Synchronized schema and seed:**
 
 ```typescript
+// seed.ts - Updated accordingly with faker for realistic data
+import { faker } from '@faker-js/faker';
+
 // schema.ts - Added new enum and field
 export const priorityEnum = pgEnum('priority', ['low', 'medium', 'high', 'urgent']);
 export type Priority = (typeof priorityEnum.enumValues)[number];
@@ -2759,9 +2772,6 @@ export const items = pgTable('items', {
   priority: priorityEnum('priority').notNull().default('medium'), // NEW FIELD
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
-
-// seed.ts - Updated accordingly with faker for realistic data
-import { faker } from '@faker-js/faker';
 
 const priorities: Array<'low' | 'medium' | 'high' | 'urgent'> = ['low', 'medium', 'high', 'urgent'];
 

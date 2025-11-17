@@ -1,5 +1,5 @@
-import { pgTable, text, timestamp, varchar, pgEnum, uuid, boolean } from 'drizzle-orm/pg-core';
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
+import { boolean, pgEnum, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 // Enums
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);

@@ -5,10 +5,12 @@
 
 'use client';
 
-import { trpc } from '@/lib/trpc/client';
-import { useToast } from '@/hooks/use-toast';
-import type { AppRouter } from '@/lib/trpc/router';
 import type { inferRouterInputs } from '@trpc/server';
+
+import { trpc } from '@/lib/trpc/client';
+import type { AppRouter } from '@/lib/trpc/router';
+
+import { useToast } from '@/hooks/use-toast';
 
 // Infer types from tRPC router - no need for centralized type definitions!
 type RouterInput = inferRouterInputs<AppRouter>;

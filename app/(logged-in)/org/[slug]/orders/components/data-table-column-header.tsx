@@ -2,10 +2,10 @@
  * DataTable Column Header Component
  * Provides sorting controls for server-side sorting
  */
-
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+
 import { Button } from '@/components/ui/button';
 
 interface DataTableColumnHeaderProps extends React.HTMLAttributes<HTMLDivElement> {

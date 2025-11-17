@@ -1,8 +1,8 @@
-// Better Auth - Client and types
-export { useSession, signIn, signOut, emailOtp } from './client';
-
 // Better Auth Types - Re-exported from Better Auth Email OTP plugin
 import type { EmailOTPOptions, OrganizationOptions } from 'better-auth/plugins';
+
+// Better Auth - Client and types
+export { useSession, signIn, signOut, emailOtp } from './client';
 
 /**
  * OTP type from Better Auth Email OTP plugin

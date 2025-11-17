@@ -1,14 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { Menu, LogOut, Settings, User, CreditCard } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
+
+import { CreditCard, LogOut, Menu, Settings, User } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+
+import { useAuth } from '@/hooks/use-auth';
+import { useAuthActions } from '@/hooks/use-auth';
+import { useOrganization } from '@/hooks/use-organization';
+import { useUserAvatar } from '@/hooks/use-user-avatar';
+
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,9 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useUserAvatar } from '@/hooks/use-user-avatar';
-import { useAuthActions } from '@/hooks/use-auth';
-import { useOrganization } from '@/hooks/use-organization';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 interface NavbarProps {
   variant?: 'standard' | 'transparent';
@@ -39,7 +42,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
   return (
     <header
       className={cn(
-        'fixed top-0 w-full z-50 py-3',
+        'fixed top-0 z-50 w-full py-3',
         variant === 'standard' ? 'bg-background border-b' : 'bg-transparent',
         className
       )}
@@ -50,7 +53,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
         </Link>
 
         {/* Desktop navigation */}
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden items-center gap-6 md:flex">
           {isSignedIn ? (
             // Show user profile for logged-in users
             <div className="flex items-center gap-3">
@@ -59,7 +62,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                   <div className="cursor-pointer">
                     <Avatar className="h-8 w-8 rounded-lg">
                       <AvatarImage src={profileImageUrl} alt={displayName} />
-                      <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                      <AvatarFallback className="bg-primary text-primary-foreground rounded-lg">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
@@ -68,8 +71,8 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{displayName}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{primaryEmail}</p>
+                      <p className="text-sm leading-none font-medium">{displayName}</p>
+                      <p className="text-muted-foreground text-xs leading-none">{primaryEmail}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -126,20 +129,20 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
-              <nav className="flex flex-col gap-4 mt-8">
+              <nav className="mt-8 flex flex-col gap-4">
                 {isSignedIn ? (
                   // Mobile navigation for logged-in users
                   <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-3 p-2 border rounded-lg">
+                    <div className="flex items-center gap-3 rounded-lg border p-2">
                       <Avatar className="h-10 w-10 rounded-lg">
                         <AvatarImage src={profileImageUrl} alt={displayName} />
-                        <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                        <AvatarFallback className="bg-primary text-primary-foreground rounded-lg">
                           {initials}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <div className="text-sm font-medium">{displayName}</div>
-                        <div className="text-xs text-muted-foreground">{primaryEmail}</div>
+                        <div className="text-muted-foreground text-xs">{primaryEmail}</div>
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
@@ -163,7 +166,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                       </Link>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                        className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950"
                         onClick={() => handleSignOut()}
                       >
                         <LogOut className="mr-2 h-4 w-4" />

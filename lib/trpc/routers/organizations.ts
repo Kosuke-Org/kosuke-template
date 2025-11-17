@@ -2,29 +2,31 @@
  * tRPC router for organization operations
  * Handles organization CRUD, member management, and invitations
  */
+import { headers } from 'next/headers';
 
 import { TRPCError } from '@trpc/server';
-import { router, protectedProcedure } from '../init';
-import { uploadProfileImage, deleteProfileImage } from '@/lib/storage';
+import { and, eq } from 'drizzle-orm';
+import { z } from 'zod';
+
+import { auth } from '@/lib/auth/providers';
+import { db } from '@/lib/db';
+import { invitations } from '@/lib/db/schema';
 import { generateUniqueOrgSlug } from '@/lib/organizations';
+import { deleteProfileImage, uploadProfileImage } from '@/lib/storage';
+
+import { protectedProcedure, router } from '../init';
 import {
-  createOrganizationSchema,
-  updateOrganizationSchema,
-  getOrganizationSchema,
+  cancelInvitationSchema,
   createInvitationSchema,
+  createOrganizationSchema,
+  getOrgMembersSchema,
+  getOrganizationSchema,
+  getUserOrganizationsSchema,
+  leaveOrganizationSchema,
   removeMemberSchema,
   updateMemberRoleSchema,
-  getOrgMembersSchema,
-  leaveOrganizationSchema,
-  cancelInvitationSchema,
-  getUserOrganizationsSchema,
+  updateOrganizationSchema,
 } from '../schemas/organizations';
-import { z } from 'zod';
-import { auth } from '@/lib/auth/providers';
-import { headers } from 'next/headers';
-import { db } from '@/lib/db';
-import { and, eq } from 'drizzle-orm';
-import { invitations } from '@/lib/db/schema';
 
 export const organizationsRouter = router({
   /**

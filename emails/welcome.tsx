@@ -1,4 +1,5 @@
-import { Section, Text, Button, Hr } from '@react-email/components';
+import { Button, Hr, Section, Text } from '@react-email/components';
+
 import { BaseLayout } from '@/lib/email/templates';
 
 interface WelcomeEmailProps {
@@ -18,14 +19,14 @@ export const WelcomeEmail = ({
     <BaseLayout preview={`Welcome to Kosuke Template, ${firstName}! 🎉`}>
       {/* Welcome Message */}
       <Section className="mb-8">
-        <Text className="text-3xl font-bold text-stone-900 mb-4 mt-0">
+        <Text className="mt-0 mb-4 text-3xl font-bold text-stone-900">
           Welcome, {firstName}! 🎉
         </Text>
-        <Text className="text-base text-stone-600 mb-4 leading-relaxed">
+        <Text className="mb-4 text-base leading-relaxed text-stone-600">
           Thank you for joining Kosuke Template! We&apos;re excited to have you on board. Your
           account (<strong>{email}</strong>) has been successfully created.
         </Text>
-        <Text className="text-base text-stone-600 mb-0 leading-relaxed">
+        <Text className="mb-0 text-base leading-relaxed text-stone-600">
           You now have access to a powerful Next.js template with authentication, billing, beautiful
           UI components, and much more.
         </Text>
@@ -33,12 +34,12 @@ export const WelcomeEmail = ({
 
       {/* CTA Section */}
       {(dashboardUrl || settingsUrl) && (
-        <Section className="bg-stone-50 rounded-lg p-6 mb-8 text-center">
-          <Text className="text-xl font-semibold text-stone-900 mb-6 mt-0">Get Started</Text>
+        <Section className="mb-8 rounded-lg bg-stone-50 p-6 text-center">
+          <Text className="mt-0 mb-6 text-xl font-semibold text-stone-900">Get Started</Text>
           {dashboardUrl && (
             <Button
               href={dashboardUrl}
-              className="bg-stone-900 text-white px-6 py-3 rounded-lg font-semibold no-underline mr-3 mb-2 inline-block"
+              className="mr-3 mb-2 inline-block rounded-lg bg-stone-900 px-6 py-3 font-semibold text-white no-underline"
             >
               Go to Dashboard
             </Button>
@@ -46,7 +47,7 @@ export const WelcomeEmail = ({
           {settingsUrl && (
             <Button
               href={settingsUrl}
-              className="bg-stone-600 text-white px-6 py-3 rounded-lg font-semibold no-underline ml-3 mb-2 inline-block"
+              className="mb-2 ml-3 inline-block rounded-lg bg-stone-600 px-6 py-3 font-semibold text-white no-underline"
             >
               Account Settings
             </Button>
@@ -56,7 +57,7 @@ export const WelcomeEmail = ({
 
       {/* Features Section */}
       <Section className="mb-8">
-        <Text className="text-xl font-semibold text-stone-900 mb-4">What&apos;s included:</Text>
+        <Text className="mb-4 text-xl font-semibold text-stone-900">What&apos;s included:</Text>
 
         {[
           'Next.js 15 with App Router and TypeScript',
@@ -69,17 +70,17 @@ export const WelcomeEmail = ({
           'Error monitoring with Sentry',
           'React Email for beautiful email templates',
         ].map((feature, index) => (
-          <Text key={index} className="text-sm text-stone-600 mb-3 flex items-center">
-            <span className="text-stone-900 font-bold mr-3">✓</span>
+          <Text key={index} className="mb-3 flex items-center text-sm text-stone-600">
+            <span className="mr-3 font-bold text-stone-900">✓</span>
             {feature}
           </Text>
         ))}
       </Section>
 
-      <Hr className="border-stone-200 my-6" />
+      <Hr className="my-6 border-stone-200" />
 
       <Section>
-        <Text className="text-xs text-stone-500 text-center">
+        <Text className="text-center text-xs text-stone-500">
           This email was sent to {email}. If you have any questions, just reply to this
           email—we&apos;re always happy to help out.
         </Text>

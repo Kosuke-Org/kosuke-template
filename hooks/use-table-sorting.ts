@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 interface UseTableSortingOptions<T extends string> {
   initialSortBy: T;

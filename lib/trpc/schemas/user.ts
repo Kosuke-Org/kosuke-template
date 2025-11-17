@@ -3,7 +3,6 @@
  * These schemas are used by both tRPC router (server) and forms (client)
  * NO SERVER DEPENDENCIES - can be imported in client components
  */
-
 import { z } from 'zod';
 
 export const notificationSettingsSchema = z.object({

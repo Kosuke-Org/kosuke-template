@@ -2,8 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-4xl pt-12 sm:pt-20 pb-16 px-4 sm:px-6">
+    <div className="bg-background min-h-screen">
+      <div className="container max-w-4xl px-4 pt-12 pb-16 sm:px-6 sm:pt-20">
         <div className="mb-8">
           <h1 className="text-4xl font-bold tracking-tight">Terms of Service</h1>
           <p className="text-muted-foreground mt-2">
@@ -40,7 +40,7 @@ export default function TermsPage() {
                 for personal, non-commercial transitory viewing only. This is the grant of a
                 license, not a transfer of title, and under this license you may not:
               </p>
-              <ul className="list-disc pl-6 space-y-1 mt-4">
+              <ul className="mt-4 list-disc space-y-1 pl-6">
                 <li>Modify or copy the materials</li>
                 <li>Use the materials for any commercial purpose or for any public display</li>
                 <li>Attempt to reverse engineer any software contained in the service</li>
@@ -72,7 +72,7 @@ export default function TermsPage() {
                 advance on a recurring basis. Billing cycles are set on a monthly or annual basis,
                 depending on the subscription plan selected.
               </p>
-              <h4 className="text-lg font-semibold mt-4 mb-2">Cancellation</h4>
+              <h4 className="mt-4 mb-2 text-lg font-semibold">Cancellation</h4>
               <p>
                 You may cancel your subscription at any time. Upon cancellation, your subscription
                 will remain active until the end of your current billing period.
@@ -86,7 +86,7 @@ export default function TermsPage() {
             </CardHeader>
             <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
               <p>You may not use our service:</p>
-              <ul className="list-disc pl-6 space-y-1">
+              <ul className="list-disc space-y-1 pl-6">
                 <li>For any unlawful purpose or to solicit others to unlawful acts</li>
                 <li>
                   To violate any international, federal, provincial, or state regulations, rules,

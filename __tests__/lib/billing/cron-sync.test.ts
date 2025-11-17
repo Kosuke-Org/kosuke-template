@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { runPeriodicSync, checkSyncHealth } from '@/lib/billing/cron-sync';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { checkSyncHealth, runPeriodicSync } from '@/lib/billing/cron-sync';
+import { syncStaleSubscriptions } from '@/lib/billing/stripe-sync';
 
 // Mock stripe-sync module
 vi.mock('@/lib/billing/stripe-sync', () => ({
   syncStaleSubscriptions: vi.fn(),
 }));
-
-import { syncStaleSubscriptions } from '@/lib/billing/stripe-sync';
 
 describe('Cron Sync Module', () => {
   beforeEach(() => {

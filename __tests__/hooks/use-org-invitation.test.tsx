@@ -1,9 +1,12 @@
-import { renderHook } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
-import { vi, type Mock } from 'vitest';
-import { useOrgInvitation } from '@/hooks/use-org-invitation';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook } from '@testing-library/react';
+import { type Mock, vi } from 'vitest';
+
 import { trpc } from '@/lib/trpc/client';
+
+import { useOrgInvitation } from '@/hooks/use-org-invitation';
 
 const mockToast = vi.fn();
 vi.mock('@/hooks/use-toast', () => ({

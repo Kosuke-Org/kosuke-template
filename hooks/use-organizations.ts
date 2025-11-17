@@ -6,8 +6,9 @@
 
 'use client';
 
-import { useAuth } from '@/hooks/use-auth';
 import { trpc } from '@/lib/trpc/client';
+
+import { useAuth } from '@/hooks/use-auth';
 
 export function useOrganizations() {
   const { isSignedIn, userId } = useAuth();
