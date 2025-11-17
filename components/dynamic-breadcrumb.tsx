@@ -12,6 +12,7 @@ import {
 import { useOrganization } from '@/hooks/use-organization';
 import { BreadcrumbSkeleton } from './skeletons';
 import { useAuth } from '@/hooks/use-auth';
+import Link from 'next/link';
 
 // Define human-readable names for routes
 const routeNames: Record<string, string> = {
@@ -88,7 +89,9 @@ export function DynamicBreadcrumb() {
               {item.isLast || item.href === null ? (
                 <BreadcrumbPage>{item.name}</BreadcrumbPage>
               ) : (
-                <BreadcrumbLink href={item.href}>{item.name}</BreadcrumbLink>
+                <BreadcrumbLink asChild>
+                  <Link href={item.href}>{item.name}</Link>
+                </BreadcrumbLink>
               )}
             </BreadcrumbItem>
             {!item.isLast && <BreadcrumbSeparator className="hidden md:block" />}
