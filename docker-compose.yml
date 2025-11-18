@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16.4-alpine
@@ -10,6 +8,46 @@ services:
       - '54321:5432'
     volumes:
       - kosuke_template_postgres_data:/var/lib/postgresql/data
+    networks:
+      - kosuke_network
+
+  nextjs: &app
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    volumes:
+      - .:/app:cached
+      - /app/node_modules
+      - /app/.next
+    env_file:
+      - .env
+    networks:
+      - kosuke_network
+    restart: unless-stopped
+    container_name: kosuke_template_nextjs
+    ports:
+      - '3000:3000'
+    depends_on:
+      - postgres
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "require(\"http\").get(\"http://localhost:3000\", (r) => process.exit(r.statusCode === 200 ? 0 : 1))"',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  workers:
+    <<: *app
+    container_name: kosuke_template_workers
+    depends_on:
+      - postgres
+      - redis
+    ports: []
+    command: bun run workers:dev
 
   engine:
     build:
@@ -22,7 +60,8 @@ services:
       - ./engine:/app
     env_file:
       - .env
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - kosuke_network
     restart: unless-stopped
 
   redis:
@@ -33,8 +72,16 @@ services:
     volumes:
       - kosuke_template_redis_data:/data
     command: redis-server --appendonly yes
+    networks:
+      - kosuke_network
     restart: unless-stopped
 
 volumes:
   kosuke_template_postgres_data:
   kosuke_template_redis_data:
+
+networks:
+  kosuke_network:
+    name: kosuke_network
+    driver: bridge
+    attachable: true

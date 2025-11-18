@@ -72,25 +72,30 @@ git clone https://github.com/YOUR_USERNAME/kosuke-template.git
 cd kosuke-template
 ```
 
-#### 2. Install Dependencies
+#### 2. Install Dependencies (Local)
 
 ```bash
-bun install
+nvm use & bun install --frozen-lockfile
 ```
 
-#### 3. Set Up Environment Variables
+**Note**: `nvm use` reads the Node version from `.nvmrc` and switches to it. Run `nvm install` first if the version isn't installed.
+
+#### 3. Create Environment Variables
 
 Create `.env` file in the root directory:
 
 ```bash
-# Database (Local PostgreSQL via Docker)
-POSTGRES_URL=postgres://postgres:postgres@localhost:54321/postgres
+# Database (PostgreSQL via Docker on kosuke_network)
+POSTGRES_URL=postgres://postgres:postgres@postgres:5432/postgres
 POSTGRES_DB=postgres
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 
-# Redis (Local Redis via Docker)
-REDIS_URL=redis://localhost:6379
+# Redis (via Docker on kosuke_network)
+REDIS_URL=redis://redis:6379
+
+# Engine (Python FastAPI microservice on kosuke_network)
+ENGINE_BASE_URL=http://engine:8000
 
 # Stripe Billing
 STRIPE_PUBLISHABLE_KEY=pk_test_...
@@ -127,21 +132,40 @@ S3_SECRET_ACCESS_KEY=your_secret_key
 - **Sentry**: Create project → Copy DSN (optional for local development)
 - **DigitalOcean**: Create account → Create Spaces bucket → Generate API key & secret
 
-#### 4. Start Services (PostgreSQL + Redis)
+#### 4. Start All Services
 
 ```bash
-docker-compose up -d
+just run
 ```
 
-This starts:
+This builds and starts all services on the `kosuke_network`:
 
-- PostgreSQL on port 54321
-- Redis on port 6379
+- **Next.js** on `http://localhost:3000`
+- **PostgreSQL** on `localhost:54321`
+- **Redis** on `localhost:6379`
+- **Engine (FastAPI)** on `http://localhost:8000`
+- **Background Workers** (BullMQ)
 
-#### 5. Run Migrations
+## 🐳 Docker Development
+
+The template includes a complete Docker setup for local development with hot reload:
+
+**Services**:
+- **nextjs**: Next.js dev server with hot reload (port 3000)
+- **workers**: BullMQ background workers with hot reload
+- **postgres**: PostgreSQL database (port 54321)
+- **redis**: Redis for caching & jobs (port 6379)
+- **engine**: Python FastAPI microservice (port 8000)
+
+**Common `just` Commands**:
 
 ```bash
-bun run db:migrate
+just run              # Build and start all services
+just up               # Start services without rebuild
+just down             # Stop all services
+just logs [service]   # View logs (all or specific service)
+just migrate          # Run database migrations
+just db-reset         # Reset database and run migrations
 ```
 
 ## ⚡ Background Jobs with BullMQ
@@ -154,7 +178,11 @@ This template includes a robust background job system powered by BullMQ and Redi
 - **⚙️ Scalable**: Add workers as needed to process jobs in parallel
 - **🔧 Flexible**: Easy to add new background jobs and scheduled tasks
 
-Background workers run alongside your web server in development (`bun run dev:all`) and as separate processes in production.
+**Development**:
+- Workers run in a separate container (`kosuke_template_workers`)
+- Both web server and workers have hot reload enabled
+- Changes to code automatically restart services
+- View worker logs: `just logs workers`
 
 ## 📧 Email Templates with React Email
 
@@ -162,47 +190,33 @@ This template uses **React Email** for building beautiful, responsive email temp
 
 ### Email Development Workflow
 
-#### 6. Start Development Server
+Services are already running via `just run`. Open:
+- **Next.js**: [localhost:3000](http://localhost:3000)
+- **Email Preview**: [localhost:3001](http://localhost:3001) (via `just email:dev`)
+
+To preview email templates in another terminal:
 
 ```bash
-# Start web server only
-bun run dev
-
-# OR start web server + background workers together
-bun run dev:all
+just email:dev
 ```
 
-Visit [localhost:3000](http://localhost:3000) 🚀
-
-### Common Commands
+### Just Commands
 
 ```bash
-# Development
-bun run dev              # Start dev server (port 3000)
-bun run workers:dev      # Start background workers with hot reload
-bun run dev:all          # Start both web server and workers together
-bun run build            # Build for production
-bun run start            # Start production server
+# Docker Management
+just run                 # Build and start all services
+just up                  # Start services without rebuild
+just down                # Stop all services
+just logs [service]      # View logs
 
 # Database
-bun run db:generate      # Generate migration from schema changes
-bun run db:migrate       # Run pending migrations
-bun run db:studio        # Open Drizzle Studio (visual DB browser)
-bun run db:seed          # Seed database with test data
-bun run db:reset         # Reset database and seed it with test data
+just db:generate         # Generate migration from schema changes
+just db:migrate          # Run pending migrations
+just db:reset            # Reset database and run migrations
+just db:seed             # Seed database with test data
 
-# Email Development
-bun run email:dev        # Preview email templates (port 3001)
-
-# Code Quality
-bun run lint             # Run ESLint
-bun run typecheck        # Run TypeScript type checking
-bun run format           # Format code with Prettier
-
-# Testing
-bun run test             # Run all tests
-bun run test:watch       # Watch mode
-bun run test:coverage    # Coverage report
+# Email
+just email:dev           # Preview email templates (port 3001)
 ```
 
 ### Database Operations
@@ -212,11 +226,11 @@ bun run test:coverage    # Coverage report
 ```bash
 # 1. Edit lib/db/schema.ts
 # 2. Generate migration
-bun run db:generate
+just db:generate
 
 # 3. Review generated SQL in lib/db/migrations/
 # 4. Apply migration
-bun run db:migrate
+just db:migrate
 ```
 
 #### Seed with test data
@@ -225,10 +239,10 @@ Populate your local database with realistic test data:
 
 ```bash
 # Reset database and seed with test data
-bun run db:reset
+just db:reset
 
 # Or just seed (without reset)
-bun run db:seed
+just db:seed
 ```
 
 **Test Users Created:**
@@ -247,22 +261,9 @@ bun run db:studio
 # Visit https://local.drizzle.studio
 ```
 
-### Email Template Development
-
-```bash
-# Start preview server
-bun run email:dev
-
-# Visit localhost:3001 to:
-# - Preview all email templates
-# - Test with different props
-# - View HTML and plain text versions
-# - Check responsive design
-```
-
 ### Testing
 
-#### Run Tests
+Run tests locally (requires dependencies installed):
 
 ```bash
 # All tests
