@@ -20,6 +20,7 @@ import {
   createInvitationSchema,
   createOrganizationSchema,
   getOrgMembersSchema,
+  getOrganizationBySlugSchema,
   getOrganizationSchema,
   getUserOrganizationsSchema,
   leaveOrganizationSchema,
@@ -60,6 +61,29 @@ export const organizationsRouter = router({
     return result;
   }),
 
+  /**
+   * Get a single organization by slug
+   */
+  getOrganizationBySlug: protectedProcedure
+    .input(getOrganizationBySlugSchema)
+    .query(async ({ input }) => {
+      const result = await auth.api.getFullOrganization({
+        query: {
+          organizationSlug: input.organizationSlug,
+        },
+        headers: await headers(),
+      });
+
+      if (!result) {
+        // throw a TRPC error with code 'NOT_FOUND'
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: `Organization ${input.organizationSlug} not found`,
+        });
+      }
+
+      return result;
+    }),
   /**
    * Create a new organization
    */

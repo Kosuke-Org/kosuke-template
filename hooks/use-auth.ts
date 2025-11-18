@@ -155,7 +155,7 @@ export function useAuthActions() {
       return signOut({
         fetchOptions: {
           onSuccess: () => {
-            router.push(AUTH_ROUTES.ROOT);
+            window.location.href = AUTH_ROUTES.ROOT;
           },
         },
       });
