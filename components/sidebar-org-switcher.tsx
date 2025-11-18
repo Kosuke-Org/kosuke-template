@@ -9,12 +9,11 @@ import * as React from 'react';
 
 import Link from 'next/link';
 
-import { Building, ChevronsUpDown, Plus, Settings } from 'lucide-react';
+import { ChevronsUpDown, Plus, Settings } from 'lucide-react';
 
 import { organization } from '@/lib/auth/client';
 import { getInitials } from '@/lib/utils';
 
-import { useAuth } from '@/hooks/use-auth';
 import { useOrganization } from '@/hooks/use-organization';
 import { useOrganizations } from '@/hooks/use-organizations';
 
@@ -38,13 +37,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function SidebarOrgSwitcher() {
   const { isMobile } = useSidebar();
-  const { isLoading: isAuthLoading } = useAuth();
   const { organizations, isLoading } = useOrganizations();
   const { organization: activeOrganization, isLoading: isActivating } = useOrganization();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
 
   // Loading state
-  if (isLoading || isActivating || isAuthLoading) {
+  if (isLoading || isActivating || !activeOrganization) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
@@ -60,6 +58,8 @@ export function SidebarOrgSwitcher() {
     );
   }
 
+  const activeOrgInitials = getInitials(activeOrganization.name);
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -69,30 +69,19 @@ export function SidebarOrgSwitcher() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar key={activeOrganization?.id} className="h-8 w-8 rounded-lg">
-                {activeOrganization?.logo && (
-                  <AvatarImage src={activeOrganization.logo} alt={activeOrganization?.name ?? ''} />
+              <Avatar key={activeOrganization.id} className="h-8 w-8 rounded-lg">
+                {activeOrganization.logo && (
+                  <AvatarImage src={activeOrganization.logo} alt={activeOrganization.name} />
                 )}
                 <AvatarFallback className="bg-primary text-primary-foreground rounded-lg">
-                  {activeOrganization?.name ? (
-                    getInitials(activeOrganization.name)
-                  ) : (
-                    <Building className="h-4 w-4" />
-                  )}
+                  {activeOrgInitials}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                {activeOrganization ? (
-                  <>
-                    <span className="truncate font-semibold">{activeOrganization.name}</span>
-                    <span className="text-muted-foreground truncate text-xs">
-                      {organizations.length}{' '}
-                      {organizations.length === 1 ? 'workspace' : 'workspaces'}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-muted-foreground truncate text-xs">Select workspace</span>
-                )}
+                <span className="truncate font-semibold">{activeOrganization.name}</span>
+                <span className="text-muted-foreground truncate text-xs">
+                  {organizations.length} {organizations.length === 1 ? 'workspace' : 'workspaces'}
+                </span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -108,7 +97,7 @@ export function SidebarOrgSwitcher() {
             </DropdownMenuLabel>
             {organizations.map((org) => {
               const orgInitials = getInitials(org.name);
-              const isActive = org.id === activeOrganization?.id;
+              const isActive = org.id === activeOrganization.id;
 
               return (
                 <DropdownMenuItem
@@ -147,17 +136,15 @@ export function SidebarOrgSwitcher() {
               );
             })}
             <DropdownMenuSeparator />
-            {activeOrganization && (
-              <DropdownMenuItem asChild>
-                <Link
-                  href={`/org/${activeOrganization.slug}/settings`}
-                  className="cursor-pointer gap-2 p-2"
-                >
-                  <Settings className="h-4 w-4" />
-                  <span>Organization Settings</span>
-                </Link>
-              </DropdownMenuItem>
-            )}
+            <DropdownMenuItem asChild>
+              <Link
+                href={`/org/${activeOrganization.slug}/settings`}
+                className="cursor-pointer gap-2 p-2"
+              >
+                <Settings className="h-4 w-4" />
+                <span>Organization Settings</span>
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setIsCreateDialogOpen(true)}
               className="cursor-pointer gap-2 p-2"
