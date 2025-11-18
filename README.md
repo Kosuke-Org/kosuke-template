@@ -151,6 +151,7 @@ This builds and starts all services on the `kosuke_network`:
 The template includes a complete Docker setup for local development with hot reload:
 
 **Services**:
+
 - **nextjs**: Next.js dev server with hot reload (port 3000)
 - **workers**: BullMQ background workers with hot reload
 - **postgres**: PostgreSQL database (port 54321)
@@ -179,6 +180,7 @@ This template includes a robust background job system powered by BullMQ and Redi
 - **🔧 Flexible**: Easy to add new background jobs and scheduled tasks
 
 **Development**:
+
 - Workers run in a separate container (`kosuke_template_workers`)
 - Both web server and workers have hot reload enabled
 - Changes to code automatically restart services
@@ -191,6 +193,7 @@ This template uses **React Email** for building beautiful, responsive email temp
 ### Email Development Workflow
 
 Services are already running via `just run`. Open:
+
 - **Next.js**: [localhost:3000](http://localhost:3000)
 - **Email Preview**: [localhost:3001](http://localhost:3001) (via `just email:dev`)
 
