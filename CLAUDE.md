@@ -2729,29 +2729,32 @@ All color tokens are defined in `./app/globals.css` and support both light and d
 **Always add both success and failure notifications at the end of the job:**
 
 ```yaml
-      - name: Notify Slack - Success
-        if: success()
-        run: |
-          curl -X POST --data '{"text":"✅ Workflow Name Completed Successfully\nDetails: https://link-to-result"}' ${{ secrets.SLACK_WEBHOOK_URL }}
+- name: Notify Slack - Success
+  if: success()
+  run: |
+    curl -X POST --data '{"text":"✅ Workflow Name Completed Successfully\nDetails: https://link-to-result"}' ${{ secrets.SLACK_WEBHOOK_URL }}
 
-      - name: Notify Slack - Failure
-        if: failure()
-        run: |
-          curl -X POST --data "{\"text\":\"❌ Workflow Name Failed\nAction: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
+- name: Notify Slack - Failure
+  if: failure()
+  run: |
+    curl -X POST --data "{\"text\":\"❌ Workflow Name Failed\nAction: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
 #### **🏗️ Best Practices**
 
 **Include relevant links in success messages:**
+
 - Release workflows → Link to GitHub release
 - Build workflows → Link to build artifact or deployment
 - Sync workflows → Link to action run for details
 
 **Always include action run link in failure messages:**
+
 - Allows quick navigation to logs for debugging
 - Use: `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`
 
 **Use consistent emoji indicators:**
+
 - ✅ Success
 - ❌ Failure
 - 🔄 In Progress (optional)
