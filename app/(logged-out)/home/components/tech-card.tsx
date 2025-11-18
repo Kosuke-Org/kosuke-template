@@ -24,6 +24,7 @@ export function TechLogo({ name, logoPath, url, size = 'md', className = '' }: T
   const { theme, systemTheme } = useTheme();
 
   useEffect(() => {
+    // eslint-disable-next-line
     setMounted(true);
   }, []);
 

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 
-import { middleware } from '@/middleware';
+import { proxy } from '@/proxy';
+import { getCookieCache } from 'better-auth/cookies';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Session } from '@/lib/auth/providers';
@@ -25,7 +26,13 @@ vi.mock('next/server', async () => {
   };
 });
 
-describe('middleware', () => {
+vi.mock('better-auth/cookies', () => {
+  return { getCookieCache: vi.fn() };
+});
+
+const mockGetCookieCache = vi.mocked(getCookieCache);
+
+describe('proxy', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -56,24 +63,24 @@ describe('middleware', () => {
   };
 
   it('allows public routes for unauthenticated users', async () => {
-    const res = await middleware(makeReq('/terms'));
+    const res = await proxy(makeReq('/terms'));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('allows public routes (home, privacy, terms) for unauthenticated users', async () => {
-    const res = await middleware(makeReq('/home'));
+    const res = await proxy(makeReq('/home'));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('redirects unauthenticated users on protected routes', async () => {
-    const res = await middleware(makeReq('/settings'));
+    const res = await proxy(makeReq('/settings'));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/sign-in');
     expect(res?.url).toContain('redirect=%2Fsettings');
   });
 
   it('redirects unauthenticated users on org routes', async () => {
-    const res = await middleware(makeReq('/org/test-org/dashboard'));
+    const res = await proxy(makeReq('/org/test-org/dashboard'));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/sign-in');
   });
@@ -81,7 +88,7 @@ describe('middleware', () => {
   it('redirects authenticated users without activeOrganizationSlug to onboarding', async () => {
     const cookies = mockSession(mockedSession);
 
-    const res = await middleware(makeReq('/settings', cookies));
+    const res = await proxy(makeReq('/settings', cookies));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/onboarding');
   });
@@ -89,7 +96,7 @@ describe('middleware', () => {
   it('allows authenticated users without activeOrganizationSlug to access onboarding', async () => {
     const cookies = mockSession(mockedSession);
 
-    const res = await middleware(makeReq('/onboarding', cookies));
+    const res = await proxy(makeReq('/onboarding', cookies));
     expect(res).toEqual({ type: 'next' });
   });
 
@@ -103,7 +110,7 @@ describe('middleware', () => {
       },
     });
 
-    const res = await middleware(makeReq('/', cookies));
+    const res = await proxy(makeReq('/', cookies));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/org/test-org/dashboard');
   });
@@ -118,7 +125,7 @@ describe('middleware', () => {
       },
     });
 
-    const res = await middleware(makeReq('/settings', cookies));
+    const res = await proxy(makeReq('/settings', cookies));
     expect(res).toEqual({ type: 'next' });
   });
 
@@ -132,7 +139,7 @@ describe('middleware', () => {
       },
     });
 
-    const res = await middleware(makeReq('/org/test-org/dashboard', cookies));
+    const res = await proxy(makeReq('/org/test-org/dashboard', cookies));
     expect(res).toEqual({ type: 'next' });
   });
 
@@ -146,18 +153,18 @@ describe('middleware', () => {
       },
     });
 
-    const res = await middleware(makeReq('/sign-in', cookies));
+    const res = await proxy(makeReq('/sign-in', cookies));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/org/test-org/dashboard');
   });
 
   it('calls NextResponse.next() for API routes', async () => {
-    const res = await middleware(makeReq('/api/user'));
+    const res = await proxy(makeReq('/api/user'));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('calls NextResponse.next() for tRPC routes', async () => {
-    const res = await middleware(makeReq('/api/trpc/user.list'));
+    const res = await proxy(makeReq('/api/trpc/user.list'));
     expect(res).toEqual({ type: 'next' });
   });
 
@@ -171,27 +178,27 @@ describe('middleware', () => {
       },
     });
 
-    const res = await middleware(makeReq('/privacy', cookies));
+    const res = await proxy(makeReq('/privacy', cookies));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('redirects authenticated users without activeOrganizationSlug trying to access sign-in to onboarding', async () => {
     const cookies = mockSession(mockedSession);
 
-    const res = await middleware(makeReq('/sign-in', cookies));
+    const res = await proxy(makeReq('/sign-in', cookies));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/onboarding');
   });
 
   it('allows access to /sign-in/verify with valid sign_in_attempt_email cookie', async () => {
-    const res = await middleware(
+    const res = await proxy(
       makeReq('/sign-in/verify', { [SIGN_IN_ATTEMPT_EMAIL_COOKIE]: 'test@example.com' })
     );
     expect(res).toEqual({ type: 'next' });
   });
 
   it('redirects to /sign-in when accessing /sign-in/verify without sign_in_attempt_email cookie', async () => {
-    const res = await middleware(makeReq('/sign-in/verify'));
+    const res = await proxy(makeReq('/sign-in/verify'));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/sign-in');
   });
@@ -199,7 +206,7 @@ describe('middleware', () => {
   it('redirects authenticated users without activeOrganizationSlug from root to onboarding', async () => {
     const cookies = mockSession(mockedSession);
 
-    const res = await middleware(makeReq('/', cookies));
+    const res = await proxy(makeReq('/', cookies));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/onboarding');
   });
