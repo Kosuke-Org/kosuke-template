@@ -120,6 +120,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.check-changes.outputs.has_changes == 'true' && steps.check-pr.outputs.should_create == 'true'
+        id: create-pr
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -184,3 +185,17 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "View the [Actions tab](https://github.com/${{ github.repository }}/actions) for detailed logs." >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify Slack - Success
+        if: success()
+        run: |
+          PR_URL=""
+          if [[ "${{ steps.create-pr.outputs.pull-request-number }}" != "" ]]; then
+            PR_URL="https://github.com/${{ github.repository }}/pull/${{ steps.create-pr.outputs.pull-request-number }}"
+          fi
+          curl -X POST --data "{\"text\":\"✅ Shadcn/UI Components Updated Successfully\n${PR_URL}\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack - Failure
+        if: failure()
+        run: |
+          curl -X POST --data "{\"text\":\"❌ Shadcn/UI Components Update Failed\nAction: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" ${{ secrets.SLACK_WEBHOOK_URL }}

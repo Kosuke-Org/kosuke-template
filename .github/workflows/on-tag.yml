@@ -102,6 +102,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Create GitHub Release
+        id: create-release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
@@ -128,3 +129,13 @@ jobs:
             ---
 
             ${{ github.event.release.body }}
+
+      - name: Notify Slack - Success
+        if: success()
+        run: |
+          curl -X POST --data '{"text":"✅ Kosuke Template Release ${{ env.VERSION }} Published Successfully\n${{ steps.create-release.outputs.url }}"}' ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Slack - Failure
+        if: failure()
+        run: |
+          curl -X POST --data "{\"text\":\"❌ Kosuke Template Release ${{ env.VERSION }} Failed\nAction: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
