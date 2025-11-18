@@ -164,7 +164,7 @@ just run              # Build and start all services
 just up               # Start services without rebuild
 just down             # Stop all services
 just logs [service]   # View logs (all or specific service)
-just migrate          # Run database migrations
+just db-migrate       # Run database migrations
 just db-reset         # Reset database and run migrations
 ```
 
@@ -197,7 +197,7 @@ Services are already running via `just run`. Open:
 To preview email templates in another terminal:
 
 ```bash
-just email:dev
+just email-dev
 ```
 
 ### Just Commands
@@ -210,13 +210,13 @@ just down                # Stop all services
 just logs [service]      # View logs
 
 # Database
-just db:generate         # Generate migration from schema changes
-just db:migrate          # Run pending migrations
-just db:reset            # Reset database and run migrations
-just db:seed             # Seed database with test data
+just db-generate         # Generate migration from schema changes
+just db-migrate          # Run pending migrations
+just db-reset            # Reset database and run migrations
+just db-seed             # Seed database with test data
 
 # Email
-just email:dev           # Preview email templates (port 3001)
+just email-dev           # Preview email templates (port 3001)
 ```
 
 ### Database Operations
@@ -226,11 +226,11 @@ just email:dev           # Preview email templates (port 3001)
 ```bash
 # 1. Edit lib/db/schema.ts
 # 2. Generate migration
-just db:generate
+just db-generate
 
 # 3. Review generated SQL in lib/db/migrations/
 # 4. Apply migration
-just db:migrate
+just db-migrate
 ```
 
 #### Seed with test data
@@ -239,10 +239,10 @@ Populate your local database with realistic test data:
 
 ```bash
 # Reset database and seed with test data
-just db:reset
+just db-reset
 
 # Or just seed (without reset)
-just db:seed
+just db-seed
 ```
 
 **Test Users Created:**

@@ -47,15 +47,15 @@ just down               # Stop all services
 just logs [service]     # View logs (all or specific service)
 
 # Database Setup & Migrations
-just db:generate        # Generate Drizzle migrations from schema changes
-just db:migrate         # Apply pending migrations to database
-just db:reset           # Reset database and run migrations
-just db:seed            # Seed database with initial data
+just db-generate        # Generate Drizzle migrations from schema changes
+just db-migrate         # Apply pending migrations to database
+just db-reset           # Reset database and run migrations
+just db-seed            # Seed database with initial data
 bun run db:push         # Push schema changes directly (dev only)
 bun run db:studio       # Open Drizzle Studio for database inspection
 
 # Email Templates
-just email:dev          # Preview email templates (port 3001)
+just email-dev          # Preview email templates (port 3001)
 
 # Local Development (Run Outside Docker)
 bun run dev             # Start Next.js dev server

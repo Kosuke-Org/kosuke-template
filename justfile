@@ -21,15 +21,15 @@ install:
     @echo "Installing dependencies locally..."
     @bun install --frozen-lockfile
 
-db:generate:
+db-generate:
     @echo "Generating database migration..."
     @bun run db:generate
 
-db:migrate:
+db-migrate:
     @echo "Migrating database..."
     @docker exec kosuke_template_nextjs bun run db:migrate
 
-db:reset:
+db-reset:
     @echo "Dropping and recreating database..."
     @docker compose down -v
     @docker compose up -d
@@ -38,7 +38,7 @@ db:reset:
     @docker exec kosuke_template_nextjs bun run db:migrate
     @echo "Database reset complete!"
 
-db:seed:
+db-seed:
     @echo "Seeding database..."
     @docker exec kosuke_template_nextjs bun run db:seed
 
@@ -49,7 +49,7 @@ logs service="":
         docker compose logs -f {{service}}; \
     fi
 
-email:dev:
+email-dev:
     @echo "Starting email preview server..."
     @bun run email:dev
 
