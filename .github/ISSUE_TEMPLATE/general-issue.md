@@ -4,7 +4,6 @@ about: Report a bug, request a feature, or describe a problem.
 title: ''
 labels: ''
 assignees: ''
-
 ---
 
 ## Expected Behavior
