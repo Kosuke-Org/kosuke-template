@@ -1,0 +1,32 @@
+{
+  "version": "0.1.0",
+  "services": {
+    "nextjs": {
+      "type": "bun",
+      "directory": ".",
+      "env_file": "./.env.example",
+      "databases": {
+        "postgres": {
+          "connection_variable": "POSTGRES_URL"
+        },
+        "redis": {
+          "connection_variable": "REDIS_URL"
+        }
+      },
+      "isEntrypoint": true
+    },
+    "engine": {
+      "type": "python",
+      "directory": "./engine",
+      "env_file": "./engine/.env.example"
+    }
+  },
+  "databases": {
+    "postgres": {
+      "type": "postgres"
+    },
+    "redis": {
+      "type": "redis"
+    }
+  }
+}
