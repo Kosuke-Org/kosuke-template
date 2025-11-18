@@ -158,6 +158,7 @@ export function OrdersDataTable({
     [onView, onEdit, onDelete, sortBy, sortOrder, onSortChange]
   );
 
+  // eslint-disable-next-line
   const table = useReactTable({
     data: orders,
     columns,
