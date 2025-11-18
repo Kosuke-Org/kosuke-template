@@ -1,6 +1,8 @@
+import { TRPCError } from '@trpc/server';
+
 import { createCaller } from '@/lib/trpc/server';
 
-import OrganisationNotFound from './not-found/organisation-not-found';
+import NotFound from './not-found/not-found';
 
 export default async function OrgLayout({
   children,
@@ -16,8 +18,12 @@ export default async function OrgLayout({
     await caller.organizations.getOrganizationBySlug({
       organizationSlug: slug,
     });
-  } catch {
-    return <OrganisationNotFound />;
+  } catch (error) {
+    if (error instanceof TRPCError && error.code === 'NOT_FOUND') {
+      return <NotFound />;
+    }
+
+    throw error;
   }
 
   return <>{children}</>;

@@ -67,22 +67,21 @@ export const organizationsRouter = router({
   getOrganizationBySlug: protectedProcedure
     .input(getOrganizationBySlugSchema)
     .query(async ({ input }) => {
-      const result = await auth.api.getFullOrganization({
-        query: {
-          organizationSlug: input.organizationSlug,
-        },
-        headers: await headers(),
-      });
+      try {
+        const result = await auth.api.getFullOrganization({
+          query: {
+            organizationSlug: input.organizationSlug,
+          },
+          headers: await headers(),
+        });
 
-      if (!result) {
-        // throw a TRPC error with code 'NOT_FOUND'
+        return result;
+      } catch {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: `Organization ${input.organizationSlug} not found`,
         });
       }
-
-      return result;
     }),
   /**
    * Create a new organization
