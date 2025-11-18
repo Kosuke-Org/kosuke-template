@@ -2,6 +2,8 @@
  * tRPC initialization
  * Core tRPC configuration for type-safe API routes
  */
+import { headers } from 'next/headers';
+
 import { TRPCError, initTRPC } from '@trpc/server';
 import superjson from 'superjson';
 
@@ -10,9 +12,22 @@ import { auth } from '@/lib/auth/providers';
 /**
  * Create context for tRPC
  * This runs on every request and provides access to auth state and organization context
+ *
+ * @param opts - Optional context options
+ * @param opts.req - Request object (used in API routes)
+ * If no req is provided, uses headers() from next/headers (for server components)
  */
 export const createTRPCContext = async (opts?: { req?: Request }) => {
-  const sessionData = opts?.req ? await auth.api.getSession({ headers: opts.req.headers }) : null;
+  let sessionData = null;
+
+  if (opts?.req) {
+    // API route - use request headers
+    sessionData = await auth.api.getSession({ headers: opts.req.headers });
+  } else {
+    // Server component - use headers() from next/headers
+    const headersList = await headers();
+    sessionData = await auth.api.getSession({ headers: headersList });
+  }
 
   const user = sessionData?.user;
   const userId = user?.id ?? null;

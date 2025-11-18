@@ -60,22 +60,24 @@ export function DynamicBreadcrumb() {
   } else if (pathname.startsWith('/org/')) {
     const orgSlug = pathSegments[1];
 
-    breadcrumbItems.push({
-      href: `/org/${orgSlug}/settings`,
-      name: activeOrganization?.name ?? '',
-      isLast: pathSegments.length === 2,
-    });
-
-    for (let i = 2; i < pathSegments.length; i++) {
-      const segment = pathSegments[i];
-      const isLast = i === pathSegments.length - 1;
-      const href = `/${pathSegments.slice(0, i + 1).join('/')}`;
-
+    if (activeOrganization?.slug === orgSlug) {
       breadcrumbItems.push({
-        href,
-        name: getDisplayName(segment),
-        isLast,
+        href: `/org/${orgSlug}/settings`,
+        name: activeOrganization?.name ?? '',
+        isLast: pathSegments.length === 2,
       });
+
+      for (let i = 2; i < pathSegments.length; i++) {
+        const segment = pathSegments[i];
+        const isLast = i === pathSegments.length - 1;
+        const href = `/${pathSegments.slice(0, i + 1).join('/')}`;
+
+        breadcrumbItems.push({
+          href,
+          name: getDisplayName(segment),
+          isLast,
+        });
+      }
     }
   }
 

@@ -42,6 +42,10 @@ export const getOrganizationSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
 });
 
+export const getOrganizationBySlugSchema = z.object({
+  organizationSlug: z.string().min(1, 'Organization slug is required'),
+});
+
 export const getUserOrganizationsSchema = z.object({
   userId: z.uuid('Invalid user ID'),
 });
