@@ -98,19 +98,14 @@ export default function SecurityPage() {
         <CardHeader>
           <CardTitle className="text-destructive">Danger Zone</CardTitle>
           <CardDescription>
-            Permanently delete your account and all associated data.
+            Permanently delete your account and all associated data. This action cannot be undone.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {!showDeleteConfirm ? (
-            <div className="space-y-4">
-              <p className="text-muted-foreground text-sm">
-                Once you delete your account, there is no going back. This action cannot be undone.
-              </p>
-              <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
-                Delete Account
-              </Button>
-            </div>
+            <Button variant="destructive" onClick={() => setShowDeleteConfirm(true)}>
+              Delete Account
+            </Button>
           ) : (
             <form onSubmit={handleDeleteAccount} className="space-y-6">
               <div className="bg-destructive/10 flex items-start gap-3 rounded-md p-4">

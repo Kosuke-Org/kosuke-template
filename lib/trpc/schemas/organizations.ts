@@ -87,6 +87,10 @@ export const leaveOrganizationSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
 });
 
+export const deleteOrganizationSchema = z.object({
+  organizationId: z.uuid('Invalid organization ID'),
+});
+
 export const getOrgMembersSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
   limit: z.number().int().positive().default(100),

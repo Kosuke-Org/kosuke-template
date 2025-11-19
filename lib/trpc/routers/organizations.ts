@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db';
 import { invitations } from '@/lib/db/schema';
-import { generateUniqueOrgSlug } from '@/lib/organizations';
+import { generateUniqueOrgSlug, switchToNextOrganization } from '@/lib/organizations';
 import { deleteProfileImage, uploadProfileImage } from '@/lib/storage';
 
 import { protectedProcedure, router } from '../init';
@@ -19,6 +19,7 @@ import {
   cancelInvitationSchema,
   createInvitationSchema,
   createOrganizationSchema,
+  deleteOrganizationSchema,
   getOrgMembersSchema,
   getOrganizationBySlugSchema,
   getOrganizationSchema,
@@ -380,38 +381,65 @@ export const organizationsRouter = router({
         headers: await headers(),
       });
 
-      // Check if the user has other organizations to set as active in the session
-      // If not, set the active organization to null - the user will be redirected to the /onboarding route
-      const otherOrgs = await auth.api.listOrganizations({
-        query: {
-          userId: ctx.userId,
-        },
-        headers: await headers(),
-      });
-
-      if (otherOrgs.length) {
-        const nextOrg = otherOrgs[0];
-        const { id, slug } = nextOrg;
-
-        await auth.api.setActiveOrganization({
-          body: {
-            organizationId: id,
-            organizationSlug: slug,
-          },
-          headers: await headers(),
-        });
-      } else {
-        await auth.api.setActiveOrganization({
-          body: {
-            organizationId: null,
-          },
-          headers: await headers(),
-        });
-      }
+      // Switch to another organization or set active to null if none remain
+      await switchToNextOrganization(ctx.userId);
 
       return {
         success: true,
         message: 'You have left the organization',
+      };
+    }),
+
+  /**
+   * Delete organization (owner only)
+   */
+  deleteOrganization: protectedProcedure
+    .input(deleteOrganizationSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { role } = await auth.api.getActiveMemberRole({
+        headers: await headers(),
+      });
+
+      if (role !== 'owner') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Only organization owners can delete the organization',
+        });
+      }
+
+      const organization = await auth.api.getFullOrganization({
+        query: {
+          organizationId: input.organizationId,
+        },
+        headers: await headers(),
+      });
+
+      if (!organization) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Organization not found',
+        });
+      }
+
+      // Delete organization logo if it exists
+      if (organization.logo) {
+        await deleteProfileImage(organization.logo);
+      }
+
+      // Delete the organization
+      await auth.api.deleteOrganization({
+        body: {
+          organizationId: input.organizationId,
+        },
+        headers: await headers(),
+      });
+
+      // Switch to another organization or set active to null if none remain
+      await switchToNextOrganization(ctx.userId);
+
+      return {
+        success: true,
+        message: 'Organization deleted successfully',
       };
     }),
 });

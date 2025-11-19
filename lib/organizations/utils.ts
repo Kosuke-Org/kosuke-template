@@ -2,8 +2,11 @@
  * Organization Utilities
  * Helper functions for organization operations
  */
+import { headers } from 'next/headers';
+
 import { eq } from 'drizzle-orm';
 
+import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db';
 import { organizations } from '@/lib/db/schema';
 import type { Organization } from '@/lib/types';
@@ -59,4 +62,43 @@ export async function getOrgById(organizationId: string): Promise<Organization |
     .limit(1);
 
   return org || null;
+}
+
+/**
+ * Switch to another organization after leaving/deleting the current one
+ * If the user has other organizations, sets the first one as active
+ * Otherwise, sets active organization to null (user will be redirected to onboarding)
+ */
+export async function switchToNextOrganization(userId: string): Promise<void> {
+  const headersList = await headers();
+
+  // Get user's remaining organizations
+  const otherOrgs = await auth.api.listOrganizations({
+    query: {
+      userId,
+    },
+    headers: headersList,
+  });
+
+  if (otherOrgs.length > 0) {
+    // Switch to the first available organization
+    const nextOrg = otherOrgs[0];
+    const { id, slug } = nextOrg;
+
+    await auth.api.setActiveOrganization({
+      body: {
+        organizationId: id,
+        organizationSlug: slug,
+      },
+      headers: headersList,
+    });
+  } else {
+    // No other organizations - set active to null
+    await auth.api.setActiveOrganization({
+      body: {
+        organizationId: null,
+      },
+      headers: headersList,
+    });
+  }
 }

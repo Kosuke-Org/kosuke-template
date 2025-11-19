@@ -56,9 +56,7 @@ export default function OrgGeneralSettingsPage() {
         <OrgLogoUpload organization={organization} />
       </Card>
 
-      <Card>
-        <OrgGeneralForm organization={organization} />
-      </Card>
+      <OrgGeneralForm organization={organization} />
     </div>
   );
 }
