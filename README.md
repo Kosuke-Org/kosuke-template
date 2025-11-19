@@ -85,9 +85,6 @@ Create `.env` file in the root directory:
 ```bash
 # Database (Local PostgreSQL via Docker)
 POSTGRES_URL=postgres://postgres:postgres@localhost:54321/postgres
-POSTGRES_DB=postgres
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
 
 # Redis (Local Redis via Docker)
 REDIS_URL=redis://localhost:6379
