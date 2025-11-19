@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
-import { ChevronRight, LoaderCircle, Pencil } from 'lucide-react';
+import { LoaderCircle, Pencil } from 'lucide-react';
 
 import { trpc } from '@/lib/trpc/client';
 
@@ -13,7 +13,7 @@ import { useAuth, useAuthActions } from '@/hooks/use-auth';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
 /**
@@ -63,7 +63,7 @@ export const OTPVerification = () => {
 
   if (isLoading) {
     return (
-      <Card className="py-8">
+      <Card>
         <CardContent className="flex items-center justify-center py-12">
           <LoaderCircle className="text-muted-foreground h-8 w-8 animate-spin" />
         </CardContent>
@@ -72,74 +72,71 @@ export const OTPVerification = () => {
   }
 
   return (
-    <Card className="py-8">
-      <CardHeader className="px-10 text-center">
-        <CardTitle className="text-lg font-bold">Check your email</CardTitle>
-        <CardDescription className="flex flex-col gap-1 text-xs">
+    <Card>
+      <CardHeader className="text-center">
+        <CardTitle>Check your email</CardTitle>
+        <CardDescription className="flex flex-col gap-1">
           <span>We sent a verification code to</span>
-          <div className="text-foreground flex items-center justify-center font-medium">
+          <div className="text-foreground flex items-center justify-center gap-1">
             <span>{email}</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="h-auto p-1"
-              onClick={handleChangeEmail}
-            >
+            <Button type="button" variant="ghost" size="icon-sm" onClick={handleChangeEmail}>
               <Pencil className="size-3" />
             </Button>
           </div>
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-10">
-        <form onSubmit={handleFormSubmit} className="space-y-4">
-          <Field data-invalid={!!verifyOTPError} className="text-center">
-            <FieldLabel htmlFor="otp" className="justify-center text-xs">
-              Verification code
-            </FieldLabel>
+      <CardContent>
+        <form onSubmit={handleFormSubmit}>
+          <FieldGroup>
+            <Field data-invalid={!!verifyOTPError}>
+              <FieldLabel htmlFor="otp" className="justify-center">
+                Verification code
+              </FieldLabel>
 
-            <InputOTP
-              value={otp}
-              onChange={setOtp}
-              onComplete={handleSubmit}
-              containerClassName="justify-center"
-              pattern={REGEXP_ONLY_DIGITS}
-              maxLength={6}
-              required
-              aria-invalid={!!verifyOTPError}
-              autoFocus
-            >
-              {Array.from({ length: 6 }).map((_, index) => (
-                <InputOTPGroup key={index}>
-                  <InputOTPSlot index={index} />
-                </InputOTPGroup>
-              ))}
-            </InputOTP>
-            {verifyOTPError && (
-              <FieldError errors={[{ message: verifyOTPError.message }]}>
-                {verifyOTPError.message}
-              </FieldError>
-            )}
-          </Field>
-          <Field>
-            <Button type="submit" disabled={isVerifyingOTP || otp.length !== 6 || isLoadingSession}>
-              {(isVerifyingOTP || isLoadingSession) && <LoaderCircle className="animate-spin" />}
-              Continue
-              <ChevronRight />
-            </Button>
-          </Field>
-
-          <FieldDescription className="pt-2 text-center text-xs">
-            Didn&apos;t receive the code?{' '}
-            <button
-              type="button"
-              onClick={handleResendCode}
-              disabled={isSendingOTP}
-              className="font-bold !no-underline !underline-offset-2 hover:!underline focus:!underline disabled:opacity-50"
-            >
-              {isSendingOTP ? 'Sending...' : 'Resend code'}
-            </button>
-          </FieldDescription>
+              <InputOTP
+                value={otp}
+                onChange={setOtp}
+                onComplete={handleSubmit}
+                containerClassName="justify-center"
+                pattern={REGEXP_ONLY_DIGITS}
+                maxLength={6}
+                required
+                aria-invalid={!!verifyOTPError}
+                autoFocus
+              >
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <InputOTPGroup key={index}>
+                    <InputOTPSlot index={index} />
+                  </InputOTPGroup>
+                ))}
+              </InputOTP>
+              {verifyOTPError && (
+                <FieldError errors={[{ message: verifyOTPError.message }]}>
+                  {verifyOTPError.message}
+                </FieldError>
+              )}
+            </Field>
+            <Field>
+              <Button
+                type="submit"
+                disabled={isVerifyingOTP || otp.length !== 6 || isLoadingSession}
+              >
+                {(isVerifyingOTP || isLoadingSession) && <LoaderCircle className="animate-spin" />}
+                Continue
+              </Button>
+              <FieldDescription className="text-center">
+                Didn&apos;t receive the code?{' '}
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={isSendingOTP}
+                  className="underline-offset-4 hover:underline disabled:opacity-50"
+                >
+                  {isSendingOTP ? 'Sending...' : 'Resend code'}
+                </button>
+              </FieldDescription>
+            </Field>
+          </FieldGroup>
         </form>
       </CardContent>
     </Card>

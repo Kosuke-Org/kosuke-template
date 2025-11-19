@@ -7,17 +7,7 @@
 
 import { ColumnDef } from '@tanstack/react-table';
 import type { inferRouterOutputs } from '@trpc/server';
-import {
-  Calendar,
-  CircleDollarSign,
-  Edit,
-  Eye,
-  Hash,
-  Info,
-  MoreHorizontal,
-  Trash,
-  User,
-} from 'lucide-react';
+import { Edit, Eye, MoreHorizontal, Trash } from 'lucide-react';
 
 import type { AppRouter } from '@/lib/trpc/router';
 
@@ -109,17 +99,18 @@ export function getOrderColumns(
   columns.push(
     {
       accessorKey: 'id',
-      header: () => <DataTableColumnHeader title="Order" icon={<Hash size={16} />} />,
-      cell: ({ row }) => row.original.id,
+      header: () => <DataTableColumnHeader title="Order" />,
+      cell: ({ row }) => <div className="w-fit">{row.original.id}</div>,
+      size: 0,
     },
     {
       accessorKey: 'customerName',
-      header: () => <DataTableColumnHeader title="Customer" icon={<User size={16} />} />,
+      header: () => <DataTableColumnHeader title="Customer" />,
       cell: ({ row }) => row.original.customerName,
     },
     {
       accessorKey: 'status',
-      header: () => <DataTableColumnHeader title="Status" icon={<Info size={16} />} />,
+      header: () => <DataTableColumnHeader title="Status" />,
       cell: ({ row }) => (
         <Badge className={statusColors[row.original.status]}>{row.original.status}</Badge>
       ),
@@ -129,7 +120,6 @@ export function getOrderColumns(
       header: () => (
         <DataTableColumnHeader
           title="Amount"
-          icon={<CircleDollarSign size={16} />}
           sortable
           sortDirection={sortBy === 'amount' ? sortOrder : false}
           onSort={() => onSort('amount')}
@@ -142,7 +132,6 @@ export function getOrderColumns(
       header: () => (
         <DataTableColumnHeader
           title="Date"
-          icon={<Calendar size={16} />}
           sortable
           sortDirection={sortBy === 'orderDate' ? sortOrder : false}
           onSort={() => onSort('orderDate')}
@@ -157,44 +146,46 @@ export function getOrderColumns(
         const order = row.original;
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onView(order.id);
-                }}
-              >
-                <Eye className="mr-2 h-4 w-4" />
-                View
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(order.id);
-                }}
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(order.id);
-                }}
-                className="text-red-600"
-              >
-                <Trash className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onView(order.id);
+                  }}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  View
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(order.id);
+                  }}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(order.id);
+                  }}
+                  className="text-destructive"
+                >
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         );
       },
     }
