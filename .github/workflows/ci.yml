@@ -36,6 +36,9 @@ jobs:
       - name: Start Docker services
         run: docker compose up -d postgres
 
+      - name: Wait for PostgreSQL
+        run: docker compose exec -T postgres pg_isready -U postgres
+
       - name: Run ESLint
         run: bun run lint
 

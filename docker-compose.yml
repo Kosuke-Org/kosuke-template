@@ -10,6 +10,11 @@ services:
       - '54321:5432'
     volumes:
       - kosuke_template_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
 
   engine:
     build:
