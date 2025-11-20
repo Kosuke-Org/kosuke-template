@@ -51,11 +51,6 @@ jobs:
       - name: Copy environment variables
         run: cp .env.example .env
 
-      - name: Run migrations
-        env:
-          POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres
-        run: bun run db:migrate
-
       - name: Run ESLint
         run: bun run lint
 
