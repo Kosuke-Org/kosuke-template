@@ -50,7 +50,7 @@ jobs:
 
       - name: Run migrations
         env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+          POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres
         run: bun run db:migrate
 
       - name: Run ESLint
