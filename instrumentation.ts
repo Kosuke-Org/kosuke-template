@@ -30,7 +30,7 @@ function validateEnvironmentVariables() {
     { key: 'RESEND_FROM_EMAIL', description: 'Resend from email address' },
 
     // Engine
-    { key: 'ENGINE_BASE_URL', description: 'Python microservice base URL' },
+    { key: 'ENGINE_URL', description: 'Python microservice base URL' },
 
     // S3 Storage
     { key: 'S3_REGION', description: 'S3-compatible storage region' },
