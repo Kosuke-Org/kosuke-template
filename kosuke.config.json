@@ -28,7 +28,14 @@
       "RESEND_API_KEY": "__KSK__RESEND_API_KEY",
       "RESEND_FROM_EMAIL": "noreply@kosuke.ai",
       "RESEND_FROM_NAME": "Kosuke Template",
-      "RESEND_REPLY_TO": "noreply@kosuke.ai"
+      "RESEND_REPLY_TO": "noreply@kosuke.ai",
+      "STRIPE_SECRET_KEY": "sk_test_xxx",
+      "STRIPE_PUBLISHABLE_KEY": "pk_test_xxx",
+      "STRIPE_PRO_PRICE_ID": "price_xxx",
+      "STRIPE_BUSINESS_PRICE_ID": "price_xxx",
+      "STRIPE_WEBHOOK_SECRET": "whsec_xxx",
+      "STRIPE_SUCCESS_URL": "http://localhost:3000/settings/billing",
+      "STRIPE_CANCEL_URL": "http://localhost:3000/settings/billing"
     }
   }
 }
