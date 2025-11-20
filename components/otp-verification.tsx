@@ -79,7 +79,13 @@ export const OTPVerification = () => {
           <span>We sent a verification code to</span>
           <div className="text-foreground flex items-center justify-center gap-1">
             <span>{email}</span>
-            <Button type="button" variant="ghost" size="icon-sm" onClick={handleChangeEmail}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={handleChangeEmail}
+            >
               <Pencil className="size-3" />
             </Button>
           </div>
