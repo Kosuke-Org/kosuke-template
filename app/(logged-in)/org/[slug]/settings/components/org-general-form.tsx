@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
@@ -47,7 +47,12 @@ export function OrgGeneralForm({ organization }: { organization: Organization })
     updateOrganization({ organizationId: organization.id, name: data.name });
   };
 
-  const hasChanges = form.watch('name') !== organization?.name;
+  const watchedName = useWatch({
+    control: form.control,
+    name: 'name',
+  });
+
+  const hasChanges = watchedName !== organization?.name;
 
   if (!organization) return null;
 
