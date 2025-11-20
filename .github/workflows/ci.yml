@@ -11,6 +11,9 @@ jobs:
     name: Test and Lint Next.js
     runs-on: ubuntu-latest
 
+    env:
+      POSTGRES_URL: postgres://postgres:postgres@localhost:5432/postgres
+
     services:
       postgres:
         image: postgres:16.4-alpine
