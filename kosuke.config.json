@@ -1,32 +1,34 @@
 {
-  "version": "0.1.0",
-  "services": {
-    "nextjs": {
-      "type": "bun",
-      "directory": ".",
-      "env_file": "./.env.example",
-      "databases": {
-        "postgres": {
-          "connection_variable": "POSTGRES_URL"
-        },
-        "redis": {
-          "connection_variable": "REDIS_URL"
-        }
+  "preview": {
+    "services": {
+      "nextjs": {
+        "type": "bun",
+        "directory": ".",
+        "is_entrypoint": true
       },
-      "isEntrypoint": true
+      "engine": {
+        "type": "python",
+        "directory": "./engine",
+        "connection_variable": "ENGINE_URL"
+      }
     },
-    "engine": {
-      "type": "python",
-      "directory": "./engine",
-      "env_file": "./engine/.env.example"
-    }
-  },
-  "databases": {
-    "postgres": {
-      "type": "postgres"
+    "storages": {
+      "postgres": {
+        "type": "postgres",
+        "connection_variable": "POSTGRES_URL"
+      },
+      "redis": {
+        "type": "redis",
+        "connection_variable": "REDIS_URL"
+      }
     },
-    "redis": {
-      "type": "redis"
+    "environment": {
+      "BETTER_AUTH_SECRET": "mysecret",
+      "NEXT_PUBLIC_APP_URL": "http://localhost:3000",
+      "RESEND_API_KEY": "__KSK__RESEND_API_KEY__",
+      "RESEND_FROM_EMAIL": "noreply@kosuke.ai",
+      "RESEND_FROM_NAME": "Kosuke Template",
+      "RESEND_REPLY_TO": "noreply@kosuke.ai"
     }
   }
 }
