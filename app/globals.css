@@ -302,6 +302,11 @@
     -moz-appearance: textfield !important;
     appearance: textfield !important;
   }
+
+  /* Force readable dark text when 1Password injects data-com-onepassword-filled="light" */
+  .dark input[data-com-onepassword-filled='light'] {
+    color: var(--background) !important;
+  }
 }
 
 :root {

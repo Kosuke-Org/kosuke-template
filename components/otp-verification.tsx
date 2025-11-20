@@ -106,7 +106,7 @@ export const OTPVerification = () => {
               >
                 {Array.from({ length: 6 }).map((_, index) => (
                   <InputOTPGroup key={index}>
-                    <InputOTPSlot index={index} />
+                    <InputOTPSlot index={index} className="h-10 w-10" />
                   </InputOTPGroup>
                 ))}
               </InputOTP>
@@ -130,7 +130,7 @@ export const OTPVerification = () => {
                   type="button"
                   onClick={handleResendCode}
                   disabled={isSendingOTP}
-                  className="underline-offset-4 hover:underline disabled:opacity-50"
+                  className="hover:text-primary underline underline-offset-4 disabled:opacity-50"
                 >
                   {isSendingOTP ? 'Sending...' : 'Resend code'}
                 </button>
