@@ -8,10 +8,6 @@ function validateEnvironmentVariables() {
   const requiredEnvVars = [
     // Database
     { key: 'POSTGRES_URL', description: 'PostgreSQL database connection URL' },
-    { key: 'POSTGRES_DB', description: 'PostgreSQL database name' },
-    { key: 'POSTGRES_USER', description: 'PostgreSQL database user' },
-    { key: 'POSTGRES_PASSWORD', description: 'PostgreSQL database password' },
-
     // Redis
     { key: 'REDIS_URL', description: 'Redis connection URL' },
 
