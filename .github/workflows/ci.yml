@@ -33,11 +33,11 @@ jobs:
       - name: Copy environment variables
         run: cp .env.example .env
 
-      - name: Update DATABASE_URL for CI
-        run: sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgres://postgres:postgres@localhost:54321/postgres|' .env
-
       - name: Start Docker services
         run: docker compose up -d --wait postgres
+
+      - name: Run migrations
+        run: DATABASE_URL=postgres://postgres:postgres@localhost:54321/postgres bun run db:migrate
 
       - name: Run ESLint
         run: bun run lint
