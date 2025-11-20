@@ -203,7 +203,7 @@ export default function BillingPage() {
       variant: 'outline' as const,
     };
     return (
-      <Badge variant={config.variant} className="capitalize">
+      <Badge variant={config.variant} className="rounded-full capitalize hover:bg-inherit">
         {status.replace('_', ' ')}
       </Badge>
     );
@@ -454,13 +454,17 @@ export default function BillingPage() {
                     <CardTitle className="flex items-center justify-between">
                       {plan.name}
                       {tier === 'pro' && !isCurrentPlan && !isScheduledDowngrade && (
-                        <Badge variant="secondary">Most Popular</Badge>
+                        <Badge variant="secondary" className="rounded-full hover:bg-inherit">
+                          Most Popular
+                        </Badge>
                       )}
-                      {isCurrentPlan && <Badge>Current Plan</Badge>}
+                      {isCurrentPlan && (
+                        <Badge className="rounded-full hover:bg-inherit">Current Plan</Badge>
+                      )}
                       {isScheduledDowngrade && (
                         <Badge
                           variant="outline"
-                          className="border-yellow-500 text-yellow-700 dark:text-yellow-400"
+                          className="rounded-full border-yellow-500 text-yellow-700 hover:bg-inherit dark:text-yellow-400"
                         >
                           Scheduled
                         </Badge>

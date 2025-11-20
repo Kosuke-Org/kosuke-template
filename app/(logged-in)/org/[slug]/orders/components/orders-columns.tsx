@@ -10,6 +10,7 @@ import type { inferRouterOutputs } from '@trpc/server';
 import { Edit, Eye, MoreHorizontal, Trash } from 'lucide-react';
 
 import type { AppRouter } from '@/lib/trpc/router';
+import { cn } from '@/lib/utils';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -112,7 +113,9 @@ export function getOrderColumns(
       accessorKey: 'status',
       header: () => <DataTableColumnHeader title="Status" />,
       cell: ({ row }) => (
-        <Badge className={statusColors[row.original.status]}>{row.original.status}</Badge>
+        <Badge className={cn(statusColors[row.original.status], 'rounded-full hover:bg-inherit')}>
+          {row.original.status}
+        </Badge>
       ),
     },
     {

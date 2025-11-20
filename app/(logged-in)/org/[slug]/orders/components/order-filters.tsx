@@ -121,7 +121,9 @@ export function OrderFilters({
           <ListFilter />
           Filters
           {activeFiltersCount > 0 && (
-            <Badge className="h-5 w-5 p-0 text-xs">{activeFiltersCount}</Badge>
+            <Badge className="m-0 h-5 w-5 justify-center rounded-full border-0 p-0 text-xs hover:bg-inherit">
+              {activeFiltersCount}
+            </Badge>
           )}
         </Button>
       </PopoverTrigger>
@@ -292,7 +294,7 @@ export function ActiveFilterBadges({
         <Badge
           key={status}
           variant="outline"
-          className={cn('gap-1 pr-1 pl-2', statusColors[status])}
+          className={cn('gap-1 rounded-full pr-1 pl-2 hover:bg-inherit', statusColors[status])}
         >
           {status}
           <Button
@@ -306,8 +308,8 @@ export function ActiveFilterBadges({
         </Badge>
       ))}
       {(dateFrom || dateTo) && (
-        <Badge variant="secondary" className="gap-2 pr-1 pl-2">
-          <CalendarIcon />
+        <Badge variant="secondary" className="gap-2 rounded-full pr-1 pl-2 hover:bg-inherit">
+          <CalendarIcon className="size-3" />
           {dateFrom && dateTo
             ? `${format(dateFrom, 'MMM d')} - ${format(dateTo, 'MMM d')}`
             : dateFrom
@@ -327,7 +329,7 @@ export function ActiveFilterBadges({
         </Badge>
       )}
       {(minAmount > 0 || maxAmount < MAX_AMOUNT) && (
-        <Badge variant="secondary" className="h-7 gap-1 pr-1 pl-2">
+        <Badge variant="secondary" className="gap-1 rounded-full pr-1 pl-2 hover:bg-inherit">
           ${minAmount} - ${maxAmount}
           <Button
             variant="ghost"

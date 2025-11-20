@@ -243,7 +243,7 @@ export function OrgMemberList() {
                       <TableCell className="text-muted-foreground">{user.email}</TableCell>
                       <TableCell>
                         <Badge
-                          className="capitalize"
+                          className="rounded-full capitalize hover:bg-inherit"
                           variant={member.role === ORG_ROLES.OWNER ? 'default' : 'secondary'}
                         >
                           {member.role}

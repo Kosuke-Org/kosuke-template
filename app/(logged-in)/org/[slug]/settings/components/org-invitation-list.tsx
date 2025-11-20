@@ -92,14 +92,17 @@ export function OrgInvitationList() {
                         <TableCell className="font-medium">{invitation.email}</TableCell>
                         <TableCell>
                           <Badge
-                            className="capitalize"
+                            className="rounded-full capitalize hover:bg-inherit"
                             variant={invitation.role === ORG_ROLES.OWNER ? 'default' : 'secondary'}
                           >
                             {invitation.role}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={isExpired ? 'destructive' : 'secondary'}>
+                          <Badge
+                            className="rounded-full hover:bg-inherit"
+                            variant={isExpired ? 'destructive' : 'secondary'}
+                          >
                             {isExpired ? 'Expired' : invitation.status}
                           </Badge>
                         </TableCell>
