@@ -11,6 +11,21 @@ jobs:
     name: Test and Lint Next.js
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v5
 
@@ -33,11 +48,11 @@ jobs:
       - name: Copy environment variables
         run: cp .env.example .env
 
-      - name: Start Docker services
-        run: docker compose up -d --wait postgres
+      - name: Update DATABASE_URL for CI
+        run: sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres|' .env
 
       - name: Run migrations
-        run: DATABASE_URL=postgres://postgres:postgres@localhost:54321/postgres bun run db:migrate
+        run: bun run db:migrate
 
       - name: Run ESLint
         run: bun run lint
