@@ -49,7 +49,7 @@ export default function OnboardingPage() {
 
   const onSubmit = (data: OrganizationFormValues) => {
     createOrganization(data, {
-      onSuccess: async (slug) => {
+      onSuccess: (slug) => {
         router.push(`/org/${slug}/dashboard`);
       },
     });
@@ -96,7 +96,7 @@ export default function OnboardingPage() {
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="animate-spin" />
                     Creating workspace...
                   </>
                 ) : (

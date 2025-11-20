@@ -85,11 +85,8 @@ nvm use & bun install --frozen-lockfile
 Create `.env` file in the root directory:
 
 ```bash
-# Database (PostgreSQL via Docker on kosuke_network)
-POSTGRES_URL=postgres://postgres:postgres@postgres:5432/postgres
-POSTGRES_DB=postgres
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
+# Database (Local PostgreSQL via Docker)
+POSTGRES_URL=postgres://postgres:postgres@localhost:54321/postgres
 
 # Redis (via Docker on kosuke_network)
 REDIS_URL=redis://redis:6379

@@ -34,7 +34,7 @@ jobs:
         run: cp .env.example .env
 
       - name: Start Docker services
-        run: docker compose up -d postgres
+        run: docker compose up -d --wait postgres
 
       - name: Run ESLint
         run: bun run lint

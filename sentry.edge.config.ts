@@ -4,15 +4,17 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 import * as Sentry from '@sentry/nextjs';
 
-// Only initialize Sentry in production
-if (process.env.NODE_ENV === 'production') {
-  Sentry.init({
-    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+const dsn = process.env.SENTRY_DSN;
+const environment = process.env.SENTRY_ENVIRONMENT || 'development';
 
-    // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
-    tracesSampleRate: 1,
+const sentryOptions: Sentry.EdgeOptions = {
+  dsn,
+  environment,
+  tracesSampleRate: 1.0,
+  maxBreadcrumbs: 50,
+  attachStacktrace: true,
+};
 
-    // Setting this option to true will print useful information to the console while you're setting up Sentry.
-    debug: false,
-  });
-}
+console.log('🚀 Initializing Sentry (Edge)');
+Sentry.init(sentryOptions);
+console.log('✅ Sentry (Edge) initialized');

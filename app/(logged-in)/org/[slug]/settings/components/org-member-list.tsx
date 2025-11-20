@@ -370,7 +370,7 @@ export function OrgMemberList() {
             <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmRemove}
-              className="bg-destructive text-destructive-foreground"
+              className="bg-destructive hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 text-white"
               disabled={isRemoving}
             >
               {isRemoving && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -403,7 +403,7 @@ export function OrgMemberList() {
             {currentUserRole !== ORG_ROLES.OWNER && (
               <AlertDialogAction
                 onClick={confirmLeave}
-                className="bg-destructive text-destructive-foreground"
+                className="bg-destructive hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 text-white"
                 disabled={isLeavingMutation}
               >
                 {isLeavingMutation && <Loader2 className="h-4 w-4 animate-spin" />}
