@@ -92,7 +92,7 @@ POSTGRES_URL=postgres://postgres:postgres@localhost:54321/postgres
 REDIS_URL=redis://redis:6379
 
 # Engine (Python FastAPI microservice on kosuke_network)
-ENGINE_BASE_URL=http://engine:8000
+ENGINE_URL=http://engine:8000
 
 # Stripe Billing
 STRIPE_PUBLISHABLE_KEY=pk_test_...
