@@ -186,6 +186,11 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "View the [Actions tab](https://github.com/${{ github.repository }}/actions) for detailed logs." >> $GITHUB_STEP_SUMMARY
 
+      - name: Notify Slack - Skipped (PR Already Open)
+        if: steps.check-changes.outputs.has_changes == 'true' && steps.check-pr.outputs.should_create == 'false'
+        run: |
+          curl -X POST --data "{\"text\":\"⏭️ Shadcn/UI Components Update Skipped\nReason: PR already open (#${{ steps.check-pr.outputs.existing_pr }})\nPR: https://github.com/${{ github.repository }}/pull/${{ steps.check-pr.outputs.existing_pr }}\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
+
       - name: Notify Slack - Success
         if: success()
         run: |
