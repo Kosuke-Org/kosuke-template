@@ -48,10 +48,9 @@ jobs:
       - name: Copy environment variables
         run: cp .env.example .env
 
-      - name: Update DATABASE_URL for CI
-        run: sed -i 's|DATABASE_URL=.*|DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres|' .env
-
       - name: Run migrations
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
         run: bun run db:migrate
 
       - name: Run ESLint
