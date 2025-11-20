@@ -52,6 +52,8 @@ jobs:
         run: bun run knip
 
       - name: Build application
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:54321/postgres
         run: bun run build
 
   test-engine:
