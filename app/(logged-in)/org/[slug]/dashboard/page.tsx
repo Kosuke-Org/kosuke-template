@@ -315,9 +315,10 @@ export default function Page() {
               <Badge variant="secondary">Secondary</Badge>
               <Badge variant="destructive">Destructive</Badge>
               <Badge variant="outline">Outline</Badge>
-              <Badge className="bg-green-500">Success</Badge>
-              <Badge className="bg-yellow-500">Warning</Badge>
-              <Badge className="bg-blue-500">Info</Badge>
+              <Badge className="bg-green-500 hover:bg-inherit">Success</Badge>
+              <Badge className="bg-yellow-500 hover:bg-inherit">Warning</Badge>
+              <Badge className="bg-blue-500 hover:bg-inherit">Info</Badge>
+              <Badge className="rounded-full">Rounded</Badge>
             </CardContent>
           </Card>
         </section>

@@ -67,7 +67,7 @@ export function Home() {
             >
               <Badge
                 variant="outline"
-                className="relative mb-4 cursor-default overflow-hidden px-2 py-1 text-xs sm:mb-6 sm:px-3"
+                className="relative mb-4 cursor-default overflow-hidden rounded-full px-2 py-1 text-xs hover:bg-inherit sm:mb-6 sm:px-3"
               >
                 {/* Shine effect */}
                 <motion.div
@@ -165,7 +165,7 @@ export function Home() {
                       <div className="bg-muted text-muted-foreground rounded-lg p-2">
                         <feature.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                       </div>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="rounded-full text-xs hover:bg-inherit">
                         {feature.metrics}
                       </Badge>
                     </div>
@@ -343,7 +343,7 @@ export function Home() {
                         <Rocket className="text-foreground h-4 w-4 sm:h-5 sm:w-5" />
                         <h3 className="text-base font-semibold sm:text-lg">Revenue Ready</h3>
                       </div>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="rounded-full text-xs hover:bg-inherit">
                         Stripe
                       </Badge>
                     </div>

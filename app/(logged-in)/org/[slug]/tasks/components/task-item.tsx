@@ -88,7 +88,10 @@ export function TaskItem({
             </p>
           )}
           <div className="flex items-center gap-2 pt-1">
-            <Badge variant="outline" className={priorityColors[priority]}>
+            <Badge
+              variant="outline"
+              className={cn(priorityColors[priority], 'rounded-full hover:bg-inherit')}
+            >
               {priority}
             </Badge>
             {dueDate && (
