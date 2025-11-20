@@ -26,9 +26,9 @@
       "BETTER_AUTH_SECRET": "mysecret",
       "NEXT_PUBLIC_APP_URL": "http://localhost:3000",
       "RESEND_API_KEY": "__KSK__RESEND_API_KEY__",
-      "RESEND_FROM_EMAIL": "templates@kosuke.ai",
+      "RESEND_FROM_EMAIL": "noreply@kosuke.ai",
       "RESEND_FROM_NAME": "Kosuke Template",
-      "RESEND_REPLY_TO": "templates@kosuke.ai"
+      "RESEND_REPLY_TO": "noreply@kosuke.ai"
     }
   }
 }
