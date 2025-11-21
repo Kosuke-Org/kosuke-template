@@ -82,7 +82,7 @@ export const OTPVerification = () => {
             <Button
               type="button"
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               className="h-auto p-1"
               onClick={handleChangeEmail}
             >

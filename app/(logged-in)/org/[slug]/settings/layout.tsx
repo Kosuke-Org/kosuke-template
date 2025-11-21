@@ -37,11 +37,11 @@ export default function OrgSettingsLayout({ children }: { children: React.ReactN
 
       <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="w-full">
-          <TabsTrigger value="general" className="flex items-center gap-2">
+          <TabsTrigger value="general" className="flex flex-1 items-center gap-2">
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">General</span>
           </TabsTrigger>
-          <TabsTrigger value="members" className="flex items-center gap-2">
+          <TabsTrigger value="members" className="flex flex-1 items-center gap-2">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Members</span>
           </TabsTrigger>

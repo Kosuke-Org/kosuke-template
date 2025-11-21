@@ -82,7 +82,7 @@ function DroppableColumn({
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-medium">{column.title}</CardTitle>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="rounded-full text-xs hover:bg-inherit">
               {totalCount > 0 ? (
                 <>
                   {completedCount} / {totalCount}
