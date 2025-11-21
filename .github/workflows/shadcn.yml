@@ -192,7 +192,7 @@ jobs:
           curl -X POST --data "{\"text\":\"⏭️ Shadcn/UI Components Update Skipped\nReason: PR already open (#${{ steps.check-pr.outputs.existing_pr }})\nPR: https://github.com/${{ github.repository }}/pull/${{ steps.check-pr.outputs.existing_pr }}\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
 
       - name: Notify Slack - Success
-        if: success()
+        if: success() && !(steps.check-changes.outputs.has_changes == 'true' && steps.check-pr.outputs.should_create == 'false')
         run: |
           PR_URL=""
           if [[ "${{ steps.create-pr.outputs.pull-request-number }}" != "" ]]; then
