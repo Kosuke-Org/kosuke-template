@@ -20,6 +20,7 @@ import { ORG_ROLES } from '@/lib/types/organization';
 import {
   ActivityType,
   type NewActivityLog,
+  type NewOrderHistory,
   type NewOrgMembership,
   type NewOrganization,
   type NewTask,
@@ -29,6 +30,7 @@ import {
   SubscriptionTier,
   type TaskPriority,
   activityLogs,
+  orderHistory,
   orders,
   orgMemberships,
   organizations,
@@ -37,10 +39,7 @@ import {
   users,
 } from '../schema';
 
-const IS_PRODUCTION =
-  process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
-
-if (IS_PRODUCTION) {
+if (process.env.NODE_ENV === 'production') {
   console.error('Error: Seed script cannot be run in production environment!');
   console.error('This script is for development and testing only.');
   process.exit(1);
@@ -330,10 +329,93 @@ async function seed() {
       };
     });
 
-    await db.insert(orders).values([...org1Orders, ...org2Orders]);
+    const insertedOrders = await db
+      .insert(orders)
+      .values([...org1Orders, ...org2Orders])
+      .returning();
 
     console.log(`  ✅ Created 15 orders for ${org1Name}`);
     console.log(`  ✅ Created 15 orders for ${org2Name}\n`);
+
+    // Step 10: Create order history
+    console.log('📜 Creating order history...');
+
+    const statusProgression: Record<OrderStatus, OrderStatus[]> = {
+      pending: ['pending'],
+      processing: ['pending', 'processing'],
+      shipped: ['pending', 'processing', 'shipped'],
+      delivered: ['pending', 'processing', 'shipped', 'delivered'],
+      cancelled: ['pending', 'cancelled'],
+    };
+
+    const statusNotes: Record<OrderStatus, string[]> = {
+      pending: ['Order created', 'Order received', 'Payment pending'],
+      processing: [
+        'Payment confirmed',
+        'Order is being prepared',
+        'Items being packaged',
+        'Quality check in progress',
+      ],
+      shipped: [
+        'Order shipped',
+        'Package handed to carrier',
+        'Out for delivery',
+        'In transit to destination',
+      ],
+      delivered: [
+        'Order delivered successfully',
+        'Package delivered to customer',
+        'Signed for delivery',
+        'Left at front door',
+      ],
+      cancelled: [
+        'Order cancelled by customer',
+        'Order cancelled - payment failed',
+        'Order cancelled - out of stock',
+        'Cancelled due to customer request',
+      ],
+    };
+
+    const allHistoryEntries: NewOrderHistory[] = [];
+
+    for (const order of insertedOrders) {
+      const progression = statusProgression[order.status];
+      const orderDate = new Date(order.orderDate);
+
+      // Calculate total days needed for all statuses
+      const totalStatuses = progression.length;
+
+      for (let i = 0; i < totalStatuses; i++) {
+        const status = progression[i];
+        const notes = statusNotes[status];
+        const note = notes[Math.floor(Math.random() * notes.length)];
+
+        // Calculate timestamps: start from oldest (first status) to newest (current status)
+        // Work backwards from order date: last status is closest to orderDate
+        const statusesFromEnd = totalStatuses - 1 - i;
+        const daysOffset = statusesFromEnd * faker.number.int({ min: 1, max: 3 });
+        const hoursOffset = faker.number.int({ min: 1, max: 12 });
+        const statusDate = new Date(orderDate);
+        statusDate.setDate(statusDate.getDate() - daysOffset);
+        statusDate.setHours(statusDate.getHours() - hoursOffset);
+
+        // 30% chance of system update (null userId), 70% chance of user update
+        const isSystemUpdate = Math.random() < 0.3;
+        const userId = isSystemUpdate ? null : order.userId;
+
+        allHistoryEntries.push({
+          orderId: order.id,
+          userId,
+          status,
+          notes: note,
+          createdAt: statusDate,
+        });
+      }
+    }
+
+    await db.insert(orderHistory).values(allHistoryEntries);
+
+    console.log(`  ✅ Created ${allHistoryEntries.length} order history entries\n`);
 
     console.log('✅ Database seeding completed successfully!\n');
     console.log('📊 Summary:');
@@ -343,7 +425,8 @@ async function seed() {
     console.log('  • 2 subscriptions created');
     console.log('  • 20 tasks created');
     console.log('  • 10 activity logs created');
-    console.log('  • 30 orders created\n');
+    console.log('  • 30 orders created');
+    console.log(`  • ${allHistoryEntries.length} order history entries created\n`);
     console.log('🔑 Test Users:');
     console.log(`  • ${janeSmithEmail} (Admin of ${org1Name})`);
     console.log(`  • ${johnDoeEmail} (Admin of ${org2Name}, Member of ${org1Name})\n`);
