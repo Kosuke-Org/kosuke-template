@@ -7,10 +7,7 @@
  */
 import postgres from 'postgres';
 
-const IS_PRODUCTION =
-  process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
-
-if (IS_PRODUCTION) {
+if (process.env.NODE_ENV === 'production') {
   console.error('Error: Seed script cannot be run in production environment!');
   console.error('This script is for development and testing only.');
   process.exit(1);
