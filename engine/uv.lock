@@ -131,8 +131,8 @@ wheels = [
 
 [[package]]
 name = "engine-service"
-version = "1.9.0"
-source = { editable = "." }
+version = "0.1.0"
+source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "pydantic" },

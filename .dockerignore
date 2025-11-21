@@ -58,6 +58,9 @@ cli/venv/
 cli/__pycache__/
 *.pyc
 
+# Engine (runs in separate container)
+engine/
+
 # Database
 *.db
 *.sqlite

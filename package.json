@@ -1,6 +1,5 @@
 {
   "name": "kosuke-template",
-  "version": "1.9.0",
   "type": "module",
   "private": true,
   "scripts": {
@@ -33,7 +32,6 @@
     "check:all": "bun run lint:all && bun run typecheck:all && bun run test:all && bun run knip",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:migrate:prod": "drizzle-kit migrate --verbose",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "bunx tsx -r dotenv/config lib/db/scripts/db-seed.ts",
