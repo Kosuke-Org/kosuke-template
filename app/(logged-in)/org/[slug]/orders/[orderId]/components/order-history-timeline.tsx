@@ -84,6 +84,7 @@ export function OrderHistoryTimeline({
                 : entry !== undefined || index < currentStatusIndex;
               const isCurrent = status === currentStatus;
               const isDisabled = !isCompleted && !isCurrent;
+              const isDelivered = status === 'delivered';
 
               return (
                 <div key={status} className="relative flex flex-col items-center gap-4">
@@ -93,14 +94,21 @@ export function OrderHistoryTimeline({
                       'bg-background z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all',
                       isCompleted && 'border-primary bg-primary',
                       isCurrent && 'bg-background border-0',
-                      isDisabled && 'border-muted bg-background border-dashed'
+                      isDisabled && 'border-muted bg-background border-dashed',
+                      isCurrent && isDelivered && 'bg-chart-2'
                     )}
                   >
                     {isCompleted && !isCurrent && (
                       <Check className="text-primary-foreground h-4 w-4" />
                     )}
 
-                    {isCurrent && <div className="bg-primary h-3 w-3 rounded-full" />}
+                    {isCurrent && isDelivered && (
+                      <Check className="text-primary-foreground h-4 w-4" />
+                    )}
+
+                    {isCurrent && !isDelivered && (
+                      <div className="bg-primary h-3 w-3 rounded-full" />
+                    )}
                   </div>
 
                   {/* Content */}
@@ -141,11 +149,15 @@ export function OrderHistoryTimeline({
               : entry !== undefined || index < currentStatusIndex;
             const isCurrent = status === currentStatus;
             const isDisabled = !isCompleted && !isCurrent;
+            const isDelivered = status === 'delivered';
 
             return (
               <div key={status} className="relative flex gap-4 pb-8 last:pb-0">
                 {/* Timeline connector */}
-                <Separator orientation="vertical" className="absolute left-3" />
+                {index !== visibleStatuses.length - 1 && (
+                  <Separator orientation="vertical" className="absolute left-3" />
+                )}
+
                 <div className="relative flex flex-col items-center">
                   {/* Timeline dot */}
                   <div
@@ -153,13 +165,21 @@ export function OrderHistoryTimeline({
                       'bg-background z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-all',
                       isCompleted && 'border-primary bg-primary',
                       isCurrent && 'bg-background border-0',
-                      isDisabled && 'border-muted bg-background border-dashed'
+                      isDisabled && 'border-muted bg-background border-dashed',
+                      isCurrent && isDelivered && 'bg-chart-2'
                     )}
                   >
                     {isCompleted && !isCurrent && (
                       <Check className="text-primary-foreground h-4 w-4" />
                     )}
-                    {isCurrent && <div className="bg-primary h-3 w-3 rounded-full" />}
+
+                    {isCurrent && isDelivered && (
+                      <Check className="text-primary-foreground h-4 w-4" />
+                    )}
+
+                    {isCurrent && !isDelivered && (
+                      <div className="bg-primary h-3 w-3 rounded-full" />
+                    )}
                   </div>
                 </div>
 
