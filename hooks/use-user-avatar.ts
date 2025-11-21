@@ -25,7 +25,7 @@ export function useUserAvatar() {
   }, [user?.email]);
 
   return {
-    profileImageUrl: typeof profileImageUrl === 'string' ? profileImageUrl : '',
+    profileImageUrl: typeof profileImageUrl === 'string' ? profileImageUrl : null,
     initials,
     displayName,
     primaryEmail,

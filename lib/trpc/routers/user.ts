@@ -2,10 +2,13 @@
  * tRPC router for user operations
  * Handles user settings and profile management
  */
+import { headers } from 'next/headers';
+
 import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 
 import { AUTH_ERRORS } from '@/lib/auth/constants';
+import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
 import { users } from '@/lib/db/schema';
 import { deleteProfileImage, uploadProfileImage } from '@/lib/storage';
@@ -124,6 +127,13 @@ export const userRouter = router({
 
       // Upload new image
       const imageUrl = await uploadProfileImage(file, ctx.userId);
+
+      await auth.api.updateUser({
+        body: {
+          image: imageUrl,
+        },
+        headers: await headers(),
+      });
 
       return {
         success: true,
