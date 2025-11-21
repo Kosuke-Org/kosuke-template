@@ -15,7 +15,7 @@ export default function InvitationEmail({
       {/* Heading */}
 
       <Section className="mb-8 rounded-lg bg-stone-50 p-8 text-center">
-        <Text className="mt-0 mb-6 text-xl font-bold text-stone-900">
+        <Text className="mt-0 mb-6 text-xl font-medium">
           {inviter.user.name} invited you to join {organization.name}
         </Text>
         <Button href={inviteLink} className="mb-6 rounded-md bg-stone-900 px-4 py-2 text-white">
@@ -30,7 +30,7 @@ export default function InvitationEmail({
 
       {/* Security Notice */}
       <Section>
-        <Text className="text-center text-xs text-stone-500">
+        <Text className="text-center text-sm text-stone-500">
           If you didn&apos;t request this invitation, you can safely ignore this email.
         </Text>
       </Section>

@@ -5,13 +5,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
-import { ChevronRight, LoaderCircle } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 
 import { useAuthActions } from '@/hooks/use-auth';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
 export const SignIn = () => {
@@ -31,52 +31,45 @@ export const SignIn = () => {
   };
 
   return (
-    <Card className="py-8">
-      <CardHeader className="px-10 text-center">
-        <CardTitle className="text-lg font-bold">Sign in to Kosuke Template</CardTitle>
-        <CardDescription className="text-xs">
-          Welcome back! Please sign in to continue
-        </CardDescription>
+    <Card>
+      <CardHeader>
+        <CardTitle>Sign in to Kosuke Template</CardTitle>
+        <CardDescription>Welcome back! Please sign in to continue</CardDescription>
       </CardHeader>
-      <CardContent className="px-10">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Field data-invalid={!!signInError}>
-            <FieldLabel htmlFor="email" className="text-xs">
-              Email address
-            </FieldLabel>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              className="!text-xs"
-              placeholder="Enter your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              aria-invalid={!!signInError}
-            />
-            {signInError && (
-              <FieldError className="text-xs" errors={[{ message: signInError.message }]}>
-                {signInError.message}
-              </FieldError>
-            )}
-          </Field>
-          <Field>
-            <Button type="submit" disabled={isSigningIn} className="text-xs">
-              {isSigningIn && <LoaderCircle className="animate-spin" />}
-              Continue
-              <ChevronRight className="size-3" />
-            </Button>
-            <FieldDescription className="pt-6 text-center text-xs">
-              Don&apos;t have an account?{' '}
-              <Link
-                href={signUpLink}
-                className="font-bold !no-underline !underline-offset-2 hover:!underline focus:!underline"
-              >
-                Sign up
-              </Link>
-            </FieldDescription>
-          </Field>
+      <CardContent>
+        <form onSubmit={handleSubmit}>
+          <FieldGroup>
+            <Field data-invalid={!!signInError}>
+              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                aria-invalid={!!signInError}
+              />
+              {signInError && (
+                <FieldError errors={[{ message: signInError.message }]}>
+                  {signInError.message}
+                </FieldError>
+              )}
+            </Field>
+            <Field>
+              <Button type="submit" disabled={isSigningIn}>
+                {isSigningIn && <LoaderCircle className="animate-spin" />}
+                Continue
+              </Button>
+              <FieldDescription className="text-center">
+                Don&apos;t have an account?{' '}
+                <Link href={signUpLink} className="underline-offset-4 hover:underline">
+                  Sign up
+                </Link>
+              </FieldDescription>
+            </Field>
+          </FieldGroup>
         </form>
       </CardContent>
     </Card>

@@ -13,11 +13,13 @@ export const statusOptions: { value: OrderStatus; label: string }[] = [
 ];
 
 export const statusColors: Record<OrderStatus, string> = {
-  pending: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20',
-  processing: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
-  shipped: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20',
-  delivered: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20',
-  cancelled: 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20',
+  pending:
+    'bg-chart-5/10 text-chart-5 border-chart-5/20 dark:bg-chart-1/10 dark:text-chart-1 dark:border-chart-1/20',
+  processing: 'bg-chart-2/10 text-chart-2 border-chart-2/20',
+  shipped: 'bg-chart-3/10 text-chart-3 border-chart-3/20',
+  delivered: 'bg-chart-4/10 text-chart-4 border-chart-4/20',
+  cancelled:
+    'bg-chart-1/10 text-chart-1 border-chart-1/20 dark:bg-chart-5/10 dark:text-chart-5 dark:border-chart-5/20 ',
 };
 
 export const MAX_AMOUNT = 10000;

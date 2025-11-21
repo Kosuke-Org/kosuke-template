@@ -49,7 +49,7 @@ export function Home() {
   const dashboardUrl = organization ? `/org/${organization.slug}/dashboard` : '/';
 
   return (
-    <div className="bg-background min-h-screen w-full">
+    <div className="bg-background min-h-screen w-full pt-[60px]">
       {/* Hero Section - Terminal First */}
       <section className="px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-32">
         <div className="container mx-auto max-w-6xl">

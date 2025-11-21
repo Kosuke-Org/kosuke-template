@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function PrivacyPage() {
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-background min-h-screen pt-[60px]">
       <div className="container max-w-4xl px-4 pt-12 pb-16 sm:px-6 sm:pt-20">
         <div className="mb-8">
           <h1 className="text-4xl font-bold tracking-tight">Privacy Policy</h1>

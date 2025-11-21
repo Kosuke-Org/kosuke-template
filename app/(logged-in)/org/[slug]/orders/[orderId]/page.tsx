@@ -7,11 +7,10 @@
 
 import { use, useState } from 'react';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { format } from 'date-fns';
-import { ArrowLeft, Calendar, CircleDollarSign, Hash, Info, Trash, User } from 'lucide-react';
+import { Calendar, CircleDollarSign, Hash, Info, Trash, User } from 'lucide-react';
 import type { z } from 'zod';
 
 import { type OrderStatus, orderStatusEnum } from '@/lib/db/schema';
@@ -178,28 +177,12 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
           The order you&apos;re looking for doesn&apos;t exist, has been deleted, or you don&apos;t
           have permission to view it.
         </p>
-        <Button asChild>
-          <Link href={`/org/${resolvedParams.slug}/orders`}>
-            <ArrowLeft /> Back to orders
-          </Link>
-        </Button>
       </div>
     );
   }
 
   return (
     <div className="max-w-3xl space-y-2">
-      <Button
-        asChild
-        variant="ghost"
-        className="text-muted-foreground hover:text-muted-foreground text-sm"
-      >
-        <Link href={`/org/${resolvedParams.slug}/orders`}>
-          <ArrowLeft className="h-4 w-4" />
-          Back to orders
-        </Link>
-      </Button>
-
       <h1 className="text-xl font-semibold">Order Details</h1>
 
       <div className="mt-4">

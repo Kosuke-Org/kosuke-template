@@ -277,15 +277,6 @@ export function OrdersDataTable({
       />
       {isLoading ? (
         <TableSkeleton />
-      ) : orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <h3 className="mb-1 text-lg font-semibold">No orders found</h3>
-          <p className="text-muted-foreground text-sm">
-            {searchQuery || activeFiltersCount > 0
-              ? 'Try adjusting your filters'
-              : 'Create your first order to get started'}
-          </p>
-        </div>
       ) : (
         <div className="space-y-4">
           <div className="rounded-md border">
@@ -333,19 +324,24 @@ export function OrdersDataTable({
                 ) : (
                   <TableRow>
                     <TableCell colSpan={columns.length} className="h-24 text-center">
-                      No results.
+                      No results.{' '}
+                      {searchQuery || activeFiltersCount > 0
+                        ? 'Try adjusting your filters'
+                        : 'Create your first order to get started'}
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </div>
-          <DataTablePagination
-            table={table}
-            totalRecords={total}
-            onPageChange={onPageChange}
-            onPageSizeChange={onPageSizeChange}
-          />
+          {orders.length > 0 && (
+            <DataTablePagination
+              table={table}
+              totalRecords={total}
+              onPageChange={onPageChange}
+              onPageSizeChange={onPageSizeChange}
+            />
+          )}
         </div>
       )}
     </>
