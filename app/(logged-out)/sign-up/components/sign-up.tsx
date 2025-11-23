@@ -4,13 +4,13 @@ import { useState } from 'react';
 
 import Link from 'next/link';
 
-import { ChevronRight, LoaderCircle } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 
 import { useAuthActions } from '@/hooks/use-auth';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
 export const SignUp = () => {
@@ -23,52 +23,45 @@ export const SignUp = () => {
   };
 
   return (
-    <Card className="py-8">
-      <CardHeader className="px-10 text-center">
-        <CardTitle className="text-lg font-bold">Create your account</CardTitle>
-        <CardDescription className="text-xs">
-          Welcome! Please fill in the details to get started.
-        </CardDescription>
+    <Card>
+      <CardHeader>
+        <CardTitle>Create your account</CardTitle>
+        <CardDescription>Welcome! Please fill in the details to get started.</CardDescription>
       </CardHeader>
-      <CardContent className="px-10">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Field data-invalid={!!signUpError}>
-            <FieldLabel htmlFor="email" className="text-xs">
-              Email address
-            </FieldLabel>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              className="!text-xs"
-              placeholder="Enter your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              aria-invalid={!!signUpError}
-            />
-            {signUpError && (
-              <FieldError className="text-xs" errors={[{ message: signUpError.message }]}>
-                {signUpError.message}
-              </FieldError>
-            )}
-          </Field>
-          <Field>
-            <Button type="submit" disabled={isSigningUp} className="text-xs">
-              {isSigningUp && <LoaderCircle className="animate-spin" />}
-              Continue
-              <ChevronRight className="size-3" />
-            </Button>
-            <FieldDescription className="pt-6 text-center text-xs">
-              Already have an account?{' '}
-              <Link
-                href="/sign-in"
-                className="font-bold !no-underline !underline-offset-2 hover:!underline focus:!underline"
-              >
-                Sign in
-              </Link>
-            </FieldDescription>
-          </Field>
+      <CardContent>
+        <form onSubmit={handleSubmit}>
+          <FieldGroup>
+            <Field data-invalid={!!signUpError}>
+              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                aria-invalid={!!signUpError}
+              />
+              {signUpError && (
+                <FieldError errors={[{ message: signUpError.message }]}>
+                  {signUpError.message}
+                </FieldError>
+              )}
+            </Field>
+            <Field>
+              <Button type="submit" disabled={isSigningUp}>
+                {isSigningUp && <LoaderCircle className="animate-spin" />}
+                Continue
+              </Button>
+              <FieldDescription className="text-center">
+                Already have an account?{' '}
+                <Link href="/sign-in" className="underline-offset-4 hover:underline">
+                  Sign in
+                </Link>
+              </FieldDescription>
+            </Field>
+          </FieldGroup>
         </form>
       </CardContent>
     </Card>

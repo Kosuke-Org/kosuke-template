@@ -9,16 +9,19 @@ import { useToast } from '@/hooks/use-toast';
 export function useProfileUpload() {
   const { toast } = useToast();
   const { setCurrentImageUrl } = useProfileImage();
+  const utils = trpc.useUtils();
 
   const uploadMutation = trpc.user.uploadProfileImage.useMutation({
     onSuccess: (data) => {
       toast({
-        title: 'Profile image updated',
-        description: data.message || 'Your profile image has been updated successfully.',
+        title: 'Success',
+        description: 'Profile image updated successfully',
       });
 
       // Update local state immediately to show the new image
       setCurrentImageUrl(data.imageUrl);
+
+      utils.user.getUser.invalidate();
     },
     onError: (error) => {
       console.error('Error uploading image:', error);
@@ -31,14 +34,16 @@ export function useProfileUpload() {
   });
 
   const deleteMutation = trpc.user.deleteProfileImage.useMutation({
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast({
-        title: 'Profile image deleted',
-        description: data.message || 'Your profile image has been deleted successfully.',
+        title: 'Success',
+        description: 'Profile image removed successfully',
       });
 
       // Clear local state
       setCurrentImageUrl(null);
+
+      utils.user.getUser.invalidate();
     },
     onError: (error) => {
       console.error('Error deleting image:', error);
