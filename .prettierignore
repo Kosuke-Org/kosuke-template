@@ -15,6 +15,3 @@ bun.lock
 lib/db/migrations
 engine
 cli
-
-# Shadcn/UI components, we ignore them because they are auto-generated
-components/ui
