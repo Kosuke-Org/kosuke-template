@@ -31,7 +31,7 @@ const knipConfig = {
     'drizzle-zod',
     '@trpc/next',
   ],
-  ignoreBinaries: ['uv'],
+  ignoreBinaries: ['uv', 'shadcn'],
   rules: {
     files: 'error',
     dependencies: 'error',

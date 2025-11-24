@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import { z } from 'zod';
 
 import { db } from '@/lib/db/drizzle';
-import { type OrderStatus, orders, organizations, users } from '@/lib/db/schema';
+import { type OrderStatus, orderHistory, orders, organizations, users } from '@/lib/db/schema';
 
 import { protectedProcedure, router } from '../init';
 import {
@@ -189,6 +189,44 @@ export const ordersRouter = router({
   }),
 
   /**
+   * Get order history (status changes over time)
+   */
+  getHistory: protectedProcedure
+    .input(z.object({ orderId: z.uuid(), organizationId: z.uuid() }))
+    .query(async ({ input }) => {
+      // Verify order exists and user has access
+      const order = await db
+        .select()
+        .from(orders)
+        .where(and(eq(orders.id, input.orderId), eq(orders.organizationId, input.organizationId)))
+        .limit(1);
+
+      if (order.length === 0) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Order not found',
+        });
+      }
+
+      // Fetch history entries
+      const history = await db
+        .select({
+          id: orderHistory.id,
+          status: orderHistory.status,
+          notes: orderHistory.notes,
+          createdAt: orderHistory.createdAt,
+          userDisplayName: users.displayName,
+          userEmail: users.email,
+        })
+        .from(orderHistory)
+        .leftJoin(users, eq(orderHistory.userId, users.id))
+        .where(eq(orderHistory.orderId, input.orderId))
+        .orderBy(desc(orderHistory.createdAt));
+
+      return history;
+    }),
+
+  /**
    * Create a new order
    */
   create: protectedProcedure.input(createOrderSchema).mutation(async ({ ctx, input }) => {
@@ -206,6 +244,8 @@ export const ordersRouter = router({
       });
     }
 
+    const initialStatus = (input.status as OrderStatus | undefined) ?? 'pending';
+
     // Create order
     const newOrder = await db
       .insert(orders)
@@ -213,7 +253,7 @@ export const ordersRouter = router({
         customerName: input.customerName,
         userId: ctx.userId,
         organizationId: input.organizationId,
-        status: (input.status as OrderStatus | undefined) ?? 'pending',
+        status: initialStatus,
         amount: input.amount,
         currency: 'USD',
         orderDate: input.orderDate ?? new Date(),
@@ -221,13 +261,21 @@ export const ordersRouter = router({
       })
       .returning();
 
+    // Create initial history entry
+    await db.insert(orderHistory).values({
+      orderId: newOrder[0].id,
+      userId: ctx.userId,
+      status: initialStatus,
+      notes: 'Order created',
+    });
+
     return newOrder[0];
   }),
 
   /**
    * Update an existing order
    */
-  update: protectedProcedure.input(updateOrderSchema).mutation(async ({ input }) => {
+  update: protectedProcedure.input(updateOrderSchema).mutation(async ({ ctx, input }) => {
     // Verify order exists and user has access
     const existingOrder = await db
       .select()
@@ -242,17 +290,30 @@ export const ordersRouter = router({
       });
     }
 
+    const oldStatus = existingOrder[0].status;
+    const newStatus = input.status as OrderStatus | undefined;
+
     // Update order
     const { id, ...updateData } = input;
     const updatedOrder = await db
       .update(orders)
       .set({
         ...updateData,
-        status: updateData.status as OrderStatus | undefined,
+        status: newStatus,
         updatedAt: new Date(),
       })
       .where(eq(orders.id, id))
       .returning();
+
+    // Create history entry if status changed
+    if (newStatus && newStatus !== oldStatus) {
+      await db.insert(orderHistory).values({
+        orderId: id,
+        userId: ctx.userId,
+        status: newStatus,
+        notes: `Status changed from ${oldStatus} to ${newStatus}`,
+      });
+    }
 
     return updatedOrder[0];
   }),

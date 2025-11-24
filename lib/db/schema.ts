@@ -184,6 +184,20 @@ export const orders = pgTable('orders', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Order History - Tracks all status changes and updates to orders
+export const orderHistory = pgTable('order_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  orderId: uuid('order_id')
+    .notNull()
+    .references(() => orders.id, {
+      onDelete: 'cascade',
+    }),
+  userId: uuid('user_id'), // User who made the change (nullable for external/automated updates)
+  status: orderStatusEnum('status').notNull(), // Status at this point in history
+  notes: text('notes'), // Optional notes about the change
+  createdAt: timestamp('created_at').defaultNow().notNull(), // When this status was set
+});
+
 // Enums for type safety
 export enum SubscriptionTier {
   FREE = 'free',
@@ -239,6 +253,8 @@ export type OrgMembership = InferSelectModel<typeof orgMemberships>;
 export type NewOrgMembership = InferInsertModel<typeof orgMemberships>;
 export type Order = InferSelectModel<typeof orders>;
 export type NewOrder = InferInsertModel<typeof orders>;
+export type OrderHistory = InferSelectModel<typeof orderHistory>;
+export type NewOrderHistory = InferInsertModel<typeof orderHistory>;
 
 // Infer enum types from schema
 export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];
