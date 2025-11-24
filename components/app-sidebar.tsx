@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 
-import { CheckSquare, LifeBuoy, ReceiptText, Send, SquareTerminal } from 'lucide-react';
+import { CheckSquare, ReceiptText, SquareTerminal } from 'lucide-react';
 
 import { useOrganization } from '@/hooks/use-organization';
 
@@ -41,18 +41,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           icon: ReceiptText,
         },
       ],
-      navSecondary: [
-        {
-          title: 'Support',
-          url: '#',
-          icon: LifeBuoy,
-        },
-        {
-          title: 'Feedback',
-          url: '#',
-          icon: Send,
-        },
-      ],
+      navSecondary: [],
     };
   }, [activeOrganization]);
 
