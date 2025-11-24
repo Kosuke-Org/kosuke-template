@@ -9,8 +9,8 @@ import {
   CreditCard,
   House,
   LogOut,
+  Monitor,
   Shield,
-  Sparkles,
 } from 'lucide-react';
 
 import { getInitials } from '@/lib/utils';
@@ -101,13 +101,6 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles className="mr-2 h-4 w-4" />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <Link href="/settings" className="flex w-full cursor-pointer items-center">
                   <BadgeCheck className="mr-2 h-4 w-4" />
@@ -115,9 +108,18 @@ export function NavUser() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings/security" className="flex w-full cursor-pointer items-center">
-                  <Shield className="mr-2 h-4 w-4" />
-                  Security
+                <Link
+                  href="/settings/appearance"
+                  className="flex w-full cursor-pointer items-center"
+                >
+                  <Monitor className="mr-2 h-4 w-4" />
+                  Appearance
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings/billing" className="flex w-full cursor-pointer items-center">
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Billing
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
@@ -130,9 +132,9 @@ export function NavUser() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/settings/billing" className="flex w-full cursor-pointer items-center">
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Billing
+                <Link href="/settings/security" className="flex w-full cursor-pointer items-center">
+                  <Shield className="mr-2 h-4 w-4" />
+                  Security
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
