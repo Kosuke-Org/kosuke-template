@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useRef, useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 
 import Image from 'next/image';
 
@@ -80,7 +80,7 @@ export default function ProfileSettings() {
   const { userId, isLoading: isAuthLoading } = useAuth();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [localImageUrl, setLocalImageUrl] = useState<string | null>(null);
+  const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
   const { data: userData, isLoading: isUserLoading } = trpc.user.getUser.useQuery(
     { userId: userId! },
@@ -92,12 +92,7 @@ export default function ProfileSettings() {
 
   const utils = trpc.useUtils();
 
-  // Update local image URL when user data changes
-  useEffect(() => {
-    if (userData?.profileImageUrl !== undefined) {
-      setLocalImageUrl(userData.profileImageUrl);
-    }
-  }, [userData?.profileImageUrl]);
+  const localImageUrl = tempImageUrl ?? userData?.profileImageUrl ?? null;
 
   const { handleImageUpload, handleImageDelete, isUploading, isDeleting } = useProfileUpload();
 
@@ -125,12 +120,6 @@ export default function ProfileSettings() {
     },
   });
 
-  const isLoading = isAuthLoading || isUserLoading;
-
-  if (isLoading || !userData || !userId) {
-    return <ProfileSettingsSkeleton />;
-  }
-
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -140,11 +129,12 @@ export default function ProfileSettings() {
     // Update local state to reflect the new image
     const reader = new FileReader();
     reader.onloadend = () => {
-      setLocalImageUrl(reader.result as string);
+      setTempImageUrl(reader.result as string);
     };
     reader.readAsDataURL(file);
 
-    // Reset input
+    setTempImageUrl(null);
+
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -152,7 +142,7 @@ export default function ProfileSettings() {
 
   const handleDelete = async () => {
     await handleImageDelete();
-    setLocalImageUrl(null);
+    setTempImageUrl(null);
   };
 
   const onSubmit = async (data: ProfileFormValues) => {
@@ -161,7 +151,7 @@ export default function ProfileSettings() {
 
   // Generate initials from display name or email
   const getInitials = () => {
-    if (userData.displayName) {
+    if (userData?.displayName) {
       return userData.displayName
         .split(' ')
         .map((n) => n[0])
@@ -169,11 +159,22 @@ export default function ProfileSettings() {
         .toUpperCase()
         .slice(0, 2);
     }
-    return userData.email[0].toUpperCase();
+    return userData?.email[0].toUpperCase();
   };
 
-  const hasChanges = form.watch('displayName') !== userData.displayName;
+  const watchedName = useWatch({
+    control: form.control,
+    name: 'displayName',
+  });
+
+  const hasChanges = watchedName !== userData?.displayName;
   const isUpdating = updateDisplayNameMutation.isPending;
+
+  const isLoading = isAuthLoading || isUserLoading;
+
+  if (isLoading || !userData || !userId) {
+    return <ProfileSettingsSkeleton />;
+  }
 
   return (
     <div className="space-y-6">
