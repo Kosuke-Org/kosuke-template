@@ -91,7 +91,7 @@ describe('Auth Utils', () => {
         expect(mockSet).toHaveBeenCalledWith('sign_in_attempt_email', email, {
           httpOnly: true,
           secure: false, // NODE_ENV !== 'production' in tests
-          sameSite: 'lax',
+          sameSite: 'none',
           maxAge: 600, // 10 minutes in seconds
           path: '/',
         });
