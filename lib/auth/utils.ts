@@ -43,7 +43,7 @@ export async function createSignInAttempt(email: string): Promise<string> {
 
   cookieStore.set(SIGN_IN_ATTEMPT_EMAIL_COOKIE, email, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV !== 'development',
     sameSite: 'none',
     maxAge: SIGN_IN_ATTEMPT_EXPIRY_MINUTES * 60,
     path: '/',
