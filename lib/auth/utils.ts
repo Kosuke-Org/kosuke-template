@@ -42,7 +42,7 @@ export async function createSignInAttempt(email: string): Promise<string> {
   const cookieStore = await cookies();
   const headersList = await headers();
 
-  const host = headersList.get('host') ?? '';
+  const host = (headersList.get('host') || headersList.get(':authority')) ?? '';
   const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
 
   cookieStore.set(SIGN_IN_ATTEMPT_EMAIL_COOKIE, email, {
