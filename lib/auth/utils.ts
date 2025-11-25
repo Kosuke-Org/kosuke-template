@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 import { ActivityType } from '@/lib/db/schema';
 
@@ -31,7 +31,7 @@ export function createActivityLogData(
  * Uses a single httpOnly cookie for simplicity (no database persistence needed).
  */
 
-const SIGN_IN_ATTEMPT_EMAIL_COOKIE = 'sign_in_attempt_email';
+export const SIGN_IN_ATTEMPT_EMAIL_COOKIE = 'sign_in_attempt_email';
 const SIGN_IN_ATTEMPT_EXPIRY_MINUTES = 10; // 10 minutes to complete sign-in flow
 
 /**
@@ -40,11 +40,15 @@ const SIGN_IN_ATTEMPT_EXPIRY_MINUTES = 10; // 10 minutes to complete sign-in flo
  */
 export async function createSignInAttempt(email: string): Promise<string> {
   const cookieStore = await cookies();
+  const headersList = await headers();
+
+  const host = headersList.get('host') ?? '';
+  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
 
   cookieStore.set(SIGN_IN_ATTEMPT_EMAIL_COOKIE, email, {
     httpOnly: true,
-    secure: process.env.NODE_ENV !== 'development',
-    sameSite: 'none',
+    secure: isLocalhost ? false : true,
+    sameSite: isLocalhost ? 'lax' : 'none',
     maxAge: SIGN_IN_ATTEMPT_EXPIRY_MINUTES * 60,
     path: '/',
   });
