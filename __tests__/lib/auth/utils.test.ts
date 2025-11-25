@@ -90,7 +90,7 @@ describe('Auth Utils', () => {
         expect(result).toBe(email);
         expect(mockSet).toHaveBeenCalledWith('sign_in_attempt_email', email, {
           httpOnly: true,
-          secure: false, // NODE_ENV !== 'production' in tests
+          secure: true, // NODE_ENV !== 'development' in tests
           sameSite: 'none',
           maxAge: 600, // 10 minutes in seconds
           path: '/',
