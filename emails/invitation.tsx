@@ -65,6 +65,7 @@ const defaultProps: InvitationEmailParams = {
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     role: 'member',
     status: 'pending',
+    createdAt: new Date(),
   },
   organization: {
     id: '00000000-0000-0000-0000-000000000003',

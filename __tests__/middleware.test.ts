@@ -5,8 +5,6 @@ import { middleware } from '@/middleware';
 import { getCookieCache } from 'better-auth/cookies';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { Session } from '@/lib/auth/providers';
-
 import { mockedSession } from './setup/mocks';
 
 vi.mock('next/server', async () => {
@@ -44,7 +42,7 @@ describe('middleware', () => {
     return req;
   };
 
-  const mockSession = (sessionData: Session | null) => {
+  const mockSession = (sessionData: Awaited<ReturnType<typeof getCookieCache>> | null) => {
     mockGetCookieCache.mockResolvedValue(sessionData);
   };
 

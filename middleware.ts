@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getCookieCache } from 'better-auth/cookies';
 
-import type { Session } from '@/lib/auth/providers';
-
 /**
  * Create a route matcher function
  * Supports exact matches and wildcard patterns with (.*)
@@ -61,7 +59,7 @@ export async function middleware(req: NextRequest) {
   // API routes handle their own authentication via protectedProcedures
   if (isApiRoute(req)) return NextResponse.next();
 
-  const sessionData = await getCookieCache<Session>(req);
+  const sessionData = await getCookieCache(req);
   const isAuthenticated = !!sessionData?.session;
   const activeOrganizationSlug = sessionData?.session?.activeOrganizationSlug ?? null;
 
