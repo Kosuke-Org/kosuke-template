@@ -95,7 +95,7 @@ export function useAuthActions() {
       }
     },
     onSuccess: async () => {
-      await clearSignInAttemptMutation.mutate();
+      await clearSignInAttemptMutation.mutateAsync();
 
       // do page refresh to avoid stale session
       if (redirectUrl) {
