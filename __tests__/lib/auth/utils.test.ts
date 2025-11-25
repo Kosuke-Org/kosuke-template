@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  SIGN_IN_ATTEMPT_EMAIL_COOKIE,
   clearSignInAttempt,
   createActivityLogData,
   createSignInAttempt,
@@ -21,6 +22,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn(),
+  headers: vi.fn(),
 }));
 
 describe('Auth Utils', () => {
@@ -63,56 +65,127 @@ describe('Auth Utils', () => {
   describe('Sign-in Attempt Management', () => {
     describe('createSignInAttempt', () => {
       it('should handle email with special characters', async () => {
-        const { cookies } = await import('next/headers');
+        const { cookies, headers } = await import('next/headers');
         const mockSet = vi.fn();
-        vi.mocked(cookies).mockResolvedValue({
+        const mockGet = vi.fn().mockReturnValue('example.com');
+
+        (cookies as Mock).mockResolvedValue({
           set: mockSet,
-        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+        });
+
+        (headers as Mock).mockResolvedValue({
+          get: mockGet,
+        });
 
         const email = 'test+tag@example.com';
         const result = await createSignInAttempt(email);
 
         expect(result).toBe(email);
-        expect(mockSet).toHaveBeenCalledWith('sign_in_attempt_email', email, expect.any(Object));
+        expect(mockSet).toHaveBeenCalledWith(
+          SIGN_IN_ATTEMPT_EMAIL_COOKIE,
+          email,
+          expect.any(Object)
+        );
       });
 
-      it('should create a sign-in attempt cookie with correct settings', async () => {
-        const { cookies } = await import('next/headers');
-
+      it('should create a sign-in attempt cookie with secure settings for production host', async () => {
+        const { cookies, headers } = await import('next/headers');
         const mockSet = vi.fn();
-        vi.mocked(cookies).mockResolvedValue({
+        const mockGet = vi.fn().mockReturnValue('example.com');
+
+        (cookies as Mock).mockResolvedValue({
           set: mockSet,
-        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+        });
+
+        (headers as Mock).mockResolvedValue({
+          get: mockGet,
+        });
 
         const email = 'test@example.com';
         const result = await createSignInAttempt(email);
 
         expect(result).toBe(email);
-        expect(mockSet).toHaveBeenCalledWith('sign_in_attempt_email', email, {
+        expect(mockGet).toHaveBeenCalledWith('host');
+        expect(mockSet).toHaveBeenCalledWith(SIGN_IN_ATTEMPT_EMAIL_COOKIE, email, {
           httpOnly: true,
-          secure: true, // NODE_ENV !== 'development' in tests
+          secure: true,
           sameSite: 'none',
           maxAge: 600, // 10 minutes in seconds
           path: '/',
         });
       });
 
-      it('should use secure flag in production', async () => {
-        vi.stubEnv('NODE_ENV', 'production');
-        const { cookies } = await import('next/headers');
-
+      it('should use insecure settings for localhost', async () => {
+        const { cookies, headers } = await import('next/headers');
         const mockSet = vi.fn();
-        vi.mocked(cookies).mockResolvedValue({
+        const mockGet = vi.fn().mockReturnValue('localhost:3000');
+
+        (cookies as Mock).mockResolvedValue({
           set: mockSet,
-        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+        });
+
+        (headers as Mock).mockResolvedValue({
+          get: mockGet,
+        });
 
         await createSignInAttempt('test@example.com');
 
         expect(mockSet).toHaveBeenCalledWith(
-          'sign_in_attempt_email',
+          SIGN_IN_ATTEMPT_EMAIL_COOKIE,
+          'test@example.com',
+          expect.objectContaining({
+            secure: false,
+            sameSite: 'lax',
+          })
+        );
+      });
+
+      it('should use insecure settings for 127.0.0.1', async () => {
+        const { cookies, headers } = await import('next/headers');
+        const mockSet = vi.fn();
+        const mockGet = vi.fn().mockReturnValue('127.0.0.1:3000');
+
+        (cookies as Mock).mockResolvedValue({
+          set: mockSet,
+        });
+
+        (headers as Mock).mockResolvedValue({
+          get: mockGet,
+        });
+
+        await createSignInAttempt('test@example.com');
+
+        expect(mockSet).toHaveBeenCalledWith(
+          SIGN_IN_ATTEMPT_EMAIL_COOKIE,
+          'test@example.com',
+          expect.objectContaining({
+            secure: false,
+            sameSite: 'lax',
+          })
+        );
+      });
+
+      it('should handle missing host header', async () => {
+        const { cookies, headers } = await import('next/headers');
+        const mockSet = vi.fn();
+        const mockGet = vi.fn().mockReturnValue(null);
+
+        (cookies as Mock).mockResolvedValue({
+          set: mockSet,
+        });
+
+        (headers as Mock).mockResolvedValue({
+          get: mockGet,
+        });
+
+        await createSignInAttempt('test@example.com');
+
+        expect(mockSet).toHaveBeenCalledWith(
+          SIGN_IN_ATTEMPT_EMAIL_COOKIE,
           'test@example.com',
           expect.objectContaining({
             secure: true,
+            sameSite: 'none',
           })
         );
       });
@@ -121,22 +194,25 @@ describe('Auth Utils', () => {
     describe('getCurrentSignInAttempt', () => {
       it('should return email when sign-in attempt exists', async () => {
         const { cookies } = await import('next/headers');
-        const mockGet = vi.fn();
-        vi.mocked(cookies).mockResolvedValue({
-          get: mockGet.mockReturnValue({ value: 'test@example.com' }),
-        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+        const mockGet = vi.fn().mockReturnValue({ value: 'test@example.com' });
+
+        (cookies as Mock).mockResolvedValue({
+          get: mockGet,
+        });
+
         const result = await getCurrentSignInAttempt();
 
         expect(result).toEqual({ email: 'test@example.com' });
-        expect(mockGet).toHaveBeenCalledWith('sign_in_attempt_email');
+        expect(mockGet).toHaveBeenCalledWith(SIGN_IN_ATTEMPT_EMAIL_COOKIE);
       });
 
       it('should return null when sign-in attempt does not exist', async () => {
         const { cookies } = await import('next/headers');
-        const mockGet = vi.fn();
-        vi.mocked(cookies).mockResolvedValue({
+        const mockGet = vi.fn().mockReturnValue(undefined);
+
+        (cookies as Mock).mockResolvedValue({
           get: mockGet,
-        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+        });
 
         const result = await getCurrentSignInAttempt();
 
@@ -145,10 +221,11 @@ describe('Auth Utils', () => {
 
       it('should return null when cookie value is empty', async () => {
         const { cookies } = await import('next/headers');
-        const mockGet = vi.fn();
-        vi.mocked(cookies).mockResolvedValue({
+        const mockGet = vi.fn().mockReturnValue(undefined);
+
+        (cookies as Mock).mockResolvedValue({
           get: mockGet,
-        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+        });
 
         const result = await getCurrentSignInAttempt();
 
@@ -160,13 +237,14 @@ describe('Auth Utils', () => {
       it('should delete the sign-in attempt cookie', async () => {
         const { cookies } = await import('next/headers');
         const mockDelete = vi.fn();
-        vi.mocked(cookies).mockResolvedValue({
+
+        (cookies as Mock).mockResolvedValue({
           delete: mockDelete,
-        } as any); // eslint-disable-line @typescript-eslint/no-explicit-any
+        });
 
         await clearSignInAttempt();
 
-        expect(mockDelete).toHaveBeenCalledWith('sign_in_attempt_email');
+        expect(mockDelete).toHaveBeenCalledWith(SIGN_IN_ATTEMPT_EMAIL_COOKIE);
       });
     });
 

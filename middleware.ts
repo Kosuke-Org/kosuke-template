@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCookieCache } from 'better-auth/cookies';
 
 import type { Session } from '@/lib/auth/providers';
+import { SIGN_IN_ATTEMPT_EMAIL_COOKIE } from '@/lib/auth/utils';
 
 /**
  * Create a route matcher function
@@ -67,7 +68,7 @@ export async function middleware(req: NextRequest) {
 
   // Protect /sign-in/verify - requires active sign-in attempt cookie
   if (isSignInVerifyRoute(req)) {
-    const attemptEmail = req.cookies.get('sign_in_attempt_email')?.value;
+    const attemptEmail = req.cookies.get(SIGN_IN_ATTEMPT_EMAIL_COOKIE)?.value;
     if (attemptEmail) return NextResponse.next();
     return NextResponse.redirect(new URL('/sign-in', req.url));
   }

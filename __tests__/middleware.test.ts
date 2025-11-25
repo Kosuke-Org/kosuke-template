@@ -6,6 +6,7 @@ import { getCookieCache } from 'better-auth/cookies';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Session } from '@/lib/auth/providers';
+import { SIGN_IN_ATTEMPT_EMAIL_COOKIE } from '@/lib/auth/utils';
 
 import { mockedSession } from './setup/mocks';
 
@@ -189,7 +190,7 @@ describe('middleware', () => {
     mockSession(null);
 
     const res = await middleware(
-      makeReq('/sign-in/verify', { sign_in_attempt_email: 'test@example.com' })
+      makeReq('/sign-in/verify', { [SIGN_IN_ATTEMPT_EMAIL_COOKIE]: 'test@example.com' })
     );
     expect(res).toEqual({ type: 'next' });
   });
