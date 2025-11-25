@@ -63,6 +63,11 @@ export const auth = betterAuth({
     },
   },
   advanced: {
+    defaultCookieAttributes: {
+      httpOnly: true,
+      secure: true,
+      sameSite: process.env.ENABLE_SAME_SITE_NONE_COOKIES === 'true' ? 'none' : 'lax',
+    },
     database: {
       generateId: () => crypto.randomUUID(),
     },

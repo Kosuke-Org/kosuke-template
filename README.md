@@ -119,6 +119,9 @@ S3_ENDPOINT=https://nyc3.digitaloceanspaces.com
 S3_BUCKET=your-bucket-name
 S3_ACCESS_KEY_ID=your_access_key
 S3_SECRET_ACCESS_KEY=your_secret_key
+
+# Cookies
+ENABLE_SAME_SITE_NONE_COOKIES=false # true when running the template inside an iframe
 ```
 
 **Get Your Credentials**:

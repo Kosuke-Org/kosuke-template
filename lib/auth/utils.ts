@@ -1,4 +1,4 @@
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 
 import { ActivityType } from '@/lib/db/schema';
 
@@ -40,15 +40,11 @@ const SIGN_IN_ATTEMPT_EXPIRY_MINUTES = 10; // 10 minutes to complete sign-in flo
  */
 export async function createSignInAttempt(email: string): Promise<string> {
   const cookieStore = await cookies();
-  const headersList = await headers();
-
-  const host = (headersList.get('host') || headersList.get(':authority')) ?? '';
-  const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
 
   cookieStore.set(SIGN_IN_ATTEMPT_EMAIL_COOKIE, email, {
     httpOnly: true,
-    secure: isLocalhost ? false : true,
-    sameSite: isLocalhost ? 'lax' : 'none',
+    secure: true,
+    sameSite: process.env.ENABLE_SAME_SITE_NONE_COOKIES === 'true' ? 'none' : 'lax',
     maxAge: SIGN_IN_ATTEMPT_EXPIRY_MINUTES * 60,
     path: '/',
   });
