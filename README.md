@@ -131,7 +131,7 @@ S3_SECRET_ACCESS_KEY=your_secret_key
 #### 4. Start All Services
 
 ```bash
-just run
+docker compose up --build -d
 ```
 
 This builds and starts all services on the `kosuke_network`:
@@ -154,15 +154,24 @@ The template includes a complete Docker setup for local development with hot rel
 - **redis**: Redis for caching & jobs (port 6379)
 - **engine**: Python FastAPI microservice (port 8000)
 
-**Common `just` Commands**:
+**Common Commands**:
 
 ```bash
-just run              # Build and start all services
-just up               # Start services without rebuild
-just down             # Stop all services
-just logs [service]   # View logs (all or specific service)
-just db-migrate       # Run database migrations
-just db-reset         # Reset database and run migrations
+# Docker Management
+docker compose up --build -d              # Build and start all services
+docker compose up -d --remove-orphans     # Start services without rebuild
+docker compose down                       # Stop all services
+docker compose logs -f [service]          # View logs (all or specific service)
+
+# Database (run inside Docker container or locally)
+bun run db:generate                       # Generate migration from schema changes
+bun run db:migrate                        # Run pending migrations
+docker compose down -v && docker compose up -d && sleep 5 && docker exec kosuke_template_nextjs bun run db:migrate  # Reset database and run migrations
+bun run db:seed                           # Seed database with test data
+bun run db:studio                         # Open Drizzle Studio for database inspection
+
+# Email
+bun run email:dev                         # Preview email templates (port 3001)
 ```
 
 ## ⚡ Background Jobs with BullMQ
@@ -180,7 +189,7 @@ This template includes a robust background job system powered by BullMQ and Redi
 - Workers run in a separate container (`kosuke_template_workers`)
 - Both web server and workers have hot reload enabled
 - Changes to code automatically restart services
-- View worker logs: `just logs workers`
+- View worker logs: `docker compose logs -f workers`
 
 ## 📧 Email Templates with React Email
 
@@ -188,34 +197,15 @@ This template uses **React Email** for building beautiful, responsive email temp
 
 ### Email Development Workflow
 
-Services are already running via `just run`. Open:
+Services are already running via `docker compose up --build -d`. Open:
 
 - **Next.js**: [localhost:3000](http://localhost:3000)
-- **Email Preview**: [localhost:3001](http://localhost:3001) (via `just email:dev`)
+- **Email Preview**: [localhost:3001](http://localhost:3001) (via `bun run email:dev`)
 
 To preview email templates in another terminal:
 
 ```bash
-just email-dev
-```
-
-### Just Commands
-
-```bash
-# Docker Management
-just run                 # Build and start all services
-just up                  # Start services without rebuild
-just down                # Stop all services
-just logs [service]      # View logs
-
-# Database
-just db-generate         # Generate migration from schema changes
-just db-migrate          # Run pending migrations
-just db-reset            # Reset database and run migrations
-just db-seed             # Seed database with test data
-
-# Email
-just email-dev           # Preview email templates (port 3001)
+bun run email:dev
 ```
 
 ### Database Operations
@@ -225,11 +215,11 @@ just email-dev           # Preview email templates (port 3001)
 ```bash
 # 1. Edit lib/db/schema.ts
 # 2. Generate migration
-just db-generate
+bun run db:generate
 
 # 3. Review generated SQL in lib/db/migrations/
 # 4. Apply migration
-just db-migrate
+bun run db:migrate
 ```
 
 #### Seed with test data
@@ -238,10 +228,10 @@ Populate your local database with realistic test data:
 
 ```bash
 # Reset database and seed with test data
-just db-reset
+docker compose down -v && docker compose up -d && sleep 5 && docker exec kosuke_template_nextjs bun run db:migrate && docker exec kosuke_template_nextjs bun run db:seed
 
 # Or just seed (without reset)
-just db-seed
+bun run db:seed
 ```
 
 **Test Users Created:**
