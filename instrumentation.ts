@@ -17,10 +17,6 @@ function validateEnvironmentVariables() {
     // Next.js
     { key: 'NEXT_PUBLIC_APP_URL', description: 'Application URL' },
 
-    // Resend
-    { key: 'RESEND_API_KEY', description: 'Resend API key for emails' },
-    { key: 'RESEND_FROM_EMAIL', description: 'Resend from email address' },
-
     // Engine
     { key: 'ENGINE_URL', description: 'Python microservice base URL' },
   ];
