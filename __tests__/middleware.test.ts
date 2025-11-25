@@ -47,7 +47,6 @@ describe('middleware', () => {
    * Mock session by setting the better-auth.session_data cookie
    * Pass null to simulate no session
    */
-
   const mockSession = (sessionData: Session | null) => {
     const cookies: Record<string, string> = {};
     if (sessionData) {
@@ -57,21 +56,16 @@ describe('middleware', () => {
   };
 
   it('allows public routes for unauthenticated users', async () => {
-    mockSession(null);
-
     const res = await middleware(makeReq('/terms'));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('allows public routes (home, privacy, terms) for unauthenticated users', async () => {
-    mockSession(null);
-
     const res = await middleware(makeReq('/home'));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('redirects unauthenticated users on protected routes', async () => {
-    mockSession(null);
     const res = await middleware(makeReq('/settings'));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/sign-in');
@@ -79,8 +73,6 @@ describe('middleware', () => {
   });
 
   it('redirects unauthenticated users on org routes', async () => {
-    mockSession(null);
-
     const res = await middleware(makeReq('/org/test-org/dashboard'));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/sign-in');
@@ -165,7 +157,6 @@ describe('middleware', () => {
   });
 
   it('calls NextResponse.next() for tRPC routes', async () => {
-    mockSession(null);
     const res = await middleware(makeReq('/api/trpc/user.list'));
     expect(res).toEqual({ type: 'next' });
   });
