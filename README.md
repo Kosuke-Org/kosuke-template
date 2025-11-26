@@ -208,7 +208,7 @@ This template uses **React Email** for building beautiful, responsive email temp
 
 ### Email Development Workflow
 
-Services are already running via `docker compose up --build -d`. Open:
+Services are already running via `bun run dev`. Open:
 
 - **Next.js**: [localhost:3000](http://localhost:3000)
 - **Email Preview**: [localhost:3001](http://localhost:3001) (via `bun run email:dev`)
@@ -238,10 +238,6 @@ bun run db:migrate
 Populate your local database with realistic test data:
 
 ```bash
-# Reset database and seed with test data
-docker compose down -v && docker compose up -d && sleep 5 && docker exec kosuke_template_nextjs bun run db:migrate && docker exec kosuke_template_nextjs bun run db:seed
-
-# Or just seed (without reset)
 bun run db:seed
 ```
 
