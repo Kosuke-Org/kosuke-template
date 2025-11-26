@@ -34,6 +34,10 @@ export function createActivityLogData(
 export const SIGN_IN_ATTEMPT_EMAIL_COOKIE = 'sign_in_attempt_email';
 const SIGN_IN_ATTEMPT_EXPIRY_MINUTES = 10; // 10 minutes to complete sign-in flow
 
+export const ENABLE_SECURE_COOKIE = process.env.ENABLE_SECURE_COOKIE === 'true';
+export const ENABLE_SAME_SITE_NONE_COOKIES =
+  process.env.ENABLE_SAME_SITE_NONE_COOKIES === 'true' ? 'none' : 'lax';
+
 /**
  * Create a new sign-in attempt and store it in a secure cookie
  * Note: User existence is validated by Better Auth before calling this function
@@ -43,8 +47,8 @@ export async function createSignInAttempt(email: string): Promise<string> {
 
   cookieStore.set(SIGN_IN_ATTEMPT_EMAIL_COOKIE, email, {
     httpOnly: true,
-    secure: true,
-    sameSite: process.env.ENABLE_SAME_SITE_NONE_COOKIES === 'true' ? 'none' : 'lax',
+    secure: ENABLE_SECURE_COOKIE,
+    sameSite: ENABLE_SAME_SITE_NONE_COOKIES,
     maxAge: SIGN_IN_ATTEMPT_EXPIRY_MINUTES * 60,
     path: '/',
   });

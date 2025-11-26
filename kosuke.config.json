@@ -26,6 +26,7 @@
     "environment": {
       "BETTER_AUTH_SECRET": "mysecret",
       "ENABLE_SAME_SITE_NONE_COOKIES": "true",
+      "ENABLE_SECURE_COOKIE": "true",
       "RESEND_API_KEY": "__KSK__RESEND_API_KEY",
       "RESEND_FROM_EMAIL": "noreply@kosuke.ai",
       "RESEND_FROM_NAME": "Kosuke Template",
