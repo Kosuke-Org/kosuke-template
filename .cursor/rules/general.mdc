@@ -40,38 +40,29 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
 ### Essential Commands & Database Operations
 
 ```bash
-# Docker Management (Recommended for Local Development)
-docker compose up --build -d              # Build and start all services with hot reload
-docker compose up -d --remove-orphans     # Start services without rebuild
-docker compose down                       # Stop all services
-docker compose logs -f [service]          # View logs (all or specific service)
+# Development Environment
+bun run dev               # Start all Docker containers (Next.js, Postgres, Redis, Workers)
 
-# Database Setup & Migrations
-bun run db:generate                       # Generate Drizzle migrations from schema changes
-bun run db:migrate                        # Apply pending migrations to database
-docker compose down -v && docker compose up -d && sleep 5 && docker exec kosuke_template_nextjs bun run db:migrate  # Reset database and run migrations
-bun run db:seed                           # Seed database with initial data
-bun run db:push                           # Push schema changes directly (dev only)
-bun run db:studio                         # Open Drizzle Studio for database inspection
+# Database Operations
+bun run db:migrate        # Apply migrations
+bun run db:seed           # Seed database
+bun run db:generate       # Generate migrations (schema changes)
+bun run db:push           # Push schema (prototyping)
+bun run db:reset          # Reset database
+
+# Testing & Quality
+bun run test              # Run tests
+bun run lint              # Run linter
+bun run typecheck         # Run type check
+bun run format            # Format code
+bun run knip              # Check dependencies
 
 # Email Templates
-bun run email:dev                         # Preview email templates (port 3001)
-
-# Local Development (Run Outside Docker)
-bun run dev                               # Start Next.js dev server
-bun run workers:dev                       # Start BullMQ workers
-bun run test                              # Run Vitest test suite
-bun run test:watch                        # Run tests in watch mode
-bun run test:coverage                     # Generate test coverage report
-bun run lint                              # Run ESLint
-bun run typecheck                         # Run TypeScript type checking
-bun run format                            # Format code with Prettier
-bun run format:check                      # Check code formatting
-bun run knip                              # Declutter project
+bun run email:dev         # Preview email templates (port 3001)
 
 # Shadcn UI Management
-bun run shadcn:update   # Update all shadcn components
-bun run shadcn:check    # Check for available component updates
+bun run shadcn:update     # Update all shadcn components
+bun run shadcn:check      # Check for available component updates
 ```
 
 ### Code Quality Checks

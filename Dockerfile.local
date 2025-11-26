@@ -42,5 +42,5 @@ EXPOSE 3000
 
 # Run development server with Bun
 # Source code will be mounted as volume for hot reload
-CMD ["bun", "run", "dev"]
+CMD ["bun", "run", "dev:nextjs"]
 

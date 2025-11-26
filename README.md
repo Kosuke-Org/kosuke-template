@@ -131,7 +131,7 @@ S3_SECRET_ACCESS_KEY=your_secret_key
 #### 4. Start All Services
 
 ```bash
-docker compose up --build -d
+bun run dev
 ```
 
 This builds and starts all services on the `kosuke_network`:
@@ -157,21 +157,29 @@ The template includes a complete Docker setup for local development with hot rel
 **Common Commands**:
 
 ```bash
-# Docker Management
-docker compose up --build -d              # Build and start all services
-docker compose up -d --remove-orphans     # Start services without rebuild
-docker compose down                       # Stop all services
-docker compose logs -f [service]          # View logs (all or specific service)
+# Development Environment
+bun run dev               # Start all Docker containers (Next.js, Postgres, Redis, Workers)
 
-# Database (run inside Docker container or locally)
-bun run db:generate                       # Generate migration from schema changes
-bun run db:migrate                        # Run pending migrations
-docker compose down -v && docker compose up -d && sleep 5 && docker exec kosuke_template_nextjs bun run db:migrate  # Reset database and run migrations
-bun run db:seed                           # Seed database with test data
-bun run db:studio                         # Open Drizzle Studio for database inspection
+# Database Operations
+bun run db:migrate        # Apply migrations
+bun run db:seed           # Seed database
+bun run db:generate       # Generate migrations (schema changes)
+bun run db:push           # Push schema (prototyping)
+bun run db:reset          # Reset database
 
-# Email
-bun run email:dev                         # Preview email templates (port 3001)
+# Testing & Quality
+bun run test              # Run tests
+bun run lint              # Run linter
+bun run typecheck         # Run type check
+bun run format            # Format code
+bun run knip              # Check dependencies
+
+# Email Templates
+bun run email:dev         # Preview email templates (port 3001)
+
+# Shadcn UI Management
+bun run shadcn:update     # Update all shadcn components
+bun run shadcn:check      # Check for available component updates
 ```
 
 ## ⚡ Background Jobs with BullMQ
@@ -242,13 +250,6 @@ bun run db:seed
 **Kosuke Verification Code:**
 
 When signing in with test users in development, use verification code: `424242`
-
-#### Visual Database Browser
-
-```bash
-bun run db:studio
-# Visit https://local.drizzle.studio
-```
 
 ### Testing
 
