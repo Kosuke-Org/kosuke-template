@@ -169,10 +169,13 @@ bun run db:reset          # Reset database
 
 # Testing & Quality
 bun run test              # Run tests
+bun run test:watch        # Run tests in watch mode
+bun run test:coverage     # Generate test coverage report
 bun run lint              # Run linter
 bun run typecheck         # Run type check
 bun run format            # Format code
-bun run knip              # Check dependencies
+bun run format:check      # Check code formatting
+bun run knip              # Declutter project
 
 # Email Templates
 bun run email:dev         # Preview email templates (port 3001)
