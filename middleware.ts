@@ -62,7 +62,7 @@ export async function middleware(req: NextRequest) {
   // API routes handle their own authentication via protectedProcedures
   if (isApiRoute(req)) return NextResponse.next();
 
-  const sessionData = await getCookieCache<Session>(req);
+  const sessionData = await getCookieCache<Session>(req, { isSecure: true });
   const isAuthenticated = !!sessionData?.session;
   const activeOrganizationSlug = sessionData?.session?.activeOrganizationSlug ?? null;
 
