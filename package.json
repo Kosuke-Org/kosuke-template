@@ -3,10 +3,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "docker compose up --build -d",
-    "dev:nextjs": "next dev --turbopack",
-    "dev:email": "concurrently \"bun run dev:nextjs\" \"bun run email:dev\"",
-    "dev:all": "concurrently \"bun run dev:nextjs\" \"bun run workers:dev\"",
+    "dev": "next dev --turbopack",
+    "dev:email": "concurrently \"bun run dev\" \"bun run email:dev\"",
+    "dev:all": "concurrently \"bun run dev\" \"bun run workers:dev\"",
     "workers:dev": "bun tsx --watch -r dotenv/config worker.ts",
     "workers:start": "bun tsx -r dotenv/config worker.ts",
     "prebuild": "bun run drizzle-kit migrate",

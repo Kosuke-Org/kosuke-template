@@ -11,4 +11,4 @@ RUN chmod +x /docker-entrypoint.sh
 EXPOSE 3000
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
-CMD ["bun", "run", "dev:nextjs", "--", "-H", "0.0.0.0"]
+CMD ["bun", "run", "dev", "--", "-H", "0.0.0.0"]

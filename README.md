@@ -131,7 +131,7 @@ S3_SECRET_ACCESS_KEY=your_secret_key
 #### 4. Start All Services
 
 ```bash
-bun run dev
+docker compose up --build -d
 ```
 
 This builds and starts all services on the `kosuke_network`:
@@ -158,7 +158,7 @@ The template includes a complete Docker setup for local development with hot rel
 
 ```bash
 # Development Environment
-bun run dev               # Start all Docker containers (Next.js, Postgres, Redis, Workers)
+bun run dev               # Start dev server
 
 # Database Operations
 bun run db:migrate        # Apply migrations

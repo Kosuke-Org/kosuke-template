@@ -34,9 +34,9 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
 
 ### Essential Commands & Database Operations
 
+**NEVER run `bun run dev` to start the development server - it's already running in your environment.**
+
 ```bash
-# Development Environment
-bun run dev               # Start all Docker containers (Next.js, Postgres, Redis, Workers)
 
 # Database Operations
 bun run db:migrate        # Apply migrations
