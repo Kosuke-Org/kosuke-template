@@ -22,7 +22,6 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('next/headers', () => ({
   cookies: vi.fn(),
-  headers: vi.fn(),
 }));
 
 describe('Auth Utils', () => {
@@ -65,16 +64,11 @@ describe('Auth Utils', () => {
   describe('Sign-in Attempt Management', () => {
     describe('createSignInAttempt', () => {
       it('should handle email with special characters', async () => {
-        const { cookies, headers } = await import('next/headers');
+        const { cookies } = await import('next/headers');
         const mockSet = vi.fn();
-        const mockGet = vi.fn().mockReturnValue('example.com');
 
         (cookies as Mock).mockResolvedValue({
           set: mockSet,
-        });
-
-        (headers as Mock).mockResolvedValue({
-          get: mockGet,
         });
 
         const email = 'test+tag@example.com';
@@ -88,44 +82,14 @@ describe('Auth Utils', () => {
         );
       });
 
-      it('should create a sign-in attempt cookie with secure settings for production host', async () => {
-        const { cookies, headers } = await import('next/headers');
+      it('should use sameSite=none when ENABLE_SAME_SITE_NONE_COOKIES=true', async () => {
+        vi.stubEnv('ENABLE_SAME_SITE_NONE_COOKIES', 'true');
+
+        const { cookies } = await import('next/headers');
         const mockSet = vi.fn();
-        const mockGet = vi.fn().mockReturnValue('example.com');
 
         (cookies as Mock).mockResolvedValue({
           set: mockSet,
-        });
-
-        (headers as Mock).mockResolvedValue({
-          get: mockGet,
-        });
-
-        const email = 'test@example.com';
-        const result = await createSignInAttempt(email);
-
-        expect(result).toBe(email);
-        expect(mockGet).toHaveBeenCalledWith('host');
-        expect(mockSet).toHaveBeenCalledWith(SIGN_IN_ATTEMPT_EMAIL_COOKIE, email, {
-          httpOnly: true,
-          secure: true,
-          sameSite: 'none',
-          maxAge: 600, // 10 minutes in seconds
-          path: '/',
-        });
-      });
-
-      it('should use insecure settings for localhost', async () => {
-        const { cookies, headers } = await import('next/headers');
-        const mockSet = vi.fn();
-        const mockGet = vi.fn().mockReturnValue('localhost:3000');
-
-        (cookies as Mock).mockResolvedValue({
-          set: mockSet,
-        });
-
-        (headers as Mock).mockResolvedValue({
-          get: mockGet,
         });
 
         await createSignInAttempt('test@example.com');
@@ -134,58 +98,36 @@ describe('Auth Utils', () => {
           SIGN_IN_ATTEMPT_EMAIL_COOKIE,
           'test@example.com',
           expect.objectContaining({
-            secure: false,
-            sameSite: 'lax',
-          })
-        );
-      });
-
-      it('should use insecure settings for 127.0.0.1', async () => {
-        const { cookies, headers } = await import('next/headers');
-        const mockSet = vi.fn();
-        const mockGet = vi.fn().mockReturnValue('127.0.0.1:3000');
-
-        (cookies as Mock).mockResolvedValue({
-          set: mockSet,
-        });
-
-        (headers as Mock).mockResolvedValue({
-          get: mockGet,
-        });
-
-        await createSignInAttempt('test@example.com');
-
-        expect(mockSet).toHaveBeenCalledWith(
-          SIGN_IN_ATTEMPT_EMAIL_COOKIE,
-          'test@example.com',
-          expect.objectContaining({
-            secure: false,
-            sameSite: 'lax',
-          })
-        );
-      });
-
-      it('should handle missing host header', async () => {
-        const { cookies, headers } = await import('next/headers');
-        const mockSet = vi.fn();
-        const mockGet = vi.fn().mockReturnValue(null);
-
-        (cookies as Mock).mockResolvedValue({
-          set: mockSet,
-        });
-
-        (headers as Mock).mockResolvedValue({
-          get: mockGet,
-        });
-
-        await createSignInAttempt('test@example.com');
-
-        expect(mockSet).toHaveBeenCalledWith(
-          SIGN_IN_ATTEMPT_EMAIL_COOKIE,
-          'test@example.com',
-          expect.objectContaining({
+            httpOnly: true,
             secure: true,
             sameSite: 'none',
+            maxAge: 600,
+            path: '/',
+          })
+        );
+      });
+
+      it('should use default insecure settings when no env vars are set', async () => {
+        vi.stubEnv('ENABLE_SAME_SITE_NONE_COOKIES', 'false');
+
+        const { cookies } = await import('next/headers');
+        const mockSet = vi.fn();
+
+        (cookies as Mock).mockResolvedValue({
+          set: mockSet,
+        });
+
+        await createSignInAttempt('test@example.com');
+
+        expect(mockSet).toHaveBeenCalledWith(
+          SIGN_IN_ATTEMPT_EMAIL_COOKIE,
+          'test@example.com',
+          expect.objectContaining({
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            maxAge: 600,
+            path: '/',
           })
         );
       });
