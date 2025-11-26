@@ -14,7 +14,7 @@
 import { faker } from '@faker-js/faker';
 
 import { db } from '@/lib/db/drizzle';
-import type { NewOrder, OrderStatus } from '@/lib/types/order';
+import type { NewOrder, OrderStatus } from '@/lib/types';
 import { ORG_ROLES } from '@/lib/types/organization';
 
 import {

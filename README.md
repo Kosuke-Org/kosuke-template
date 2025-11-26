@@ -135,7 +135,7 @@ COOKIE_SECURE=true # false on localhost
 #### 4. Start All Services
 
 ```bash
-just run
+docker compose up --build -d
 ```
 
 This builds and starts all services on the `kosuke_network`:
@@ -158,15 +158,35 @@ The template includes a complete Docker setup for local development with hot rel
 - **redis**: Redis for caching & jobs (port 6379)
 - **engine**: Python FastAPI microservice (port 8000)
 
-**Common `just` Commands**:
+**Common Commands**:
 
 ```bash
-just run              # Build and start all services
-just up               # Start services without rebuild
-just down             # Stop all services
-just logs [service]   # View logs (all or specific service)
-just db-migrate       # Run database migrations
-just db-reset         # Reset database and run migrations
+# Development Environment
+bun run dev               # Start dev server
+
+# Database Operations
+bun run db:migrate        # Apply migrations
+bun run db:seed           # Seed database
+bun run db:generate       # Generate migrations (schema changes)
+bun run db:push           # Push schema (prototyping)
+bun run db:reset          # Reset database
+
+# Testing & Quality
+bun run test              # Run tests
+bun run test:watch        # Run tests in watch mode
+bun run test:coverage     # Generate test coverage report
+bun run lint              # Run linter
+bun run typecheck         # Run type check
+bun run format            # Format code
+bun run format:check      # Check code formatting
+bun run knip              # Declutter project
+
+# Email Templates
+bun run email:dev         # Preview email templates (port 3001)
+
+# Shadcn UI Management
+bun run shadcn:update     # Update all shadcn components
+bun run shadcn:check      # Check for available component updates
 ```
 
 ## ⚡ Background Jobs with BullMQ
@@ -184,7 +204,7 @@ This template includes a robust background job system powered by BullMQ and Redi
 - Workers run in a separate container (`kosuke_template_workers`)
 - Both web server and workers have hot reload enabled
 - Changes to code automatically restart services
-- View worker logs: `just logs workers`
+- View worker logs: `docker compose logs -f workers`
 
 ## 📧 Email Templates with React Email
 
@@ -192,34 +212,15 @@ This template uses **React Email** for building beautiful, responsive email temp
 
 ### Email Development Workflow
 
-Services are already running via `just run`. Open:
+Services are already running via `bun run dev`. Open:
 
 - **Next.js**: [localhost:3000](http://localhost:3000)
-- **Email Preview**: [localhost:3001](http://localhost:3001) (via `just email:dev`)
+- **Email Preview**: [localhost:3001](http://localhost:3001) (via `bun run email:dev`)
 
 To preview email templates in another terminal:
 
 ```bash
-just email-dev
-```
-
-### Just Commands
-
-```bash
-# Docker Management
-just run                 # Build and start all services
-just up                  # Start services without rebuild
-just down                # Stop all services
-just logs [service]      # View logs
-
-# Database
-just db-generate         # Generate migration from schema changes
-just db-migrate          # Run pending migrations
-just db-reset            # Reset database and run migrations
-just db-seed             # Seed database with test data
-
-# Email
-just email-dev           # Preview email templates (port 3001)
+bun run email:dev
 ```
 
 ### Database Operations
@@ -229,11 +230,11 @@ just email-dev           # Preview email templates (port 3001)
 ```bash
 # 1. Edit lib/db/schema.ts
 # 2. Generate migration
-just db-generate
+bun run db:generate
 
 # 3. Review generated SQL in lib/db/migrations/
 # 4. Apply migration
-just db-migrate
+bun run db:migrate
 ```
 
 #### Seed with test data
@@ -241,11 +242,7 @@ just db-migrate
 Populate your local database with realistic test data:
 
 ```bash
-# Reset database and seed with test data
-just db-reset
-
-# Or just seed (without reset)
-just db-seed
+bun run db:seed
 ```
 
 **Test Users Created:**
@@ -256,13 +253,6 @@ just db-seed
 **Kosuke Verification Code:**
 
 When signing in with test users in development, use verification code: `424242`
-
-#### Visual Database Browser
-
-```bash
-bun run db:studio
-# Visit https://local.drizzle.studio
-```
 
 ### Testing
 

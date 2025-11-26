@@ -34,39 +34,33 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
 
 ### Essential Commands & Database Operations
 
-```bash
-# Docker Management (Recommended for Local Development)
-just run                # Build and start all services with hot reload
-just up                 # Start services without rebuild
-just down               # Stop all services
-just logs [service]     # View logs (all or specific service)
+**NEVER run `bun run dev` to start the development server - it's already running in your environment.**
 
-# Database Setup & Migrations
-just db-generate        # Generate Drizzle migrations from schema changes
-just db-migrate         # Apply pending migrations to database
-just db-reset           # Reset database and run migrations
-just db-seed            # Seed database with initial data
-bun run db:push         # Push schema changes directly (dev only)
-bun run db:studio       # Open Drizzle Studio for database inspection
+```bash
+
+# Database Operations
+bun run db:migrate        # Apply migrations
+bun run db:seed           # Seed database
+bun run db:generate       # Generate migrations (schema changes)
+bun run db:push           # Push schema (prototyping)
+bun run db:reset          # Reset database
+
+# Testing & Quality
+bun run test              # Run tests
+bun run test:watch        # Run tests in watch mode
+bun run test:coverage     # Generate test coverage report
+bun run lint              # Run linter
+bun run typecheck         # Run type check
+bun run format            # Format code
+bun run format:check      # Check code formatting
+bun run knip              # Declutter project
 
 # Email Templates
-just email-dev          # Preview email templates (port 3001)
-
-# Local Development (Run Outside Docker)
-bun run dev             # Start Next.js dev server
-bun run workers:dev     # Start BullMQ workers
-bun run test            # Run Vitest test suite
-bun run test:watch      # Run tests in watch mode
-bun run test:coverage   # Generate test coverage report
-bun run lint            # Run ESLint
-bun run typecheck       # Run TypeScript type checking
-bun run format          # Format code with Prettier
-bun run format:check    # Check code formatting
-bun run knip            # Declutter project
+bun run email:dev         # Preview email templates (port 3001)
 
 # Shadcn UI Management
-bun run shadcn:update   # Update all shadcn components
-bun run shadcn:check    # Check for available component updates
+bun run shadcn:update     # Update all shadcn components
+bun run shadcn:check      # Check for available component updates
 ```
 
 ### Code Quality Checks

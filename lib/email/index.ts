@@ -3,8 +3,12 @@ import React from 'react';
 import { render } from '@react-email/components';
 import { Resend } from 'resend';
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Only initialize Resend client if the API key is set
+let resend: Resend | null = null;
+
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+}
 
 // Email configuration
 const EMAIL_CONFIG = {
@@ -33,6 +37,11 @@ export async function sendEmail({
     // Render React component to HTML and text
     const html = await render(react);
     const text = await render(react, { plainText: true });
+
+    if (!resend) {
+      console.log('MOCK EMAIL:', text);
+      return;
+    }
 
     const result = await resend.emails.send({
       from,
