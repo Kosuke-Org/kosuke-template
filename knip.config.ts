@@ -17,6 +17,8 @@ const knipConfig = {
     // Queue system - public API for manual job triggering
     'lib/queue/queues/**',
     'lib/queue/init-workers.ts',
+    // Used in package.json scripts
+    'lib/db/scripts/db-seed.ts',
   ],
   ignoreDependencies: [
     // Shadcn/UI dependencies (only used in components/ui/** which is ignored)
@@ -27,7 +29,7 @@ const knipConfig = {
     'tailwindcss',
     'tailwindcss-animate',
     'vaul',
-    // TODO: check if we should use these dependencies
+    // They are used but not imported in the codebase
     'drizzle-zod',
     '@trpc/next',
   ],

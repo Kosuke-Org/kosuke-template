@@ -13,7 +13,7 @@ export type {
   // Base types
   NewOrder,
   OrderStatus,
-} from './order';
+} from '@/lib/db/schema';
 
 // Organization-related types
 export type {

@@ -10,7 +10,4 @@ import { inferRouterOutputs } from '@trpc/server';
 
 import { AppRouter } from '../trpc/router';
 
-// Re-export base types from schema
-export type { NewOrder, OrderStatus } from '@/lib/db/schema';
-
 export type OrderHistoryOutput = inferRouterOutputs<AppRouter>['orders']['getHistory'];
