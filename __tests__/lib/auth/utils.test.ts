@@ -4,7 +4,6 @@ import {
   SIGN_IN_ATTEMPT_EMAIL_COOKIE,
   clearSignInAttempt,
   createActivityLogData,
-  createSignInAttempt,
   getCurrentSignInAttempt,
   isTestEmail,
 } from '@/lib/auth/utils';
@@ -27,6 +26,8 @@ vi.mock('next/headers', () => ({
 describe('Auth Utils', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    vi.resetModules();
   });
 
   describe('createActivityLogData', () => {
@@ -65,6 +66,7 @@ describe('Auth Utils', () => {
     describe('createSignInAttempt', () => {
       it('should handle email with special characters', async () => {
         const { cookies } = await import('next/headers');
+        const { createSignInAttempt } = await import('@/lib/auth/utils');
         const mockSet = vi.fn();
 
         (cookies as Mock).mockResolvedValue({
@@ -82,10 +84,12 @@ describe('Auth Utils', () => {
         );
       });
 
-      it('should use sameSite=none when ENABLE_SAME_SITE_NONE_COOKIES=true', async () => {
-        vi.stubEnv('ENABLE_SAME_SITE_NONE_COOKIES', 'true');
+      it('should use sameSite=none when COOKIE_SAME_SITE=none', async () => {
+        vi.stubEnv('COOKIE_SAME_SITE', 'none');
 
         const { cookies } = await import('next/headers');
+        const { createSignInAttempt } = await import('@/lib/auth/utils');
+
         const mockSet = vi.fn();
 
         (cookies as Mock).mockResolvedValue({
@@ -99,7 +103,7 @@ describe('Auth Utils', () => {
           'test@example.com',
           expect.objectContaining({
             httpOnly: true,
-            secure: true,
+            secure: false,
             sameSite: 'none',
             maxAge: 600,
             path: '/',
@@ -107,10 +111,11 @@ describe('Auth Utils', () => {
         );
       });
 
-      it('should use default insecure settings when no env vars are set', async () => {
-        vi.stubEnv('ENABLE_SAME_SITE_NONE_COOKIES', 'false');
+      it('should use COOKIE_SECURE to set secure flag', async () => {
+        vi.stubEnv('COOKIE_SECURE', 'true');
 
         const { cookies } = await import('next/headers');
+        const { createSignInAttempt } = await import('@/lib/auth/utils');
         const mockSet = vi.fn();
 
         (cookies as Mock).mockResolvedValue({

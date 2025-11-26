@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCookieCache } from 'better-auth/cookies';
 
 import type { Session } from '@/lib/auth/providers';
-import { SIGN_IN_ATTEMPT_EMAIL_COOKIE } from '@/lib/auth/utils';
+import { COOKIE_SECURE, SIGN_IN_ATTEMPT_EMAIL_COOKIE } from '@/lib/auth/utils';
 
 /**
  * Create a route matcher function
@@ -62,7 +62,9 @@ export async function middleware(req: NextRequest) {
   // API routes handle their own authentication via protectedProcedures
   if (isApiRoute(req)) return NextResponse.next();
 
-  const sessionData = await getCookieCache<Session>(req, { isSecure: true });
+  // Better Auth prefixes secure cookies with __Secure__ based on isSecure property or on NODE_ENV
+  // We can't rely on NODE_ENV in the preview environment so we use the COOKIE_SECURE environment variable
+  const sessionData = await getCookieCache<Session>(req, { isSecure: COOKIE_SECURE });
   const isAuthenticated = !!sessionData?.session;
   const activeOrganizationSlug = sessionData?.session?.activeOrganizationSlug ?? null;
 
