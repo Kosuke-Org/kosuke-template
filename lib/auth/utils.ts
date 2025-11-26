@@ -39,7 +39,7 @@ export const COOKIE_SECURE = process.env.COOKIE_SECURE === 'true';
 export const COOKIE_SAME_SITE = (process.env.COOKIE_SAME_SITE ?? 'lax') as CookieSameSiteType;
 
 /**
- * Create a new sign-in attempt and store it in a secure cookieq
+ * Create a new sign-in attempt and store it in a secure cookie
  * Note: User existence is validated by Better Auth before calling this function
  */
 export async function createSignInAttempt(email: string): Promise<string> {
