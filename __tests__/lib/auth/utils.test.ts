@@ -84,8 +84,8 @@ describe('Auth Utils', () => {
         );
       });
 
-      it('should use sameSite=none when ENABLE_SAME_SITE_NONE_COOKIES=true', async () => {
-        vi.stubEnv('ENABLE_SAME_SITE_NONE_COOKIES', 'true');
+      it('should use sameSite=none when COOKIE_SAME_SITE=none', async () => {
+        vi.stubEnv('COOKIE_SAME_SITE', 'none');
 
         const { cookies } = await import('next/headers');
         const { createSignInAttempt } = await import('@/lib/auth/utils');
@@ -111,8 +111,8 @@ describe('Auth Utils', () => {
         );
       });
 
-      it('should use ENABLE_SECURE_COOKIE to set secure flag', async () => {
-        vi.stubEnv('ENABLE_SECURE_COOKIE', 'true');
+      it('should use COOKIE_SECURE to set secure flag', async () => {
+        vi.stubEnv('COOKIE_SECURE', 'true');
 
         const { cookies } = await import('next/headers');
         const { createSignInAttempt } = await import('@/lib/auth/utils');
