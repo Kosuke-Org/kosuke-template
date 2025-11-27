@@ -1,3 +1,5 @@
+import { NextRequest } from 'next/server';
+
 import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -5,6 +7,7 @@ import {
   clearSignInAttempt,
   createActivityLogData,
   getCurrentSignInAttempt,
+  getSessionFromCookie,
   isTestEmail,
 } from '@/lib/auth/utils';
 import { ActivityType } from '@/lib/db/schema';
@@ -250,6 +253,55 @@ describe('Auth Utils', () => {
           expect(isTestEmail('user@example.com')).toBe(false);
           expect(isTestEmail('admin@company.com')).toBe(false);
         });
+      });
+    });
+
+    describe('getSessionFromCookie', () => {
+      const encodedSession = (sessionData: Record<string, unknown>) =>
+        Buffer.from(JSON.stringify(sessionData)).toString('base64');
+
+      it('should return session data when cookie is present', () => {
+        const sessionData = { session: { id: 'test-session-id' } };
+        const encoded = encodedSession(sessionData);
+
+        const req = new NextRequest('http://localhost:3000/test', {
+          headers: {
+            cookie: `better-auth.session_data=${encoded}`,
+          },
+        });
+
+        const result = getSessionFromCookie(req);
+        expect(result).toEqual({ id: 'test-session-id' });
+      });
+
+      it('should return session data when cookie is prefixed with __Secure-', () => {
+        const sessionData = { session: { id: 'secure-session-id' } };
+        const encoded = encodedSession(sessionData);
+
+        const req = new NextRequest('http://localhost:3000/test', {
+          headers: {
+            cookie: `__Secure-better-auth.session_data=${encoded}`,
+          },
+        });
+
+        const result = getSessionFromCookie(req);
+        expect(result).toEqual({ id: 'secure-session-id' });
+      });
+
+      it('should return null when cookie is not present', () => {
+        const req = new NextRequest('http://localhost:3000/test');
+        const result = getSessionFromCookie(req);
+        expect(result).toBeNull();
+      });
+
+      it('should return null when cookie name is invalid', () => {
+        const req = new NextRequest('http://localhost:3000/test', {
+          headers: {
+            cookie: `invalid-cookie-name=test`,
+          },
+        });
+        const result = getSessionFromCookie(req);
+        expect(result).toBeNull();
       });
     });
   });

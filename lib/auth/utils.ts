@@ -1,5 +1,7 @@
 import { cookies } from 'next/headers';
+import { NextRequest } from 'next/server';
 
+import type { Session } from '@/lib/auth/providers';
 import { ActivityType } from '@/lib/db/schema';
 
 import { TEST_EMAIL_SUFFIX } from './constants';
@@ -83,4 +85,23 @@ export async function clearSignInAttempt(): Promise<void> {
 export const isTestEmail = (email: string) => {
   const isDevelopment = process.env.NODE_ENV === 'development';
   return isDevelopment && email.endsWith(TEST_EMAIL_SUFFIX);
+};
+
+// Custom session cookie getter to bypass Better Auth's secure prefix logic
+// Better Auth prefixes cookies with __Secure- based on NODE_ENV or isSecure property, which doesn't work in our preview environment
+export const getSessionFromCookie = (req: NextRequest): Session | null => {
+  try {
+    const cookieName = 'better-auth.session_data';
+    const cookie = req.cookies.get(cookieName) ?? req.cookies.get(`__Secure-${cookieName}`) ?? null;
+
+    if (!cookie) return null;
+
+    const decoded = Buffer.from(cookie.value, 'base64').toString('utf-8');
+    const sessionData = JSON.parse(decoded);
+
+    return sessionData.session as Session;
+  } catch {
+    // If parsing fails, treat as no session
+    return null;
+  }
 };

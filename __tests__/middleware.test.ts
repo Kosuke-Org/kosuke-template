@@ -1,14 +1,17 @@
-import { RequestCookie } from 'next/dist/compiled/@edge-runtime/cookies';
 import { NextRequest } from 'next/server';
 
 import { middleware } from '@/middleware';
-import { getCookieCache } from 'better-auth/cookies';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Session } from '@/lib/auth/providers';
 import { SIGN_IN_ATTEMPT_EMAIL_COOKIE } from '@/lib/auth/utils';
 
 import { mockedSession } from './setup/mocks';
+
+type RequestCookie = {
+  name: string;
+  value: string;
+};
 
 vi.mock('next/server', async () => {
   const actual = await vi.importActual<typeof import('next/server')>('next/server');
@@ -21,11 +24,12 @@ vi.mock('next/server', async () => {
   };
 });
 
-vi.mock('better-auth/cookies', () => {
-  return { getCookieCache: vi.fn() };
-});
-
-const mockGetCookieCache = vi.mocked(getCookieCache);
+/**
+ * Encode session data to base64 (same format Better Auth uses)
+ */
+function encodeSessionCookie(sessionData: Session): string {
+  return Buffer.from(JSON.stringify({ session: sessionData })).toString('base64');
+}
 
 describe('middleware', () => {
   beforeEach(() => {
@@ -45,8 +49,17 @@ describe('middleware', () => {
     return req;
   };
 
+  /**
+   * Mock session by setting the better-auth.session_data cookie
+   * Pass null to simulate no session
+   */
+
   const mockSession = (sessionData: Session | null) => {
-    mockGetCookieCache.mockResolvedValue(sessionData);
+    const cookies: Record<string, string> = {};
+    if (sessionData) {
+      cookies['better-auth.session_data'] = encodeSessionCookie(sessionData);
+    }
+    return cookies;
   };
 
   it('allows public routes for unauthenticated users', async () => {
@@ -80,22 +93,22 @@ describe('middleware', () => {
   });
 
   it('redirects authenticated users without activeOrganizationSlug to onboarding', async () => {
-    mockSession(mockedSession);
+    const cookies = mockSession(mockedSession);
 
-    const res = await middleware(makeReq('/settings'));
+    const res = await middleware(makeReq('/settings', cookies));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/onboarding');
   });
 
   it('allows authenticated users without activeOrganizationSlug to access onboarding', async () => {
-    mockSession(mockedSession);
+    const cookies = mockSession(mockedSession);
 
-    const res = await middleware(makeReq('/onboarding'));
+    const res = await middleware(makeReq('/onboarding', cookies));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('redirects authenticated users with activeOrganizationSlug from root to org dashboard', async () => {
-    mockSession({
+    const cookies = mockSession({
       ...mockedSession,
       session: {
         ...mockedSession.session,
@@ -104,13 +117,13 @@ describe('middleware', () => {
       },
     });
 
-    const res = await middleware(makeReq('/'));
+    const res = await middleware(makeReq('/', cookies));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/org/test-org/dashboard');
   });
 
   it('allows authenticated users with activeOrganizationSlug to access protected routes', async () => {
-    mockSession({
+    const cookies = mockSession({
       ...mockedSession,
       session: {
         ...mockedSession.session,
@@ -119,12 +132,12 @@ describe('middleware', () => {
       },
     });
 
-    const res = await middleware(makeReq('/settings'));
+    const res = await middleware(makeReq('/settings', cookies));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('allows authenticated users with activeOrganizationSlug to access org routes', async () => {
-    mockSession({
+    const cookies = mockSession({
       ...mockedSession,
       session: {
         ...mockedSession.session,
@@ -133,12 +146,12 @@ describe('middleware', () => {
       },
     });
 
-    const res = await middleware(makeReq('/org/test-org/dashboard'));
+    const res = await middleware(makeReq('/org/test-org/dashboard', cookies));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('redirects authenticated users trying to access sign-in routes', async () => {
-    mockSession({
+    const cookies = mockSession({
       ...mockedSession,
       session: {
         ...mockedSession.session,
@@ -147,13 +160,12 @@ describe('middleware', () => {
       },
     });
 
-    const res = await middleware(makeReq('/sign-in'));
+    const res = await middleware(makeReq('/sign-in', cookies));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/org/test-org/dashboard');
   });
 
   it('calls NextResponse.next() for API routes', async () => {
-    mockSession(null);
     const res = await middleware(makeReq('/api/user'));
     expect(res).toEqual({ type: 'next' });
   });
@@ -165,7 +177,7 @@ describe('middleware', () => {
   });
 
   it('allows authenticated users with activeOrganizationSlug to access public routes', async () => {
-    mockSession({
+    const cookies = mockSession({
       ...mockedSession,
       session: {
         ...mockedSession.session,
@@ -174,21 +186,19 @@ describe('middleware', () => {
       },
     });
 
-    const res = await middleware(makeReq('/privacy'));
+    const res = await middleware(makeReq('/privacy', cookies));
     expect(res).toEqual({ type: 'next' });
   });
 
   it('redirects authenticated users without activeOrganizationSlug trying to access sign-in to onboarding', async () => {
-    mockSession(mockedSession);
+    const cookies = mockSession(mockedSession);
 
-    const res = await middleware(makeReq('/sign-in'));
+    const res = await middleware(makeReq('/sign-in', cookies));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/onboarding');
   });
 
   it('allows access to /sign-in/verify with valid sign_in_attempt_email cookie', async () => {
-    mockSession(null);
-
     const res = await middleware(
       makeReq('/sign-in/verify', { [SIGN_IN_ATTEMPT_EMAIL_COOKIE]: 'test@example.com' })
     );
@@ -196,16 +206,15 @@ describe('middleware', () => {
   });
 
   it('redirects to /sign-in when accessing /sign-in/verify without sign_in_attempt_email cookie', async () => {
-    mockSession(null);
     const res = await middleware(makeReq('/sign-in/verify'));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/sign-in');
   });
 
   it('redirects authenticated users without activeOrganizationSlug from root to onboarding', async () => {
-    mockSession(mockedSession);
+    const cookies = mockSession(mockedSession);
 
-    const res = await middleware(makeReq('/'));
+    const res = await middleware(makeReq('/', cookies));
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/onboarding');
   });
