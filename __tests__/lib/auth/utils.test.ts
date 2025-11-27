@@ -1,10 +1,15 @@
+import { NextRequest } from 'next/server';
+
 import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { encodeSessionCookie } from '@/__tests__/setup/utils';
 
 import {
   SIGN_IN_ATTEMPT_EMAIL_COOKIE,
   clearSignInAttempt,
   createActivityLogData,
   getCurrentSignInAttempt,
+  getSessionFromCookie,
   isTestEmail,
 } from '@/lib/auth/utils';
 import { ActivityType } from '@/lib/db/schema';
@@ -250,6 +255,50 @@ describe('Auth Utils', () => {
           expect(isTestEmail('user@example.com')).toBe(false);
           expect(isTestEmail('admin@company.com')).toBe(false);
         });
+      });
+    });
+
+    describe('getSessionFromCookie', () => {
+      it('should return session data when cookie is present', () => {
+        const sessionData = { session: { id: 'test-session-id' } };
+
+        const req = new NextRequest('http://localhost:3000/test', {
+          headers: {
+            cookie: `better-auth.session_data=${encodeSessionCookie(sessionData)}`,
+          },
+        });
+
+        const result = getSessionFromCookie(req);
+        expect(result).toEqual({ session: { id: 'test-session-id' } });
+      });
+
+      it('should return session data when cookie is prefixed with __Secure-', () => {
+        const sessionData = { session: { id: 'secure-session-id' } };
+
+        const req = new NextRequest('http://localhost:3000/test', {
+          headers: {
+            cookie: `__Secure-better-auth.session_data=${encodeSessionCookie(sessionData)}`,
+          },
+        });
+
+        const result = getSessionFromCookie(req);
+        expect(result).toEqual({ session: { id: 'secure-session-id' } });
+      });
+
+      it('should return null when cookie is not present', () => {
+        const req = new NextRequest('http://localhost:3000/test');
+        const result = getSessionFromCookie(req);
+        expect(result).toBeNull();
+      });
+
+      it('should return null when cookie name is invalid', () => {
+        const req = new NextRequest('http://localhost:3000/test', {
+          headers: {
+            cookie: `invalid-cookie-name=test`,
+          },
+        });
+        const result = getSessionFromCookie(req);
+        expect(result).toBeNull();
       });
     });
   });
