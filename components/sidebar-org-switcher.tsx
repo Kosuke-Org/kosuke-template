@@ -61,13 +61,14 @@ export function SidebarOrgSwitcher() {
   const activeOrgInitials = getInitials(activeOrganization.name);
 
   return (
-    <SidebarMenu>
+    <SidebarMenu suppressHydrationWarning>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              suppressHydrationWarning
             >
               <Avatar key={activeOrganization.id} className="h-8 w-8 rounded-lg">
                 {activeOrganization.logo && (
