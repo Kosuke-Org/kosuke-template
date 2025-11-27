@@ -78,6 +78,7 @@ export const mockedSession = {
     createdAt: new Date(),
     updatedAt: new Date(),
   },
+  updatedAt: Date.now(),
 };
 
 // Setup mocks
