@@ -1,3 +1,5 @@
+'use client';
+
 import { AppSidebar } from '@/components/app-sidebar';
 import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
 import { Separator } from '@/components/ui/separator';
