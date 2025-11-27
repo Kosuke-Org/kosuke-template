@@ -119,6 +119,7 @@ export const usedFunction = () => {}; // Keep
 - **Connection**: Use the configured database instance from `./lib/db/drizzle.ts`
 - **Environment**: PostgreSQL runs on port 54321 locally via Docker Compose
 - **Avoid JSONB Fields**: NEVER use JSONB fields unless absolutely necessary. Prefer proper relational design with dedicated columns and foreign keys. JSONB should only be used for truly dynamic, unstructured data that cannot be modeled with proper schema. This maintains type safety, query performance, and database integrity.
+- **Database Indexes**: NEVER create database indexes unless explicitly requested by the user. Indexes should be added intentionally based on actual performance needs, not automatically. Keep schema changes minimal and focused on the required functionality.
 
 ```typescript
 // Example schema pattern with enum
@@ -1097,7 +1098,7 @@ interface FeatureDetailPageProps {
 export default function FeatureDetailPage({ params }: FeatureDetailPageProps) {
   const resolvedParams = use(params);
   const router = useRouter();
-  const { activeOrganization, isLoading: isLoadingOrg } = useActiveOrganization();
+  const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -1434,7 +1435,7 @@ const query = useQuery<UserProfile, Error>({
 });
 ```
 
-### useSearchParams() Usage - MANDATORY
+### Next.js useSearchParams() Usage - MANDATORY
 
 **ALWAYS handle `useSearchParams()` properly to avoid static generation errors. Next.js requires Suspense boundaries for reactive search params, or use `location.search` for non-reactive access.**
 
@@ -1609,6 +1610,30 @@ export default function TermsPage() {
     </Suspense>
   );
 }
+```
+
+**Always choose the simplest solution that meets your requirements. Prefer Server Components with `searchParams` prop for static pages.**
+
+#### **Knip Guidelines - MANDATORY**
+
+When fixing Knip errors:
+
+- ✅ **ONLY fix unused exports and imports** - Remove or mark as used
+- ✅ **Fix unused internal code** - Remove dead functions, variables, types
+- ✅ **Fix duplicate exports** - Consolidate or remove duplicates
+- ❌ **NEVER modify package.json** - Ignore dependency-related warnings
+- ❌ **NEVER add or remove packages** - Only fix code-level issues
+- ❌ **NEVER update dependencies** - Leave package versions unchanged
+
+```bash
+# ✅ CORRECT - Fix unused exports
+export const usedFunction = () => {}; // Keep
+// Remove: export const unusedFunction = () => {}; // Delete this
+
+# ❌ WRONG - Don't touch dependencies
+// Don't remove packages from package.json based on Knip warnings
+// Don't update package versions
+// Ignore "unlisted dependencies" warnings
 ```
 
 ### tRPC Integration - Type-Safe API Layer
@@ -2380,7 +2405,7 @@ return result.get("data")
 - Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError)
 - Structure files: exported component, subcomponents, helpers, static content, types
 - Always reference Better Auth users via `userId` (UUID) in database operations
-- Use proper error handling for all external API calls (Better Auth, Stripe, Resend)
+- Use proper error handling for all external API calls (Stripe, Resend)
 
 ### TypeScript and Type Safety Guidelines
 

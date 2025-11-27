@@ -114,6 +114,7 @@ export const usedFunction = () => {}; // Keep
 - **Connection**: Use the configured database instance from `./lib/db/drizzle.ts`
 - **Environment**: PostgreSQL runs on port 54321 locally via Docker Compose
 - **Avoid JSONB Fields**: NEVER use JSONB fields unless absolutely necessary. Prefer proper relational design with dedicated columns and foreign keys. JSONB should only be used for truly dynamic, unstructured data that cannot be modeled with proper schema. This maintains type safety, query performance, and database integrity.
+- **Database Indexes**: NEVER create database indexes unless explicitly requested by the user. Indexes should be added intentionally based on actual performance needs, not automatically. Keep schema changes minimal and focused on the required functionality.
 
 ```typescript
 // Example schema pattern with enum
