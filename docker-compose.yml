@@ -5,7 +5,7 @@ services:
     env_file:
       - .env
     ports:
-      - '54321:5432'
+      - '5432:5432'
     volumes:
       - kosuke_template_postgres_data:/var/lib/postgresql/data
     networks:
