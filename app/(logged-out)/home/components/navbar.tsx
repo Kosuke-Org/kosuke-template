@@ -23,7 +23,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 interface NavbarProps {
   variant?: 'standard' | 'transparent';
@@ -129,12 +129,13 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
               </Button>
             </SheetTrigger>
             <SheetContent side="right">
-              <nav className="mt-8 flex flex-col gap-4">
+              <SheetTitle className="sr-only">Sidebar</SheetTitle>
+              <nav className="mt-10 flex flex-col gap-4 px-4">
                 {isSignedIn ? (
                   // Mobile navigation for logged-in users
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-3 rounded-lg border p-2">
-                      <Avatar className="h-10 w-10 rounded-lg">
+                  <>
+                    <div className="flex items-center gap-3 rounded-lg">
+                      <Avatar className="h-8 w-8 rounded-lg">
                         {profileImageUrl && <AvatarImage src={profileImageUrl} alt={displayName} />}
                         <AvatarFallback className="bg-primary text-primary-foreground rounded-lg">
                           {initials}
@@ -173,10 +174,10 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                         Log out
                       </Button>
                     </div>
-                  </div>
+                  </>
                 ) : (
                   // Mobile navigation for logged-out users
-                  <div className="flex flex-col gap-2 pt-2">
+                  <>
                     <Link href="/sign-in">
                       <Button variant="ghost" className="w-full justify-start">
                         Log in
@@ -185,7 +186,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                     <Link href="/sign-up">
                       <Button className="w-full">Sign up</Button>
                     </Link>
-                  </div>
+                  </>
                 )}
               </nav>
             </SheetContent>
