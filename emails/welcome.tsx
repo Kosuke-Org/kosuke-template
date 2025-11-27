@@ -60,7 +60,7 @@ export const WelcomeEmail = ({
         <Text className="mb-4 text-xl font-semibold text-stone-900">What&apos;s included:</Text>
 
         {[
-          'Next.js 15 with App Router and TypeScript',
+          'Next.js 16 with App Router and TypeScript',
           'Better Auth Authentication with user management',
           'Stripe Billing integration for subscriptions',
           'Beautiful Shadcn UI components',
