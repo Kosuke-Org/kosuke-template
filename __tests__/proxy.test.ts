@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server';
 
 import { proxy } from '@/proxy';
-import { getCookieCache } from 'better-auth/cookies';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Session } from '@/lib/auth/providers';
@@ -25,12 +24,6 @@ vi.mock('next/server', async () => {
     },
   };
 });
-
-vi.mock('better-auth/cookies', () => {
-  return { getCookieCache: vi.fn() };
-});
-
-const mockGetCookieCache = vi.mocked(getCookieCache);
 
 describe('proxy', () => {
   beforeEach(() => {
