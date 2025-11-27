@@ -7,6 +7,7 @@ import type { Session } from '@/lib/auth/providers';
 import { SIGN_IN_ATTEMPT_EMAIL_COOKIE } from '@/lib/auth/utils';
 
 import { mockedSession } from './setup/mocks';
+import { encodeSessionCookie } from './setup/utils';
 
 type RequestCookie = {
   name: string;
@@ -23,13 +24,6 @@ vi.mock('next/server', async () => {
     },
   };
 });
-
-/**
- * Encode session data to base64 (same format Better Auth uses)
- */
-function encodeSessionCookie(sessionData: Session): string {
-  return Buffer.from(JSON.stringify({ session: sessionData })).toString('base64');
-}
 
 describe('middleware', () => {
   beforeEach(() => {

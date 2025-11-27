@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 
 import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { encodeSessionCookie } from '@/__tests__/setup/utils';
+
 import {
   SIGN_IN_ATTEMPT_EMAIL_COOKIE,
   clearSignInAttempt,
@@ -257,35 +259,30 @@ describe('Auth Utils', () => {
     });
 
     describe('getSessionFromCookie', () => {
-      const encodedSession = (sessionData: Record<string, unknown>) =>
-        Buffer.from(JSON.stringify(sessionData)).toString('base64');
-
       it('should return session data when cookie is present', () => {
         const sessionData = { session: { id: 'test-session-id' } };
-        const encoded = encodedSession(sessionData);
 
         const req = new NextRequest('http://localhost:3000/test', {
           headers: {
-            cookie: `better-auth.session_data=${encoded}`,
+            cookie: `better-auth.session_data=${encodeSessionCookie(sessionData)}`,
           },
         });
 
         const result = getSessionFromCookie(req);
-        expect(result).toEqual({ id: 'test-session-id' });
+        expect(result).toEqual({ session: { id: 'test-session-id' } });
       });
 
       it('should return session data when cookie is prefixed with __Secure-', () => {
         const sessionData = { session: { id: 'secure-session-id' } };
-        const encoded = encodedSession(sessionData);
 
         const req = new NextRequest('http://localhost:3000/test', {
           headers: {
-            cookie: `__Secure-better-auth.session_data=${encoded}`,
+            cookie: `__Secure-better-auth.session_data=${encodeSessionCookie(sessionData)}`,
           },
         });
 
         const result = getSessionFromCookie(req);
-        expect(result).toEqual({ id: 'secure-session-id' });
+        expect(result).toEqual({ session: { id: 'secure-session-id' } });
       });
 
       it('should return null when cookie is not present', () => {
