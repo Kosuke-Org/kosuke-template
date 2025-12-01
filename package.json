@@ -109,7 +109,7 @@
     "react-email": "^5.0.5",
     "react-hook-form": "^7.67.0",
     "react-resizable-panels": "^3.0.6",
-    "recharts": "2.15.4",
+    "recharts": "3.5.1",
     "resend": "^6.5.2",
     "sonner": "^2.0.7",
     "stripe": "^19.3.0",
