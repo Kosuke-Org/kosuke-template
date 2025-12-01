@@ -11,7 +11,7 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import { useMutation } from '@tanstack/react-query';
 
-import { emailOtp, signIn, signOut, useSession } from '@/lib/auth/client';
+import { authClient, emailOtp, signIn, signOut } from '@/lib/auth/client';
 import { AUTH_ROUTES } from '@/lib/auth/constants';
 import { trpc } from '@/lib/trpc/client';
 
@@ -32,8 +32,9 @@ import { useToast } from '@/hooks/use-toast';
  * ```
  */
 export function useAuth() {
-  const { data, isPending, isRefetching, refetch } = useSession();
+  const useSession = authClient.useSession();
 
+  const data = useSession.data;
   const session = data?.session;
   const user = data?.user;
 
@@ -41,11 +42,11 @@ export function useAuth() {
     session,
     user,
     userId: user?.id,
-    isLoading: isPending || isRefetching,
+    isLoading: useSession.isPending || useSession.isRefetching,
     isSignedIn: !!user,
     activeOrganizationSlug: session?.activeOrganizationSlug,
     activeOrganizationId: session?.activeOrganizationId,
-    refetch,
+    refetch: useSession.refetch,
   };
 }
 

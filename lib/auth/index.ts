@@ -2,7 +2,7 @@
 import type { EmailOTPOptions, OrganizationOptions } from 'better-auth/plugins';
 
 // Better Auth - Client and types
-export { useSession, signIn, signOut, emailOtp } from './client';
+export { authClient, signIn, signOut, emailOtp } from './client';
 
 /**
  * OTP type from Better Auth Email OTP plugin

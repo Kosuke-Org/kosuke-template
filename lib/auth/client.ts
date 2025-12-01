@@ -18,7 +18,7 @@ import type { auth } from '@/lib/auth/providers';
  * Better Auth client for use in React components with Email OTP support
  * Uses nano-store for state management and better-fetch for requests
  */
-const authClient = createAuthClient({
+export const authClient = createAuthClient({
   baseURL: process.env.NEXT_PUBLIC_APP_URL,
   plugins: [
     emailOTPClient(),
@@ -28,4 +28,4 @@ const authClient = createAuthClient({
   ],
 });
 
-export const { useSession, signIn, signOut, emailOtp, organization } = authClient;
+export const { signIn, signOut, emailOtp, organization } = authClient;
