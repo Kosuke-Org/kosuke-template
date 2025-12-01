@@ -39,6 +39,7 @@ const SIGN_IN_ATTEMPT_EXPIRY_MINUTES = 10; // 10 minutes to complete sign-in flo
 
 export const COOKIE_SECURE = process.env.COOKIE_SECURE === 'true';
 export const COOKIE_SAME_SITE = (process.env.COOKIE_SAME_SITE ?? 'lax') as CookieSameSiteType;
+export const COOKIE_PREFIX = process.env.COOKIE_PREFIX ?? 'better-auth'; // default to better-auth as it's the default prefix used by Better Auth
 
 /**
  * Create a new sign-in attempt and store it in a secure cookie
@@ -91,7 +92,7 @@ export const isTestEmail = (email: string) => {
 // Better Auth prefixes cookies with __Secure- based on NODE_ENV or isSecure property, which doesn't work in our preview environment
 export const getSessionFromCookie = (req: NextRequest): Session | null => {
   try {
-    const cookieName = 'better-auth.session_data';
+    const cookieName = `${COOKIE_PREFIX}.session_data`;
     const cookie = req.cookies.get(cookieName) ?? req.cookies.get(`__Secure-${cookieName}`) ?? null;
 
     if (!cookie) return null;

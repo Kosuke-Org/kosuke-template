@@ -27,6 +27,7 @@
       "BETTER_AUTH_SECRET": "mysecret",
       "COOKIE_SECURE": "true",
       "COOKIE_SAME_SITE": "none",
+      "COOKIE_PREFIX": "__KSK__COOKIE_PREFIX",
       "RESEND_API_KEY": "__KSK__RESEND_API_KEY",
       "RESEND_FROM_EMAIL": "noreply@kosuke.ai",
       "RESEND_FROM_NAME": "Kosuke Template",
