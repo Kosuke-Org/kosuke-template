@@ -2155,6 +2155,91 @@ async function proxyToEngine<T>(endpoint: string, options: RequestInit = {}): Pr
 
 - **Stateless Architecture**: The engine microservice is stateless and performs ONLY computational operations (LMSR, BTL, Monte Carlo). It does NOT connect to the database. Never add `DATABASE_URL` to engine environment variables or `depends_on: postgres` in docker-compose.yml. All data persistence is handled by Next.js + tRPC + Drizzle.
 
+### Engine Client Usage (MANDATORY)
+
+**ALL calls to the Python engine microservice MUST go through the centralized client at `lib/engine/client.ts`.**
+
+This applies to:
+
+- tRPC routers calling engine endpoints
+- Queue job processors calling engine endpoints
+- Any other server-side code that needs to call the Python engine
+
+**✅ CORRECT - Use centralized engine client:**
+
+```typescript
+// lib/queue/jobs/index-document.ts
+import { callIndexDocument } from '@/lib/engine/client';
+
+export async function processIndexDocument(data: IndexDocumentJobData) {
+  const result = await callIndexDocument({
+    documentId: data.documentId,
+    fileUrl: data.fileUrl,
+    metadata: data.metadata,
+  });
+  return { success: result.success, indexed: result.indexed };
+}
+```
+
+**❌ WRONG - Direct fetch calls to engine:**
+
+```typescript
+// ❌ NO! Don't make direct fetch calls to the engine
+const ENGINE_API_URL = process.env.ENGINE_API_URL || 'http://localhost:8000';
+
+const response = await fetch(`${ENGINE_API_URL}/api/v1/rag/index-document`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ document_id: documentId }),
+});
+```
+
+**Benefits of Centralized Client:**
+
+- ✅ **Consistent error handling** - Retry logic, timeout handling, error classification
+- ✅ **Type safety** - Request/response types defined once
+- ✅ **Centralized configuration** - API URL, API key, timeouts in one place
+- ✅ **snake_case ↔ camelCase mapping** - Automatic conversion between Python and TypeScript conventions
+- ✅ **Easier testing** - Mock the client functions instead of fetch calls
+- ✅ **Maintainability** - Changes to API structure only need updates in one file
+
+**Adding New Engine Endpoints:**
+
+When adding a new Python engine endpoint, add the corresponding function to `lib/engine/client.ts`:
+
+```typescript
+// 1. Define request/response interfaces (snake_case for Python API)
+interface MyFeatureRequest {
+  param_one: string;
+  param_two: number;
+}
+
+interface MyFeatureResponse {
+  result_value: string;
+  tokens_used: number;
+}
+
+// 2. Create the typed function with camelCase interface
+export async function callMyFeature(request: { paramOne: string; paramTwo: number }): Promise<{
+  resultValue: string;
+  tokensUsed: number;
+}> {
+  const response = await callEngine<MyFeatureRequest, MyFeatureResponse>(
+    '/api/v1/my-feature/endpoint',
+    {
+      param_one: request.paramOne,
+      param_two: request.paramTwo,
+    },
+    30000 // timeout in ms
+  );
+
+  return {
+    resultValue: response.result_value,
+    tokensUsed: response.tokens_used,
+  };
+}
+```
+
 ### Engine Folder Structure
 
 **ALWAYS colocate Pydantic models with their corresponding API endpoint files. NEVER create a centralized models.py file.**
