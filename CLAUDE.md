@@ -593,6 +593,111 @@ return <PageContent data={data} />;
 - **Local State**: useState for component-specific state
 - **Persistence**: Use Zustand persist middleware when needed
 
+### Client-Side Detection - MANDATORY
+
+**ALWAYS use the `useClient` hook to detect client-side mounting. NEVER use manual `useState` + `useEffect` patterns.**
+
+#### **✅ WHEN TO USE useClient**
+
+- **Client-only operations** - Window/document access, browser APIs
+- **Theme detection** - Reading system theme preferences
+- **Local storage** - Accessing localStorage/sessionStorage
+- **Media queries** - Checking viewport sizes
+- **Any browser-specific feature** - Features that don't exist on server
+
+#### **🔧 Implementation Pattern**
+
+**✅ CORRECT - Use useClient hook:**
+
+```typescript
+'use client';
+
+import { useClient } from '@/hooks/use-client';
+import { useTheme } from 'next-themes';
+
+export function ThemeSwitcher() {
+  const { isClient } = useClient();
+  const { theme, setTheme } = useTheme();
+
+  if (!isClient) {
+    return <div className="h-10 w-24" />; // Skeleton/placeholder
+  }
+
+  return (
+    <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+      <option value="system">System</option>
+    </select>
+  );
+}
+```
+
+**❌ WRONG - Manual useState + useEffect:**
+
+```typescript
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
+
+export function ThemeSwitcher() {
+  // ❌ NO! Don't manually manage mounted state
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div className="h-10 w-24" />;
+  }
+
+  return (
+    <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+      <option value="system">System</option>
+    </select>
+  );
+}
+```
+
+#### **🏗️ Best Practices**
+
+**Why useClient?**
+
+- ✅ Consistent pattern across codebase
+- ✅ Uses React 18's `useSyncExternalStore` (more reliable)
+- ✅ No hydration mismatches
+- ✅ Cleaner, more maintainable code
+- ✅ Single source of truth for client detection
+
+**Common Use Cases:**
+
+```typescript
+// Window size detection
+const { isClient } = useClient();
+if (!isClient) return null;
+const width = window.innerWidth;
+
+// localStorage access
+const { isClient } = useClient();
+const savedValue = isClient ? localStorage.getItem('key') : null;
+
+// Browser-only libraries
+const { isClient } = useClient();
+if (!isClient) return <Skeleton />;
+return <BrowserOnlyComponent />;
+```
+
+**Return Placeholder/Skeleton:**
+
+- Always return a placeholder or skeleton during SSR
+- Match dimensions to prevent layout shift
+- Use semantic HTML for better accessibility
+
 ### Table Operations
 
 **ALWAYS use table hooks for table operations to avoid code duplication. These hooks provide consistent patterns for search, filtering, sorting, and pagination across all table implementations.**

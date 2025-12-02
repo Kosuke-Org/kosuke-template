@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
 import { useTheme } from 'next-themes';
 
 import { Monitor, Moon, Sun } from 'lucide-react';
+
+import { useClient } from '@/hooks/use-client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -31,14 +31,9 @@ const themes = [
 
 export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const { isClient } = useClient();
 
-  useEffect(() => {
-    // eslint-disable-next-line
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
+  if (!isClient) {
     return (
       <div className="grid grid-cols-3 gap-4">
         {themes.map((themeOption) => (
