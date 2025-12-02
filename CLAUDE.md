@@ -593,6 +593,83 @@ return <PageContent data={data} />;
 - **Local State**: useState for component-specific state
 - **Persistence**: Use Zustand persist middleware when needed
 
+### React Hook Form - watch vs useWatch
+
+**PREFER `useWatch` for reactive form values in render phase. Use `watch()` only in callbacks.**
+
+#### **✅ WHEN TO USE useWatch**
+
+- **Render phase reactive values** - Displaying or computing values during render
+- **Derived/computed values** - Calculations based on form fields
+- **Performance optimization** - Large forms with many fields
+- **Component isolation** - Isolating re-renders to specific components
+
+#### **✅ WHEN TO USE watch()**
+
+- **Event handlers** - Inside onClick, onSubmit, onChange callbacks
+- **Imperative reads** - Getting values without subscribing to changes
+- **Multiple fields at once** - `watch(['field1', 'field2'])` for batching
+
+#### **🔧 Implementation Patterns**
+
+**✅ CORRECT - useWatch for render phase:**
+
+```typescript
+import { useWatch } from 'react-hook-form';
+
+function OrgGeneralForm() {
+  const form = useForm({ defaultValues: { name: organization?.name } });
+
+  // ✅ Reactive value for render phase - optimized re-renders
+  const watchedName = useWatch({
+    control: form.control,
+    name: 'name',
+  });
+
+  const hasChanges = watchedName !== organization?.name;
+
+  return (
+    <Button disabled={!hasChanges}>Save</Button>
+  );
+}
+```
+
+**✅ CORRECT - watch() for callbacks:**
+
+```typescript
+function OrgGeneralForm() {
+  const form = useForm();
+
+  const handlePreview = () => {
+    // ✅ Imperative read in callback - no subscription needed
+    const currentName = form.watch('name');
+    console.log('Current name:', currentName);
+  };
+
+  return <Button onClick={handlePreview}>Preview</Button>;
+}
+```
+
+**❌ WRONG - watch() for reactive render values:**
+
+```typescript
+function OrgGeneralForm() {
+  const form = useForm();
+
+  // ❌ Causes entire component to re-render on every field change
+  const hasChanges = form.watch('name') !== organization?.name;
+
+  return <Button disabled={!hasChanges}>Save</Button>;
+}
+```
+
+#### **Performance Benefits:**
+
+- ✅ `useWatch` isolates re-renders to subscription point
+- ✅ Prevents unnecessary parent component re-renders
+- ✅ Better performance in large forms or complex UIs
+- ✅ More predictable render behavior
+
 ### Client-Side Detection - MANDATORY
 
 **ALWAYS use the `useClient` hook to detect client-side mounting. NEVER use manual `useState` + `useEffect` patterns.**
