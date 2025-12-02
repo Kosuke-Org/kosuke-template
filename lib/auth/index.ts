@@ -33,5 +33,3 @@ export { ActivityType } from '@/lib/db/schema';
 
 // Constants
 export { AUTH_ROUTES } from './constants';
-
-export type CookieSameSiteType = 'lax' | 'strict' | 'none';
