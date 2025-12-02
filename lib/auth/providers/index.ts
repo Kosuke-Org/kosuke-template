@@ -16,7 +16,7 @@ import { sendOTPEmail } from '@/lib/email/otp';
 import { redis } from '@/lib/redis';
 
 import { TEST_OTP } from '../constants';
-import { COOKIE_SAME_SITE, COOKIE_SECURE, isTestEmail } from '../utils';
+import { isTestEmail } from '../utils';
 
 /**
  * Better Auth instance with Email OTP
@@ -65,8 +65,8 @@ export const auth = betterAuth({
   advanced: {
     defaultCookieAttributes: {
       httpOnly: true,
-      secure: COOKIE_SECURE,
-      sameSite: COOKIE_SAME_SITE,
+      secure: true,
+      sameSite: 'lax',
     },
     database: {
       generateId: () => crypto.randomUUID(),

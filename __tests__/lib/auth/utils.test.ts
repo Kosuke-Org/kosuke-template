@@ -88,59 +88,6 @@ describe('Auth Utils', () => {
           expect.any(Object)
         );
       });
-
-      it('should use sameSite=none when COOKIE_SAME_SITE=none', async () => {
-        vi.stubEnv('COOKIE_SAME_SITE', 'none');
-
-        const { cookies } = await import('next/headers');
-        const { createSignInAttempt } = await import('@/lib/auth/utils');
-
-        const mockSet = vi.fn();
-
-        (cookies as Mock).mockResolvedValue({
-          set: mockSet,
-        });
-
-        await createSignInAttempt('test@example.com');
-
-        expect(mockSet).toHaveBeenCalledWith(
-          SIGN_IN_ATTEMPT_EMAIL_COOKIE,
-          'test@example.com',
-          expect.objectContaining({
-            httpOnly: true,
-            secure: false,
-            sameSite: 'none',
-            maxAge: 600,
-            path: '/',
-          })
-        );
-      });
-
-      it('should use COOKIE_SECURE to set secure flag', async () => {
-        vi.stubEnv('COOKIE_SECURE', 'true');
-
-        const { cookies } = await import('next/headers');
-        const { createSignInAttempt } = await import('@/lib/auth/utils');
-        const mockSet = vi.fn();
-
-        (cookies as Mock).mockResolvedValue({
-          set: mockSet,
-        });
-
-        await createSignInAttempt('test@example.com');
-
-        expect(mockSet).toHaveBeenCalledWith(
-          SIGN_IN_ATTEMPT_EMAIL_COOKIE,
-          'test@example.com',
-          expect.objectContaining({
-            httpOnly: true,
-            secure: true,
-            sameSite: 'lax',
-            maxAge: 600,
-            path: '/',
-          })
-        );
-      });
     });
 
     describe('getCurrentSignInAttempt', () => {
