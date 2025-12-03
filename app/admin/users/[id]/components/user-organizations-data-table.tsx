@@ -44,7 +44,7 @@ interface UserOrganizationsDataTableProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   // Action handlers
-  onView: (slug: string) => void;
+  onView: (id: string) => void;
   onRemove: (id: string, userName: string, orgName: string) => void;
 }
 
@@ -116,7 +116,7 @@ export function UserOrganizationsDataTable({
                   <TableRow
                     key={row.id}
                     className="cursor-pointer"
-                    onClick={() => onView(row.original.organization.slug)}
+                    onClick={() => onView(row.original.organization.id)}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>

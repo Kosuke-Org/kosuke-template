@@ -1,12 +1,17 @@
 'use client';
 
 import { use, useState } from 'react';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { useRouter } from 'next/navigation';
 
-import { Loader2, Mail, Trash2, User } from 'lucide-react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
+import { Loader2, Trash2 } from 'lucide-react';
+import { z } from 'zod';
 
 import { trpc } from '@/lib/trpc/client';
+import { adminUpdateUserSchema } from '@/lib/trpc/schemas/admin';
 
 import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useTableSearch } from '@/hooks/use-table-search';
@@ -22,31 +27,62 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { UserOrganizationsDataTable } from './components/user-organizations-data-table';
 
+type UserFormValues = z.infer<typeof adminUpdateUserSchema>;
+
 function UserDetailSkeleton() {
   return (
     <div className="space-y-6">
-      <Skeleton className="h-10 w-32" />
-      <div className="grid gap-6 md:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="flex items-start justify-between">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-9 w-32" />
       </div>
+
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList>
+          <Skeleton className="h-10 w-20" />
+          <Skeleton className="h-10 w-32" />
+        </TabsList>
+
+        <TabsContent value="profile" className="space-y-6">
+          <div className="flex flex-col gap-10 lg:flex-row">
+            <Card className="max-w-4xl lg:flex-1">
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                  </div>
+                  <Skeleton className="h-10 w-32" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <aside className="space-y-6">
+              <div className="space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="space-y-1">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                ))}
+              </div>
+              <Skeleton className="h-3 w-40" />
+            </aside>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -75,6 +111,16 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       staleTime: 1000 * 60 * 2, // 2 minutes
     }
   );
+
+  const utils = trpc.useUtils();
+
+  const form = useForm<Omit<UserFormValues, 'id'>>({
+    resolver: zodResolver(adminUpdateUserSchema.omit({ id: true })),
+    values: {
+      displayName: userData?.user.displayName || '',
+      emailVerified: userData?.user.emailVerified || false,
+    },
+  });
 
   const pagination = useTablePagination({ initialPage: 1, initialPageSize: 20 });
 
@@ -108,12 +154,31 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     }
   );
 
+  const updateUserMutation = trpc.admin.users.update.useMutation({
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'User updated successfully',
+      });
+      utils.admin.users.get.invalidate({ id: resolvedParams.id });
+      utils.admin.users.list.invalidate();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const deleteUser = trpc.admin.users.delete.useMutation({
     onSuccess: () => {
       toast({
         title: 'Success',
         description: 'User deleted successfully',
       });
+      utils.admin.users.list.invalidate();
       router.push('/admin/users');
     },
     onError: (error) => {
@@ -148,8 +213,8 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     setDeleteDialogOpen(false);
   };
 
-  const handleViewOrganization = (slug: string) => {
-    router.push(`/admin/organizations/${slug}`);
+  const handleViewOrganization = (id: string) => {
+    router.push(`/admin/organizations/${id}`);
   };
 
   const handleRemoveMembership = (id: string, userName: string, orgName: string) => {
@@ -161,6 +226,27 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     if (!membershipToDelete) return;
     await deleteMembership.mutateAsync({ id: membershipToDelete.id });
   };
+
+  const onSubmit = async (data: Omit<UserFormValues, 'id'>) => {
+    await updateUserMutation.mutateAsync({
+      id: resolvedParams.id,
+      ...data,
+    });
+  };
+
+  const watchedDisplayName = useWatch({
+    control: form.control,
+    name: 'displayName',
+  });
+
+  const watchedEmailVerified = useWatch({
+    control: form.control,
+    name: 'emailVerified',
+  });
+
+  const hasChanges =
+    watchedDisplayName !== userData?.user.displayName ||
+    watchedEmailVerified !== userData?.user.emailVerified;
 
   if (isLoading) {
     return <UserDetailSkeleton />;
@@ -182,10 +268,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{user.displayName}</h1>
-          <p className="text-muted-foreground mt-1 text-sm">{user.email}</p>
-        </div>
+        <h1 className="text-2xl font-bold">{user.displayName}</h1>
         <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
           <Trash2 />
           Delete User
@@ -199,43 +282,66 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         </TabsList>
 
         <TabsContent value="profile" className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* User Info */}
-            <Card>
+          <div className="flex flex-col gap-10 lg:flex-row">
+            <Card className="max-w-4xl lg:flex-1">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  User Information
-                </CardTitle>
+                <CardTitle>User Information</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <div className="text-muted-foreground text-sm font-medium">Email</div>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Mail className="text-muted-foreground h-4 w-4" />
-                    {user.email}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground text-sm font-medium">Email Verified</div>
-                  <div className="mt-1">
-                    {user.emailVerified ? (
-                      <Badge variant="default">Verified</Badge>
-                    ) : (
-                      <Badge variant="secondary">Unverified</Badge>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground text-sm font-medium">User ID</div>
-                  <div className="mt-1 font-mono text-sm">{user.id}</div>
-                </div>
-                <div>
-                  <div className="text-muted-foreground text-sm font-medium">Created</div>
-                  <div className="mt-1 text-sm">{new Date(user.createdAt).toLocaleString()}</div>
-                </div>
+              <CardContent>
+                <form id="user-form" onSubmit={form.handleSubmit(onSubmit)}>
+                  <FieldGroup>
+                    <Controller
+                      name="displayName"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel htmlFor="user-display-name">Name</FieldLabel>
+                          <Input
+                            {...field}
+                            id="user-display-name"
+                            aria-invalid={fieldState.invalid}
+                            placeholder="Enter display name"
+                            disabled={updateUserMutation.isPending}
+                          />
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                        </Field>
+                      )}
+                    />
+
+                    <div>
+                      <Button type="submit" disabled={updateUserMutation.isPending || !hasChanges}>
+                        {updateUserMutation.isPending && (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        )}
+                        Save Changes
+                      </Button>
+                    </div>
+                  </FieldGroup>
+                </form>
               </CardContent>
             </Card>
+
+            <aside className="space-y-6">
+              <dl className="space-y-4">
+                <div className="space-y-1">
+                  <dt className="text-muted-foreground text-xs">User ID</dt>
+                  <dd className="text-sm break-all">{user.id}</dd>
+                </div>
+
+                <div className="space-y-1">
+                  <dt className="text-muted-foreground text-xs">Email</dt>
+                  <dd className="text-sm">{user.email}</dd>
+                </div>
+
+                <div className="space-y-1">
+                  <dt className="text-muted-foreground text-xs">User since</dt>
+                  <dd className="text-sm">{format(new Date(user.createdAt), 'MMM d, yyyy')}</dd>
+                </div>
+              </dl>
+              <span className="text-muted-foreground text-xs">
+                Last updated at {format(new Date(user.updatedAt), 'MMM d, yyyy')}
+              </span>
+            </aside>
           </div>
         </TabsContent>
 

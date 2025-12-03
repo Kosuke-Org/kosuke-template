@@ -84,8 +84,8 @@ export default function AdminOrganizationsPage() {
     },
   });
 
-  const handleViewClick = (slug: string) => {
-    router.push(`/admin/organizations/${slug}`);
+  const handleViewClick = (id: string) => {
+    router.push(`/admin/organizations/${id}`);
   };
 
   const handleDeleteClick = (id: string, name: string) => {

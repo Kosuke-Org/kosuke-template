@@ -221,11 +221,11 @@ export const adminRouter = router({
     /**
      * Get single organization details with members
      */
-    get: superAdminProcedure.input(z.object({ slug: z.string() })).query(async ({ input }) => {
+    get: superAdminProcedure.input(z.object({ id: z.uuid() })).query(async ({ input }) => {
       const [org] = await db
         .select()
         .from(organizations)
-        .where(eq(organizations.slug, input.slug))
+        .where(eq(organizations.id, input.id))
         .limit(1);
 
       if (!org) {

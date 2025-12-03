@@ -116,7 +116,7 @@ export function OrganizationsDataTable({
                   <TableRow
                     key={row.id}
                     className="cursor-pointer"
-                    onClick={() => onView(row.original.slug)}
+                    onClick={() => onView(row.original.id)}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
