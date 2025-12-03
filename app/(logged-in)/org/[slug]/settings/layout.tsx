@@ -7,7 +7,8 @@
 
 import { Suspense } from 'react';
 
-import { useParams, usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useParams, usePathname } from 'next/navigation';
 
 import { Settings, Users } from 'lucide-react';
 
@@ -16,15 +17,10 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export default function OrgSettingsLayout({ children }: { children: React.ReactNode }) {
   const params = useParams();
   const pathname = usePathname();
-  const router = useRouter();
   const slug = params.slug as string;
 
   const baseUrl = `/org/${slug}/settings`;
   const currentTab = pathname === baseUrl ? 'general' : pathname.split('/').pop() || 'general';
-
-  const handleTabChange = (value: string) => {
-    router.push(`${baseUrl}${value === 'general' ? '' : `/${value}`}`);
-  };
 
   return (
     <div className="flex max-w-4xl flex-col space-y-6">
@@ -35,15 +31,19 @@ export default function OrgSettingsLayout({ children }: { children: React.ReactN
         </p>
       </div>
 
-      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
+      <Tabs value={currentTab} className="w-full">
         <TabsList className="w-full">
-          <TabsTrigger value="general" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">General</span>
+          <TabsTrigger value="general" className="flex items-center gap-2" asChild>
+            <Link href={baseUrl}>
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">General</span>
+            </Link>
           </TabsTrigger>
-          <TabsTrigger value="members" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Members</span>
+          <TabsTrigger value="members" className="flex items-center gap-2" asChild>
+            <Link href={`${baseUrl}/members`}>
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Members</span>
+            </Link>
           </TabsTrigger>
         </TabsList>
       </Tabs>

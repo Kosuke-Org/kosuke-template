@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '@/hooks/use-auth';
+import { useClient } from '@/hooks/use-client';
 
 import {
   AreaChartDemo,
@@ -136,8 +137,9 @@ export default function Page() {
   const [sliderValue, setSliderValue] = useState([50]);
   const [switchValue, setSwitchValue] = useState(false);
   const { isLoading } = useAuth();
+  const { isClient } = useClient();
 
-  if (isLoading) {
+  if (isLoading || !isClient) {
     return <DashboardSkeleton />;
   }
 

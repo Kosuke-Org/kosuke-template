@@ -57,7 +57,7 @@ export default defineConfig({
         '**/__tests__/**',
         '**/cli/**',
         'instrumentation*.ts',
-        'middleware.ts',
+        'proxy.ts',
         'sentry.*.ts',
       ],
       thresholds: {

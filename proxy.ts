@@ -55,7 +55,7 @@ const isSignInVerifyRoute = createRouteMatcher([
 ]);
 const isAuthRoute = createRouteMatcher(['/sign-in(.*)', '/sign-up(.*)']);
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   // API routes handle their own authentication via protectedProcedures
   if (isApiRoute(req)) return NextResponse.next();
 

@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
 
 import { motion } from 'framer-motion';
+
+import { useClient } from '@/hooks/use-client';
 
 interface TechLogoProps {
   name: string;
@@ -20,15 +22,11 @@ interface TechLogoProps {
 
 export function TechLogo({ name, logoPath, url, size = 'md', className = '' }: TechLogoProps) {
   const [imageError, setImageError] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const { isClient } = useClient();
   const { theme, systemTheme } = useTheme();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // Determine the current theme, considering system preference
-  const currentTheme = mounted ? (theme === 'system' ? systemTheme : theme) : 'light';
+  const currentTheme = isClient ? (theme === 'system' ? systemTheme : theme) : 'light';
   const logoSrc = currentTheme === 'dark' ? logoPath.dark : logoPath.light;
 
   const sizeClasses = {

@@ -16,6 +16,7 @@ import {
 import { getInitials } from '@/lib/utils';
 
 import { useAuth, useAuthActions } from '@/hooks/use-auth';
+import { useClient } from '@/hooks/use-client';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 
 import { UserSkeleton } from '@/components/skeletons';
@@ -39,13 +40,14 @@ import {
 export function NavUser() {
   const { isSignedIn } = useAuth();
   const { isMobile } = useSidebar();
+  const { isClient } = useClient();
   const { profileImageUrl, displayName, primaryEmail } = useUserAvatar();
   const { signOut: handleSignOut } = useAuthActions();
 
   // Generate initials from display name
   const initials = getInitials(displayName);
 
-  if (!isSignedIn) {
+  if (!isClient || !isSignedIn) {
     return (
       <SidebarMenu>
         <SidebarMenuItem>
@@ -58,13 +60,14 @@ export function NavUser() {
   }
 
   return (
-    <SidebarMenu>
+    <SidebarMenu suppressHydrationWarning>
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              suppressHydrationWarning
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 {profileImageUrl && <AvatarImage src={profileImageUrl} alt={displayName} />}

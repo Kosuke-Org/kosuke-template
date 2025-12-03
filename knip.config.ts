@@ -4,6 +4,7 @@ const knipConfig = {
     '.venv/**',
     'engine/**',
     'cli/**',
+    'proxy.ts',
     // Shadcn/UI components, we keep them as part of the template
     'components/ui/**',
     // Chart/skeleton components are template examples

@@ -20,7 +20,7 @@ interface Technology {
 
 export const technologies: Technology[] = [
   {
-    name: 'Next.js 15',
+    name: 'Next.js 16',
     description: 'The React framework for production with App Router and Server Components',
     logoPath: {
       light: '/logos/nextjs.svg',

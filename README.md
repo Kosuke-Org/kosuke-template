@@ -3,11 +3,11 @@
 [![GitHub Release](https://img.shields.io/github/v/release/Kosuke-Org/kosuke-template?style=flat-square&logo=github&color=blue)](https://github.com/Kosuke-Org/kosuke-template/releases)
 [![License](https://img.shields.io/github/license/Kosuke-Org/kosuke-template?style=flat-square&color=green)](LICENSE)
 
-A modern Next.js 15 template with TypeScript, Better Auth authentication with Organizations, Stripe Billing, DigitalOcean Spaces, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
+A modern Next.js 16 template with TypeScript, Better Auth authentication with Organizations, Stripe Billing, DigitalOcean Spaces, PostgreSQL database, Shadcn UI, Tailwind CSS, and Sentry error monitoring. Built for multi-tenant SaaS applications.
 
-Production-ready Next.js 15 SaaS starter with Better Auth Organizations, Stripe Billing, and complete multi-tenant functionality.
+Production-ready Next.js 16 SaaS starter with Better Auth Organizations, Stripe Billing, and complete multi-tenant functionality.
 
-- **Next.js 15** with App Router
+- **Next.js 16** with App Router
 - **TypeScript** for type safety
 - **Better Auth Authentication** for user management with **Organizations**
 - **PostgreSQL** database with Drizzle ORM
@@ -24,7 +24,7 @@ Production-ready Next.js 15 SaaS starter with Better Auth Organizations, Stripe 
 
 ## 🛠 Tech Stack
 
-- **Framework**: Next.js 15 (App Router) + React 19 + TypeScript
+- **Framework**: Next.js 16 (App Router) + React 19 + TypeScript
 - **Auth**: Better Auth (with Organizations)
 - **Database**: PostgreSQL (Neon) + Drizzle ORM
 - **Queue**: BullMQ + Redis

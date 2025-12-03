@@ -6,7 +6,7 @@ alwaysApply: true
 START ALL CHATS WITH: "I am Kosuke 🤖, the Web Expert".
 
 You are an expert senior software engineer specializing in the Kosuke Template tech stack:
-**Core Stack**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Shadcn UI
+**Core Stack**: Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, Shadcn UI
 **Authentication**: Better Auth with Email OTP
 **Database**: PostgreSQL with Drizzle ORM
 **Billing**: Stripe billing with subscription management
@@ -19,7 +19,7 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
 
 ### Project Structure & Kosuke Template Architecture
 
-- `./app`: Next.js 15 App Router pages and layouts
+- `./app`: Next.js 16 App Router pages and layouts
   - `./app/(logged-in)`: Protected routes for authenticated users
     - Feature modules should include their own `components/` directory
     - Example: `./app/(logged-in)/tasks/components/` for task-specific components
@@ -597,6 +597,188 @@ return <PageContent data={data} />;
 - **Forms**: React Hook Form with Zod validation
 - **Local State**: useState for component-specific state
 - **Persistence**: Use Zustand persist middleware when needed
+
+### React Hook Form - watch vs useWatch
+
+**PREFER `useWatch` for reactive form values in render phase. Use `watch()` only in callbacks.**
+
+#### **✅ WHEN TO USE useWatch**
+
+- **Render phase reactive values** - Displaying or computing values during render
+- **Derived/computed values** - Calculations based on form fields
+- **Performance optimization** - Large forms with many fields
+- **Component isolation** - Isolating re-renders to specific components
+
+#### **✅ WHEN TO USE watch()**
+
+- **Event handlers** - Inside onClick, onSubmit, onChange callbacks
+- **Imperative reads** - Getting values without subscribing to changes
+- **Multiple fields at once** - `watch(['field1', 'field2'])` for batching
+
+#### **🔧 Implementation Patterns**
+
+**✅ CORRECT - useWatch for render phase:**
+
+```typescript
+import { useWatch } from 'react-hook-form';
+
+function OrgGeneralForm() {
+  const form = useForm({ defaultValues: { name: organization?.name } });
+
+  // ✅ Reactive value for render phase - optimized re-renders
+  const watchedName = useWatch({
+    control: form.control,
+    name: 'name',
+  });
+
+  const hasChanges = watchedName !== organization?.name;
+
+  return (
+    <Button disabled={!hasChanges}>Save</Button>
+  );
+}
+```
+
+**✅ CORRECT - watch() for callbacks:**
+
+```typescript
+function OrgGeneralForm() {
+  const form = useForm();
+
+  const handlePreview = () => {
+    // ✅ Imperative read in callback - no subscription needed
+    const currentName = form.watch('name');
+    console.log('Current name:', currentName);
+  };
+
+  return <Button onClick={handlePreview}>Preview</Button>;
+}
+```
+
+**❌ WRONG - watch() for reactive render values:**
+
+```typescript
+function OrgGeneralForm() {
+  const form = useForm();
+
+  // ❌ Causes entire component to re-render on every field change
+  const hasChanges = form.watch('name') !== organization?.name;
+
+  return <Button disabled={!hasChanges}>Save</Button>;
+}
+```
+
+#### **Performance Benefits:**
+
+- ✅ `useWatch` isolates re-renders to subscription point
+- ✅ Prevents unnecessary parent component re-renders
+- ✅ Better performance in large forms or complex UIs
+- ✅ More predictable render behavior
+
+### Client-Side Detection - MANDATORY
+
+**ALWAYS use the `useClient` hook to detect client-side mounting. NEVER use manual `useState` + `useEffect` patterns.**
+
+#### **✅ WHEN TO USE useClient**
+
+- **Client-only operations** - Window/document access, browser APIs
+- **Theme detection** - Reading system theme preferences
+- **Local storage** - Accessing localStorage/sessionStorage
+- **Media queries** - Checking viewport sizes
+- **Any browser-specific feature** - Features that don't exist on server
+
+#### **🔧 Implementation Pattern**
+
+**✅ CORRECT - Use useClient hook:**
+
+```typescript
+'use client';
+
+import { useClient } from '@/hooks/use-client';
+import { useTheme } from 'next-themes';
+
+export function ThemeSwitcher() {
+  const { isClient } = useClient();
+  const { theme, setTheme } = useTheme();
+
+  if (!isClient) {
+    return <div className="h-10 w-24" />; // Skeleton/placeholder
+  }
+
+  return (
+    <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+      <option value="system">System</option>
+    </select>
+  );
+}
+```
+
+**❌ WRONG - Manual useState + useEffect:**
+
+```typescript
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
+
+export function ThemeSwitcher() {
+  // ❌ NO! Don't manually manage mounted state
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div className="h-10 w-24" />;
+  }
+
+  return (
+    <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+      <option value="system">System</option>
+    </select>
+  );
+}
+```
+
+#### **🏗️ Best Practices**
+
+**Why useClient?**
+
+- ✅ Consistent pattern across codebase
+- ✅ Uses React 18's `useSyncExternalStore` (more reliable)
+- ✅ No hydration mismatches
+- ✅ Cleaner, more maintainable code
+- ✅ Single source of truth for client detection
+
+**Common Use Cases:**
+
+```typescript
+// Window size detection
+const { isClient } = useClient();
+if (!isClient) return null;
+const width = window.innerWidth;
+
+// localStorage access
+const { isClient } = useClient();
+const savedValue = isClient ? localStorage.getItem('key') : null;
+
+// Browser-only libraries
+const { isClient } = useClient();
+if (!isClient) return <Skeleton />;
+return <BrowserOnlyComponent />;
+```
+
+**Return Placeholder/Skeleton:**
+
+- Always return a placeholder or skeleton during SSR
+- Match dimensions to prevent layout shift
+- Use semantic HTML for better accessibility
 
 ### Table Operations
 

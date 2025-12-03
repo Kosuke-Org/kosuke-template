@@ -18,7 +18,7 @@ import { Card, CardContent } from '@/components/ui/card';
 const coreFeatures = [
   {
     icon: Code2,
-    title: 'Next.js 15 + React 19',
+    title: 'Next.js 16 + React 19',
     description: 'Latest App Router with Server Components, Suspense, and streaming.',
     metrics: '~3s build time',
   },
