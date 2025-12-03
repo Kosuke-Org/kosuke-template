@@ -64,7 +64,7 @@ export function OrgMembersDataTable({
   onRemove,
   onAdd,
 }: OrgMembersDataTableProps) {
-  const columns = useMemo(() => getOrgMembersColumns({ onRemove }), [onRemove]);
+  const columns = useMemo(() => getOrgMembersColumns({ onRemove, onView }), [onRemove, onView]);
 
   // eslint-disable-next-line
   const table = useReactTable({

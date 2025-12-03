@@ -64,7 +64,10 @@ export function UserOrganizationsDataTable({
   onRemove,
   onAdd,
 }: UserOrganizationsDataTableProps) {
-  const columns = useMemo(() => getUserOrganizationsColumns({ onRemove }), [onRemove]);
+  const columns = useMemo(
+    () => getUserOrganizationsColumns({ onRemove, onView }),
+    [onRemove, onView]
+  );
 
   // eslint-disable-next-line
   const table = useReactTable({

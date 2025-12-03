@@ -8,7 +8,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 import type { inferRouterOutputs } from '@trpc/server';
 import { format } from 'date-fns';
-import { MoreHorizontal, Shield, X } from 'lucide-react';
+import { Building2, MoreHorizontal, Shield, X } from 'lucide-react';
 
 import type { AppRouter } from '@/lib/trpc/router';
 
@@ -27,13 +27,14 @@ type RouterOutput = inferRouterOutputs<AppRouter>;
 type MembershipWithDetails = RouterOutput['admin']['memberships']['list']['memberships'][number];
 
 interface ColumnActionsProps {
+  onView: (id: string) => void;
   onRemove: (id: string, userName: string, orgName: string) => void;
 }
 
 export function getUserOrganizationsColumns(
   actions: ColumnActionsProps
 ): ColumnDef<MembershipWithDetails>[] {
-  const { onRemove } = actions;
+  const { onRemove, onView } = actions;
 
   const columns: ColumnDef<MembershipWithDetails>[] = [
     {
@@ -91,6 +92,15 @@ export function getUserOrganizationsColumns(
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onView(membership.organization.id);
+                  }}
+                >
+                  <Building2 />
+                  View Organization
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
