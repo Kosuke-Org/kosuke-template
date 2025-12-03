@@ -2,6 +2,7 @@
   "semi": true,
   "plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-tailwindcss"],
   "importOrder": [
+    "server-only",
     "^react(.*)",
     "^next(.*)",
     "<BUILTIN_MODULES>",

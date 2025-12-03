@@ -7,6 +7,7 @@ import { headers } from 'next/headers';
 import { TRPCError, initTRPC } from '@trpc/server';
 import superjson from 'superjson';
 
+import { isSuperAdminByUserEmail } from '@/lib/auth/permissions';
 import { auth } from '@/lib/auth/providers';
 
 /**
@@ -89,4 +90,21 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
       getUser: ctx.getUser,
     },
   });
+});
+
+/**
+ * Super admin procedure - requires authentication and super admin access
+ */
+export const superAdminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const user = await ctx.getUser();
+
+  if (!user) {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'User not found' });
+  }
+
+  if (!isSuperAdminByUserEmail(user.email)) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Super admin access required' });
+  }
+
+  return next({ ctx });
 });

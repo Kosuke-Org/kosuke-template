@@ -203,4 +203,37 @@ describe('proxy', () => {
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/onboarding');
   });
+
+  it('redirects authenticated users to admin dashboard if they are super admin', async () => {
+    vi.stubEnv('SUPER_ADMIN_EMAILS', 'test@example.com');
+    const cookies = mockSession({
+      ...mockedSession,
+      // user email is already 'test@example.com' in mockedSession
+      session: {
+        ...mockedSession.session,
+        activeOrganizationId: 'org-1',
+        activeOrganizationSlug: 'test-org',
+      },
+    });
+
+    const res = await proxy(makeReq('/admin', cookies));
+    expect(res?.type).toBe('next');
+  });
+
+  it('redirects authenticated users to org dashboard if they are not super admin', async () => {
+    vi.stubEnv('SUPER_ADMIN_EMAILS', '');
+
+    const cookies = mockSession({
+      ...mockedSession,
+      session: {
+        ...mockedSession.session,
+        activeOrganizationId: 'org-1',
+        activeOrganizationSlug: 'test-org',
+      },
+    });
+
+    const res = await proxy(makeReq('/admin', cookies));
+    expect(res?.type).toBe('redirect');
+    expect(res?.url).toContain('/org/test-org/dashboard');
+  });
 });

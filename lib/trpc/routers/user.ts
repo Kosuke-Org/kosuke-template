@@ -8,6 +8,7 @@ import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 
 import { AUTH_ERRORS } from '@/lib/auth/constants';
+import { isSuperAdminByUserEmail } from '@/lib/auth/permissions';
 import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
 import { users } from '@/lib/db/schema';
@@ -185,4 +186,12 @@ export const userRouter = router({
         message: 'Display name updated successfully',
       };
     }),
+
+  /**
+   * Check if current user is a super admin
+   */
+  isSuperAdmin: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.getUser();
+    return isSuperAdminByUserEmail(user?.email);
+  }),
 });

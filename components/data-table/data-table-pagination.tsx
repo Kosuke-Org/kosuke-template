@@ -37,7 +37,7 @@ export function DataTablePagination<TData>({
   return (
     <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
       <div className="text-muted-foreground text-sm">
-        Showing {startIndex} to {endIndex} of {totalRecords} orders
+        Showing {startIndex} to {endIndex} of {totalRecords} results
       </div>
       <div className="flex items-center gap-2">
         <Select

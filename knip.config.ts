@@ -20,6 +20,8 @@ const knipConfig = {
     'lib/queue/init-workers.ts',
     // Used in package.json scripts
     'lib/db/scripts/db-seed.ts',
+    // Used in tests
+    '__tests__/setup/server-only-mock.ts',
   ],
   ignoreDependencies: [
     // Shadcn/UI dependencies (only used in components/ui/** which is ignored)
