@@ -20,6 +20,12 @@ export const adminDeleteUserSchema = z.object({
   id: z.uuid(),
 });
 
+export const adminCreateUserSchema = z.object({
+  email: z.email('Invalid email address'),
+  organizationId: z.uuid().optional(),
+  role: z.enum(['owner', 'admin', 'member']).optional().default('member'),
+});
+
 // Organization Management Schemas
 export const adminOrgListFiltersSchema = z
   .object({
@@ -37,6 +43,16 @@ export const adminUpdateOrgSchema = z.object({
 
 export const adminDeleteOrgSchema = z.object({
   id: z.uuid(),
+});
+
+export const adminCreateOrgSchema = z.object({
+  name: z.string().min(1, 'Organization name is required').max(255),
+  slug: z
+    .string()
+    .min(1, 'Slug is required')
+    .max(255)
+    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
+  ownerId: z.uuid().optional(),
 });
 
 // Organization Membership Schemas

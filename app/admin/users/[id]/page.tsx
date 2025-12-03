@@ -11,6 +11,7 @@ import { Loader2, Trash2 } from 'lucide-react';
 import { z } from 'zod';
 
 import { trpc } from '@/lib/trpc/client';
+import type { adminCreateMembershipSchema } from '@/lib/trpc/schemas/admin';
 import { adminUpdateUserSchema } from '@/lib/trpc/schemas/admin';
 
 import { useTablePagination } from '@/hooks/use-table-pagination';
@@ -34,6 +35,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+import { AddToOrganizationDialog } from './components/add-to-organization-dialog';
 import { UserOrganizationsDataTable } from './components/user-organizations-data-table';
 
 type UserFormValues = z.infer<typeof adminUpdateUserSchema>;
@@ -99,6 +101,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [membershipDeleteDialogOpen, setMembershipDeleteDialogOpen] = useState(false);
+  const [addToOrgDialogOpen, setAddToOrgDialogOpen] = useState(false);
   const [membershipToDelete, setMembershipToDelete] = useState<{
     id: string;
     userName: string;
@@ -140,17 +143,29 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     }
   };
 
-  const { data: membershipsData } = trpc.admin.memberships.list.useQuery(
+  const { data: membershipsData, refetch: refetchMemberships } =
+    trpc.admin.memberships.list.useQuery(
+      {
+        userId: resolvedParams.id,
+        searchQuery: searchValue.trim() || undefined,
+        page: pagination.page,
+        pageSize: pagination.pageSize,
+      },
+      {
+        placeholderData: (previousData) => previousData,
+        staleTime: 1000 * 60 * 2,
+        enabled: !!resolvedParams.id,
+      }
+    );
+
+  // Fetch all organizations for the add to org dropdown
+  const { data: orgsData } = trpc.admin.organizations.list.useQuery(
     {
-      userId: resolvedParams.id,
-      searchQuery: searchValue.trim() || undefined,
-      page: pagination.page,
-      pageSize: pagination.pageSize,
+      page: 1,
+      pageSize: 100,
     },
     {
-      placeholderData: (previousData) => previousData,
-      staleTime: 1000 * 60 * 2,
-      enabled: !!resolvedParams.id,
+      staleTime: 1000 * 60 * 5,
     }
   );
 
@@ -190,12 +205,31 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     },
   });
 
+  const createMembership = trpc.admin.memberships.create.useMutation({
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'User added to organization successfully',
+      });
+      refetchMemberships();
+      setAddToOrgDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const deleteMembership = trpc.admin.memberships.delete.useMutation({
     onSuccess: () => {
       toast({
         title: 'Success',
         description: 'Membership removed successfully',
       });
+      refetchMemberships();
       setMembershipDeleteDialogOpen(false);
       setMembershipToDelete(null);
     },
@@ -227,6 +261,10 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     await deleteMembership.mutateAsync({ id: membershipToDelete.id });
   };
 
+  const handleAddToOrgSubmit = async (data: z.infer<typeof adminCreateMembershipSchema>) => {
+    await createMembership.mutateAsync(data);
+  };
+
   const onSubmit = async (data: Omit<UserFormValues, 'id'>) => {
     await updateUserMutation.mutateAsync({
       id: resolvedParams.id,
@@ -247,6 +285,15 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   const hasChanges =
     watchedDisplayName !== userData?.user.displayName ||
     watchedEmailVerified !== userData?.user.emailVerified;
+
+  const existingOrganizations = membershipsData?.memberships.map(
+    (membership) => membership.organization.id
+  );
+
+  const availableOrganizations =
+    orgsData?.organizations.filter(
+      (organization) => !existingOrganizations?.includes(organization.id)
+    ) ?? [];
 
   if (isLoading) {
     return <UserDetailSkeleton />;
@@ -358,6 +405,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
             onPageSizeChange={pagination.setPageSize}
             onView={handleViewOrganization}
             onRemove={handleRemoveMembership}
+            onAdd={() => setAddToOrgDialogOpen(true)}
           />
         </TabsContent>
       </Tabs>
@@ -403,6 +451,15 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AddToOrganizationDialog
+        open={addToOrgDialogOpen}
+        onOpenChange={setAddToOrgDialogOpen}
+        onSubmit={handleAddToOrgSubmit}
+        isPending={createMembership.isPending}
+        userId={resolvedParams.id}
+        availableOrganizations={availableOrganizations}
+      />
     </div>
   );
 }

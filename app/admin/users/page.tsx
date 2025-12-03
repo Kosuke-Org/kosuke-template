@@ -5,8 +5,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Loader2 } from 'lucide-react';
+import type { z } from 'zod';
 
 import { trpc } from '@/lib/trpc/client';
+import type { adminCreateUserSchema } from '@/lib/trpc/schemas/admin';
 
 import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useTableSearch } from '@/hooks/use-table-search';
@@ -24,12 +26,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+import { CreateUserDialog } from './components/create-user-dialog';
 import { UsersDataTable } from './components/users-data-table';
 
 export default function AdminUsersPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{
     id: string;
     email: string;
@@ -65,6 +69,35 @@ export default function AdminUsersPage() {
     }
   );
 
+  const { data: orgsData } = trpc.admin.organizations.list.useQuery(
+    {
+      page: 1,
+      pageSize: 100,
+    },
+    {
+      staleTime: 1000 * 60 * 5,
+    }
+  );
+
+  const createUser = trpc.admin.users.create.useMutation({
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'User created successfully',
+      });
+      refetch();
+      setCreateDialogOpen(false);
+      refetch();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const deleteUser = trpc.admin.users.delete.useMutation({
     onSuccess: () => {
       toast({
@@ -98,6 +131,10 @@ export default function AdminUsersPage() {
     await deleteUser.mutateAsync({ id: userToDelete.id });
   };
 
+  const handleCreateSubmit = async (data: z.infer<typeof adminCreateUserSchema>) => {
+    await createUser.mutateAsync(data);
+  };
+
   if (isLoading) {
     return <TableSkeleton />;
   }
@@ -121,6 +158,15 @@ export default function AdminUsersPage() {
         onPageSizeChange={pagination.setPageSize}
         onView={handleViewClick}
         onDelete={handleDeleteClick}
+        onCreate={() => setCreateDialogOpen(true)}
+      />
+
+      <CreateUserDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSubmit={handleCreateSubmit}
+        isPending={createUser.isPending}
+        availableOrganizations={orgsData?.organizations ?? []}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

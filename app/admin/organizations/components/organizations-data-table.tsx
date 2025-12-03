@@ -9,11 +9,12 @@ import { useMemo } from 'react';
 
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import type { inferRouterOutputs } from '@trpc/server';
-import { Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 
 import type { AppRouter } from '@/lib/trpc/router';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -47,6 +48,7 @@ interface OrganizationsDataTableProps {
   // Action handlers
   onView: (slug: string) => void;
   onDelete: (id: string, name: string) => void;
+  onCreate: () => void;
 }
 
 export function OrganizationsDataTable({
@@ -61,6 +63,7 @@ export function OrganizationsDataTable({
   onPageSizeChange,
   onView,
   onDelete,
+  onCreate,
 }: OrganizationsDataTableProps) {
   const columns = useMemo(() => getOrganizationColumns({ onView, onDelete }), [onView, onDelete]);
 
@@ -90,6 +93,12 @@ export function OrganizationsDataTable({
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-9"
           />
+        </div>
+        <div className="ml-auto">
+          <Button onClick={onCreate}>
+            <Plus />
+            Create Organization
+          </Button>
         </div>
       </div>
       <div className="space-y-4">

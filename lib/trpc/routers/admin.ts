@@ -16,6 +16,8 @@ import { router, superAdminProcedure } from '../init';
 import {
   adminCleanQueueSchema,
   adminCreateMembershipSchema,
+  adminCreateOrgSchema,
+  adminCreateUserSchema,
   adminDeleteMembershipSchema,
   adminDeleteOrgSchema,
   adminDeleteUserSchema,
@@ -123,6 +125,56 @@ export const adminRouter = router({
         subscriptions,
         memberships,
       };
+    }),
+
+    /**
+     * Create new user (with optional organization membership)
+     */
+    create: superAdminProcedure.input(adminCreateUserSchema).mutation(async ({ input }) => {
+      const { email, organizationId, role } = input;
+
+      // Check if user already exists
+      const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+      if (existingUser) {
+        throw new TRPCError({ code: 'CONFLICT', message: 'User with this email already exists' });
+      }
+
+      // Create the user
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          email,
+          displayName: email,
+          emailVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      // If organization specified, create membership
+      if (organizationId && role) {
+        // Verify organization exists
+        const [org] = await db
+          .select()
+          .from(organizations)
+          .where(eq(organizations.id, organizationId))
+          .limit(1);
+
+        if (!org) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Organization not found' });
+        }
+
+        // Create membership
+        await db.insert(orgMemberships).values({
+          organizationId,
+          userId: newUser.id,
+          role,
+          createdAt: new Date(),
+        });
+      }
+
+      return newUser;
     }),
 
     /**
@@ -253,6 +305,58 @@ export const adminRouter = router({
         organization: org,
         members,
       };
+    }),
+
+    /**
+     * Create new organization (with optional owner)
+     */
+    create: superAdminProcedure.input(adminCreateOrgSchema).mutation(async ({ input }) => {
+      const { name, slug, ownerId } = input;
+
+      // Check if slug already exists
+      const [existingOrg] = await db
+        .select()
+        .from(organizations)
+        .where(eq(organizations.slug, slug))
+        .limit(1);
+
+      if (existingOrg) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'Organization with this slug already exists',
+        });
+      }
+
+      // Create the organization
+      const [newOrg] = await db
+        .insert(organizations)
+        .values({
+          name,
+          slug,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      // If owner specified, create owner membership
+      if (ownerId) {
+        // Verify user exists
+        const [owner] = await db.select().from(users).where(eq(users.id, ownerId)).limit(1);
+
+        if (!owner) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Owner user not found' });
+        }
+
+        // Create owner membership
+        await db.insert(orgMemberships).values({
+          organizationId: newOrg.id,
+          userId: ownerId,
+          role: 'owner',
+          createdAt: new Date(),
+        });
+      }
+
+      return newOrg;
     }),
 
     /**

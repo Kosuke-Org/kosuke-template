@@ -5,8 +5,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Loader2 } from 'lucide-react';
+import type { z } from 'zod';
 
 import { trpc } from '@/lib/trpc/client';
+import type { adminCreateOrgSchema } from '@/lib/trpc/schemas/admin';
 
 import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useTableSearch } from '@/hooks/use-table-search';
@@ -24,12 +26,14 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+import { CreateOrganizationDialog } from './components/create-organization-dialog';
 import { OrganizationsDataTable } from './components/organizations-data-table';
 
 export default function AdminOrganizationsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [orgToDelete, setOrgToDelete] = useState<{
     id: string;
     name: string;
@@ -65,6 +69,34 @@ export default function AdminOrganizationsPage() {
     }
   );
 
+  const { data: usersData } = trpc.admin.users.list.useQuery(
+    {
+      page: 1,
+      pageSize: 100,
+    },
+    {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    }
+  );
+
+  const createOrg = trpc.admin.organizations.create.useMutation({
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: 'Organization created successfully',
+      });
+      refetch();
+      setCreateDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const deleteOrg = trpc.admin.organizations.delete.useMutation({
     onSuccess: () => {
       toast({
@@ -98,6 +130,10 @@ export default function AdminOrganizationsPage() {
     await deleteOrg.mutateAsync({ id: orgToDelete.id });
   };
 
+  const handleCreateSubmit = async (data: z.infer<typeof adminCreateOrgSchema>) => {
+    await createOrg.mutateAsync(data);
+  };
+
   if (isLoading) {
     return <TableSkeleton />;
   }
@@ -121,6 +157,15 @@ export default function AdminOrganizationsPage() {
         onPageSizeChange={pagination.setPageSize}
         onView={handleViewClick}
         onDelete={handleDeleteClick}
+        onCreate={() => setCreateDialogOpen(true)}
+      />
+
+      <CreateOrganizationDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onSubmit={handleCreateSubmit}
+        isPending={createOrg.isPending}
+        availableUsers={usersData?.users ?? []}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
