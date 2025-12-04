@@ -85,7 +85,6 @@ export default function AdminUsersPage() {
         title: 'Success',
         description: 'User created successfully',
       });
-      refetch();
       setCreateDialogOpen(false);
       refetch();
     },
