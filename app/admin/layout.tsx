@@ -1,6 +1,7 @@
 'use client';
 
-import { AdminSidebar } from '@/components/admin-sidebar';
+import { AdminSidebar } from '@/app/admin/components/admin-sidebar';
+
 import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';

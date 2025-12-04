@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useAdminMemberships } from '@/hooks/use-admin-memberships';
+import { useAdminMemberships } from '@/app/admin/hooks/use-admin-memberships';
 
 const mockToast = vi.fn();
 const mockCreateMutate = vi.fn();

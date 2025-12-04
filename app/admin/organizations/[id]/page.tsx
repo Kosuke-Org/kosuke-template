@@ -10,12 +10,13 @@ import { format } from 'date-fns';
 import { Loader2, Trash2 } from 'lucide-react';
 import { z } from 'zod';
 
+import { useAdminMemberships } from '@/app/admin/hooks/use-admin-memberships';
+
 import { trpc } from '@/lib/trpc/client';
 import type { adminCreateMembershipSchema } from '@/lib/trpc/schemas/admin';
 import { adminUpdateOrgSchema } from '@/lib/trpc/schemas/admin';
 import { OrgRoleValue } from '@/lib/types';
 
-import { useAdminMemberships } from '@/hooks/use-admin-memberships';
 import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useTableSearch } from '@/hooks/use-table-search';
 import { useToast } from '@/hooks/use-toast';
