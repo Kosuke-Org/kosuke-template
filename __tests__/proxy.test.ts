@@ -205,10 +205,12 @@ describe('proxy', () => {
   });
 
   it('redirects authenticated users to admin dashboard if they are super admin', async () => {
-    vi.stubEnv('SUPER_ADMIN_EMAILS', 'test@example.com');
     const cookies = mockSession({
       ...mockedSession,
-      // user email is already 'test@example.com' in mockedSession
+      user: {
+        ...mockedSession.user,
+        isAdmin: true,
+      },
       session: {
         ...mockedSession.session,
         activeOrganizationId: 'org-1',
@@ -221,8 +223,6 @@ describe('proxy', () => {
   });
 
   it('redirects authenticated users to org dashboard if they are not super admin', async () => {
-    vi.stubEnv('SUPER_ADMIN_EMAILS', '');
-
     const cookies = mockSession({
       ...mockedSession,
       session: {

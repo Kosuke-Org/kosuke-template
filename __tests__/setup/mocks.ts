@@ -4,18 +4,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Stripe from 'stripe';
 import { vi } from 'vitest';
 
+import type { Session } from '@/lib/auth/providers';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Mock User authentication
-type MockUserType = {
-  id: string;
-  email: string;
-  emailVerified: boolean;
-  name: string;
-  image?: string | null | undefined;
-  createdAt: Date;
-  updatedAt: Date;
-};
+type MockUserType = Session['user'];
 
 const mockUser: MockUserType = {
   id: 'user_123',
@@ -25,6 +19,7 @@ const mockUser: MockUserType = {
   image: 'https://example.com/avatar.jpg',
   createdAt: new Date(),
   updatedAt: new Date(),
+  isAdmin: false,
 };
 
 // Mock Stripe responses
@@ -77,6 +72,7 @@ export const mockedSession = {
     image: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    isAdmin: false,
   },
   updatedAt: Date.now(),
 };

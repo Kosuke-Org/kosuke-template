@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { isSuperAdminByUserEmail } from '@/lib/auth/permissions';
 import { SIGN_IN_ATTEMPT_EMAIL_COOKIE, getSessionFromCookie } from '@/lib/auth/utils';
 
 /**
@@ -74,7 +73,7 @@ export async function proxy(req: NextRequest) {
 
   // Admin route authorization - must be super admin (authentication checked below)
   if (isAuthenticated && isAdminRoute(req)) {
-    if (!isSuperAdminByUserEmail(sessionData.user.email)) {
+    if (!sessionData.user.isAdmin) {
       const redirectUrl = activeOrganizationSlug
         ? `/org/${activeOrganizationSlug}/dashboard`
         : '/onboarding';

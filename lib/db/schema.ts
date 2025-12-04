@@ -19,6 +19,7 @@ export const users = pgTable('users', {
   profileImageUrl: text('profile_image_url'),
   stripeCustomerId: text('stripe_customer_id').unique(), // Stripe customer ID
   notificationSettings: text('notification_settings'), // JSON string for notification preferences
+  isAdmin: boolean('is_admin').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()

@@ -62,6 +62,7 @@ async function seed() {
       displayName: 'John Doe',
       profileImageUrl: null,
       emailVerified: true,
+      isAdmin: true,
     };
 
     const janeNewUser: NewUser = {
@@ -69,6 +70,7 @@ async function seed() {
       displayName: 'Jane Smith',
       profileImageUrl: null,
       emailVerified: true,
+      isAdmin: true,
     };
 
     const [johnUser] = await db

@@ -129,6 +129,12 @@ export const auth = betterAuth({
       name: 'displayName',
       image: 'profileImageUrl',
     },
+    additionalFields: {
+      isAdmin: {
+        type: 'boolean',
+        defaultValue: false,
+      },
+    },
   },
   session: {
     storeSessionInDatabase: false,

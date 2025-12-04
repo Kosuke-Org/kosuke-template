@@ -8,7 +8,6 @@ import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 
 import { AUTH_ERRORS } from '@/lib/auth/constants';
-import { isSuperAdminByUserEmail } from '@/lib/auth/permissions';
 import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
 import { users } from '@/lib/db/schema';
@@ -36,6 +35,7 @@ export const userRouter = router({
         profileImageUrl: users.profileImageUrl,
         stripeCustomerId: users.stripeCustomerId,
         notificationSettings: users.notificationSettings,
+        isAdmin: users.isAdmin,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       })
@@ -192,6 +192,6 @@ export const userRouter = router({
    */
   isSuperAdmin: protectedProcedure.query(async ({ ctx }) => {
     const user = await ctx.getUser();
-    return isSuperAdminByUserEmail(user?.email);
+    return user?.isAdmin ?? false;
   }),
 });
