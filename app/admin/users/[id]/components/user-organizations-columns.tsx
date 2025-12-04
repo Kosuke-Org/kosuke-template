@@ -11,9 +11,10 @@ import { format } from 'date-fns';
 import { Building2, MoreHorizontal, Shield, X } from 'lucide-react';
 
 import type { AppRouter } from '@/lib/trpc/router';
+import { OrgRoleValue } from '@/lib/types';
+import { ORG_ROLES } from '@/lib/types/organization';
 
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -21,6 +22,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // Infer MembershipWithDetails from tRPC router output
 type RouterOutput = inferRouterOutputs<AppRouter>;
@@ -29,12 +37,13 @@ type MembershipWithDetails = RouterOutput['admin']['memberships']['list']['membe
 interface ColumnActionsProps {
   onView: (id: string) => void;
   onRemove: (id: string, userName: string, orgName: string) => void;
+  onRoleChange: (id: string, role: OrgRoleValue) => void;
 }
 
 export function getUserOrganizationsColumns(
   actions: ColumnActionsProps
 ): ColumnDef<MembershipWithDetails>[] {
-  const { onRemove, onView } = actions;
+  const { onRemove, onView, onRoleChange } = actions;
 
   const columns: ColumnDef<MembershipWithDetails>[] = [
     {
@@ -50,18 +59,33 @@ export function getUserOrganizationsColumns(
       cell: ({ row }) => {
         const membership = row.original;
         return (
-          <Badge
-            variant={
-              membership.role === 'owner'
-                ? 'default'
-                : membership.role === 'admin'
-                  ? 'secondary'
-                  : 'outline'
-            }
-          >
-            {membership.role === 'owner' && <Shield className="mr-1 h-3 w-3" />}
-            {membership.role}
-          </Badge>
+          <div onClick={(e) => e.stopPropagation()}>
+            <Select
+              value={membership.role}
+              onValueChange={(value: OrgRoleValue) => {
+                onRoleChange(membership.id, value);
+              }}
+            >
+              <SelectTrigger className="w-[130px]">
+                <SelectValue>
+                  <div className="flex items-center gap-1.5">
+                    {membership.role === ORG_ROLES.OWNER && <Shield className="h-3 w-3" />}
+                    <span className="capitalize">{membership.role}</span>
+                  </div>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="owner">
+                  <div className="flex items-center gap-1.5">
+                    <Shield className="h-3 w-3" />
+                    <span>Owner</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="member">Member</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         );
       },
     },

@@ -13,7 +13,9 @@ import { z } from 'zod';
 import { trpc } from '@/lib/trpc/client';
 import type { adminCreateMembershipSchema } from '@/lib/trpc/schemas/admin';
 import { adminUpdateUserSchema } from '@/lib/trpc/schemas/admin';
+import { OrgRoleValue } from '@/lib/types';
 
+import { useAdminMemberships } from '@/hooks/use-admin-memberships';
 import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useTableSearch } from '@/hooks/use-table-search';
 import { useToast } from '@/hooks/use-toast';
@@ -205,42 +207,10 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     },
   });
 
-  const createMembership = trpc.admin.memberships.create.useMutation({
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'User added to organization successfully',
-      });
-      refetchMemberships();
-      setAddToOrgDialogOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const deleteMembership = trpc.admin.memberships.delete.useMutation({
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'Membership removed successfully',
-      });
-      refetchMemberships();
-      setMembershipDeleteDialogOpen(false);
-      setMembershipToDelete(null);
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const { createMembership, updateMembership, deleteMembership, isDeleting, isCreating } =
+    useAdminMemberships({
+      onMutationSuccess: refetchMemberships,
+    });
 
   const handleDelete = async () => {
     await deleteUser.mutateAsync({ id: resolvedParams.id });
@@ -256,13 +226,20 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     setMembershipDeleteDialogOpen(true);
   };
 
+  const handleRoleChange = async (id: string, role: OrgRoleValue) => {
+    await updateMembership({ id, role });
+  };
+
   const handleDeleteMembershipConfirm = async () => {
     if (!membershipToDelete) return;
-    await deleteMembership.mutateAsync({ id: membershipToDelete.id });
+    await deleteMembership({ id: membershipToDelete.id });
+    setMembershipDeleteDialogOpen(false);
+    setMembershipToDelete(null);
   };
 
   const handleAddToOrgSubmit = async (data: z.infer<typeof adminCreateMembershipSchema>) => {
-    await createMembership.mutateAsync(data);
+    await createMembership(data);
+    setAddToOrgDialogOpen(false);
   };
 
   const onSubmit = async (data: Omit<UserFormValues, 'id'>) => {
@@ -405,12 +382,16 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
             onPageSizeChange={pagination.setPageSize}
             onView={handleViewOrganization}
             onRemove={handleRemoveMembership}
+            onRoleChange={handleRoleChange}
             onAdd={() => setAddToOrgDialogOpen(true)}
           />
         </TabsContent>
       </Tabs>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog
+        open={deleteDialogOpen || deleteUser.isPending}
+        onOpenChange={setDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -429,7 +410,10 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={membershipDeleteDialogOpen} onOpenChange={setMembershipDeleteDialogOpen}>
+      <AlertDialog
+        open={membershipDeleteDialogOpen || isDeleting}
+        onOpenChange={setMembershipDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Membership?</AlertDialogTitle>
@@ -439,13 +423,9 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMembership.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteMembershipConfirm}
-              disabled={deleteMembership.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMembership.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMembershipConfirm} disabled={isDeleting}>
+              {isDeleting && <Loader2 className="h-4 w-4 animate-spin" />}
               Remove Membership
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -453,10 +433,10 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       </AlertDialog>
 
       <AddToOrganizationDialog
-        open={addToOrgDialogOpen}
+        open={addToOrgDialogOpen || isCreating}
         onOpenChange={setAddToOrgDialogOpen}
         onSubmit={handleAddToOrgSubmit}
-        isPending={createMembership.isPending}
+        isPending={isCreating}
         userId={resolvedParams.id}
         availableOrganizations={availableOrganizations}
       />

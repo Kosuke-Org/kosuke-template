@@ -184,14 +184,8 @@ export function CreateOrganizationDialog({
             Cancel
           </Button>
           <Button type="submit" form="create-org-form" disabled={isPending}>
-            {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              'Create Organization'
-            )}
+            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Create
           </Button>
         </DialogFooter>
       </DialogContent>

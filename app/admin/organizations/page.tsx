@@ -168,7 +168,10 @@ export default function AdminOrganizationsPage() {
         availableUsers={usersData?.users ?? []}
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog
+        open={deleteDialogOpen || deleteOrg.isPending}
+        onOpenChange={setDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
@@ -181,7 +184,7 @@ export default function AdminOrganizationsPage() {
             <AlertDialogCancel disabled={deleteOrg.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleteOrg.isPending}>
               {deleteOrg.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Delete Organization
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

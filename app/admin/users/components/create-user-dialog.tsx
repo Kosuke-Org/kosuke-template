@@ -1,6 +1,6 @@
 'use client';
 
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
@@ -51,6 +51,12 @@ export function CreateUserDialog({
       organizationId: undefined,
       role: 'member' as const,
     },
+  });
+
+  // Watch organizationId to conditionally show role field
+  const selectedOrgId = useWatch({
+    control: form.control,
+    name: 'organizationId',
   });
 
   const handleSubmit = async (data: CreateUserFormValues) => {
@@ -127,33 +133,33 @@ export function CreateUserDialog({
               )}
             />
 
-            <Controller
-              name="role"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="role">Role (if organization selected)</FieldLabel>
-                  <Select
-                    value={field.value ?? 'member'}
-                    onValueChange={field.onChange}
-                    disabled={isPending}
-                  >
-                    <SelectTrigger id="role">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="owner">Owner</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="member">Member</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FieldDescription>
-                    The user&apos;s role in the organization (if selected)
-                  </FieldDescription>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )}
-            />
+            {selectedOrgId && (
+              <Controller
+                name="role"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="role">Role</FieldLabel>
+                    <Select
+                      value={field.value ?? 'member'}
+                      onValueChange={field.onChange}
+                      disabled={isPending}
+                    >
+                      <SelectTrigger id="role">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="owner">Owner</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="member">Member</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FieldDescription>The user&apos;s role in the organization</FieldDescription>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                )}
+              />
+            )}
           </FieldGroup>
         </form>
 
@@ -162,14 +168,8 @@ export function CreateUserDialog({
             Cancel
           </Button>
           <Button type="submit" form="create-user-form" disabled={isPending}>
-            {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              'Create User'
-            )}
+            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Create
           </Button>
         </DialogFooter>
       </DialogContent>

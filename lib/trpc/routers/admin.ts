@@ -11,6 +11,7 @@ import { db } from '@/lib/db/drizzle';
 import { orgMemberships, organizations, userSubscriptions, users } from '@/lib/db/schema';
 import { createQueue } from '@/lib/queue/client';
 import { QUEUE_NAMES } from '@/lib/queue/config';
+import { ORG_ROLES } from '@/lib/types/organization';
 
 import { router, superAdminProcedure } from '../init';
 import {
@@ -351,7 +352,7 @@ export const adminRouter = router({
         await db.insert(orgMemberships).values({
           organizationId: newOrg.id,
           userId: ownerId,
-          role: 'owner',
+          role: ORG_ROLES.OWNER,
           createdAt: new Date(),
         });
       }
@@ -538,15 +539,42 @@ export const adminRouter = router({
      * Update membership role
      */
     update: superAdminProcedure.input(adminUpdateMembershipSchema).mutation(async ({ input }) => {
+      // Get the membership being updated
+      const [membership] = await db
+        .select()
+        .from(orgMemberships)
+        .where(eq(orgMemberships.id, input.id))
+        .limit(1);
+
+      if (!membership) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Membership not found' });
+      }
+
+      // If changing role FROM owner, ensure there will be another owner
+      if (membership.role === ORG_ROLES.OWNER && input.role !== ORG_ROLES.OWNER) {
+        const [ownerCount] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(orgMemberships)
+          .where(
+            and(
+              eq(orgMemberships.organizationId, membership.organizationId),
+              eq(orgMemberships.role, ORG_ROLES.OWNER)
+            )
+          );
+
+        if (ownerCount.count <= 1) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Cannot change role: organization must have at least one owner',
+          });
+        }
+      }
+
       const [updated] = await db
         .update(orgMemberships)
         .set({ role: input.role })
         .where(eq(orgMemberships.id, input.id))
         .returning();
-
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Membership not found' });
-      }
 
       return updated;
     }),
@@ -555,14 +583,42 @@ export const adminRouter = router({
      * Delete membership
      */
     delete: superAdminProcedure.input(adminDeleteMembershipSchema).mutation(async ({ input }) => {
+      // Get the membership being deleted
+      const [membership] = await db
+        .select()
+        .from(orgMemberships)
+        .where(eq(orgMemberships.id, input.id))
+        .limit(1);
+
+      if (!membership) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Membership not found' });
+      }
+
+      // If deleting an owner, ensure there will be another owner
+      if (membership.role === ORG_ROLES.OWNER) {
+        const [ownerCount] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(orgMemberships)
+          .where(
+            and(
+              eq(orgMemberships.organizationId, membership.organizationId),
+              eq(orgMemberships.role, ORG_ROLES.OWNER)
+            )
+          );
+
+        if (ownerCount.count <= 1) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message:
+              'Cannot remove member: organization must have at least one owner. Transfer ownership to another member first.',
+          });
+        }
+      }
+
       const [deleted] = await db
         .delete(orgMemberships)
         .where(eq(orgMemberships.id, input.id))
         .returning();
-
-      if (!deleted) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Membership not found' });
-      }
 
       return { success: true, deletedMembership: deleted };
     }),

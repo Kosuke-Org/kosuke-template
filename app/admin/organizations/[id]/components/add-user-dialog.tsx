@@ -157,14 +157,8 @@ export function AddUserDialog({
             Cancel
           </Button>
           <Button type="submit" form="add-user-form" disabled={isPending}>
-            {isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Adding...
-              </>
-            ) : (
-              'Add User'
-            )}
+            {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            Add
           </Button>
         </DialogFooter>
       </DialogContent>

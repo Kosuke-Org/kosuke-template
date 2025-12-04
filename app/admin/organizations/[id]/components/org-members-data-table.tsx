@@ -12,6 +12,7 @@ import type { inferRouterOutputs } from '@trpc/server';
 import { Plus, Search } from 'lucide-react';
 
 import type { AppRouter } from '@/lib/trpc/router';
+import { OrgRoleValue } from '@/lib/types';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,7 @@ interface OrgMembersDataTableProps {
   // Action handlers
   onView: (userId: string) => void;
   onRemove: (id: string, userName: string, orgName: string) => void;
+  onRoleChange: (id: string, role: OrgRoleValue) => void;
   onAdd: () => void;
 }
 
@@ -62,9 +64,13 @@ export function OrgMembersDataTable({
   onPageSizeChange,
   onView,
   onRemove,
+  onRoleChange,
   onAdd,
 }: OrgMembersDataTableProps) {
-  const columns = useMemo(() => getOrgMembersColumns({ onRemove, onView }), [onRemove, onView]);
+  const columns = useMemo(
+    () => getOrgMembersColumns({ onRemove, onView, onRoleChange }),
+    [onRemove, onView, onRoleChange]
+  );
 
   // eslint-disable-next-line
   const table = useReactTable({

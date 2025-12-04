@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { orgRoleEnum } from '@/lib/db/schema';
+import { ORG_ROLES } from '@/lib/types/organization';
+
 // User Management Schemas
 export const adminUserListFiltersSchema = z
   .object({
@@ -23,7 +26,7 @@ export const adminDeleteUserSchema = z.object({
 export const adminCreateUserSchema = z.object({
   email: z.email('Invalid email address'),
   organizationId: z.uuid().optional(),
-  role: z.enum(['owner', 'admin', 'member']).optional().default('member'),
+  role: z.enum(orgRoleEnum.enumValues).optional().default(ORG_ROLES.MEMBER),
 });
 
 // Organization Management Schemas
@@ -61,7 +64,7 @@ export const adminMembershipListFiltersSchema = z
     searchQuery: z.string().optional(),
     organizationId: z.uuid().optional(),
     userId: z.uuid().optional(),
-    role: z.enum(['owner', 'admin', 'member']).optional(),
+    role: z.enum(orgRoleEnum.enumValues).optional(),
     page: z.number().min(1).default(1),
     pageSize: z.number().min(5).max(100).default(10),
   })
@@ -69,7 +72,7 @@ export const adminMembershipListFiltersSchema = z
 
 export const adminUpdateMembershipSchema = z.object({
   id: z.uuid(),
-  role: z.enum(['owner', 'admin', 'member']),
+  role: z.enum(orgRoleEnum.enumValues),
 });
 
 export const adminDeleteMembershipSchema = z.object({
@@ -79,7 +82,7 @@ export const adminDeleteMembershipSchema = z.object({
 export const adminCreateMembershipSchema = z.object({
   organizationId: z.uuid(),
   userId: z.uuid(),
-  role: z.enum(['owner', 'admin', 'member']),
+  role: z.enum(orgRoleEnum.enumValues),
 });
 
 // Job & Queue Management Schemas

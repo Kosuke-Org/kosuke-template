@@ -12,6 +12,7 @@ import type { inferRouterOutputs } from '@trpc/server';
 import { Plus, Search } from 'lucide-react';
 
 import type { AppRouter } from '@/lib/trpc/router';
+import { OrgRoleValue } from '@/lib/types';
 
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,7 @@ interface UserOrganizationsDataTableProps {
   // Action handlers
   onView: (id: string) => void;
   onRemove: (id: string, userName: string, orgName: string) => void;
+  onRoleChange: (id: string, role: OrgRoleValue) => void;
   onAdd: () => void;
 }
 
@@ -62,11 +64,12 @@ export function UserOrganizationsDataTable({
   onPageSizeChange,
   onView,
   onRemove,
+  onRoleChange,
   onAdd,
 }: UserOrganizationsDataTableProps) {
   const columns = useMemo(
-    () => getUserOrganizationsColumns({ onRemove, onView }),
-    [onRemove, onView]
+    () => getUserOrganizationsColumns({ onRemove, onView, onRoleChange }),
+    [onRemove, onView, onRoleChange]
   );
 
   // eslint-disable-next-line
@@ -87,7 +90,6 @@ export function UserOrganizationsDataTable({
   return (
     <>
       <h3 className="text-lg font-semibold">Organization Memberships</h3>
-
       <div className="flex items-center gap-3">
         <div className="relative w-full sm:w-[400px] lg:w-[500px]">
           <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
