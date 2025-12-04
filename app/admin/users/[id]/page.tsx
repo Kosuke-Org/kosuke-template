@@ -427,7 +427,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteMembershipConfirm} disabled={isDeleting}>
               {isDeleting && <Loader2 className="h-4 w-4 animate-spin" />}
-              Remove Membership
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
