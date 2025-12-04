@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { organization: activeOrganization, isLoading } = useOrganization();
-  const { isSuperAdmin } = usePermissions();
+  const { isAdmin } = usePermissions();
 
   // Generate org-aware navigation items
   const navItems = React.useMemo(() => {
@@ -45,7 +45,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     const secondaryItems = [];
 
-    if (isSuperAdmin) {
+    if (isAdmin) {
       secondaryItems.push({
         title: 'Admin',
         url: '/admin',
@@ -57,7 +57,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       navMain: mainItems,
       navSecondary: secondaryItems,
     };
-  }, [activeOrganization, isSuperAdmin]);
+  }, [activeOrganization, isAdmin]);
 
   return (
     <Sidebar variant="inset" {...props}>

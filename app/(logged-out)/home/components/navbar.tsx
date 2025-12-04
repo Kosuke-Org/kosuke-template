@@ -35,7 +35,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
   const { isSignedIn } = useAuth();
   const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar();
   const { signOut: handleSignOut } = useAuthActions();
-  const { isSuperAdmin } = usePermissions();
+  const { isAdmin } = usePermissions();
   const { organization: activeOrganization } = useOrganization();
   const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
   const settingsUrl = '/settings';
@@ -86,7 +86,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                         Dashboard
                       </Link>
                     </DropdownMenuItem>
-                    {isSuperAdmin && (
+                    {isAdmin && (
                       <DropdownMenuItem asChild>
                         <Link href={adminUrl} className="cursor-pointer">
                           <Shield className="mr-2 h-4 w-4" />
@@ -164,7 +164,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                           Dashboard
                         </Button>
                       </Link>
-                      {isSuperAdmin && (
+                      {isAdmin && (
                         <Link href={adminUrl}>
                           <Button variant="ghost" className="w-full justify-start">
                             <Shield className="mr-2 h-4 w-4" />

@@ -190,7 +190,7 @@ export const userRouter = router({
   /**
    * Check if current user is a super admin
    */
-  isSuperAdmin: protectedProcedure.query(async ({ ctx }) => {
+  isAdmin: protectedProcedure.query(async ({ ctx }) => {
     const user = await ctx.getUser();
     return user?.isAdmin ?? false;
   }),
