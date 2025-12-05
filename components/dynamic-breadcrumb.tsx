@@ -29,6 +29,10 @@ const routeNames: Record<string, string> = {
   account: 'Account',
   tasks: 'Tasks',
   orders: 'Orders',
+  admin: 'Admin',
+  users: 'Users',
+  organizations: 'Organizations',
+  jobs: 'Jobs & Queues',
 };
 
 export function DynamicBreadcrumb() {
@@ -78,6 +82,25 @@ export function DynamicBreadcrumb() {
           isLast,
         });
       }
+    }
+  } else if (pathname.startsWith('/admin')) {
+    // Admin routes: Admin > Section > Detail
+    breadcrumbItems.push({
+      href: '/admin',
+      name: 'Admin',
+      isLast: pathSegments.length === 1,
+    });
+
+    for (let i = 1; i < pathSegments.length; i++) {
+      const segment = pathSegments[i];
+      const isLast = i === pathSegments.length - 1;
+      const href = `/${pathSegments.slice(0, i + 1).join('/')}`;
+
+      breadcrumbItems.push({
+        href: isLast ? null : href,
+        name: getDisplayName(segment),
+        isLast,
+      });
     }
   }
 

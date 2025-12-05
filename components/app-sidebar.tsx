@@ -2,9 +2,10 @@
 
 import * as React from 'react';
 
-import { CheckSquare, ReceiptText, SquareTerminal } from 'lucide-react';
+import { CheckSquare, ReceiptText, Shield, SquareTerminal } from 'lucide-react';
 
 import { useOrganization } from '@/hooks/use-organization';
+import { usePermissions } from '@/hooks/use-permissions';
 
 import { NavMain } from '@/components/nav-main';
 import { NavSecondary } from '@/components/nav-secondary';
@@ -15,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { organization: activeOrganization, isLoading } = useOrganization();
+  const { isAdmin } = usePermissions();
 
   // Generate org-aware navigation items
   const navItems = React.useMemo(() => {
@@ -22,28 +24,40 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     const orgPrefix = `/org/${activeOrganization.slug}`;
 
+    const mainItems = [
+      {
+        title: 'Dashboard',
+        url: `${orgPrefix}/dashboard`,
+        icon: SquareTerminal,
+        isActive: true,
+      },
+      {
+        title: 'Tasks',
+        url: `${orgPrefix}/tasks`,
+        icon: CheckSquare,
+      },
+      {
+        title: 'Orders',
+        url: `${orgPrefix}/orders`,
+        icon: ReceiptText,
+      },
+    ];
+
+    const secondaryItems = [];
+
+    if (isAdmin) {
+      secondaryItems.push({
+        title: 'Admin',
+        url: '/admin',
+        icon: Shield,
+      });
+    }
+
     return {
-      navMain: [
-        {
-          title: 'Dashboard',
-          url: `${orgPrefix}/dashboard`,
-          icon: SquareTerminal,
-          isActive: true,
-        },
-        {
-          title: 'Tasks',
-          url: `${orgPrefix}/tasks`,
-          icon: CheckSquare,
-        },
-        {
-          title: 'Orders',
-          url: `${orgPrefix}/orders`,
-          icon: ReceiptText,
-        },
-      ],
-      navSecondary: [],
+      navMain: mainItems,
+      navSecondary: secondaryItems,
     };
-  }, [activeOrganization]);
+  }, [activeOrganization, isAdmin]);
 
   return (
     <Sidebar variant="inset" {...props}>

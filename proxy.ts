@@ -47,7 +47,8 @@ const isPublicRoute = createRouteMatcher([
 
 const isOnboardingRoute = createRouteMatcher(['/onboarding']);
 const isRootRoute = createRouteMatcher(['/']);
-const isProtectedRoute = createRouteMatcher(['/org(.*)', '/settings(.*)']);
+const isAdminRoute = createRouteMatcher(['/admin(.*)']);
+const isProtectedRoute = createRouteMatcher(['/org(.*)', '/settings(.*)', '/admin(.*)']);
 const isApiRoute = createRouteMatcher(['/api(.*)']);
 const isSignInVerifyRoute = createRouteMatcher([
   '/sign-in/verify',
@@ -68,6 +69,18 @@ export async function proxy(req: NextRequest) {
     const attemptEmail = req.cookies.get(SIGN_IN_ATTEMPT_EMAIL_COOKIE)?.value;
     if (attemptEmail) return NextResponse.next();
     return NextResponse.redirect(new URL('/sign-in', req.url));
+  }
+
+  // Admin route authorization - must be super admin (authentication checked below)
+  if (isAuthenticated && isAdminRoute(req)) {
+    if (sessionData.user.role !== 'admin') {
+      const redirectUrl = activeOrganizationSlug
+        ? `/org/${activeOrganizationSlug}/dashboard`
+        : '/onboarding';
+      return NextResponse.redirect(new URL(redirectUrl, req.url));
+    }
+
+    return NextResponse.next();
   }
 
   // If user has an organization, redirect to dashboard

@@ -1,0 +1,93 @@
+'use client';
+
+import * as React from 'react';
+
+import Link from 'next/link';
+
+import { ArrowLeft, Building2, LayoutDashboard, Shield, Users } from 'lucide-react';
+
+import { AUTH_ROUTES } from '@/lib/auth';
+
+import { useOrganization } from '@/hooks/use-organization';
+
+import { NavMain } from '@/components/nav-main';
+import { NavUser } from '@/components/nav-user';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar';
+
+export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { organization: activeOrganization } = useOrganization();
+
+  const adminNavItems = [
+    {
+      title: 'Dashboard',
+      url: '/admin',
+      icon: LayoutDashboard,
+      isActive: true,
+    },
+    {
+      title: 'Users',
+      url: '/admin/users',
+      icon: Users,
+    },
+    {
+      title: 'Organizations',
+      url: '/admin/organizations',
+      icon: Building2,
+    },
+    // {
+    //   title: 'Jobs & Queues',
+    //   url: '/admin/jobs',
+    //   icon: Activity,
+    // },
+  ];
+
+  const backToAppUrl = activeOrganization
+    ? `/org/${activeOrganization.slug}/dashboard`
+    : AUTH_ROUTES.ROOT;
+
+  return (
+    <Sidebar variant="inset" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <div>
+                <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                  <Shield className="size-4" />
+                </div>
+                <div className="flex flex-col gap-0.5 leading-none">
+                  <span className="font-semibold">Admin Panel</span>
+                  <span className="text-muted-foreground text-xs">Super Admin Access</span>
+                </div>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
+      <SidebarContent>
+        <NavMain items={adminNavItems} />
+        <SidebarMenu className="mt-auto">
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild>
+              <Link href={backToAppUrl}>
+                <ArrowLeft />
+                <span>Back to App</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarContent>
+      <SidebarFooter>
+        <NavUser />
+      </SidebarFooter>
+    </Sidebar>
+  );
+}

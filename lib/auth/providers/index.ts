@@ -5,7 +5,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { nextCookies } from 'better-auth/next-js';
-import { emailOTP, organization } from 'better-auth/plugins';
+import { admin, emailOTP, organization } from 'better-auth/plugins';
 import { desc, eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db/drizzle';
@@ -187,6 +187,7 @@ export const auth = betterAuth({
       disableSignUp: true, // Prevent automatic user creation during sign-in
       allowedAttempts: 5, // Allow 5 attempts before invalidating OTP
     }),
+    admin(),
     // nextCookies plugin must be last
     nextCookies(),
   ],

@@ -11,6 +11,7 @@ import { Edit, Eye, MoreHorizontal, Trash } from 'lucide-react';
 
 import type { AppRouter } from '@/lib/trpc/router';
 
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -22,7 +23,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 import { statusColors } from '../utils';
-import { DataTableColumnHeader } from './data-table-column-header';
 
 // Infer OrderWithDetails from tRPC router output
 type RouterOutput = inferRouterOutputs<AppRouter>;

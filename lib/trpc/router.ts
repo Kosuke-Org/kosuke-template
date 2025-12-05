@@ -3,6 +3,7 @@
  * Combines all sub-routers
  */
 import { router } from './init';
+import { adminRouter } from './routers/admin';
 import { authRouter } from './routers/auth';
 import { billingRouter } from './routers/billing';
 import { engineRouter } from './routers/engine';
@@ -19,6 +20,7 @@ export const appRouter = router({
   billing: billingRouter,
   engine: engineRouter,
   orders: ordersRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;

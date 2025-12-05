@@ -15,6 +15,13 @@
       "when": 1763719972716,
       "tag": "0001_rare_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1764927559944,
+      "tag": "0002_wealthy_killmonger",
+      "breakpoints": true
     }
   ]
 }

@@ -5,6 +5,8 @@
  */
 import { z } from 'zod';
 
+import { orgRoleEnum } from '@/lib/db/schema';
+
 /**
  * Organization Schemas
  */
@@ -56,7 +58,7 @@ export const getUserOrganizationsSchema = z.object({
 export const createInvitationSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
   email: z.email('Invalid email address'),
-  role: z.enum(['owner', 'admin', 'member']).default('member'),
+  role: z.enum(orgRoleEnum.enumValues).default('member'),
 });
 
 export const cancelInvitationSchema = z.object({
@@ -69,13 +71,13 @@ export const cancelInvitationSchema = z.object({
  */
 export const orgInviteFormSchema = z.object({
   email: z.email('Invalid email address'),
-  role: z.enum(['owner', 'admin', 'member']),
+  role: z.enum(orgRoleEnum.enumValues),
 });
 
 export const updateMemberRoleSchema = z.object({
   organizationId: z.uuid('Invalid organization ID'),
   memberId: z.string().min(1, 'User ID is required'),
-  role: z.enum(['owner', 'admin', 'member']),
+  role: z.enum(orgRoleEnum.enumValues),
 });
 
 export const removeMemberSchema = z.object({

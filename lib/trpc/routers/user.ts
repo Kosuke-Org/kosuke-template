@@ -35,6 +35,7 @@ export const userRouter = router({
         profileImageUrl: users.profileImageUrl,
         stripeCustomerId: users.stripeCustomerId,
         notificationSettings: users.notificationSettings,
+        role: users.role,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       })
@@ -185,4 +186,12 @@ export const userRouter = router({
         message: 'Display name updated successfully',
       };
     }),
+
+  /**
+   * Check if current user is a super admin
+   */
+  isAdmin: protectedProcedure.query(async ({ ctx }) => {
+    const user = await ctx.getUser();
+    return user?.role === 'admin';
+  }),
 });

@@ -13,6 +13,7 @@ import { db } from '@/lib/db';
 import { invitations } from '@/lib/db/schema';
 import { generateUniqueOrgSlug, switchToNextOrganization } from '@/lib/organizations';
 import { deleteProfileImage, uploadProfileImage } from '@/lib/storage';
+import { ORG_ROLES } from '@/lib/types/organization';
 
 import { protectedProcedure, router } from '../init';
 import {
@@ -167,7 +168,7 @@ export const organizationsRouter = router({
           headers: await headers(),
         });
 
-        if (role !== 'admin' && role !== 'owner') {
+        if (role !== ORG_ROLES.ADMIN && role !== ORG_ROLES.OWNER) {
           throw new TRPCError({
             code: 'FORBIDDEN',
             message: 'Only organization admins and owners can upload the logo',
@@ -228,7 +229,7 @@ export const organizationsRouter = router({
       headers: await headers(),
     });
 
-    if (role !== 'admin' && role !== 'owner') {
+    if (role !== ORG_ROLES.ADMIN && role !== ORG_ROLES.OWNER) {
       throw new TRPCError({
         code: 'FORBIDDEN',
         message: 'Only organization admins and owners can delete the logo',
@@ -400,7 +401,7 @@ export const organizationsRouter = router({
         headers: await headers(),
       });
 
-      if (role !== 'owner') {
+      if (role !== ORG_ROLES.OWNER) {
         throw new TRPCError({
           code: 'FORBIDDEN',
           message: 'Only organization owners can delete the organization',

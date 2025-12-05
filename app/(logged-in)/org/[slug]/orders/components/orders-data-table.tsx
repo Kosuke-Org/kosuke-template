@@ -22,10 +22,11 @@ import { type ExportType, exportTypeEnum } from '@/lib/trpc/schemas/orders';
 import type { OrderStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import { TableSkeleton } from '@/components/data-table/data-table-skeleton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -36,7 +37,6 @@ import {
 } from '@/components/ui/table';
 
 import { MAX_AMOUNT } from '../utils';
-import { DataTablePagination } from './data-table-pagination';
 import { ActiveFilterBadges, OrderFilters } from './order-filters';
 import { getOrderColumns } from './orders-columns';
 
@@ -82,22 +82,6 @@ interface OrdersDataTableProps {
   selectedRowIds?: string[];
   onRowSelectionChange?: (selectedRowIds: string[]) => void;
   onBulkDelete?: (selectedRowIds: string[]) => void;
-}
-
-function TableSkeleton() {
-  return (
-    <div className="space-y-3">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 py-3">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-4 w-48" />
-          <Skeleton className="h-6 w-20" />
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-4 w-24" />
-        </div>
-      ))}
-    </div>
-  );
 }
 
 export function OrdersDataTable({

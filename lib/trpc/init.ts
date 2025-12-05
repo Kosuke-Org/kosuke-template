@@ -90,3 +90,20 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
     },
   });
 });
+
+/**
+ * Super admin procedure - requires authentication and super admin access
+ */
+export const superAdminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const user = await ctx.getUser();
+
+  if (!user) {
+    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'User not found' });
+  }
+
+  if (user.role !== 'admin') {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+  }
+
+  return next({ ctx });
+});

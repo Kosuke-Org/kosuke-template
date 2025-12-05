@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 
-import { CreditCard, LogOut, Menu, Settings, User } from 'lucide-react';
+import { CreditCard, LogOut, Menu, Settings, Shield, User } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthActions } from '@/hooks/use-auth';
 import { useOrganization } from '@/hooks/use-organization';
+import { usePermissions } from '@/hooks/use-permissions';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
 
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -34,10 +35,12 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
   const { isSignedIn } = useAuth();
   const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar();
   const { signOut: handleSignOut } = useAuthActions();
+  const { isAdmin } = usePermissions();
   const { organization: activeOrganization } = useOrganization();
   const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
   const settingsUrl = '/settings';
   const billingUrl = '/settings/billing';
+  const adminUrl = '/admin';
 
   return (
     <header
@@ -83,6 +86,14 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                         Dashboard
                       </Link>
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link href={adminUrl} className="cursor-pointer">
+                          <Shield className="mr-2 h-4 w-4" />
+                          Admin
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link href={settingsUrl} className="cursor-pointer">
                         <Settings className="mr-2 h-4 w-4" />
@@ -153,6 +164,14 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                           Dashboard
                         </Button>
                       </Link>
+                      {isAdmin && (
+                        <Link href={adminUrl}>
+                          <Button variant="ghost" className="w-full justify-start">
+                            <Shield className="mr-2 h-4 w-4" />
+                            Admin
+                          </Button>
+                        </Link>
+                      )}
                       <Link href={settingsUrl}>
                         <Button variant="ghost" className="w-full justify-start">
                           <Settings className="mr-2 h-4 w-4" />
