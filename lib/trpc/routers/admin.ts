@@ -104,10 +104,17 @@ export const adminRouter = router({
         headers: await headers(),
       });
 
+      const [userRole] = await db
+        .select({ role: users.role })
+        .from(users)
+        .where(eq(users.id, input.id))
+        .limit(1);
+
       return {
         user: {
           ...user,
           displayName: user.name, // returned mapped custom fields
+          role: userRole?.role,
         },
       };
     }),
@@ -120,7 +127,7 @@ export const adminRouter = router({
      * For now, we create users directly in the database
      */
     create: superAdminProcedure.input(adminCreateUserSchema).mutation(async ({ input }) => {
-      const { email, organizationId, role } = input;
+      const { email, organizationId, orgRole, role } = input;
 
       // Check if user already exists
       const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -135,14 +142,14 @@ export const adminRouter = router({
           email,
           displayName: email,
           emailVerified: false,
-          role: 'user',
+          role,
           createdAt: new Date(),
           updatedAt: new Date(),
         })
         .returning();
 
       // If organization specified, create membership
-      if (organizationId && role) {
+      if (organizationId && orgRole) {
         // Verify organization exists
         const [org] = await db
           .select()
@@ -158,7 +165,7 @@ export const adminRouter = router({
         await db.insert(orgMemberships).values({
           organizationId,
           userId: newUser.id,
-          role,
+          role: orgRole,
           createdAt: new Date(),
         });
       }
@@ -171,17 +178,27 @@ export const adminRouter = router({
      * Uses Better Auth's admin.updateUser API
      */
     update: superAdminProcedure.input(adminUpdateUserSchema).mutation(async ({ input }) => {
-      const { id, displayName } = input;
+      const { id, ...updates } = input;
 
       await auth.api.adminUpdateUser({
         body: {
           userId: id,
-          data: {
-            name: displayName,
-          },
+          data: { ...updates },
         },
         headers: await headers(),
       });
+
+      // Revoke user sessions if role or email verified is updated
+      if (updates.role || updates.emailVerified) {
+        await auth.api.revokeUserSessions({
+          body: {
+            userId: id,
+          },
+          headers: await headers(),
+        });
+      }
+
+      return { success: true, message: 'User updated successfully' };
     }),
 
     /**
@@ -189,9 +206,18 @@ export const adminRouter = router({
      * Uses Better Auth's admin.removeUser API which properly handles session cleanup
      */
     delete: superAdminProcedure.input(adminDeleteUserSchema).mutation(async ({ input }) => {
+      const { id: userId } = input;
+
+      await auth.api.revokeUserSessions({
+        body: {
+          userId,
+        },
+        headers: await headers(),
+      });
+
       await auth.api.removeUser({
         body: {
-          userId: input.id,
+          userId,
         },
         headers: await headers(),
       });
