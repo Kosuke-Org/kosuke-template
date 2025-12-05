@@ -213,9 +213,8 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
       onMutationSuccess: refetchMemberships,
     });
 
-  const handleDelete = async () => {
-    await deleteUser.mutateAsync({ id: resolvedParams.id });
-    setDeleteDialogOpen(false);
+  const handleDelete = () => {
+    deleteUser.mutate({ id: resolvedParams.id });
   };
 
   const handleViewOrganization = (id: string) => {
@@ -243,8 +242,8 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     setAddToOrgDialogOpen(false);
   };
 
-  const onSubmit = async (data: Omit<UserFormValues, 'id'>) => {
-    await updateUserMutation.mutateAsync({
+  const onSubmit = (data: Omit<UserFormValues, 'id'>) => {
+    updateUserMutation.mutate({
       id: resolvedParams.id,
       ...data,
     });

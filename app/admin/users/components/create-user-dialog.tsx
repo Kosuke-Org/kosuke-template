@@ -32,7 +32,7 @@ type CreateUserFormValues = z.infer<typeof adminCreateUserSchema>;
 interface CreateUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: CreateUserFormValues) => Promise<void>;
+  onSubmit: (data: CreateUserFormValues) => void;
   isPending: boolean;
   availableOrganizations?: Array<{ id: string; name: string; slug: string }>;
 }
@@ -59,9 +59,8 @@ export function CreateUserDialog({
     name: 'organizationId',
   });
 
-  const handleSubmit = async (data: CreateUserFormValues) => {
-    await onSubmit(data as CreateUserFormValues);
-    form.reset();
+  const handleSubmit = (data: CreateUserFormValues) => {
+    onSubmit(data);
   };
 
   const handleOpenChange = (newOpen: boolean) => {

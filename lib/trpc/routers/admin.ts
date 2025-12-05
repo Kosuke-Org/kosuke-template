@@ -1,14 +1,22 @@
 /**
  * Admin tRPC Router
  * Super admin only - all procedures require super admin permission
+ *
+ * This router wraps Better Auth's admin plugin functionality in tRPC procedures.
+ * User and session management operations are delegated to Better Auth's admin API.
+ *
+ * See: https://www.better-auth.com/docs/plugins/admin
  */
+import { headers } from 'next/headers';
+
 import { TRPCError } from '@trpc/server';
 import type { Job } from 'bullmq';
 import { and, count, eq, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
-import { orgMemberships, organizations, userSubscriptions, users } from '@/lib/db/schema';
+import { orgMemberships, organizations, users } from '@/lib/db/schema';
 import { createQueue } from '@/lib/queue/client';
 import { QUEUE_NAMES } from '@/lib/queue/config';
 import { ORG_ROLES } from '@/lib/types/organization';
@@ -43,94 +51,73 @@ export const adminRouter = router({
   users: router({
     /**
      * List all users with filters and pagination
+     * Uses Better Auth's admin.listUsers API
      */
     list: superAdminProcedure.input(adminUserListFiltersSchema).query(async ({ input }) => {
       const page = input?.page ?? 1;
       const pageSize = input?.pageSize ?? 10;
       const offset = (page - 1) * pageSize;
 
-      const conditions = [];
+      try {
+        const result = await auth.api.listUsers({
+          query: {
+            limit: pageSize,
+            offset,
+            sortBy: 'createdAt',
+            sortDirection: 'desc',
+            ...(input?.searchQuery && {
+              searchValue: input.searchQuery,
+              searchField: 'email',
+              searchOperator: 'contains',
+            }),
+          },
+          headers: await headers(),
+        });
 
-      // Search by email or display name
-      if (input?.searchQuery && input.searchQuery.trim()) {
-        const searchTerm = `%${input.searchQuery.trim()}%`;
-        conditions.push(or(ilike(users.email, searchTerm), ilike(users.displayName, searchTerm))!);
+        return {
+          users: result.users.map((user) => ({
+            ...user,
+            displayName: user.name,
+          })),
+          total: result.total,
+          page,
+          pageSize,
+          totalPages: Math.ceil(result.total / pageSize),
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to list users',
+          cause: error,
+        });
       }
-
-      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-      // Get total count
-      const [{ total }] = await db.select({ total: count() }).from(users).where(whereClause);
-
-      // Get paginated users
-      const userList = await db
-        .select({
-          id: users.id,
-          email: users.email,
-          emailVerified: users.emailVerified,
-          displayName: users.displayName,
-          profileImageUrl: users.profileImageUrl,
-          stripeCustomerId: users.stripeCustomerId,
-          role: users.role,
-          createdAt: users.createdAt,
-          updatedAt: users.updatedAt,
-        })
-        .from(users)
-        .where(whereClause)
-        .orderBy(sql`${users.createdAt} DESC`)
-        .limit(pageSize)
-        .offset(offset);
-
-      return {
-        users: userList,
-        total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(total / pageSize),
-      };
     }),
 
     /**
-     * Get single user details with subscriptions and memberships
+     * Get single user details
      */
-    get: superAdminProcedure.input(z.object({ id: z.string().uuid() })).query(async ({ input }) => {
-      const [user] = await db.select().from(users).where(eq(users.id, input.id)).limit(1);
-
-      if (!user) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
-      }
-
-      // Get user subscriptions
-      const subscriptions = await db
-        .select()
-        .from(userSubscriptions)
-        .where(eq(userSubscriptions.userId, input.id));
-
-      // Get user memberships with organization details
-      const memberships = await db
-        .select({
-          id: orgMemberships.id,
-          role: orgMemberships.role,
-          createdAt: orgMemberships.createdAt,
-          organization: {
-            id: organizations.id,
-            name: organizations.name,
-            slug: organizations.slug,
-          },
-        })
-        .from(orgMemberships)
-        .innerJoin(organizations, eq(orgMemberships.organizationId, organizations.id))
-        .where(eq(orgMemberships.userId, input.id));
+    get: superAdminProcedure.input(z.object({ id: z.uuid() })).query(async ({ input }) => {
+      const user = await auth.api.getUser({
+        query: {
+          id: input.id,
+        },
+        headers: await headers(),
+      });
 
       return {
-        user,
-        subscriptions,
-        memberships,
+        user: {
+          ...user,
+          displayName: user.name, // returned mapped custom fields
+        },
       };
     }),
 
     /**
      * Create new user (with optional organization membership)
+     *
+     * Note: Better Auth's admin.createUser doesn't support passwordless authentication yet.
+     * See: https://github.com/better-auth/better-auth/issues/4226
+     * For now, we create users directly in the database
      */
     create: superAdminProcedure.input(adminCreateUserSchema).mutation(async ({ input }) => {
       const { email, organizationId, role } = input;
@@ -142,13 +129,13 @@ export const adminRouter = router({
         throw new TRPCError({ code: 'CONFLICT', message: 'User with this email already exists' });
       }
 
-      // Create the user
       const [newUser] = await db
         .insert(users)
         .values({
           email,
           displayName: email,
           emailVerified: false,
+          role: 'user',
           createdAt: new Date(),
           updatedAt: new Date(),
         })
@@ -181,37 +168,33 @@ export const adminRouter = router({
 
     /**
      * Update user details
+     * Uses Better Auth's admin.updateUser API
      */
     update: superAdminProcedure.input(adminUpdateUserSchema).mutation(async ({ input }) => {
-      const { id, ...updates } = input;
+      const { id, displayName } = input;
 
-      const [updated] = await db
-        .update(users)
-        .set({
-          ...updates,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, id))
-        .returning();
-
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
-      }
-
-      return updated;
+      await auth.api.adminUpdateUser({
+        body: {
+          userId: id,
+          data: {
+            name: displayName,
+          },
+        },
+        headers: await headers(),
+      });
     }),
 
     /**
-     * Delete user (cascades to sessions, memberships, etc.)
+     * Hard deletes a user from the database.
+     * Uses Better Auth's admin.removeUser API which properly handles session cleanup
      */
     delete: superAdminProcedure.input(adminDeleteUserSchema).mutation(async ({ input }) => {
-      const [deleted] = await db.delete(users).where(eq(users.id, input.id)).returning();
-
-      if (!deleted) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
-      }
-
-      return { success: true, deletedUser: deleted };
+      await auth.api.removeUser({
+        body: {
+          userId: input.id,
+        },
+        headers: await headers(),
+      });
     }),
   }),
 
@@ -367,36 +350,36 @@ export const adminRouter = router({
     update: superAdminProcedure.input(adminUpdateOrgSchema).mutation(async ({ input }) => {
       const { id, ...updates } = input;
 
-      const [updated] = await db
-        .update(organizations)
-        .set({
-          ...updates,
-          updatedAt: new Date(),
-        })
-        .where(eq(organizations.id, id))
-        .returning();
-
-      if (!updated) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Organization not found' });
+      try {
+        await db
+          .update(organizations)
+          .set({
+            ...updates,
+            updatedAt: new Date(),
+          })
+          .where(eq(organizations.id, id));
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to update organization',
+          cause: error,
+        });
       }
-
-      return updated;
     }),
 
     /**
-     * Delete organization (cascades to memberships, invitations, etc.)
+     * Delete organization (cascades to memberships, invitations, orders, tasks, etc.)
      */
     delete: superAdminProcedure.input(adminDeleteOrgSchema).mutation(async ({ input }) => {
-      const [deleted] = await db
-        .delete(organizations)
-        .where(eq(organizations.id, input.id))
-        .returning();
-
-      if (!deleted) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Organization not found' });
+      try {
+        await db.delete(organizations).where(eq(organizations.id, input.id));
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to delete organization',
+          cause: error,
+        });
       }
-
-      return { success: true, deletedOrganization: deleted };
     }),
   }),
 
