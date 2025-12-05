@@ -73,7 +73,7 @@ export async function proxy(req: NextRequest) {
 
   // Admin route authorization - must be super admin (authentication checked below)
   if (isAuthenticated && isAdminRoute(req)) {
-    if (!sessionData.user.isAdmin) {
+    if (sessionData.user.role !== 'admin') {
       const redirectUrl = activeOrganizationSlug
         ? `/org/${activeOrganizationSlug}/dashboard`
         : '/onboarding';

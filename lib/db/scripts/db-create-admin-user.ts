@@ -33,7 +33,7 @@ async function main() {
   const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
   if (existingUser) {
-    if (existingUser.isAdmin) {
+    if (existingUser.role === 'admin') {
       console.log(`User with email ${email} is already an admin. Skipping...`);
       process.exit(0);
     }
@@ -42,7 +42,7 @@ async function main() {
 
     const [user] = await db
       .update(users)
-      .set({ isAdmin: true })
+      .set({ role: 'admin' })
       .where(eq(users.email, email))
       .returning({ email: users.email });
 
@@ -57,7 +57,7 @@ async function main() {
     .values({
       email,
       displayName: email,
-      isAdmin: true,
+      role: 'admin',
       emailVerified: true,
       createdAt: new Date(),
       updatedAt: new Date(),

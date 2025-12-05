@@ -101,8 +101,8 @@ export const superAdminProcedure = protectedProcedure.use(async ({ ctx, next }) 
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'User not found' });
   }
 
-  if (!user.isAdmin) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Super admin access required' });
+  if (user.role !== 'admin') {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
   }
 
   return next({ ctx });

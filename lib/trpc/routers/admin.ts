@@ -71,7 +71,7 @@ export const adminRouter = router({
           displayName: users.displayName,
           profileImageUrl: users.profileImageUrl,
           stripeCustomerId: users.stripeCustomerId,
-          isAdmin: users.isAdmin,
+          role: users.role,
           createdAt: users.createdAt,
           updatedAt: users.updatedAt,
         })

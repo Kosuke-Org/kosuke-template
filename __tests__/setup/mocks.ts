@@ -19,7 +19,8 @@ const mockUser: MockUserType = {
   image: 'https://example.com/avatar.jpg',
   createdAt: new Date(),
   updatedAt: new Date(),
-  isAdmin: false,
+  role: 'user',
+  banned: false,
 };
 
 // Mock Stripe responses
@@ -69,10 +70,11 @@ export const mockedSession = {
     email: 'test@example.com',
     emailVerified: true,
     name: 'Test User',
+    role: 'user',
+    banned: false,
     image: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    isAdmin: false,
   },
   updatedAt: Date.now(),
 };

@@ -35,7 +35,7 @@ export const userRouter = router({
         profileImageUrl: users.profileImageUrl,
         stripeCustomerId: users.stripeCustomerId,
         notificationSettings: users.notificationSettings,
-        isAdmin: users.isAdmin,
+        role: users.role,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       })
@@ -192,6 +192,6 @@ export const userRouter = router({
    */
   isAdmin: protectedProcedure.query(async ({ ctx }) => {
     const user = await ctx.getUser();
-    return user?.isAdmin ?? false;
+    return user?.role === 'admin';
   }),
 });

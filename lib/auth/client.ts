@@ -4,6 +4,7 @@
  * See: https://www.better-auth.com/docs/integrations/next
  */
 import {
+  adminClient,
   emailOTPClient,
   inferAdditionalFields,
   inferOrgAdditionalFields,
@@ -25,6 +26,7 @@ const authClient = createAuthClient({
     organizationClient({ schema: inferOrgAdditionalFields<typeof auth>() }),
     inferAdditionalFields<typeof auth>(),
     customSessionClient<typeof auth>(),
+    adminClient(),
   ],
 });
 

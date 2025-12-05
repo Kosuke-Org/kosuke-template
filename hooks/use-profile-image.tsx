@@ -7,7 +7,7 @@ import { User } from '@/lib/db/schema';
 /**
  * Hook to handle profile image URLs
  */
-export function useProfileImageUrl(user?: User) {
+export function useProfileImageUrl(user?: Partial<User>) {
   const { currentImageUrl } = useProfileImage();
 
   return useMemo(() => {

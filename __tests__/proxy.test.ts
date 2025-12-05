@@ -209,7 +209,7 @@ describe('proxy', () => {
       ...mockedSession,
       user: {
         ...mockedSession.user,
-        isAdmin: true,
+        role: 'admin',
       },
       session: {
         ...mockedSession.session,
