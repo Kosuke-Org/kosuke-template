@@ -64,8 +64,6 @@ vi.mock('@/lib/trpc/client', () => ({
 }));
 
 describe('useAdminMemberships', () => {
-  const mockOnMutationSuccess = vi.fn();
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -82,9 +80,7 @@ describe('useAdminMemberships', () => {
   });
 
   it('should call onMutationSuccess callback after successful create', () => {
-    const { result } = renderHook(() =>
-      useAdminMemberships({ onMutationSuccess: mockOnMutationSuccess })
-    );
+    const { result } = renderHook(() => useAdminMemberships());
 
     result.current.createMembership({
       userId: 'user-1',
@@ -104,13 +100,10 @@ describe('useAdminMemberships', () => {
       title: 'Success',
       description: 'User added to organization successfully',
     });
-    expect(mockOnMutationSuccess).toHaveBeenCalled();
   });
 
   it('should show success toast on update', () => {
-    const { result } = renderHook(() =>
-      useAdminMemberships({ onMutationSuccess: mockOnMutationSuccess })
-    );
+    const { result } = renderHook(() => useAdminMemberships());
 
     result.current.updateMembership({
       id: 'membership-1',
@@ -128,13 +121,10 @@ describe('useAdminMemberships', () => {
       title: 'Success',
       description: 'Member role updated successfully',
     });
-    expect(mockOnMutationSuccess).toHaveBeenCalled();
   });
 
   it('should show success toast on delete', () => {
-    const { result } = renderHook(() =>
-      useAdminMemberships({ onMutationSuccess: mockOnMutationSuccess })
-    );
+    const { result } = renderHook(() => useAdminMemberships());
 
     result.current.deleteMembership({ id: 'membership-1' });
 
@@ -146,7 +136,6 @@ describe('useAdminMemberships', () => {
       title: 'Success',
       description: 'Membership removed successfully',
     });
-    expect(mockOnMutationSuccess).toHaveBeenCalled();
   });
 
   it('should show error toast on create failure', () => {
@@ -168,9 +157,7 @@ describe('useAdminMemberships', () => {
   });
 
   it('should call onMutationSuccess even on update error', () => {
-    const { result } = renderHook(() =>
-      useAdminMemberships({ onMutationSuccess: mockOnMutationSuccess })
-    );
+    const { result } = renderHook(() => useAdminMemberships());
 
     result.current.updateMembership({
       id: 'membership-1',
@@ -184,7 +171,6 @@ describe('useAdminMemberships', () => {
       description: 'Update failed',
       variant: 'destructive',
     });
-    expect(mockOnMutationSuccess).toHaveBeenCalled();
   });
 
   it('should show error toast on delete failure', () => {

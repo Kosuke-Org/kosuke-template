@@ -183,10 +183,15 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   );
 
   const updateUserMutation = trpc.admin.users.update.useMutation({
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      const willRevokeSession =
+        variables.role !== undefined || variables.emailVerified !== undefined;
+
       toast({
         title: 'Success',
-        description: 'User updated successfully',
+        description: willRevokeSession
+          ? 'User updated successfully. Their session has been revoked and they will need to sign in again.'
+          : 'User updated successfully',
       });
       utils.admin.users.get.invalidate({ id: resolvedParams.id });
       utils.admin.users.list.invalidate();
@@ -219,9 +224,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   });
 
   const { createMembership, updateMembership, deleteMembership, isDeleting, isCreating } =
-    useAdminMemberships({
-      onMutationSuccess: refetchMemberships,
-    });
+    useAdminMemberships();
 
   const handleDelete = () => {
     deleteUser.mutate({ id: resolvedParams.id });
@@ -236,20 +239,38 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     setMembershipDeleteDialogOpen(true);
   };
 
-  const handleRoleChange = async (id: string, role: OrgRoleValue) => {
-    await updateMembership({ id, role });
+  const handleRoleChange = (id: string, role: OrgRoleValue) => {
+    updateMembership(
+      { id, role },
+      {
+        onSuccess: () => {
+          refetchMemberships();
+        },
+      }
+    );
   };
 
   const handleDeleteMembershipConfirm = async () => {
     if (!membershipToDelete) return;
-    await deleteMembership({ id: membershipToDelete.id });
-    setMembershipDeleteDialogOpen(false);
-    setMembershipToDelete(null);
+    deleteMembership(
+      { id: membershipToDelete.id },
+      {
+        onSuccess: () => {
+          refetchMemberships();
+          setMembershipDeleteDialogOpen(false);
+          setMembershipToDelete(null);
+        },
+      }
+    );
   };
 
-  const handleAddToOrgSubmit = async (data: z.infer<typeof adminCreateMembershipSchema>) => {
-    await createMembership(data);
-    setAddToOrgDialogOpen(false);
+  const handleAddToOrgSubmit = (data: z.infer<typeof adminCreateMembershipSchema>) => {
+    createMembership(data, {
+      onSuccess: () => {
+        refetchMemberships();
+        setAddToOrgDialogOpen(false);
+      },
+    });
   };
 
   const onSubmit = (data: Omit<UserFormValues, 'id'>) => {

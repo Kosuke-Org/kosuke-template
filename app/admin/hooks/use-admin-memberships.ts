@@ -4,11 +4,7 @@ import { trpc } from '@/lib/trpc/client';
 
 import { useToast } from '@/hooks/use-toast';
 
-interface UseAdminMembershipsOptions {
-  onMutationSuccess?: () => void;
-}
-
-export function useAdminMemberships({ onMutationSuccess }: UseAdminMembershipsOptions = {}) {
+export function useAdminMemberships() {
   const { toast } = useToast();
 
   const createMembership = trpc.admin.memberships.create.useMutation({
@@ -17,7 +13,6 @@ export function useAdminMemberships({ onMutationSuccess }: UseAdminMembershipsOp
         title: 'Success',
         description: 'User added to organization successfully',
       });
-      onMutationSuccess?.();
     },
     onError: (error) => {
       toast({
@@ -34,7 +29,6 @@ export function useAdminMemberships({ onMutationSuccess }: UseAdminMembershipsOp
         title: 'Success',
         description: 'Member role updated successfully',
       });
-      onMutationSuccess?.();
     },
     onError: (error) => {
       toast({
@@ -42,7 +36,6 @@ export function useAdminMemberships({ onMutationSuccess }: UseAdminMembershipsOp
         description: error.message,
         variant: 'destructive',
       });
-      onMutationSuccess?.(); // Refetch even on error to sync state
     },
   });
 
@@ -52,7 +45,6 @@ export function useAdminMemberships({ onMutationSuccess }: UseAdminMembershipsOp
         title: 'Success',
         description: 'Membership removed successfully',
       });
-      onMutationSuccess?.();
     },
     onError: (error) => {
       toast({

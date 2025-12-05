@@ -188,8 +188,13 @@ export const adminRouter = router({
         headers: await headers(),
       });
 
-      // Revoke user sessions if role or email verified is updated
-      if (updates.role || updates.emailVerified) {
+      /**
+       * Revoke all active sessions when security-sensitive fields change.
+       * This ensures users must re-authenticate after:
+       * - Role changes (admin permissions granted/revoked)
+       * - Email verification status changes (security state change)
+       */
+      if (updates.role !== undefined || updates.emailVerified !== undefined) {
         await auth.api.revokeUserSessions({
           body: {
             userId: id,

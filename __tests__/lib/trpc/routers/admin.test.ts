@@ -211,6 +211,21 @@ describe('Admin Router', () => {
         headers: expect.any(Object),
       });
     });
+
+    it('revokes sessions when emailVerified is updated', async () => {
+      auth.api.adminUpdateUser.mockResolvedValue({});
+      auth.api.revokeUserSessions.mockResolvedValue({});
+
+      await caller.admin.users.update({
+        id: testUserId,
+        emailVerified: false,
+      });
+
+      expect(auth.api.revokeUserSessions).toHaveBeenCalledWith({
+        body: { userId: testUserId },
+        headers: expect.any(Object),
+      });
+    });
   });
 
   describe('users.delete', () => {

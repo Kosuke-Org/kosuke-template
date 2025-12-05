@@ -31,7 +31,7 @@ type AddToOrgFormValues = z.infer<typeof adminCreateMembershipSchema>;
 interface AddToOrganizationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: AddToOrgFormValues) => Promise<void>;
+  onSubmit: (data: AddToOrgFormValues) => void;
   isPending: boolean;
   userId: string;
   availableOrganizations?: Array<{ id: string; name: string; slug: string }>;
