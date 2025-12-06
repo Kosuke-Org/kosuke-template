@@ -125,13 +125,13 @@ export default function AdminUsersPage() {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = () => {
     if (!userToDelete) return;
-    await deleteUser.mutateAsync({ id: userToDelete.id });
+    deleteUser.mutate({ id: userToDelete.id });
   };
 
-  const handleCreateSubmit = async (data: z.infer<typeof adminCreateUserSchema>) => {
-    await createUser.mutateAsync(data);
+  const handleCreateSubmit = (data: z.infer<typeof adminCreateUserSchema>) => {
+    createUser.mutate(data);
   };
 
   if (isLoading) {

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { orgRoleEnum } from '@/lib/db/schema';
-import { ORG_ROLES } from '@/lib/types/organization';
+import { ORG_ROLES, USER_ROLES } from '@/lib/types/organization';
 
 // User Management Schemas
 export const adminUserListFiltersSchema = z
@@ -17,6 +17,7 @@ export const adminUpdateUserSchema = z.object({
   displayName: z.string().min(1).max(255).optional(),
   email: z.email().optional(),
   emailVerified: z.boolean().optional(),
+  role: z.enum([USER_ROLES.ADMIN, USER_ROLES.USER]).optional(),
 });
 
 export const adminDeleteUserSchema = z.object({
@@ -26,7 +27,8 @@ export const adminDeleteUserSchema = z.object({
 export const adminCreateUserSchema = z.object({
   email: z.email('Invalid email address'),
   organizationId: z.uuid().optional(),
-  role: z.enum(orgRoleEnum.enumValues).optional().default(ORG_ROLES.MEMBER),
+  role: z.enum([USER_ROLES.ADMIN, USER_ROLES.USER]).optional().default(USER_ROLES.USER),
+  orgRole: z.enum(orgRoleEnum.enumValues).optional().default(ORG_ROLES.MEMBER),
 });
 
 // Organization Management Schemas

@@ -31,7 +31,7 @@ type AddUserFormValues = z.infer<typeof adminCreateMembershipSchema>;
 interface AddUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: AddUserFormValues) => Promise<void>;
+  onSubmit: (data: AddUserFormValues) => void;
   isPending: boolean;
   organizationId: string;
   availableUsers?: Array<{ id: string; email: string; displayName: string }>;

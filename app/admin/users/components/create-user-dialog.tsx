@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import type { z } from 'zod';
 
 import { adminCreateUserSchema } from '@/lib/trpc/schemas/admin';
+import { ORG_ROLES, USER_ROLES } from '@/lib/types/organization';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -17,7 +18,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -26,13 +34,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 type CreateUserFormValues = z.infer<typeof adminCreateUserSchema>;
 
 interface CreateUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: CreateUserFormValues) => Promise<void>;
+  onSubmit: (data: CreateUserFormValues) => void;
   isPending: boolean;
   availableOrganizations?: Array<{ id: string; name: string; slug: string }>;
 }
@@ -49,7 +58,7 @@ export function CreateUserDialog({
     defaultValues: {
       email: '',
       organizationId: undefined,
-      role: 'member' as const,
+      orgRole: ORG_ROLES.MEMBER,
     },
   });
 
@@ -59,9 +68,8 @@ export function CreateUserDialog({
     name: 'organizationId',
   });
 
-  const handleSubmit = async (data: CreateUserFormValues) => {
-    await onSubmit(data as CreateUserFormValues);
-    form.reset();
+  const handleSubmit = (data: CreateUserFormValues) => {
+    onSubmit(data);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -103,6 +111,30 @@ export function CreateUserDialog({
             />
 
             <Controller
+              name="role"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="role">Is Admin</FieldLabel>
+                  <FieldDescription>
+                    Whether the user has administrative privileges
+                  </FieldDescription>
+                  <FieldContent>
+                    <Switch
+                      id="role"
+                      checked={field.value === USER_ROLES.ADMIN}
+                      onCheckedChange={(checked) => {
+                        field.onChange(checked ? USER_ROLES.ADMIN : USER_ROLES.USER);
+                      }}
+                      disabled={isPending}
+                    />
+                  </FieldContent>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )}
+            />
+
+            <Controller
               name="organizationId"
               control={form.control}
               render={({ field, fieldState }) => (
@@ -135,17 +167,17 @@ export function CreateUserDialog({
 
             {selectedOrgId && (
               <Controller
-                name="role"
+                name="orgRole"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="role">Role</FieldLabel>
+                    <FieldLabel htmlFor="orgRole">Role</FieldLabel>
                     <Select
                       value={field.value ?? 'member'}
                       onValueChange={field.onChange}
                       disabled={isPending}
                     >
-                      <SelectTrigger id="role">
+                      <SelectTrigger id="orgRole">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

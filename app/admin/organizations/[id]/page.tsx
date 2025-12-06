@@ -202,6 +202,7 @@ export default function OrgDetailPage({ params }: OrgDetailPageProps) {
         title: 'Success',
         description: 'Organization deleted successfully',
       });
+      setDeleteDialogOpen(false);
       utils.admin.organizations.list.invalidate();
       router.push('/admin/organizations');
     },
@@ -215,13 +216,10 @@ export default function OrgDetailPage({ params }: OrgDetailPageProps) {
   });
 
   const { createMembership, updateMembership, deleteMembership, isDeleting, isCreating } =
-    useAdminMemberships({
-      onMutationSuccess: refetchMemberships,
-    });
+    useAdminMemberships();
 
-  const handleDelete = async () => {
-    await deleteOrg.mutateAsync({ id: orgData?.organization.id ?? '' });
-    setDeleteDialogOpen(false);
+  const handleDelete = () => {
+    deleteOrg.mutate({ id: orgData?.organization.id ?? '' });
   };
 
   const handleViewUser = (userId: string) => {
@@ -233,20 +231,38 @@ export default function OrgDetailPage({ params }: OrgDetailPageProps) {
     setMembershipDeleteDialogOpen(true);
   };
 
-  const handleRoleChange = async (id: string, role: OrgRoleValue) => {
-    await updateMembership({ id, role });
+  const handleRoleChange = (id: string, role: OrgRoleValue) => {
+    updateMembership(
+      { id, role },
+      {
+        onSuccess: () => {
+          refetchMemberships();
+        },
+      }
+    );
   };
 
-  const handleDeleteMembershipConfirm = async () => {
+  const handleDeleteMembershipConfirm = () => {
     if (!membershipToDelete) return;
-    await deleteMembership({ id: membershipToDelete.id });
-    setMembershipDeleteDialogOpen(false);
-    setMembershipToDelete(null);
+    deleteMembership(
+      { id: membershipToDelete.id },
+      {
+        onSuccess: () => {
+          refetchMemberships();
+          setMembershipDeleteDialogOpen(false);
+          setMembershipToDelete(null);
+        },
+      }
+    );
   };
 
-  const handleAddUserSubmit = async (data: z.infer<typeof adminCreateMembershipSchema>) => {
-    await createMembership(data);
-    setAddUserDialogOpen(false);
+  const handleAddUserSubmit = (data: z.infer<typeof adminCreateMembershipSchema>) => {
+    createMembership(data, {
+      onSuccess: () => {
+        refetchMemberships();
+        setAddUserDialogOpen(false);
+      },
+    });
   };
 
   const onSubmit = async (data: Omit<OrgFormValues, 'id'>) => {

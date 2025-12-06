@@ -22,3 +22,13 @@ export const ORG_ROLES: Record<string, OrgRoleValue> = {
   ADMIN: 'admin',
   MEMBER: 'member',
 } as const;
+
+/**
+ * User Role Constants
+ * Enum-like object for organization roles
+ */
+export const USER_ROLES: Record<string, 'admin' | 'user'> = {
+  ADMIN: 'admin',
+  USER: 'user',
+} as const;
+export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];

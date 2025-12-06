@@ -20,7 +20,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   // Generate org-aware navigation items
   const navItems = React.useMemo(() => {
-    if (!activeOrganization) return { navMain: [], navSecondary: [] };
+    if (!activeOrganization) return [];
 
     const orgPrefix = `/org/${activeOrganization.slug}`;
 
@@ -43,21 +43,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       },
     ];
 
-    const secondaryItems = [];
-
-    if (isAdmin) {
-      secondaryItems.push({
-        title: 'Admin',
-        url: '/admin',
-        icon: Shield,
-      });
-    }
-
-    return {
-      navMain: mainItems,
-      navSecondary: secondaryItems,
-    };
-  }, [activeOrganization, isAdmin]);
+    return mainItems;
+  }, [activeOrganization]);
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -65,7 +52,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarOrgSwitcher />
       </SidebarHeader>
       <SidebarContent>
-        {isLoading || !activeOrganization ? (
+        {isLoading ? (
           <div className="space-y-2 p-2">
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
@@ -73,8 +60,28 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
         ) : (
           <>
-            <NavMain items={navItems.navMain} />
-            <NavSecondary items={navItems.navSecondary} className="mt-auto" />
+            {!activeOrganization ? (
+              <div className="space-y-2 p-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ) : (
+              <NavMain items={navItems} />
+            )}
+
+            {isAdmin && (
+              <NavSecondary
+                items={[
+                  {
+                    title: 'Admin',
+                    url: '/admin',
+                    icon: Shield,
+                  },
+                ]}
+                className="mt-auto"
+              />
+            )}
           </>
         )}
       </SidebarContent>

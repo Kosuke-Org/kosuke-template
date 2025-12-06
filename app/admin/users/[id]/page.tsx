@@ -16,6 +16,7 @@ import { trpc } from '@/lib/trpc/client';
 import type { adminCreateMembershipSchema } from '@/lib/trpc/schemas/admin';
 import { adminUpdateUserSchema } from '@/lib/trpc/schemas/admin';
 import { OrgRoleValue } from '@/lib/types';
+import { USER_ROLES, UserRole } from '@/lib/types/organization';
 
 import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useTableSearch } from '@/hooks/use-table-search';
@@ -33,9 +34,17 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { AddToOrganizationDialog } from './components/add-to-organization-dialog';
@@ -125,6 +134,7 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     values: {
       displayName: userData?.user.displayName || '',
       emailVerified: userData?.user.emailVerified || false,
+      role: (userData?.user.role ?? USER_ROLES.USER) as UserRole,
     },
   });
 
@@ -173,10 +183,15 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   );
 
   const updateUserMutation = trpc.admin.users.update.useMutation({
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      const willRevokeSession =
+        variables.role !== undefined || variables.emailVerified !== undefined;
+
       toast({
         title: 'Success',
-        description: 'User updated successfully',
+        description: willRevokeSession
+          ? 'User updated successfully. Their session has been revoked and they will need to sign in again.'
+          : 'User updated successfully',
       });
       utils.admin.users.get.invalidate({ id: resolvedParams.id });
       utils.admin.users.list.invalidate();
@@ -209,13 +224,10 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   });
 
   const { createMembership, updateMembership, deleteMembership, isDeleting, isCreating } =
-    useAdminMemberships({
-      onMutationSuccess: refetchMemberships,
-    });
+    useAdminMemberships();
 
-  const handleDelete = async () => {
-    await deleteUser.mutateAsync({ id: resolvedParams.id });
-    setDeleteDialogOpen(false);
+  const handleDelete = () => {
+    deleteUser.mutate({ id: resolvedParams.id });
   };
 
   const handleViewOrganization = (id: string) => {
@@ -227,24 +239,42 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     setMembershipDeleteDialogOpen(true);
   };
 
-  const handleRoleChange = async (id: string, role: OrgRoleValue) => {
-    await updateMembership({ id, role });
+  const handleRoleChange = (id: string, role: OrgRoleValue) => {
+    updateMembership(
+      { id, role },
+      {
+        onSuccess: () => {
+          refetchMemberships();
+        },
+      }
+    );
   };
 
   const handleDeleteMembershipConfirm = async () => {
     if (!membershipToDelete) return;
-    await deleteMembership({ id: membershipToDelete.id });
-    setMembershipDeleteDialogOpen(false);
-    setMembershipToDelete(null);
+    deleteMembership(
+      { id: membershipToDelete.id },
+      {
+        onSuccess: () => {
+          refetchMemberships();
+          setMembershipDeleteDialogOpen(false);
+          setMembershipToDelete(null);
+        },
+      }
+    );
   };
 
-  const handleAddToOrgSubmit = async (data: z.infer<typeof adminCreateMembershipSchema>) => {
-    await createMembership(data);
-    setAddToOrgDialogOpen(false);
+  const handleAddToOrgSubmit = (data: z.infer<typeof adminCreateMembershipSchema>) => {
+    createMembership(data, {
+      onSuccess: () => {
+        refetchMemberships();
+        setAddToOrgDialogOpen(false);
+      },
+    });
   };
 
-  const onSubmit = async (data: Omit<UserFormValues, 'id'>) => {
-    await updateUserMutation.mutateAsync({
+  const onSubmit = (data: Omit<UserFormValues, 'id'>) => {
+    updateUserMutation.mutate({
       id: resolvedParams.id,
       ...data,
     });
@@ -260,9 +290,15 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     name: 'emailVerified',
   });
 
+  const watchedRole = useWatch({
+    control: form.control,
+    name: 'role',
+  });
+
   const hasChanges =
     watchedDisplayName !== userData?.user.displayName ||
-    watchedEmailVerified !== userData?.user.emailVerified;
+    watchedEmailVerified !== userData?.user.emailVerified ||
+    watchedRole !== userData?.user.role;
 
   const existingOrganizations = membershipsData?.memberships.map(
     (membership) => membership.organization.id
@@ -328,6 +364,52 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
                             placeholder="Enter display name"
                             disabled={updateUserMutation.isPending}
                           />
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                        </Field>
+                      )}
+                    />
+
+                    <Controller
+                      name="emailVerified"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel htmlFor="user-email-verified">Email Verified</FieldLabel>
+                          <FieldDescription>
+                            Whether the user&apos;s email address is verified
+                          </FieldDescription>
+                          <FieldContent>
+                            <Switch
+                              id="user-email-verified"
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              disabled={updateUserMutation.isPending}
+                            />
+                          </FieldContent>
+                          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                        </Field>
+                      )}
+                    />
+
+                    <Controller
+                      name="role"
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel htmlFor="user-is-admin">Is Admin</FieldLabel>
+                          <FieldDescription>
+                            Whether the user has administrative privileges
+                          </FieldDescription>
+                          <FieldContent>
+                            <Switch
+                              id="user-is-admin"
+                              checked={field.value === USER_ROLES.ADMIN}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked ? USER_ROLES.ADMIN : USER_ROLES.USER);
+                              }}
+                              disabled={updateUserMutation.isPending}
+                            />
+                          </FieldContent>
                           {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                         </Field>
                       )}

@@ -8,6 +8,7 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import superjson from 'superjson';
 
 import { auth } from '@/lib/auth/providers';
+import { USER_ROLES } from '@/lib/types/organization';
 
 /**
  * Create context for tRPC
@@ -22,11 +23,19 @@ export const createTRPCContext = async (opts?: { req?: Request }) => {
 
   if (opts?.req) {
     // API route - use request headers
-    sessionData = await auth.api.getSession({ headers: opts.req.headers });
+    // Disable cookie cache to ensure we always get fresh session data from Redis/DB
+    sessionData = await auth.api.getSession({
+      headers: opts.req.headers,
+      query: { disableCookieCache: true },
+    });
   } else {
     // Server component - use headers() from next/headers
     const headersList = await headers();
-    sessionData = await auth.api.getSession({ headers: headersList });
+    // Disable cookie cache to ensure we always get fresh session data from Redis/DB
+    sessionData = await auth.api.getSession({
+      headers: headersList,
+      query: { disableCookieCache: true },
+    });
   }
 
   const user = sessionData?.user;
@@ -101,7 +110,7 @@ export const superAdminProcedure = protectedProcedure.use(async ({ ctx, next }) 
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'User not found' });
   }
 
-  if (user.role !== 'admin') {
+  if (user.role !== USER_ROLES.ADMIN) {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
   }
 

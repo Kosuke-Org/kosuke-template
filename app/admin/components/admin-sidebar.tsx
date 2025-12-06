@@ -8,8 +8,6 @@ import { ArrowLeft, Building2, LayoutDashboard, Shield, Users } from 'lucide-rea
 
 import { AUTH_ROUTES } from '@/lib/auth';
 
-import { useOrganization } from '@/hooks/use-organization';
-
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -23,8 +21,6 @@ import {
 } from '@/components/ui/sidebar';
 
 export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { organization: activeOrganization } = useOrganization();
-
   const adminNavItems = [
     {
       title: 'Dashboard',
@@ -48,10 +44,6 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
     //   icon: Activity,
     // },
   ];
-
-  const backToAppUrl = activeOrganization
-    ? `/org/${activeOrganization.slug}/dashboard`
-    : AUTH_ROUTES.ROOT;
 
   return (
     <Sidebar variant="inset" {...props}>
@@ -77,7 +69,7 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
         <SidebarMenu className="mt-auto">
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <Link href={backToAppUrl}>
+              <Link href={AUTH_ROUTES.ROOT}>
                 <ArrowLeft />
                 <span>Back to App</span>
               </Link>
