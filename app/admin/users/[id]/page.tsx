@@ -114,6 +114,8 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [membershipDeleteDialogOpen, setMembershipDeleteDialogOpen] = useState(false);
   const [addToOrgDialogOpen, setAddToOrgDialogOpen] = useState(false);
+  const [confirmUpdateDialogOpen, setConfirmUpdateDialogOpen] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<Omit<UserFormValues, 'id'> | null>(null);
   const [membershipToDelete, setMembershipToDelete] = useState<{
     id: string;
     userName: string;
@@ -183,18 +185,15 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   );
 
   const updateUserMutation = trpc.admin.users.update.useMutation({
-    onSuccess: (data, variables) => {
-      const willRevokeSession =
-        variables.role !== undefined || variables.emailVerified !== undefined;
-
+    onSuccess: () => {
       toast({
         title: 'Success',
-        description: willRevokeSession
-          ? 'User updated successfully. Their session has been revoked and they will need to sign in again.'
-          : 'User updated successfully',
+        description: 'User updated successfully',
       });
       utils.admin.users.get.invalidate({ id: resolvedParams.id });
       utils.admin.users.list.invalidate();
+      setPendingFormData(null);
+      setConfirmUpdateDialogOpen(false);
     },
     onError: (error) => {
       toast({
@@ -202,6 +201,8 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         description: error.message,
         variant: 'destructive',
       });
+      setPendingFormData(null);
+      setConfirmUpdateDialogOpen(false);
     },
   });
 
@@ -274,10 +275,8 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
   };
 
   const onSubmit = (data: Omit<UserFormValues, 'id'>) => {
-    updateUserMutation.mutate({
-      id: resolvedParams.id,
-      ...data,
-    });
+    setPendingFormData(data);
+    setConfirmUpdateDialogOpen(true);
   };
 
   const watchedDisplayName = useWatch({
@@ -294,6 +293,15 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
     control: form.control,
     name: 'role',
   });
+
+  const handleConfirmUpdate = () => {
+    if (!pendingFormData) return;
+
+    updateUserMutation.mutate({
+      id: resolvedParams.id,
+      ...pendingFormData,
+    });
+  };
 
   const hasChanges =
     watchedDisplayName !== userData?.user.displayName ||
@@ -523,6 +531,33 @@ export default function UserDetailPage({ params }: UserDetailPageProps) {
         userId={resolvedParams.id}
         availableOrganizations={availableOrganizations}
       />
+
+      <AlertDialog
+        open={confirmUpdateDialogOpen || (confirmUpdateDialogOpen && updateUserMutation.isPending)}
+        onOpenChange={setConfirmUpdateDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Log Out User?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Updating user information will revoke the user&apos;s current session and they will
+              need to sign in again. Do you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => form.reset()} disabled={updateUserMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmUpdate}
+              disabled={updateUserMutation.isPending}
+            >
+              {updateUserMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Save and Log Out User
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

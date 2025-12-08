@@ -178,12 +178,16 @@ export const adminRouter = router({
      * Uses Better Auth's admin.updateUser API
      */
     update: superAdminProcedure.input(adminUpdateUserSchema).mutation(async ({ input }) => {
-      const { id, ...updates } = input;
+      const { id, displayName, ...updates } = input;
 
       await auth.api.adminUpdateUser({
         body: {
           userId: id,
-          data: { ...updates },
+          data: {
+            ...updates,
+            // map displayName to name
+            name: displayName,
+          },
         },
         headers: await headers(),
       });
