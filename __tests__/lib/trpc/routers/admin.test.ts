@@ -185,13 +185,17 @@ describe('Admin Router', () => {
       const result = await caller.admin.users.update({
         id: testUserId,
         displayName: 'Updated Name',
+        role: 'admin',
       });
 
       expect(result.success).toBe(true);
       expect(auth.api.adminUpdateUser).toHaveBeenCalledWith({
         body: {
           userId: testUserId,
-          data: { displayName: 'Updated Name' },
+          data: {
+            name: 'Updated Name',
+            role: 'admin',
+          },
         },
         headers: expect.any(Object),
       });
