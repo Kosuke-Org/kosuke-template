@@ -2,19 +2,8 @@
 
 import { useState } from 'react';
 
-import Link from 'next/link';
-
-import {
-  Activity,
-  AlertCircle,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Loader2,
-  RefreshCw,
-  Trash2,
-  XCircle,
-} from 'lucide-react';
+import { format } from 'date-fns';
+import { Clock, Loader2, Play, RefreshCw } from 'lucide-react';
 
 import { trpc } from '@/lib/trpc/client';
 
@@ -39,23 +28,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { type JobStatus, JobsDataTable } from './components/jobs-data-table';
-
-type DialogState =
-  | { type: 'none' }
-  | { type: 'retry'; jobId: string }
-  | { type: 'remove'; jobId: string }
-  | { type: 'clean'; status: 'completed' | 'failed' };
 
 export default function AdminJobsPage() {
   const { toast } = useToast();
   const [selectedQueue, setSelectedQueue] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<JobStatus>('failed');
   const [page, setPage] = useState(1);
+  const [triggerDialogOpen, setTriggerDialogOpen] = useState(false);
   const pageSize = 20;
-  const [dialogState, setDialogState] = useState<DialogState>({ type: 'none' });
 
   const {
     data: queuesData,
@@ -63,7 +47,6 @@ export default function AdminJobsPage() {
     refetch: refetchQueues,
   } = trpc.admin.jobs.listQueues.useQuery(undefined, {
     staleTime: 1000 * 30, // 30 seconds
-    refetchInterval: 10000, // Refresh every 10 seconds
     placeholderData: (previousData) => previousData,
   });
 
@@ -71,7 +54,23 @@ export default function AdminJobsPage() {
     setSelectedQueue(queuesData[0].name);
   }
 
-  const { data: jobsData, refetch: refetchJobs } = trpc.admin.jobs.listJobs.useQuery(
+  const {
+    data: queueDetails,
+    refetch: refetchQueueDetails,
+    isRefetching: isRefetchingDetails,
+    isLoading: isLoadingDetails,
+  } = trpc.admin.jobs.getQueue.useQuery(
+    { queueName: selectedQueue },
+    {
+      enabled: !!selectedQueue,
+    }
+  );
+
+  const {
+    data: jobsData,
+    refetch: refetchJobs,
+    isLoading: isLoadingJobs,
+  } = trpc.admin.jobs.listJobs.useQuery(
     {
       queueName: selectedQueue,
       status: selectedStatus,
@@ -84,90 +83,56 @@ export default function AdminJobsPage() {
     }
   );
 
-  const selectedQueueData = queuesData?.find((q) => q.name === selectedQueue);
-
-  const retryJob = trpc.admin.jobs.retryJob.useMutation({
+  const triggerJob = trpc.admin.jobs.triggerScheduledJob.useMutation({
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Job retried successfully' });
-      refetchJobs();
-      setDialogState({ type: 'none' });
-    },
-    onError: (error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const removeJob = trpc.admin.jobs.removeJob.useMutation({
-    onSuccess: () => {
-      toast({ title: 'Success', description: 'Job removed successfully' });
-      refetchJobs();
+      toast({ title: 'Success', description: 'Job triggered successfully' });
+      setTriggerDialogOpen(false);
       refetchQueues();
-      setDialogState({ type: 'none' });
-    },
-    onError: (error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const cleanQueue = trpc.admin.jobs.cleanQueue.useMutation({
-    onSuccess: () => {
-      toast({ title: 'Success', description: 'Queue cleaned successfully' });
       refetchJobs();
-      refetchQueues();
-      setDialogState({ type: 'none' });
+      refetchQueueDetails();
     },
     onError: (error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     },
   });
 
-  const handleConfirmAction = () => {
-    if (dialogState.type === 'retry') {
-      retryJob.mutate({ queueName: selectedQueue, jobId: dialogState.jobId });
-    } else if (dialogState.type === 'remove') {
-      removeJob.mutate({ queueName: selectedQueue, jobId: dialogState.jobId });
-    } else if (dialogState.type === 'clean') {
-      cleanQueue.mutate({
-        queueName: selectedQueue,
-        grace: 0,
-        status: dialogState.status,
+  const handleTriggerClick = () => {
+    setTriggerDialogOpen(true);
+  };
+
+  const handleTriggerConfirm = () => {
+    // Since there's one scheduler per queue, get the first (and only) scheduler
+    const scheduler = queueDetails?.schedulers[0];
+    if (!scheduler || !selectedQueue) {
+      toast({
+        title: 'Error',
+        description: 'Cannot trigger job: No scheduler configured',
+        variant: 'destructive',
       });
+      return;
     }
+
+    triggerJob.mutate({
+      queueName: selectedQueue,
+      jobName: scheduler.name,
+      data: (scheduler.template?.data as Record<string, unknown>) ?? {},
+    });
   };
 
-  const getDialogContent = () => {
-    switch (dialogState.type) {
-      case 'retry':
-        return {
-          title: 'Retry Job',
-          description:
-            'Are you sure you want to retry this job? It will be moved back to the waiting queue.',
-        };
-      case 'remove':
-        return {
-          title: 'Remove Job',
-          description:
-            'Are you sure you want to remove this job permanently? This action cannot be undone.',
-        };
-      case 'clean':
-        return {
-          title: `Clean ${dialogState.status} Jobs`,
-          description: `Are you sure you want to clean all ${dialogState.status} jobs from ${selectedQueue}? This will remove old ${dialogState.status} jobs and cannot be undone.`,
-        };
-      default:
-        return { title: '', description: '' };
-    }
-  };
-
-  const dialogContent = getDialogContent();
-  const isPending = retryJob.isPending || removeJob.isPending || cleanQueue.isPending;
+  if (isLoadingQueues || isLoadingDetails || isLoadingJobs) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Skeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-2xl font-bold">Jobs</h1>
-          <p className="text-muted-foreground mt-1 text-sm">Manage all jobs in the system</p>
+          <p className="text-muted-foreground text-sm">Monitor and manage background jobs</p>
         </div>
         <div className="flex items-center gap-3">
           <Select
@@ -189,54 +154,38 @@ export default function AdminJobsPage() {
               ))}
             </SelectContent>
           </Select>
-          {selectedQueue && (
-            <Button asChild variant="outline">
-              <Link href={`/admin/jobs/${selectedQueue}`}>View Settings</Link>
-            </Button>
-          )}
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
               refetchJobs();
               refetchQueues();
+              refetchQueueDetails();
             }}
+            disabled={isRefetchingDetails}
           >
-            <RefreshCw className="h-4 w-4" />
+            {isRefetchingDetails ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
             Refresh
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleTriggerClick}
+            disabled={triggerJob.isPending || !queueDetails?.schedulers[0]}
+          >
+            {triggerJob.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+            Trigger Job
           </Button>
         </div>
       </div>
-
-      {selectedQueueData && (
-        <div className="flex items-center gap-4 rounded-lg border p-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Clock className="text-muted-foreground h-4 w-4" />
-            <span className="text-sm">Waiting</span>
-            <Badge variant="outline">{selectedQueueData.counts.waiting}</Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <Activity className="text-muted-foreground h-4 w-4" />
-            <span className="text-sm">Active</span>
-            <Badge variant="secondary">{selectedQueueData.counts.active}</Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="text-muted-foreground h-4 w-4" />
-            <span className="text-sm">Completed</span>
-          </div>
-          <Badge variant="default">{selectedQueueData.counts.completed}</Badge>
-          <div className="flex items-center gap-2">
-            <XCircle className="text-muted-foreground h-4 w-4" />
-            <span className="text-sm">Failed</span>
-          </div>
-          <Badge variant="destructive">{selectedQueueData.counts.failed}</Badge>
-          <div className="flex items-center gap-2">
-            <AlertCircle className="text-muted-foreground h-4 w-4" />
-            <span className="text-sm">Delayed</span>
-          </div>
-          <Badge variant="outline">{selectedQueueData.counts.delayed}</Badge>
-        </div>
-      )}
 
       <Tabs
         value={selectedStatus}
@@ -246,29 +195,67 @@ export default function AdminJobsPage() {
           setPage(1);
         }}
       >
-        <TabsList>
-          <TabsTrigger value="failed">Failed</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="waiting">Waiting</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="delayed">Delayed</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="failed" className="gap-2">
+              Failed
+              {queueDetails && (
+                <Badge className="h-5 min-w-5 px-1 tabular-nums">
+                  {queueDetails.counts.failed}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="active" className="gap-2">
+              Active
+              {queueDetails && (
+                <Badge className="h-5 min-w-5 px-1 tabular-nums">
+                  {queueDetails.counts.active}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="waiting" className="gap-2">
+              Waiting
+              {queueDetails && (
+                <Badge className="h-5 min-w-5 px-1 tabular-nums">
+                  {queueDetails.counts.waiting}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="gap-2">
+              Completed
+              {queueDetails && (
+                <Badge className="h-5 min-w-5 px-1 tabular-nums">
+                  {queueDetails.counts.completed}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="delayed" className="gap-2">
+              Delayed
+              {queueDetails && (
+                <Badge className="h-5 min-w-5 px-1 tabular-nums">
+                  {queueDetails.counts.delayed}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value={selectedStatus} className="space-y-4">
-          {(selectedStatus === 'completed' || selectedStatus === 'failed') &&
-            (jobsData?.total ?? 0) > 0 && (
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDialogState({ type: 'clean', status: selectedStatus })}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Clean {selectedStatus} jobs
-                </Button>
-              </div>
-            )}
+          {queueDetails?.schedulers[0] && (
+            <div className="flex gap-1 text-sm">
+              <span className="flex items-center gap-1.5">
+                <Clock className="size-4" />
+                Next run:{' '}
+                {queueDetails.schedulers[0].nextRun
+                  ? format(new Date(queueDetails.schedulers[0].nextRun), 'MMM dd, HH:mm')
+                  : 'Not scheduled'}
+              </span>
+              <span className="text-muted-foreground">
+                (cron schedule: {queueDetails.schedulers[0].pattern})
+              </span>
+            </div>
+          )}
+        </div>
 
+        <TabsContent value={selectedStatus} key={selectedStatus} className="space-y-4">
           <JobsDataTable
             jobs={jobsData?.jobs ?? []}
             total={jobsData?.total ?? 0}
@@ -277,29 +264,27 @@ export default function AdminJobsPage() {
             totalPages={jobsData?.totalPages ?? 0}
             selectedStatus={selectedStatus}
             onPageChange={setPage}
-            onRetry={(jobId) => setDialogState({ type: 'retry', jobId })}
-            onRemove={(jobId) => setDialogState({ type: 'remove', jobId })}
           />
         </TabsContent>
       </Tabs>
 
       <AlertDialog
-        open={dialogState.type !== 'none' || isPending}
-        onOpenChange={() => setDialogState({ type: 'none' })}
+        open={triggerDialogOpen || triggerJob.isPending}
+        onOpenChange={setTriggerDialogOpen}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="text-destructive h-5 w-5" />
-              <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
-            </div>
-            <AlertDialogDescription>{dialogContent.description}</AlertDialogDescription>
+            <AlertDialogTitle>Trigger Job Manually</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to trigger it manually? This will add it to the queue
+              immediately with high priority.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmAction} disabled={isPending}>
-              {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Confirm
+            <AlertDialogCancel disabled={triggerJob.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleTriggerConfirm} disabled={triggerJob.isPending}>
+              {triggerJob.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Trigger
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

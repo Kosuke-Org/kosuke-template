@@ -32,8 +32,6 @@ interface JobsDataTableProps {
   totalPages: number;
   selectedStatus: JobStatus;
   onPageChange: (page: number) => void;
-  onRetry: (jobId: string) => void;
-  onRemove: (jobId: string) => void;
 }
 
 export const JobsDataTable = ({
@@ -43,22 +41,8 @@ export const JobsDataTable = ({
   totalPages,
   selectedStatus,
   onPageChange,
-  onRetry,
-  onRemove,
 }: JobsDataTableProps) => {
-  const columns = React.useMemo(
-    () =>
-      getJobsColumns(
-        {
-          onRetry,
-          onRemove,
-        },
-        {
-          selectedStatus,
-        }
-      ),
-    [selectedStatus, onRetry, onRemove]
-  );
+  const columns = React.useMemo(() => getJobsColumns({ selectedStatus }), [selectedStatus]);
 
   // eslint-disable-next-line
   const table = useReactTable({

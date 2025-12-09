@@ -87,7 +87,6 @@ export const adminCreateMembershipSchema = z.object({
   role: z.enum(orgRoleEnum.enumValues),
 });
 
-// Job & Queue Management Schemas
 export const adminJobListFiltersSchema = z
   .object({
     queueName: z.string().optional(),
@@ -96,43 +95,6 @@ export const adminJobListFiltersSchema = z
     pageSize: z.number().min(5).max(100).default(20),
   })
   .optional();
-
-export const adminRetryJobSchema = z.object({
-  queueName: z.string(),
-  jobId: z.string(),
-});
-
-export const adminRemoveJobSchema = z.object({
-  queueName: z.string(),
-  jobId: z.string(),
-});
-
-export const adminCleanQueueSchema = z.object({
-  queueName: z.string(),
-  grace: z.number().min(0).default(0), // milliseconds
-  status: z.enum(['completed', 'failed', 'delayed', 'wait']),
-  limit: z.number().min(1).max(10000).optional(),
-});
-
-export const adminPauseQueueSchema = z.object({
-  queueName: z.string(),
-});
-
-export const adminResumeQueueSchema = z.object({
-  queueName: z.string(),
-});
-
-// Scheduler Management Schemas
-export const adminUpdateSchedulerSchema = z.object({
-  queueName: z.string(),
-  schedulerId: z.string(),
-  pattern: z
-    .string()
-    .regex(
-      /^(\*|([0-5]?\d)) (\*|([0-5]?\d)) (\*|([01]?\d|2[0-3])) (\*|([1-9]|[12]\d|3[01])) (\*|([0-6]))$/,
-      'Invalid cron pattern'
-    ),
-});
 
 export const adminTriggerScheduledJobSchema = z.object({
   queueName: z.string(),

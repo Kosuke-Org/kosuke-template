@@ -2,30 +2,16 @@
 
 import type { ColumnDef } from '@tanstack/react-table';
 import type { inferRouterOutputs } from '@trpc/server';
-import {
-  Activity,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  RefreshCw,
-  Trash2,
-  XCircle,
-} from 'lucide-react';
+import { Activity, AlertCircle, CheckCircle2, Clock, XCircle } from 'lucide-react';
 
 import type { AppRouter } from '@/lib/trpc/router';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type JobWithDetails = RouterOutput['admin']['jobs']['listJobs']['jobs'][number];
 
 export type JobStatus = 'completed' | 'failed' | 'active' | 'waiting' | 'delayed';
-
-interface ActionsCallbacks {
-  onRetry: (jobId: string) => void;
-  onRemove: (jobId: string) => void;
-}
 
 interface ColumnConfig {
   selectedStatus: JobStatus;
@@ -45,10 +31,7 @@ const statusConfig: Record<
   delayed: { icon: AlertCircle, variant: 'outline' },
 };
 
-export function getJobsColumns(
-  { onRetry, onRemove }: ActionsCallbacks,
-  { selectedStatus }: ColumnConfig
-): ColumnDef<JobWithDetails>[] {
+export function getJobsColumns({ selectedStatus }: ColumnConfig): ColumnDef<JobWithDetails>[] {
   return [
     {
       accessorKey: 'id',
@@ -81,39 +64,6 @@ export function getJobsColumns(
           {row.original.timestamp ? new Date(row.original.timestamp).toLocaleString() : '-'}
         </div>
       ),
-    },
-    {
-      id: 'actions',
-      header: '',
-      cell: ({ row }) => {
-        return (
-          <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-            {selectedStatus === 'failed' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRetry(row.original.id);
-                }}
-              >
-                <RefreshCw className="h-3 w-3" />
-                Retry
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove(row.original.id);
-              }}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        );
-      },
     },
   ];
 }

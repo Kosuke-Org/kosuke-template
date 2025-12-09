@@ -23,7 +23,6 @@ import { ORG_ROLES } from '@/lib/types/organization';
 
 import { router, superAdminProcedure } from '../init';
 import {
-  adminCleanQueueSchema,
   adminCreateMembershipSchema,
   adminCreateOrgSchema,
   adminCreateUserSchema,
@@ -33,14 +32,9 @@ import {
   adminJobListFiltersSchema,
   adminMembershipListFiltersSchema,
   adminOrgListFiltersSchema,
-  adminPauseQueueSchema,
-  adminRemoveJobSchema,
-  adminResumeQueueSchema,
-  adminRetryJobSchema,
   adminTriggerScheduledJobSchema,
   adminUpdateMembershipSchema,
   adminUpdateOrgSchema,
-  adminUpdateSchedulerSchema,
   adminUpdateUserSchema,
   adminUserListFiltersSchema,
 } from '../schemas/admin';
@@ -768,84 +762,6 @@ export const adminRouter = router({
     }),
 
     /**
-     * Retry a failed job
-     */
-    retryJob: superAdminProcedure.input(adminRetryJobSchema).mutation(async ({ input }) => {
-      const queue = createQueue(input.queueName);
-      const job = await queue.getJob(input.jobId);
-
-      if (!job) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not found' });
-      }
-
-      await job.retry();
-
-      return { success: true, jobId: input.jobId };
-    }),
-
-    /**
-     * Remove a job
-     */
-    removeJob: superAdminProcedure.input(adminRemoveJobSchema).mutation(async ({ input }) => {
-      const queue = createQueue(input.queueName);
-      const job = await queue.getJob(input.jobId);
-
-      if (!job) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not found' });
-      }
-
-      await job.remove();
-
-      return { success: true, jobId: input.jobId };
-    }),
-
-    /**
-     * Clean queue (remove old jobs)
-     */
-    cleanQueue: superAdminProcedure.input(adminCleanQueueSchema).mutation(async ({ input }) => {
-      const queue = createQueue(input.queueName);
-
-      await queue.clean(input.grace, input.limit ?? 1000, input.status);
-
-      return { success: true, queueName: input.queueName };
-    }),
-
-    /**
-     * Pause queue
-     */
-    pauseQueue: superAdminProcedure.input(adminPauseQueueSchema).mutation(async ({ input }) => {
-      const queue = createQueue(input.queueName);
-
-      await queue.pause();
-
-      return { success: true, queueName: input.queueName, paused: true };
-    }),
-
-    /**
-     * Resume queue
-     */
-    resumeQueue: superAdminProcedure.input(adminResumeQueueSchema).mutation(async ({ input }) => {
-      const queue = createQueue(input.queueName);
-
-      await queue.resume();
-
-      return { success: true, queueName: input.queueName, paused: false };
-    }),
-
-    /**
-     * Drain queue (remove all waiting jobs)
-     */
-    drainQueue: superAdminProcedure
-      .input(z.object({ queueName: z.string() }))
-      .mutation(async ({ input }) => {
-        const queue = createQueue(input.queueName);
-
-        await queue.drain();
-
-        return { success: true, queueName: input.queueName };
-      }),
-
-    /**
      * Get queue details with stats and schedulers
      */
     getQueue: superAdminProcedure
@@ -888,79 +804,6 @@ export const adminRouter = router({
             nextRun: s.next,
             template: s.template,
           })),
-        };
-      }),
-
-    /**
-     * List all active schedulers across queues
-     */
-    listSchedulers: superAdminProcedure.query(async () => {
-      const queueNames = Object.values(QUEUE_NAMES);
-
-      const schedulers = await Promise.all(
-        queueNames.map(async (queueName) => {
-          const queue = createQueue(queueName);
-          const schedulersList = await queue.getJobSchedulers();
-
-          return schedulersList.map((scheduler) => ({
-            queueName,
-            id: scheduler.key,
-            name: scheduler.name,
-            pattern: scheduler.pattern,
-            nextRun: scheduler.next,
-            template: scheduler.template,
-          }));
-        })
-      );
-
-      return schedulers.flat();
-    }),
-
-    /**
-     * Get scheduler details for a specific queue
-     */
-    getQueueSchedulers: superAdminProcedure
-      .input(z.object({ queueName: z.string() }))
-      .query(async ({ input }) => {
-        const queue = createQueue(input.queueName);
-        const schedulers = await queue.getJobSchedulers();
-
-        return schedulers.map((scheduler) => ({
-          id: scheduler.key,
-          name: scheduler.name,
-          pattern: scheduler.pattern,
-          nextRun: scheduler.next,
-          template: scheduler.template,
-        }));
-      }),
-
-    /**
-     * Update scheduler pattern
-     */
-    updateScheduler: superAdminProcedure
-      .input(adminUpdateSchedulerSchema)
-      .mutation(async ({ input }) => {
-        const queue = createQueue(input.queueName);
-
-        // Get existing scheduler to preserve template
-        const schedulers = await queue.getJobSchedulers();
-        const existingScheduler = schedulers.find((s) => s.key === input.schedulerId);
-
-        if (!existingScheduler) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Scheduler not found' });
-        }
-
-        await queue.removeJobScheduler(input.schedulerId);
-        await queue.upsertJobScheduler(
-          input.schedulerId,
-          { pattern: input.pattern },
-          existingScheduler.template
-        );
-
-        return {
-          success: true,
-          schedulerId: input.schedulerId,
-          pattern: input.pattern,
         };
       }),
 
