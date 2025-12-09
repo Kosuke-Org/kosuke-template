@@ -3,6 +3,10 @@ import { z } from 'zod';
 import { orgRoleEnum } from '@/lib/db/schema';
 import { ORG_ROLES, USER_ROLES } from '@/lib/types/organization';
 
+const jobStatusEnum = z.enum(['completed', 'failed', 'active', 'waiting', 'delayed']);
+
+export type JobStatus = z.infer<typeof jobStatusEnum>;
+
 // User Management Schemas
 export const adminUserListFiltersSchema = z
   .object({
@@ -87,37 +91,17 @@ export const adminCreateMembershipSchema = z.object({
   role: z.enum(orgRoleEnum.enumValues),
 });
 
-// Job & Queue Management Schemas
 export const adminJobListFiltersSchema = z
   .object({
     queueName: z.string().optional(),
-    status: z.enum(['completed', 'failed', 'active', 'waiting', 'delayed']).optional(),
+    status: jobStatusEnum.optional(),
     page: z.number().min(1).default(1),
     pageSize: z.number().min(5).max(100).default(20),
   })
   .optional();
 
-export const adminRetryJobSchema = z.object({
+export const adminTriggerScheduledJobSchema = z.object({
   queueName: z.string(),
-  jobId: z.string(),
-});
-
-export const adminRemoveJobSchema = z.object({
-  queueName: z.string(),
-  jobId: z.string(),
-});
-
-export const adminCleanQueueSchema = z.object({
-  queueName: z.string(),
-  grace: z.number().min(0).default(0), // milliseconds
-  status: z.enum(['completed', 'failed', 'delayed', 'wait']),
-  limit: z.number().min(1).max(10000).optional(),
-});
-
-export const adminPauseQueueSchema = z.object({
-  queueName: z.string(),
-});
-
-export const adminResumeQueueSchema = z.object({
-  queueName: z.string(),
+  jobName: z.string(),
+  data: z.record(z.string(), z.unknown()).optional(),
 });

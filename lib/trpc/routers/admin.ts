@@ -23,7 +23,6 @@ import { ORG_ROLES } from '@/lib/types/organization';
 
 import { router, superAdminProcedure } from '../init';
 import {
-  adminCleanQueueSchema,
   adminCreateMembershipSchema,
   adminCreateOrgSchema,
   adminCreateUserSchema,
@@ -33,10 +32,7 @@ import {
   adminJobListFiltersSchema,
   adminMembershipListFiltersSchema,
   adminOrgListFiltersSchema,
-  adminPauseQueueSchema,
-  adminRemoveJobSchema,
-  adminResumeQueueSchema,
-  adminRetryJobSchema,
+  adminTriggerScheduledJobSchema,
   adminUpdateMembershipSchema,
   adminUpdateOrgSchema,
   adminUpdateUserSchema,
@@ -696,7 +692,6 @@ export const adminRouter = router({
 
       const queue = createQueue(queueName);
 
-      // Get jobs based on status
       let jobs: Job[] = [];
       switch (status) {
         case 'completed':
@@ -718,12 +713,10 @@ export const adminRouter = router({
           jobs = [];
       }
 
-      // Slice for actual page
       const startIndex = (page - 1) * pageSize;
       const endIndex = startIndex + pageSize;
       const paginatedJobs = jobs.slice(startIndex, endIndex);
 
-      // Get total count
       let total = 0;
       switch (status) {
         case 'completed':
@@ -769,128 +762,68 @@ export const adminRouter = router({
     }),
 
     /**
-     * Get single job details
+     * Get queue details with stats and schedulers
      */
-    getJob: superAdminProcedure
-      .input(
-        z.object({
-          queueName: z.string(),
-          jobId: z.string(),
-        })
-      )
+    getQueue: superAdminProcedure
+      .input(z.object({ queueName: z.string() }))
       .query(async ({ input }) => {
         const queue = createQueue(input.queueName);
-        const job = await queue.getJob(input.jobId);
 
-        if (!job) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not found' });
-        }
+        const [
+          waitingCount,
+          activeCount,
+          completedCount,
+          failedCount,
+          delayedCount,
+          isPaused,
+          schedulers,
+        ] = await Promise.all([
+          queue.getWaitingCount(),
+          queue.getActiveCount(),
+          queue.getCompletedCount(),
+          queue.getFailedCount(),
+          queue.getDelayedCount(),
+          queue.isPaused(),
+          queue.getJobSchedulers(),
+        ]);
 
         return {
-          id: job.id,
-          name: job.name,
-          data: job.data,
-          progress: job.progress,
-          attemptsMade: job.attemptsMade,
-          processedOn: job.processedOn,
-          finishedOn: job.finishedOn,
-          timestamp: job.timestamp,
-          failedReason: job.failedReason,
-          stacktrace: job.stacktrace,
-          returnvalue: job.returnvalue,
-          opts: job.opts,
+          name: input.queueName,
+          counts: {
+            waiting: waitingCount,
+            active: activeCount,
+            completed: completedCount,
+            failed: failedCount,
+            delayed: delayedCount,
+          },
+          isPaused,
+          schedulers: schedulers.map((s) => ({
+            id: s.key,
+            name: s.name,
+            pattern: s.pattern,
+            nextRun: s.next,
+            template: s.template,
+          })),
         };
       }),
 
     /**
-     * Retry a failed job
+     * Trigger scheduled job manually
      */
-    retryJob: superAdminProcedure.input(adminRetryJobSchema).mutation(async ({ input }) => {
-      const queue = createQueue(input.queueName);
-      const job = await queue.getJob(input.jobId);
-
-      if (!job) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not found' });
-      }
-
-      await job.retry();
-
-      return { success: true, jobId: input.jobId };
-    }),
-
-    /**
-     * Remove a job
-     */
-    removeJob: superAdminProcedure.input(adminRemoveJobSchema).mutation(async ({ input }) => {
-      const queue = createQueue(input.queueName);
-      const job = await queue.getJob(input.jobId);
-
-      if (!job) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Job not found' });
-      }
-
-      await job.remove();
-
-      return { success: true, jobId: input.jobId };
-    }),
-
-    /**
-     * Clean queue (remove old jobs)
-     */
-    cleanQueue: superAdminProcedure.input(adminCleanQueueSchema).mutation(async ({ input }) => {
-      const queue = createQueue(input.queueName);
-
-      await queue.clean(input.grace, input.limit ?? 1000, input.status);
-
-      return { success: true, queueName: input.queueName };
-    }),
-
-    /**
-     * Pause queue
-     */
-    pauseQueue: superAdminProcedure.input(adminPauseQueueSchema).mutation(async ({ input }) => {
-      const queue = createQueue(input.queueName);
-
-      await queue.pause();
-
-      return { success: true, queueName: input.queueName, paused: true };
-    }),
-
-    /**
-     * Resume queue
-     */
-    resumeQueue: superAdminProcedure.input(adminResumeQueueSchema).mutation(async ({ input }) => {
-      const queue = createQueue(input.queueName);
-
-      await queue.resume();
-
-      return { success: true, queueName: input.queueName, paused: false };
-    }),
-
-    /**
-     * Drain queue (remove all waiting jobs)
-     */
-    drainQueue: superAdminProcedure
-      .input(z.object({ queueName: z.string() }))
+    triggerScheduledJob: superAdminProcedure
+      .input(adminTriggerScheduledJobSchema)
       .mutation(async ({ input }) => {
         const queue = createQueue(input.queueName);
 
-        await queue.drain();
+        const job = await queue.add(input.jobName, input.data ?? {}, {
+          priority: 0, // High priority for manual triggers
+        });
 
-        return { success: true, queueName: input.queueName };
-      }),
-
-    /**
-     * Obliterate queue (remove everything)
-     */
-    obliterateQueue: superAdminProcedure
-      .input(z.object({ queueName: z.string() }))
-      .mutation(async ({ input }) => {
-        const queue = createQueue(input.queueName);
-
-        await queue.obliterate({ force: true });
-
-        return { success: true, queueName: input.queueName };
+        return {
+          success: true,
+          jobId: job.id,
+          jobName: input.jobName,
+        };
       }),
   }),
 });
