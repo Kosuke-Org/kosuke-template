@@ -53,7 +53,7 @@ export function getJobsColumns(
     {
       accessorKey: 'id',
       header: 'Job ID',
-      cell: ({ row }) => <div className="font-mono text-sm">{row.original.id}</div>,
+      cell: ({ row }) => <div className="text-sm">{row.original.id}</div>,
     },
     {
       accessorKey: 'name',
