@@ -38,7 +38,6 @@ import {
 } from '@/components/ui/dialog';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type Scheduler = RouterOutput['admin']['jobs']['getQueue']['schedulers'][number];
@@ -130,14 +129,6 @@ export function SchedulerSettings({ queueName, schedulers, onUpdate }: Scheduler
       data: (selectedScheduler.template?.data as Record<string, unknown>) ?? {},
     });
   };
-
-  const cronExamples = [
-    { pattern: '* * * * *', description: 'Every minute' },
-    { pattern: '0 * * * *', description: 'Every hour' },
-    { pattern: '0 0 * * *', description: 'Daily at midnight' },
-    { pattern: '0 */6 * * *', description: 'Every 6 hours' },
-    { pattern: '0 0 * * 0', description: 'Weekly on Sunday' },
-  ];
 
   return (
     <>
@@ -240,26 +231,6 @@ export function SchedulerSettings({ queueName, schedulers, onUpdate }: Scheduler
                   </Field>
                 )}
               />
-
-              <div className="space-y-2">
-                <Label>Common Patterns</Label>
-                <div className="space-y-1">
-                  {cronExamples.map((example) => (
-                    <button
-                      key={example.pattern}
-                      type="button"
-                      onClick={() =>
-                        form.setValue('pattern', example.pattern, { shouldValidate: true })
-                      }
-                      className="hover:bg-muted flex w-full items-center justify-between rounded-md p-2 text-left text-sm transition-colors"
-                      disabled={updateScheduler.isPending}
-                    >
-                      <span className="font-mono text-xs">{example.pattern}</span>
-                      <span className="text-muted-foreground text-xs">{example.description}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
             </FieldGroup>
           </form>
           <DialogFooter>
