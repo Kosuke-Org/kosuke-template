@@ -6,9 +6,12 @@ import { format } from 'date-fns';
 import { Clock, Loader2, Play, RefreshCw } from 'lucide-react';
 
 import { trpc } from '@/lib/trpc/client';
+import type { JobStatus } from '@/lib/trpc/schemas/admin';
 
+import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useToast } from '@/hooks/use-toast';
 
+import { TableSkeleton } from '@/components/data-table/data-table-skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,18 +31,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { type JobStatus, JobsDataTable } from './components/jobs-data-table';
+import { JobsDataTable } from './components/jobs-data-table';
+
+function JobsPageSkeleton() {
+  return <TableSkeleton />;
+}
 
 export default function AdminJobsPage() {
   const { toast } = useToast();
   const [selectedQueue, setSelectedQueue] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<JobStatus>('failed');
-  const [page, setPage] = useState(1);
+  const initialPageSize = 10;
+  const { page, setPage, pageSize, setPageSize } = useTablePagination({
+    initialPageSize,
+  });
   const [triggerDialogOpen, setTriggerDialogOpen] = useState(false);
-  const pageSize = 20;
 
   const {
     data: queuesData,
@@ -50,9 +58,7 @@ export default function AdminJobsPage() {
     placeholderData: (previousData) => previousData,
   });
 
-  if (queuesData && !selectedQueue && queuesData.length > 0) {
-    setSelectedQueue(queuesData[0].name);
-  }
+  const activeQueue = selectedQueue || queuesData?.[0]?.name || '';
 
   const {
     data: queueDetails,
@@ -60,9 +66,9 @@ export default function AdminJobsPage() {
     isRefetching: isRefetchingDetails,
     isLoading: isLoadingDetails,
   } = trpc.admin.jobs.getQueue.useQuery(
-    { queueName: selectedQueue },
+    { queueName: activeQueue },
     {
-      enabled: !!selectedQueue,
+      enabled: !!activeQueue,
     }
   );
 
@@ -72,13 +78,13 @@ export default function AdminJobsPage() {
     isLoading: isLoadingJobs,
   } = trpc.admin.jobs.listJobs.useQuery(
     {
-      queueName: selectedQueue,
+      queueName: activeQueue,
       status: selectedStatus,
       page,
       pageSize,
     },
     {
-      enabled: !!selectedQueue,
+      enabled: !!activeQueue,
       staleTime: 1000 * 30,
     }
   );
@@ -103,7 +109,7 @@ export default function AdminJobsPage() {
   const handleTriggerConfirm = () => {
     // Since there's one scheduler per queue, get the first (and only) scheduler
     const scheduler = queueDetails?.schedulers[0];
-    if (!scheduler || !selectedQueue) {
+    if (!scheduler || !activeQueue) {
       toast({
         title: 'Error',
         description: 'Cannot trigger job: No scheduler configured',
@@ -113,18 +119,14 @@ export default function AdminJobsPage() {
     }
 
     triggerJob.mutate({
-      queueName: selectedQueue,
+      queueName: activeQueue,
       jobName: scheduler.name,
       data: (scheduler.template?.data as Record<string, unknown>) ?? {},
     });
   };
 
   if (isLoadingQueues || isLoadingDetails || isLoadingJobs) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Skeleton />
-      </div>
-    );
+    return <JobsPageSkeleton />;
   }
 
   return (
@@ -136,7 +138,7 @@ export default function AdminJobsPage() {
         </div>
         <div className="flex items-center gap-3">
           <Select
-            value={selectedQueue}
+            value={activeQueue}
             onValueChange={(val) => {
               setSelectedQueue(val);
               setPage(1);
@@ -264,6 +266,7 @@ export default function AdminJobsPage() {
             totalPages={jobsData?.totalPages ?? 0}
             selectedStatus={selectedStatus}
             onPageChange={setPage}
+            onPageSizeChange={setPageSize}
           />
         </TabsContent>
       </Tabs>

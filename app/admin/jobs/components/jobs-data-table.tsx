@@ -6,8 +6,9 @@ import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-tabl
 import type { inferRouterOutputs } from '@trpc/server';
 
 import type { AppRouter } from '@/lib/trpc/router';
+import type { JobStatus } from '@/lib/trpc/schemas/admin';
 
-import { Button } from '@/components/ui/button';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import {
   Table,
   TableBody,
@@ -17,9 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-import { type JobStatus, getJobsColumns } from './jobs-columns';
-
-export type { JobStatus } from './jobs-columns';
+import { getJobsColumns } from './jobs-columns';
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type JobWithDetails = RouterOutput['admin']['jobs']['listJobs']['jobs'][number];
@@ -32,15 +31,18 @@ interface JobsDataTableProps {
   totalPages: number;
   selectedStatus: JobStatus;
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
 }
 
 export const JobsDataTable = ({
   jobs,
   total,
   page,
+  pageSize,
   totalPages,
   selectedStatus,
   onPageChange,
+  onPageSizeChange,
 }: JobsDataTableProps) => {
   const columns = React.useMemo(() => getJobsColumns({ selectedStatus }), [selectedStatus]);
 
@@ -54,7 +56,7 @@ export const JobsDataTable = ({
     state: {
       pagination: {
         pageIndex: page - 1,
-        pageSize: 20,
+        pageSize,
       },
     },
   });
@@ -100,32 +102,12 @@ export const JobsDataTable = ({
           </TableBody>
         </Table>
       </div>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-muted-foreground text-sm">
-            Page {page} of {totalPages} ({total} total jobs)
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === 1}
-              onClick={() => onPageChange(page - 1)}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === totalPages}
-              onClick={() => onPageChange(page + 1)}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
+      <DataTablePagination
+        table={table}
+        totalRecords={total}
+        onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
+      />
     </div>
   );
 };

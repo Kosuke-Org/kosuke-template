@@ -5,13 +5,12 @@ import type { inferRouterOutputs } from '@trpc/server';
 import { Activity, AlertCircle, CheckCircle2, Clock, XCircle } from 'lucide-react';
 
 import type { AppRouter } from '@/lib/trpc/router';
+import type { JobStatus } from '@/lib/trpc/schemas/admin';
 
 import { Badge } from '@/components/ui/badge';
 
 type RouterOutput = inferRouterOutputs<AppRouter>;
 type JobWithDetails = RouterOutput['admin']['jobs']['listJobs']['jobs'][number];
-
-export type JobStatus = 'completed' | 'failed' | 'active' | 'waiting' | 'delayed';
 
 interface ColumnConfig {
   selectedStatus: JobStatus;
