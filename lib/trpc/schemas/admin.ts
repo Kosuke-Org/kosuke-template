@@ -121,3 +121,21 @@ export const adminPauseQueueSchema = z.object({
 export const adminResumeQueueSchema = z.object({
   queueName: z.string(),
 });
+
+// Scheduler Management Schemas
+export const adminUpdateSchedulerSchema = z.object({
+  queueName: z.string(),
+  schedulerId: z.string(),
+  pattern: z
+    .string()
+    .regex(
+      /^(\*|([0-5]?\d)) (\*|([0-5]?\d)) (\*|([01]?\d|2[0-3])) (\*|([1-9]|[12]\d|3[01])) (\*|([0-6]))$/,
+      'Invalid cron pattern'
+    ),
+});
+
+export const adminTriggerScheduledJobSchema = z.object({
+  queueName: z.string(),
+  jobName: z.string(),
+  data: z.record(z.string(), z.unknown()).optional(),
+});

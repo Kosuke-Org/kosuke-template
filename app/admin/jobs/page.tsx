@@ -2,13 +2,15 @@
 
 import { useState } from 'react';
 
+import Link from 'next/link';
+
 import {
   Activity,
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   Clock,
-  Pause,
-  Play,
+  Loader2,
   RefreshCw,
   Trash2,
   XCircle,
@@ -18,9 +20,18 @@ import { trpc } from '@/lib/trpc/client';
 
 import { useToast } from '@/hooks/use-toast';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -28,52 +39,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-function QueuesSkeleton() {
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <Skeleton key={i} className="h-32" />
-      ))}
-    </div>
-  );
-}
+import { type JobStatus, JobsDataTable } from './components/jobs-data-table';
 
-function JobsTableSkeleton() {
-  return (
-    <div className="space-y-3">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Skeleton key={i} className="h-16" />
-      ))}
-    </div>
-  );
-}
-
-type JobStatus = 'completed' | 'failed' | 'active' | 'waiting' | 'delayed';
-
-const statusConfig: Record<
-  JobStatus,
-  {
-    icon: React.ComponentType<{ className?: string }>;
-    variant: 'default' | 'destructive' | 'secondary' | 'outline';
-  }
-> = {
-  completed: { icon: CheckCircle2, variant: 'default' },
-  failed: { icon: XCircle, variant: 'destructive' },
-  active: { icon: Activity, variant: 'secondary' },
-  waiting: { icon: Clock, variant: 'outline' },
-  delayed: { icon: AlertCircle, variant: 'outline' },
-};
+type DialogState =
+  | { type: 'none' }
+  | { type: 'retry'; jobId: string }
+  | { type: 'remove'; jobId: string }
+  | { type: 'clean'; status: 'completed' | 'failed' };
 
 export default function AdminJobsPage() {
   const { toast } = useToast();
@@ -81,8 +55,8 @@ export default function AdminJobsPage() {
   const [selectedStatus, setSelectedStatus] = useState<JobStatus>('failed');
   const [page, setPage] = useState(1);
   const pageSize = 20;
+  const [dialogState, setDialogState] = useState<DialogState>({ type: 'none' });
 
-  // Fetch queues
   const {
     data: queuesData,
     isLoading: isLoadingQueues,
@@ -90,19 +64,14 @@ export default function AdminJobsPage() {
   } = trpc.admin.jobs.listQueues.useQuery(undefined, {
     staleTime: 1000 * 30, // 30 seconds
     refetchInterval: 10000, // Refresh every 10 seconds
+    placeholderData: (previousData) => previousData,
   });
 
-  // Set default queue when data loads
   if (queuesData && !selectedQueue && queuesData.length > 0) {
     setSelectedQueue(queuesData[0].name);
   }
 
-  // Fetch jobs
-  const {
-    data: jobsData,
-    isLoading: isLoadingJobs,
-    refetch: refetchJobs,
-  } = trpc.admin.jobs.listJobs.useQuery(
+  const { data: jobsData, refetch: refetchJobs } = trpc.admin.jobs.listJobs.useQuery(
     {
       queueName: selectedQueue,
       status: selectedStatus,
@@ -115,12 +84,13 @@ export default function AdminJobsPage() {
     }
   );
 
-  // Mutations
+  const selectedQueueData = queuesData?.find((q) => q.name === selectedQueue);
+
   const retryJob = trpc.admin.jobs.retryJob.useMutation({
     onSuccess: () => {
       toast({ title: 'Success', description: 'Job retried successfully' });
       refetchJobs();
-      refetchQueues();
+      setDialogState({ type: 'none' });
     },
     onError: (error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -132,26 +102,7 @@ export default function AdminJobsPage() {
       toast({ title: 'Success', description: 'Job removed successfully' });
       refetchJobs();
       refetchQueues();
-    },
-    onError: (error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const pauseQueue = trpc.admin.jobs.pauseQueue.useMutation({
-    onSuccess: () => {
-      toast({ title: 'Success', description: 'Queue paused successfully' });
-      refetchQueues();
-    },
-    onError: (error) => {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    },
-  });
-
-  const resumeQueue = trpc.admin.jobs.resumeQueue.useMutation({
-    onSuccess: () => {
-      toast({ title: 'Success', description: 'Queue resumed successfully' });
-      refetchQueues();
+      setDialogState({ type: 'none' });
     },
     onError: (error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -163,298 +114,196 @@ export default function AdminJobsPage() {
       toast({ title: 'Success', description: 'Queue cleaned successfully' });
       refetchJobs();
       refetchQueues();
+      setDialogState({ type: 'none' });
     },
     onError: (error) => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     },
   });
 
-  const handleRetry = async (jobId: string) => {
-    if (confirm('Retry this job?')) {
-      await retryJob.mutateAsync({ queueName: selectedQueue, jobId });
-    }
-  };
-
-  const handleRemove = async (jobId: string) => {
-    if (confirm('Remove this job permanently?')) {
-      await removeJob.mutateAsync({ queueName: selectedQueue, jobId });
-    }
-  };
-
-  const handleTogglePause = async (queueName: string, isPaused: boolean) => {
-    if (isPaused) {
-      await resumeQueue.mutateAsync({ queueName });
-    } else {
-      if (confirm('Pause this queue? No new jobs will be processed.')) {
-        await pauseQueue.mutateAsync({ queueName });
-      }
-    }
-  };
-
-  const handleClean = async (status: 'completed' | 'failed') => {
-    if (
-      confirm(
-        `Clean all ${status} jobs from ${selectedQueue}? This will remove old ${status} jobs.`
-      )
-    ) {
-      await cleanQueue.mutateAsync({
+  const handleConfirmAction = () => {
+    if (dialogState.type === 'retry') {
+      retryJob.mutate({ queueName: selectedQueue, jobId: dialogState.jobId });
+    } else if (dialogState.type === 'remove') {
+      removeJob.mutate({ queueName: selectedQueue, jobId: dialogState.jobId });
+    } else if (dialogState.type === 'clean') {
+      cleanQueue.mutate({
         queueName: selectedQueue,
         grace: 0,
-        status,
+        status: dialogState.status,
       });
     }
   };
 
+  const getDialogContent = () => {
+    switch (dialogState.type) {
+      case 'retry':
+        return {
+          title: 'Retry Job',
+          description:
+            'Are you sure you want to retry this job? It will be moved back to the waiting queue.',
+        };
+      case 'remove':
+        return {
+          title: 'Remove Job',
+          description:
+            'Are you sure you want to remove this job permanently? This action cannot be undone.',
+        };
+      case 'clean':
+        return {
+          title: `Clean ${dialogState.status} Jobs`,
+          description: `Are you sure you want to clean all ${dialogState.status} jobs from ${selectedQueue}? This will remove old ${dialogState.status} jobs and cannot be undone.`,
+        };
+      default:
+        return { title: '', description: '' };
+    }
+  };
+
+  const dialogContent = getDialogContent();
+  const isPending = retryJob.isPending || removeJob.isPending || cleanQueue.isPending;
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Jobs & Queues</h1>
-        <p className="text-muted-foreground">Monitor and manage BullMQ job queues</p>
-      </div>
-
-      {/* Queues Overview */}
-      <div>
-        <h2 className="mb-4 text-xl font-semibold">Queues Overview</h2>
-        {isLoadingQueues ? (
-          <QueuesSkeleton />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {queuesData?.map((queue) => (
-              <Card key={queue.name}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{queue.name}</CardTitle>
-                    {queue.isPaused ? (
-                      <Badge variant="secondary">
-                        <Pause className="mr-1 h-3 w-3" />
-                        Paused
-                      </Badge>
-                    ) : (
-                      <Badge variant="default">
-                        <Play className="mr-1 h-3 w-3" />
-                        Active
-                      </Badge>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Waiting:</span>
-                      <span className="font-medium">{queue.counts.waiting}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Active:</span>
-                      <span className="font-medium">{queue.counts.active}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Completed:</span>
-                      <span className="font-medium">{queue.counts.completed}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Failed:</span>
-                      <span className="text-destructive font-medium">{queue.counts.failed}</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleTogglePause(queue.name, queue.isPaused)}
-                    >
-                      {queue.isPaused ? (
-                        <>
-                          <Play className="h-3 w-3" />
-                          Resume
-                        </>
-                      ) : (
-                        <>
-                          <Pause className="h-3 w-3" />
-                          Pause
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedQueue(queue.name);
-                        setPage(1);
-                      }}
-                    >
-                      View Jobs
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Jobs Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Jobs</CardTitle>
-              <CardDescription>View and manage jobs in selected queue</CardDescription>
-            </div>
-            <div className="flex items-center gap-3">
-              <Select
-                value={selectedQueue}
-                onValueChange={(val) => {
-                  setSelectedQueue(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-[200px]">
-                  <SelectValue placeholder="Select queue" />
-                </SelectTrigger>
-                <SelectContent>
-                  {queuesData?.map((queue) => (
-                    <SelectItem key={queue.name} value={queue.name}>
-                      {queue.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  refetchJobs();
-                  refetchQueues();
-                }}
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs
-            value={selectedStatus}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Jobs</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Manage all jobs in the system</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Select
+            value={selectedQueue}
             onValueChange={(val) => {
-              setSelectedStatus(val as JobStatus);
+              setSelectedQueue(val);
               setPage(1);
             }}
+            disabled={isLoadingQueues}
           >
-            <TabsList>
-              <TabsTrigger value="failed">Failed</TabsTrigger>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="waiting">Waiting</TabsTrigger>
-              <TabsTrigger value="completed">Completed</TabsTrigger>
-              <TabsTrigger value="delayed">Delayed</TabsTrigger>
-            </TabsList>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Select queue" />
+            </SelectTrigger>
+            <SelectContent>
+              {queuesData?.map((queue) => (
+                <SelectItem key={queue.name} value={queue.name}>
+                  {queue.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedQueue && (
+            <Button asChild variant="outline">
+              <Link href={`/admin/jobs/${selectedQueue}`}>View Settings</Link>
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetchJobs();
+              refetchQueues();
+            }}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+        </div>
+      </div>
 
-            <TabsContent value={selectedStatus} className="space-y-4">
-              {selectedStatus === 'completed' || selectedStatus === 'failed' ? (
-                <div className="flex justify-end">
-                  <Button variant="outline" size="sm" onClick={() => handleClean(selectedStatus)}>
-                    <Trash2 className="h-4 w-4" />
-                    Clean {selectedStatus} jobs
-                  </Button>
-                </div>
-              ) : null}
+      {selectedQueueData && (
+        <div className="flex items-center gap-4 rounded-lg border p-4 text-sm">
+          <div className="flex items-center gap-2">
+            <Clock className="text-muted-foreground h-4 w-4" />
+            <span className="text-sm">Waiting</span>
+            <Badge variant="outline">{selectedQueueData.counts.waiting}</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <Activity className="text-muted-foreground h-4 w-4" />
+            <span className="text-sm">Active</span>
+            <Badge variant="secondary">{selectedQueueData.counts.active}</Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="text-muted-foreground h-4 w-4" />
+            <span className="text-sm">Completed</span>
+          </div>
+          <Badge variant="default">{selectedQueueData.counts.completed}</Badge>
+          <div className="flex items-center gap-2">
+            <XCircle className="text-muted-foreground h-4 w-4" />
+            <span className="text-sm">Failed</span>
+          </div>
+          <Badge variant="destructive">{selectedQueueData.counts.failed}</Badge>
+          <div className="flex items-center gap-2">
+            <AlertCircle className="text-muted-foreground h-4 w-4" />
+            <span className="text-sm">Delayed</span>
+          </div>
+          <Badge variant="outline">{selectedQueueData.counts.delayed}</Badge>
+        </div>
+      )}
 
-              {isLoadingJobs ? (
-                <JobsTableSkeleton />
-              ) : !jobsData || jobsData.jobs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <h3 className="mb-1 text-lg font-semibold">No {selectedStatus} jobs</h3>
-                  <p className="text-muted-foreground text-sm">No jobs found in this status</p>
-                </div>
-              ) : (
-                <>
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Job ID</TableHead>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Timestamp</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {jobsData.jobs.map((job) => {
-                          const StatusIcon = statusConfig[selectedStatus].icon;
-                          return (
-                            <TableRow key={job.id}>
-                              <TableCell className="font-mono text-sm">{job.id}</TableCell>
-                              <TableCell className="font-medium">{job.name}</TableCell>
-                              <TableCell>
-                                <Badge variant={statusConfig[selectedStatus].variant}>
-                                  <StatusIcon className="mr-1 h-3 w-3" />
-                                  {selectedStatus}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-muted-foreground text-sm">
-                                {job.timestamp ? new Date(job.timestamp).toLocaleString() : '-'}
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex gap-2">
-                                  {selectedStatus === 'failed' && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleRetry(job.id)}
-                                    >
-                                      <RefreshCw className="h-3 w-3" />
-                                      Retry
-                                    </Button>
-                                  )}
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemove(job.id)}
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
+      <Tabs
+        value={selectedStatus}
+        className="gap-4"
+        onValueChange={(val) => {
+          setSelectedStatus(val as JobStatus);
+          setPage(1);
+        }}
+      >
+        <TabsList>
+          <TabsTrigger value="failed">Failed</TabsTrigger>
+          <TabsTrigger value="active">Active</TabsTrigger>
+          <TabsTrigger value="waiting">Waiting</TabsTrigger>
+          <TabsTrigger value="completed">Completed</TabsTrigger>
+          <TabsTrigger value="delayed">Delayed</TabsTrigger>
+        </TabsList>
 
-                  {jobsData.totalPages > 1 && (
-                    <div className="flex items-center justify-between">
-                      <div className="text-muted-foreground text-sm">
-                        Page {jobsData.page} of {jobsData.totalPages} ({jobsData.total} total jobs)
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={page === 1}
-                          onClick={() => setPage(page - 1)}
-                        >
-                          Previous
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={page === jobsData.totalPages}
-                          onClick={() => setPage(page + 1)}
-                        >
-                          Next
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+        <TabsContent value={selectedStatus} className="space-y-4">
+          {(selectedStatus === 'completed' || selectedStatus === 'failed') &&
+            (jobsData?.total ?? 0) > 0 && (
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDialogState({ type: 'clean', status: selectedStatus })}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Clean {selectedStatus} jobs
+                </Button>
+              </div>
+            )}
+
+          <JobsDataTable
+            jobs={jobsData?.jobs ?? []}
+            total={jobsData?.total ?? 0}
+            page={jobsData?.page ?? 1}
+            pageSize={pageSize}
+            totalPages={jobsData?.totalPages ?? 0}
+            selectedStatus={selectedStatus}
+            onPageChange={setPage}
+            onRetry={(jobId) => setDialogState({ type: 'retry', jobId })}
+            onRemove={(jobId) => setDialogState({ type: 'remove', jobId })}
+          />
+        </TabsContent>
+      </Tabs>
+
+      <AlertDialog
+        open={dialogState.type !== 'none' || isPending}
+        onOpenChange={() => setDialogState({ type: 'none' })}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="text-destructive h-5 w-5" />
+              <AlertDialogTitle>{dialogContent.title}</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription>{dialogContent.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAction} disabled={isPending}>
+              {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

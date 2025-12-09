@@ -32,7 +32,7 @@ const routeNames: Record<string, string> = {
   admin: 'Admin',
   users: 'Users',
   organizations: 'Organizations',
-  jobs: 'Jobs & Queues',
+  jobs: 'Jobs',
 };
 
 export function DynamicBreadcrumb() {
