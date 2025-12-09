@@ -70,6 +70,7 @@ export default function QueueDetailPage({ params }: QueueDetailPageProps) {
   const {
     data: queueData,
     isLoading,
+    isRefetching,
     refetch,
   } = trpc.admin.jobs.getQueue.useQuery(
     { queueName: resolvedParams.queueName },
@@ -195,8 +196,12 @@ export default function QueueDetailPage({ params }: QueueDetailPageProps) {
           <p className="text-muted-foreground mt-1 text-sm">Queue configuration and statistics</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4" />
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
+            {isRefetching ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
             Refresh
           </Button>
           {queueData.isPaused ? (
