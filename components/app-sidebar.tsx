@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 
-import { CheckSquare, ReceiptText, Shield, SquareTerminal } from 'lucide-react';
+import { CheckSquare, File, ReceiptText, Shield, SquareTerminal } from 'lucide-react';
 
 import { useOrganization } from '@/hooks/use-organization';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -40,6 +40,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: 'Orders',
         url: `${orgPrefix}/orders`,
         icon: ReceiptText,
+      },
+      {
+        title: 'Documents',
+        url: `${orgPrefix}/documents`,
+        icon: File,
       },
     ];
 

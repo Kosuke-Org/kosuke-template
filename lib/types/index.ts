@@ -38,6 +38,9 @@ export { SubscriptionState } from './billing';
 // Engine types
 export type { CurrencyCode, CurrencyConvertRequest, CurrencyConvertResponse } from './engine';
 
+// Document and Chat types
+export type { DocumentWithUser } from './documents';
+
 // Note: API types are now handled by lib/api module
 // Import from '@/lib/api' for API-related types and utilities
 
