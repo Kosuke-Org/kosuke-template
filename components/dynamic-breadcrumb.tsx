@@ -29,6 +29,7 @@ const routeNames: Record<string, string> = {
   account: 'Account',
   tasks: 'Tasks',
   orders: 'Orders',
+  documents: 'Documents',
   admin: 'Admin',
   users: 'Users',
   organizations: 'Organizations',
