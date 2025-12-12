@@ -35,3 +35,4 @@ process.env.TEST_DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/k
 process.env.POSTGRES_URL = 'postgresql://postgres:postgres@localhost:5432/kosuke_test';
 process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
 process.env.BETTER_AUTH_SECRET = 'test-secret-key-for-testing-only';
+process.env.GOOGLE_AI_API_KEY = 'test-google-ai-api-key';

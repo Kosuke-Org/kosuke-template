@@ -154,11 +154,9 @@ export default function OrgTasksPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Tasks</h1>
-          <p className="text-muted-foreground">Manage tasks for {activeOrganization.name}</p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
+        <p className="text-muted-foreground mt-1 text-sm">Manage tasks for your organization</p>
       </div>
 
       {/* Tabs & Action Bar */}
