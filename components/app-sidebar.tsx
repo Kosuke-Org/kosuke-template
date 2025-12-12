@@ -2,8 +2,9 @@
 
 import * as React from 'react';
 
-import { CheckSquare, File, ReceiptText, Shield, SquareTerminal } from 'lucide-react';
+import { Bot, CheckSquare, File, ReceiptText, Shield, SquareTerminal } from 'lucide-react';
 
+import { useChat } from '@/hooks/use-chat';
 import { useOrganization } from '@/hooks/use-organization';
 import { usePermissions } from '@/hooks/use-permissions';
 
@@ -17,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { organization: activeOrganization, isLoading } = useOrganization();
   const { isAdmin } = usePermissions();
+  const { sessions } = useChat({ organizationId: activeOrganization?.id ?? '' });
 
   // Generate org-aware navigation items
   const navItems = React.useMemo(() => {
@@ -46,10 +48,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: `${orgPrefix}/documents`,
         icon: File,
       },
+      {
+        title: 'Assistant',
+        url: `${orgPrefix}/assistant`,
+        icon: Bot,
+        ...(sessions.length > 0
+          ? {
+              items: sessions.map((session) => ({
+                title: session.title,
+                url: `${orgPrefix}/assistant/${session.id}`,
+                icon: Bot,
+              })),
+            }
+          : []),
+      },
     ];
 
     return mainItems;
-  }, [activeOrganization]);
+  }, [activeOrganization, sessions]);
 
   return (
     <Sidebar variant="inset" {...props}>

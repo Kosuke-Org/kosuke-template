@@ -154,8 +154,9 @@ export default function OrgOrdersPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
+          <p className="text-muted-foreground mt-1 text-sm">Manage orders for your organization</p>
         </div>
         <Button onClick={() => setCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />

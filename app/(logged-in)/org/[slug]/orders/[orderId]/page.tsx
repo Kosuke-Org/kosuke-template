@@ -195,13 +195,11 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
       {/* Header Section */}
       <div className="flex items-start justify-between">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl font-bold tracking-tight">
             Order #{order.id.slice(0, 8).toUpperCase()}
           </h1>
-          <div className="flex items-center gap-2">
-            <Badge className={statusColors[order.status]}>{order.status}</Badge>
-          </div>
-          <p className="text-muted-foreground">
+          <Badge className={statusColors[order.status]}>{order.status}</Badge>
+          <p className="text-muted-foreground mt-1 text-sm">
             {order.customerName} • ${Number(order.amount).toFixed(2)}
           </p>
           <div className="text-muted-foreground flex gap-2 text-sm">
