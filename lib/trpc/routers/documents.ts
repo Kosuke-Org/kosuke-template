@@ -222,7 +222,7 @@ export const documentsRouter = router({
 
     // 2. Delete document chunks from File Search Store
     try {
-      await deleteDocumentFromFileSearchStore(document.documentResourceName);
+      await deleteDocumentFromFileSearchStore({ name: document.documentResourceName });
     } catch (error) {
       console.error('Failed to delete document from File Search Store:', error);
       // Continue with DB deletion even if File Search deletion fails
@@ -241,7 +241,7 @@ export const documentsRouter = router({
     // If no more documents, delete the file search store
     if (!remainingDocs) {
       try {
-        await deleteFileSearchStore(document.fileSearchStoreName);
+        await deleteFileSearchStore({ name: document.fileSearchStoreName });
       } catch (error) {
         console.error('Failed to delete file search store:', error);
         // Don't throw error as document is already deleted

@@ -40,6 +40,7 @@ export const deleteDocumentSchema = z.object({
 export const createChatSessionSchema = z.object({
   organizationId: z.uuid(),
   title: z.string().min(1).max(255).optional(),
+  initialMessage: z.string().min(1).optional(),
 });
 
 export const sendChatMessageSchema = z.object({

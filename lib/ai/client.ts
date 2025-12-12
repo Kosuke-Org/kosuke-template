@@ -1,4 +1,9 @@
-import type { GoogleGenAI as GoogleGenAIClass } from '@google/genai';
+import type {
+  CreateFileSearchStoreParameters,
+  DeleteDocumentParameters,
+  DeleteFileSearchStoreParameters,
+  UploadToFileSearchStoreParameters,
+} from '@google/genai';
 import { GoogleGenAI } from '@google/genai';
 
 const apiKey = process.env.GOOGLE_AI_API_KEY;
@@ -9,22 +14,17 @@ if (!apiKey) {
 
 const ai = new GoogleGenAI({ apiKey });
 
-// Infer types from the library
-type FileSearchStoresAPI = GoogleGenAIClass['fileSearchStores'];
-type CreateParams = Parameters<FileSearchStoresAPI['create']>[0];
-type UploadParams = Parameters<FileSearchStoresAPI['uploadToFileSearchStore']>[0];
-
 /**
  * Create a new File Search Store
  */
-export function createFileSearchStore(config: CreateParams['config']) {
+export function createFileSearchStore(config: CreateFileSearchStoreParameters['config']) {
   return ai.fileSearchStores.create({ config });
 }
 
 /**
  * Upload a file directly to a File Search Store
  */
-export async function uploadToFileSearchStore(params: UploadParams) {
+export async function uploadToFileSearchStore(params: UploadToFileSearchStoreParameters) {
   const operation = await ai.fileSearchStores.uploadToFileSearchStore({
     file: params.file,
     fileSearchStoreName: params.fileSearchStoreName,
@@ -47,18 +47,18 @@ export async function uploadToFileSearchStore(params: UploadParams) {
 /**
  * Delete a File Search Store
  */
-export async function deleteFileSearchStore(name: string) {
-  return ai.fileSearchStores.delete({ name, config: { force: true } });
+export async function deleteFileSearchStore({ name }: DeleteFileSearchStoreParameters) {
+  return ai.fileSearchStores.delete({ name });
 }
 
 /**
  * Delete a document and its chunks from File Search Store
  */
-export function deleteDocumentFromFileSearchStore(name: string) {
+export function deleteDocumentFromFileSearchStore({ name }: DeleteDocumentParameters) {
   return ai.fileSearchStores.documents.delete({
     name,
     config: {
-      force: true, // Delete chunks and related objects
+      force: true,
     },
   });
 }

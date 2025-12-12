@@ -23,7 +23,6 @@ const knipConfig = {
   ignoreDependencies: [
     // Shadcn/UI dependencies (only used in components/ui/** which is ignored)
     '@radix-ui/*',
-    'cmdk',
     'embla-carousel-react',
     'react-resizable-panels',
     'tailwindcss',
