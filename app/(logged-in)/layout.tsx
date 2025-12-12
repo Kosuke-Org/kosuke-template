@@ -1,11 +1,17 @@
 'use client';
 
+import { useParams } from 'next/navigation';
+
+import { cn } from '@/lib/utils';
+
 import { AppSidebar } from '@/components/app-sidebar';
 import { DynamicBreadcrumb } from '@/components/dynamic-breadcrumb';
 import { Separator } from '@/components/ui/separator';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 
 export default function LoggedInLayout({ children }: { children: React.ReactNode }) {
+  const params = useParams();
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -17,7 +23,7 @@ export default function LoggedInLayout({ children }: { children: React.ReactNode
             <DynamicBreadcrumb />
           </div>
         </header>
-        <div className="flex-1 space-y-8 p-8 pt-6">{children}</div>
+        <div className={cn(`flex-1 space-y-8 p-8 pt-6`, params.chatId && 'pb-0')}>{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

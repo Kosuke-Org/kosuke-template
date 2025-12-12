@@ -102,9 +102,9 @@ export default function DocumentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Documents</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Documents</h1>
           <p className="text-muted-foreground mt-1 text-sm">
-            Upload and manage documents for AI-powered search and chat
+            Upload and manage documents for AI-powered chat
           </p>
         </div>
         <Button onClick={() => setUploadDialogOpen(true)}>
@@ -140,7 +140,7 @@ export default function DocumentsPage() {
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               {documentToDelete &&
-                `Are you sure you want to delete "${documentToDelete.displayName}"? This action cannot be undone.`}
+                `Are you sure you want to delete "${documentToDelete.displayName}"? Your assistant will no longer have access to this document. This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

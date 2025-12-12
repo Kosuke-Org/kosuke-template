@@ -16,8 +16,9 @@ const eslintConfig = defineConfig([
     'coverage/**',
     'engine/**',
     '.venv/**',
-    // Shadcn/UI components, we ignore them because they are auto-generated
+    // Shadcn/UI components or custom registries, we ignore them because they are auto-generated
     'components/ui/**',
+    'components/ai-elements/**',
   ]),
   {
     rules: {
