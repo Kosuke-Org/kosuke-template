@@ -45,11 +45,15 @@ const AssistantInput = () => {
   });
 
   const handleSubmit = async (message: PromptInputMessage) => {
-    const session = await createSession({
-      initialMessage: message.text.trim(),
-    });
+    try {
+      const session = await createSession({
+        initialMessage: message.text.trim(),
+      });
 
-    router.push(`/org/${activeOrganization?.slug}/assistant/${session.id}`);
+      router.push(`/org/${activeOrganization?.slug}/assistant/${session.id}`);
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (

@@ -1,10 +1,12 @@
 'use client';
 
-import { Suspense, use, useState } from 'react';
+import { Suspense, use, useEffect, useRef, useState } from 'react';
 
-import { MessageSquare } from 'lucide-react';
+import Link from 'next/link';
 
-import type { GroundingMetadata } from '@/lib/ai/client';
+import { ChevronDown, ExternalLink, Loader2, MessageSquare } from 'lucide-react';
+
+import { trpc } from '@/lib/trpc/client';
 import { cn } from '@/lib/utils';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -25,9 +27,11 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from '@/components/ai-elements/prompt-input';
+import { Button } from '@/components/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Skeleton } from '@/components/ui/skeleton';
 
-function ChatPageSkeleton() {
+const ChatPageSkeleton = () => {
   return (
     <div className="mx-auto flex size-full max-w-3xl flex-col">
       <div className="flex-1">
@@ -59,36 +63,78 @@ function ChatPageSkeleton() {
       <Skeleton className="mb-8 h-24 w-full" />
     </div>
   );
-}
+};
 
-interface ChatPageProps {
-  params: Promise<{
-    slug: string;
-    chatId: string;
-  }>;
-}
-
-function ChatContent({ resolvedParams }: { resolvedParams: { slug: string; chatId: string } }) {
+const ChatContent = ({ chatId }: { chatId: string }) => {
   const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
   const { isLoading: isLoadingAuth } = useAuth();
   const [inputMessage, setInputMessage] = useState('');
 
-  const { messages, isLoading, sendMessage, isSendingMessage } = useChatSession({
-    sessionId: resolvedParams.chatId,
+  const sessionQuery = trpc.chat.getSession.useQuery(
+    {
+      sessionId: chatId,
+      organizationId: activeOrganization?.id ?? '',
+    },
+    {
+      enabled: !!chatId && !!activeOrganization?.id,
+    }
+  );
+
+  const {
+    messages,
+    isLoading,
+    sendMessage,
+    generateAIResponse,
+    isSendingMessage,
+    isGeneratingResponse,
+  } = useChatSession({
+    sessionId: chatId,
     organizationId: activeOrganization?.id ?? '',
   });
 
-  const handleSendMessage = async () => {
-    setInputMessage('');
-    await sendMessage(inputMessage.trim());
-  };
+  // Track if we've already triggered AI response for the current last message
+  const lastProcessedMessageId = useRef<string | null>(null);
 
-  const getGroundingMetadata = (groundingMetadata: string) => {
-    return JSON.parse(groundingMetadata) as GroundingMetadata;
+  useEffect(() => {
+    if (isLoading || !messages.length) return;
+
+    const lastMessage = messages[messages.length - 1];
+
+    // Check if last message is from user and we haven't processed it yet
+    if (
+      lastMessage.role === 'user' &&
+      lastMessage.id !== lastProcessedMessageId.current &&
+      !isGeneratingResponse &&
+      !isSendingMessage
+    ) {
+      lastProcessedMessageId.current = lastMessage.id;
+      generateAIResponse();
+    }
+  }, [messages, isLoading, isGeneratingResponse, isSendingMessage, generateAIResponse]);
+
+  const handleSendMessage = async () => {
+    const messageContent = inputMessage.trim();
+    setInputMessage('');
+    await sendMessage(messageContent);
   };
 
   if (isLoading || isLoadingAuth || isLoadingOrg) {
     return <ChatPageSkeleton />;
+  }
+
+  if (sessionQuery.isError) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center text-center">
+        <div>
+          <h3 className="text-lg font-semibold">{sessionQuery.error.message}</h3>
+          <Button asChild variant="link">
+            <Link href={`/org/${activeOrganization?.slug}/assistant`}>
+              Go back to the assistant page
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -102,23 +148,60 @@ function ChatContent({ resolvedParams }: { resolvedParams: { slug: string; chatI
               description="Type a message below to begin chatting"
             />
           ) : (
-            messages.map((message) => (
-              <Message from={message.role} key={message.id}>
-                <MessageContent>
-                  <MessageResponse>{message.content}</MessageResponse>
-                  {message.groundingMetadata && (
-                    <p className="text-muted-foreground text-xs">
-                      Source:{' '}
-                      {getGroundingMetadata(message.groundingMetadata)?.groundingChunks?.map(
-                        (groundingChunk, index) => (
-                          <span key={index}>{groundingChunk.retrievedContext?.title}</span>
-                        )
-                      )}
-                    </p>
-                  )}
-                </MessageContent>
-              </Message>
-            ))
+            <>
+              {messages.map((message) => (
+                <Message from={message.role} key={message.id}>
+                  <MessageContent>
+                    <MessageResponse>{message.content}</MessageResponse>
+
+                    {message.sources && message.sources.length > 0 && (
+                      <div className="text-muted-foreground text-xs">
+                        <Collapsible style={{ height: 42 * message.sources.length }}>
+                          <CollapsibleTrigger className="mb-2 flex items-center justify-between gap-2">
+                            <span>
+                              Used {message.sources.length} source
+                              {message.sources.length > 1 ? 's' : ''}
+                            </span>
+                            <ChevronDown className="size-4" />
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <div className="flex flex-col gap-1.5">
+                              {message.sources.map((source, index) => (
+                                <div key={index} className="flex items-center gap-1.5">
+                                  {source.url ? (
+                                    <a
+                                      href={source.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="hover:text-foreground flex items-center gap-1 truncate underline decoration-dotted underline-offset-2 transition-colors"
+                                    >
+                                      <span className="truncate">{source.title}</span>
+                                      <ExternalLink className="h-3 w-3 shrink-0" />
+                                    </a>
+                                  ) : (
+                                    <span className="truncate">{source.title}</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </div>
+                    )}
+                  </MessageContent>
+                </Message>
+              ))}
+              {isGeneratingResponse && (
+                <Message from="assistant" key="assistant">
+                  <MessageContent>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="size-4 animate-spin" />
+                      <MessageResponse>Thinking...</MessageResponse>
+                    </div>
+                  </MessageContent>
+                </Message>
+              )}
+            </>
           )}
         </ConversationContent>
         <ConversationScrollButton />
@@ -136,22 +219,22 @@ function ChatContent({ resolvedParams }: { resolvedParams: { slug: string; chatI
           </PromptInputBody>
           <PromptInputFooter className="justify-end">
             <PromptInputSubmit
-              disabled={!inputMessage.trim()}
-              status={isSendingMessage ? 'submitted' : 'ready'}
+              disabled={!inputMessage.trim() || isSendingMessage || isGeneratingResponse}
+              status={isSendingMessage || isGeneratingResponse ? 'submitted' : 'ready'}
             />
           </PromptInputFooter>
         </PromptInput>
       </div>
     </div>
   );
-}
+};
 
-export default function ChatPage({ params }: ChatPageProps) {
+export default function ChatPage({ params }: { params: Promise<{ chatId: string }> }) {
   const resolvedParams = use(params);
 
   return (
     <Suspense fallback={<ChatPageSkeleton />}>
-      <ChatContent resolvedParams={resolvedParams} />
+      <ChatContent chatId={resolvedParams.chatId} />
     </Suspense>
   );
 }

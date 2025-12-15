@@ -2,6 +2,8 @@ import type {
   CreateFileSearchStoreParameters,
   DeleteDocumentParameters,
   DeleteFileSearchStoreParameters,
+  GenerateContentParameters,
+  GroundingMetadata,
   UploadToFileSearchStoreParameters,
 } from '@google/genai';
 import { GoogleGenAI } from '@google/genai';
@@ -12,6 +14,7 @@ if (!apiKey) {
   throw new Error('GOOGLE_AI_API_KEY environment variable is required');
 }
 
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 const ai = new GoogleGenAI({ apiKey });
 
 /**
@@ -62,3 +65,30 @@ export function deleteDocumentFromFileSearchStore({ name }: DeleteDocumentParame
     },
   });
 }
+
+/**
+ * Generate content with File Search tool
+ * Simplified response to return only text and citations
+ */
+
+interface ContentResponse {
+  text: string;
+  groundingMetadata?: GroundingMetadata;
+}
+
+export async function generateContent(
+  params: Omit<GenerateContentParameters, 'model'>
+): Promise<ContentResponse> {
+  const response = await ai.models.generateContent({
+    model: DEFAULT_MODEL,
+    contents: params.contents,
+    config: params.config,
+  });
+
+  return {
+    text: response.text || '',
+    groundingMetadata: response.candidates?.[0]?.groundingMetadata,
+  };
+}
+
+export type { GroundingMetadata };

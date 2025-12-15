@@ -55,7 +55,17 @@ export const listChatSessionsSchema = z.object({
   pageSize: z.number().int().positive().min(1).max(100).default(20),
 });
 
-export const getChatSessionSchema = z.object({
+export const getSessionSchema = z.object({
+  sessionId: z.uuid(),
+  organizationId: z.uuid(),
+});
+
+export const getMessagesSchema = z.object({
+  sessionId: z.uuid(),
+  organizationId: z.uuid(),
+});
+
+export const generateAIResponseSchema = z.object({
   sessionId: z.uuid(),
   organizationId: z.uuid(),
 });

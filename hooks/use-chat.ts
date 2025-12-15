@@ -54,7 +54,7 @@ export function useChat(options: UseChatOptions) {
     },
   });
 
-  const updateTitleMutation = trpc.chat.updateTitle.useMutation({
+  const updateSessionMutation = trpc.chat.updateSession.useMutation({
     onSuccess: () => {
       utils.chat.listSessions.invalidate();
     },
@@ -88,8 +88,8 @@ export function useChat(options: UseChatOptions) {
     });
   };
 
-  const updateSessionTitle = async (sessionId: string, title: string) => {
-    await updateTitleMutation.mutateAsync({
+  const updateChatSession = async (sessionId: string, title: string) => {
+    await updateSessionMutation.mutateAsync({
       sessionId,
       organizationId: options.organizationId,
       title,
@@ -101,7 +101,7 @@ export function useChat(options: UseChatOptions) {
     isLoadingSessions: sessionsQuery.isLoading,
     createSession,
     deleteSession,
-    updateSessionTitle,
+    updateChatSession,
     isCreatingSession: createSessionMutation.isPending,
     isDeletingSession: deleteSessionMutation.isPending,
   };
@@ -117,7 +117,11 @@ export function useChatSession({
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
-  const sessionQuery = trpc.chat.getSession.useQuery(
+  const invalidateMessages = async () => {
+    await utils.chat.getMessages.invalidate({ sessionId, organizationId });
+  };
+
+  const messagesQuery = trpc.chat.getMessages.useQuery(
     {
       sessionId,
       organizationId,
@@ -131,10 +135,7 @@ export function useChatSession({
 
   const sendMessageMutation = trpc.chat.sendMessage.useMutation({
     onSuccess: () => {
-      utils.chat.getSession.invalidate({
-        sessionId,
-        organizationId,
-      });
+      invalidateMessages();
     },
     onError: (error) => {
       toast({
@@ -145,19 +146,39 @@ export function useChatSession({
     },
   });
 
+  const generateAIResponseMutation = trpc.chat.generateAIResponse.useMutation({
+    onSuccess: async () => {
+      await invalidateMessages();
+    },
+  });
+
   const sendMessage = async (content: string) => {
-    return sendMessageMutation.mutateAsync({
+    await sendMessageMutation.mutateAsync({
       sessionId,
       organizationId,
       content,
     });
+
+    await generateAIResponseMutation.mutateAsync({
+      sessionId,
+      organizationId,
+    });
+  };
+
+  const generateAIResponse = async () => {
+    await generateAIResponseMutation.mutateAsync({
+      sessionId,
+      organizationId,
+    });
   };
 
   return {
-    session: sessionQuery.data,
-    messages: sessionQuery.data?.messages ?? [],
-    isLoading: sessionQuery.isLoading,
+    messages: messagesQuery.data?.messages ?? [],
+    isLoading: messagesQuery.isLoading,
     sendMessage,
+    generateAIResponse,
     isSendingMessage: sendMessageMutation.isPending,
+    isGeneratingResponse: generateAIResponseMutation.isPending,
+    invalidateMessages,
   };
 }
