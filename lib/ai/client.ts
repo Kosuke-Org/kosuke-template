@@ -8,20 +8,26 @@ import type {
 } from '@google/genai';
 import { GoogleGenAI } from '@google/genai';
 
-const apiKey = process.env.GOOGLE_AI_API_KEY;
-
-if (!apiKey) {
-  throw new Error('GOOGLE_AI_API_KEY environment variable is required');
-}
-
 const DEFAULT_MODEL = 'gemini-2.5-flash';
-const ai = new GoogleGenAI({ apiKey });
+
+let _ai: GoogleGenAI | null = null;
+
+function getClient(): GoogleGenAI {
+  if (!_ai) {
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GOOGLE_AI_API_KEY environment variable is required');
+    }
+    _ai = new GoogleGenAI({ apiKey });
+  }
+  return _ai;
+}
 
 /**
  * Create a new File Search Store
  */
 export function createFileSearchStore(config: CreateFileSearchStoreParameters['config']) {
-  return ai.fileSearchStores.create({ config });
+  return getClient().fileSearchStores.create({ config });
 }
 
 /**
@@ -29,7 +35,8 @@ export function createFileSearchStore(config: CreateFileSearchStoreParameters['c
  */
 export async function uploadToFileSearchStore(params: UploadToFileSearchStoreParameters) {
   const { file, fileSearchStoreName, config } = params;
-  const operation = await ai.fileSearchStores.uploadToFileSearchStore({
+  const client = getClient();
+  const operation = await client.fileSearchStores.uploadToFileSearchStore({
     file,
     fileSearchStoreName,
     config: {
@@ -43,7 +50,7 @@ export async function uploadToFileSearchStore(params: UploadToFileSearchStorePar
   let currentOperation = operation;
   while (!currentOperation.done) {
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    currentOperation = await ai.operations.get({ operation: currentOperation });
+    currentOperation = await client.operations.get({ operation: currentOperation });
   }
 
   return currentOperation;
@@ -53,14 +60,14 @@ export async function uploadToFileSearchStore(params: UploadToFileSearchStorePar
  * Delete a File Search Store
  */
 export async function deleteFileSearchStore({ name }: DeleteFileSearchStoreParameters) {
-  return ai.fileSearchStores.delete({ name });
+  return getClient().fileSearchStores.delete({ name });
 }
 
 /**
  * Delete a document and its chunks from File Search Store
  */
 export function deleteDocumentFromFileSearchStore({ name }: DeleteDocumentParameters) {
-  return ai.fileSearchStores.documents.delete({
+  return getClient().fileSearchStores.documents.delete({
     name,
     config: {
       force: true,
@@ -81,7 +88,7 @@ interface ContentResponse {
 export async function generateContent(
   params: Omit<GenerateContentParameters, 'model'>
 ): Promise<ContentResponse> {
-  const response = await ai.models.generateContent({
+  const response = await getClient().models.generateContent({
     model: DEFAULT_MODEL,
     contents: params.contents,
     config: params.config,
