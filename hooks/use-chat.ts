@@ -150,6 +150,13 @@ export function useChatSession({
     onSuccess: async () => {
       await invalidateMessages();
     },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 
   const sendMessage = async (content: string) => {
@@ -166,10 +173,14 @@ export function useChatSession({
   };
 
   const generateAIResponse = async () => {
-    await generateAIResponseMutation.mutateAsync({
-      chatSessionId,
-      organizationId,
-    });
+    try {
+      await generateAIResponseMutation.mutateAsync({
+        chatSessionId,
+        organizationId,
+      });
+    } catch (_) {
+      // handled in onError
+    }
   };
 
   return {
