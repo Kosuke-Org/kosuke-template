@@ -84,10 +84,8 @@ export async function processIndexDocument({
         displayName,
         mimeType,
         customMetadata: [
-          {
-            key: 'storage_url',
-            stringValue: storageUrl,
-          },
+          // Can later be used for querying the document
+          // https://ai.google.dev/gemini-api/docs/file-search#metadata
           {
             key: 'document_id',
             stringValue: documentId,
