@@ -75,6 +75,7 @@ export default function AssistantPage() {
   const { isLoading: isLoadingAuth } = useAuth();
   const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
 
+  // TODO: Add endpoint to return indexed documents count
   const { documents, isLoading: isLoadingDocuments } = useDocuments({
     organizationId: activeOrganization?.id ?? '',
     pageSize: 1,

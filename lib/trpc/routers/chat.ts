@@ -100,10 +100,13 @@ export const chatRouter = router({
   }),
 
   getSession: orgProcedure.input(getSessionSchema).query(async ({ input }) => {
-    const { organizationId, sessionId } = input;
+    const { organizationId, chatSessionId } = input;
 
     const session = await db.query.chatSessions.findFirst({
-      where: and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)),
+      where: and(
+        eq(chatSessions.id, chatSessionId),
+        eq(chatSessions.organizationId, organizationId)
+      ),
     });
 
     if (!session) {
@@ -120,11 +123,14 @@ export const chatRouter = router({
    * Get all messages for a chat session
    */
   getMessages: orgProcedure.input(getMessagesSchema).query(async ({ input }) => {
-    const { organizationId, sessionId } = input;
+    const { organizationId, chatSessionId } = input;
 
     // Verify session exists and belongs to organization
     const session = await db.query.chatSessions.findFirst({
-      where: and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)),
+      where: and(
+        eq(chatSessions.id, chatSessionId),
+        eq(chatSessions.organizationId, organizationId)
+      ),
     });
 
     if (!session) {
@@ -138,7 +144,7 @@ export const chatRouter = router({
     const rawMessages = await db
       .select()
       .from(chatMessages)
-      .where(eq(chatMessages.sessionId, sessionId))
+      .where(eq(chatMessages.chatSessionId, chatSessionId))
       .orderBy(asc(chatMessages.createdAt));
 
     // Get all documents for the organization to match with sources
@@ -218,7 +224,7 @@ export const chatRouter = router({
     // If initial message provided, save it (but don't wait for AI response)
     if (initialMessage) {
       await db.insert(chatMessages).values({
-        sessionId: session.id,
+        chatSessionId: session.id,
         role: 'user',
         content: initialMessage,
       });
@@ -231,12 +237,14 @@ export const chatRouter = router({
    * Delete a chat session
    */
   deleteSession: orgProcedure.input(deleteChatSessionSchema).mutation(async ({ input }) => {
-    const { organizationId, sessionId } = input;
+    const { organizationId, chatSessionId } = input;
 
     // Delete session (messages will cascade delete)
     await db
       .delete(chatSessions)
-      .where(and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)));
+      .where(
+        and(eq(chatSessions.id, chatSessionId), eq(chatSessions.organizationId, organizationId))
+      );
 
     return { success: true };
   }),
@@ -245,12 +253,14 @@ export const chatRouter = router({
    * Update chat session title
    */
   updateSession: orgProcedure.input(updateChatSessionTitleSchema).mutation(async ({ input }) => {
-    const { organizationId, sessionId, title } = input;
+    const { organizationId, chatSessionId, title } = input;
 
     await db
       .update(chatSessions)
       .set({ title, updatedAt: new Date() })
-      .where(and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)));
+      .where(
+        and(eq(chatSessions.id, chatSessionId), eq(chatSessions.organizationId, organizationId))
+      );
 
     return { success: true };
   }),
@@ -259,11 +269,14 @@ export const chatRouter = router({
    * Send a message (save user message only)
    */
   sendMessage: orgProcedure.input(sendChatMessageSchema).mutation(async ({ input }) => {
-    const { organizationId, sessionId, content } = input;
+    const { organizationId, chatSessionId, content } = input;
 
     // Verify session exists and belongs to organization
     const session = await db.query.chatSessions.findFirst({
-      where: and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)),
+      where: and(
+        eq(chatSessions.id, chatSessionId),
+        eq(chatSessions.organizationId, organizationId)
+      ),
     });
 
     if (!session) {
@@ -276,7 +289,7 @@ export const chatRouter = router({
     const [userMessage] = await db
       .insert(chatMessages)
       .values({
-        sessionId,
+        chatSessionId,
         role: 'user',
         content,
       })
@@ -285,7 +298,7 @@ export const chatRouter = router({
     await db
       .update(chatSessions)
       .set({ updatedAt: new Date() })
-      .where(eq(chatSessions.id, sessionId));
+      .where(eq(chatSessions.id, chatSessionId));
 
     return {
       userMessage,
@@ -297,11 +310,14 @@ export const chatRouter = router({
    * Uses organization's documents as context via File Search tool
    */
   generateAIResponse: orgProcedure.input(generateAIResponseSchema).mutation(async ({ input }) => {
-    const { organizationId, sessionId } = input;
+    const { organizationId, chatSessionId } = input;
 
     // Get session with messages
     const session = await db.query.chatSessions.findFirst({
-      where: and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)),
+      where: and(
+        eq(chatSessions.id, chatSessionId),
+        eq(chatSessions.organizationId, organizationId)
+      ),
       with: {
         messages: {
           orderBy: (messages, { asc }) => [asc(messages.createdAt)],
@@ -353,7 +369,7 @@ export const chatRouter = router({
           tools: [
             {
               fileSearch: {
-                fileSearchStoreNames: [fileSearchStoreName],
+                fileSearchStoreNames: fileSearchStoreName ? [fileSearchStoreName] : undefined,
               },
             },
           ],
@@ -364,7 +380,7 @@ export const chatRouter = router({
       const [assistantMessage] = await db
         .insert(chatMessages)
         .values({
-          sessionId,
+          chatSessionId,
           role: 'assistant',
           content: aiResponse.text,
           groundingMetadata: aiResponse.groundingMetadata
@@ -377,7 +393,7 @@ export const chatRouter = router({
       await db
         .update(chatSessions)
         .set({ updatedAt: new Date() })
-        .where(eq(chatSessions.id, sessionId));
+        .where(eq(chatSessions.id, chatSessionId));
 
       return {
         message: assistantMessage,

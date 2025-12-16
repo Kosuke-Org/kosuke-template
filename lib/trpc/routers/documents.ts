@@ -1,14 +1,10 @@
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, ilike } from 'drizzle-orm';
 
-import {
-  createFileSearchStore,
-  deleteDocumentFromFileSearchStore,
-  deleteFileSearchStore,
-  uploadToFileSearchStore,
-} from '@/lib/ai/client';
+import { deleteDocumentFromFileSearchStore, deleteFileSearchStore } from '@/lib/ai/client';
 import { db } from '@/lib/db/drizzle';
 import { documents, organizations, users } from '@/lib/db/schema';
+import { addIndexDocumentJob } from '@/lib/queue/queues/documents';
 import { deleteDocument, uploadDocument } from '@/lib/storage';
 import { orgProcedure, router } from '@/lib/trpc/init';
 import {
@@ -46,6 +42,7 @@ export const documentsRouter = router({
         organizationId: documents.organizationId,
         displayName: documents.displayName,
         sizeBytes: documents.sizeBytes,
+        status: documents.status,
         fileSearchStoreName: documents.fileSearchStoreName,
         createdAt: documents.createdAt,
         userDisplayName: users.displayName,
@@ -67,13 +64,14 @@ export const documentsRouter = router({
   }),
 
   /**
-   * Upload a document to S3 and Google File Search Store
+   * Upload a document to S3 and queue for File Search indexing
+   * Returns immediately after S3 upload - indexing happens async
    */
   upload: orgProcedure.input(uploadDocumentSchema).mutation(async ({ ctx, input }) => {
     const { organizationId, displayName, mimeType, sizeBytes, fileBase64 } = input;
     const { userId } = ctx;
 
-    // Get organization to use slug for file search store name
+    // Get organization to check it exists
     const org = await db.query.organizations.findFirst({
       where: eq(organizations.id, organizationId),
     });
@@ -88,65 +86,39 @@ export const documentsRouter = router({
     // Convert base64 to buffer (strip data URL prefix if present)
     const base64Data = fileBase64.split(',')[1] || fileBase64;
     const fileBuffer = Buffer.from(base64Data, 'base64');
-
     const file = new File([fileBuffer], displayName, { type: mimeType });
 
-    // Upload file to S3 or local storage
     const storageUrl = await uploadDocument(file, organizationId);
 
-    // Check if organization already has a file search store
-    let fileSearchStoreName: string;
-
-    const existingDoc = await db.query.documents.findFirst({
-      where: eq(documents.organizationId, organizationId),
-    });
-
-    if (existingDoc) {
-      fileSearchStoreName = existingDoc.fileSearchStoreName;
-    } else {
-      const store = await createFileSearchStore({
-        displayName: `${org.slug}-documents`,
-      });
-      fileSearchStoreName = store.name ?? 'default';
-    }
-
-    // Upload file to Google File Search Store
-    const blob = new Blob([fileBuffer], { type: mimeType });
-
-    const operation = await uploadToFileSearchStore({
-      file: blob,
-      fileSearchStoreName,
-      config: {
-        displayName,
-        mimeType,
-      },
-    });
-
-    if (!operation.done || !operation.response || !operation.response.documentName) {
-      // Cleanup: Delete from storage if File Search upload fails
-      await deleteDocument(storageUrl);
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to upload document to File Search Store',
-      });
-    }
-
-    const documentResourceName = operation.response.documentName;
-
-    // Store document metadata in database
+    // Store document metadata in database with 'in_progress' status
+    // documentResourceName and fileSearchStoreName will be set by the queue job
     const [newDocument] = await db
       .insert(documents)
       .values({
         organizationId,
         userId,
-        documentResourceName,
         displayName,
         mimeType,
         sizeBytes,
         storageUrl,
-        fileSearchStoreName,
+        status: 'in_progress',
       })
       .returning();
+
+    // Queue document for File Search indexing (async)
+    await addIndexDocumentJob({
+      documentId: newDocument.id,
+      organizationId,
+      storageUrl,
+      displayName,
+      mimeType,
+      fileBase64, // Pass buffer directly
+    });
+
+    console.log('[DOCUMENTS] 📤 Document uploaded to storage, queued for indexing:', {
+      documentId: newDocument.id,
+      displayName,
+    });
 
     return newDocument;
   }),
@@ -176,26 +148,30 @@ export const documentsRouter = router({
     // Delete from S3 or local storage
     await deleteDocument(document.storageUrl);
 
-    // Delete document chunks from File Search Store
-    try {
-      await deleteDocumentFromFileSearchStore({ name: document.documentResourceName });
-    } catch (error) {
-      console.error('Failed to delete document from File Search Store:', error);
-      // Continue with DB deletion even if File Search deletion fails
-    }
-
-    // Check if this was the last document in the file search store
-    const remainingDocs = await db.query.documents.findFirst({
-      where: eq(documents.fileSearchStoreName, document.fileSearchStoreName),
-    });
-
-    // If no more documents, delete the file search store
-    if (!remainingDocs) {
+    // Delete document chunks from File Search Store (only if indexed)
+    if (document.documentResourceName && document.status === 'ready') {
       try {
-        await deleteFileSearchStore({ name: document.fileSearchStoreName });
+        await deleteDocumentFromFileSearchStore({ name: document.documentResourceName });
       } catch (error) {
-        console.error('Failed to delete file search store:', error);
-        // Don't throw error as document is already deleted
+        console.error('Failed to delete document from File Search Store:', error);
+        // Continue with DB deletion even if File Search deletion fails
+      }
+
+      // Check if this was the last document in the file search store
+      if (document.fileSearchStoreName) {
+        const remainingDocs = await db.query.documents.findFirst({
+          where: eq(documents.fileSearchStoreName, document.fileSearchStoreName),
+        });
+
+        // If no more documents, delete the file search store
+        if (!remainingDocs) {
+          try {
+            await deleteFileSearchStore({ name: document.fileSearchStoreName });
+          } catch (error) {
+            console.error('Failed to delete file search store:', error);
+            // Don't throw error as document is already deleted
+          }
+        }
       }
     }
 

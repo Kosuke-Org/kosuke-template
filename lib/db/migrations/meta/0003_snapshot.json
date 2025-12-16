@@ -1,5 +1,5 @@
 {
-  "id": "53bc9c9a-822a-4835-b7e6-8d8e8fc2422d",
+  "id": "06daafae-a3c1-4349-8bec-0dbbcede93bc",
   "prevId": "6b2a6dfe-e8b9-4184-b1d6-79fac9de411f",
   "version": "7",
   "dialect": "postgresql",
@@ -189,8 +189,8 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "session_id": {
-          "name": "session_id",
+        "chat_session_id": {
+          "name": "chat_session_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -224,12 +224,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "chat_messages_session_id_chat_sessions_id_fk": {
-          "name": "chat_messages_session_id_chat_sessions_id_fk",
+        "chat_messages_chat_session_id_chat_sessions_id_fk": {
+          "name": "chat_messages_chat_session_id_chat_sessions_id_fk",
           "tableFrom": "chat_messages",
           "tableTo": "chat_sessions",
           "columnsFrom": [
-            "session_id"
+            "chat_session_id"
           ],
           "columnsTo": [
             "id"
@@ -356,13 +356,13 @@
           "name": "document_resource_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "file_search_store_name": {
           "name": "file_search_store_name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "storage_url": {
           "name": "storage_url",
@@ -381,6 +381,14 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "document_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'in_progress'"
         },
         "created_at": {
           "name": "created_at",
@@ -1423,6 +1431,15 @@
       "values": [
         "user",
         "assistant"
+      ]
+    },
+    "public.document_status": {
+      "name": "document_status",
+      "schema": "public",
+      "values": [
+        "in_progress",
+        "ready",
+        "error"
       ]
     },
     "public.order_status": {

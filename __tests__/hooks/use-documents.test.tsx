@@ -131,9 +131,24 @@ describe('useDocuments', () => {
   });
 
   it('should upload document successfully', async () => {
+    const mockNewDocument = {
+      id: 'doc_new',
+      organizationId: 'org_123',
+      userId: 'user_123',
+      displayName: 'New Document.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: '12',
+      storageUrl: 'https://example.com/docs/new-document.pdf',
+      status: 'in_progress',
+      documentResourceName: null,
+      fileSearchStoreName: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
     const mockMutateAsync = vi.fn().mockImplementation(() => {
       const options = (trpc.documents.upload.useMutation as Mock).mock.calls[0][0];
-      options.onSuccess();
+      options.onSuccess(mockNewDocument);
     });
 
     (trpc.documents.upload.useMutation as Mock).mockReturnValue({
@@ -162,8 +177,8 @@ describe('useDocuments', () => {
     });
 
     expect(mockToast).toHaveBeenCalledWith({
-      title: 'Success',
-      description: 'Document uploaded successfully',
+      title: 'Uploading',
+      description: 'Document uploaded to storage, indexing in progress...',
     });
 
     expect(mockInvalidate).toHaveBeenCalled();

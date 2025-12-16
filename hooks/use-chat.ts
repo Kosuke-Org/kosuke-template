@@ -81,16 +81,16 @@ export function useChat(options: UseChatOptions) {
     });
   };
 
-  const deleteSession = async (sessionId: string) => {
+  const deleteSession = async (chatSessionId: string) => {
     await deleteSessionMutation.mutateAsync({
-      sessionId,
+      chatSessionId,
       organizationId: options.organizationId,
     });
   };
 
-  const updateChatSession = async (sessionId: string, title: string) => {
+  const updateChatSession = async (chatSessionId: string, title: string) => {
     await updateSessionMutation.mutateAsync({
-      sessionId,
+      chatSessionId,
       organizationId: options.organizationId,
       title,
     });
@@ -108,27 +108,27 @@ export function useChat(options: UseChatOptions) {
 }
 
 export function useChatSession({
-  sessionId,
+  chatSessionId,
   organizationId,
 }: {
-  sessionId: string;
+  chatSessionId: string;
   organizationId: string;
 }) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
   const invalidateMessages = async () => {
-    await utils.chat.getMessages.invalidate({ sessionId, organizationId });
+    await utils.chat.getMessages.invalidate({ chatSessionId, organizationId });
   };
 
   const messagesQuery = trpc.chat.getMessages.useQuery(
     {
-      sessionId,
+      chatSessionId,
       organizationId,
     },
     {
       staleTime: 1000 * 30, // 30 seconds
-      enabled: !!sessionId && !!organizationId,
+      enabled: !!chatSessionId && !!organizationId,
       refetchInterval: false,
     }
   );
@@ -154,20 +154,20 @@ export function useChatSession({
 
   const sendMessage = async (content: string) => {
     await sendMessageMutation.mutateAsync({
-      sessionId,
+      chatSessionId,
       organizationId,
       content,
     });
 
     await generateAIResponseMutation.mutateAsync({
-      sessionId,
+      chatSessionId,
       organizationId,
     });
   };
 
   const generateAIResponse = async () => {
     await generateAIResponseMutation.mutateAsync({
-      sessionId,
+      chatSessionId,
       organizationId,
     });
   };

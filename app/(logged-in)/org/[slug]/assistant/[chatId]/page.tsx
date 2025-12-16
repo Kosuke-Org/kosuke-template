@@ -4,9 +4,11 @@ import { Suspense, use, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
+import { inferRouterOutputs } from '@trpc/server';
 import { ChevronDown, ExternalLink, Loader2, MessageSquare } from 'lucide-react';
 
 import { trpc } from '@/lib/trpc/client';
+import { AppRouter } from '@/lib/trpc/router';
 import { cn } from '@/lib/utils';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -30,6 +32,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Skeleton } from '@/components/ui/skeleton';
+
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+type MessageSources = RouterOutputs['chat']['getMessages']['messages'][number]['sources'];
 
 const ChatPageSkeleton = () => {
   return (
@@ -72,7 +77,7 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
 
   const sessionQuery = trpc.chat.getSession.useQuery(
     {
-      sessionId: chatId,
+      chatSessionId: chatId,
       organizationId: activeOrganization?.id ?? '',
     },
     {
@@ -88,7 +93,7 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
     isSendingMessage,
     isGeneratingResponse,
   } = useChatSession({
-    sessionId: chatId,
+    chatSessionId: chatId,
     organizationId: activeOrganization?.id ?? '',
   });
 
@@ -153,41 +158,7 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
                 <Message from={message.role} key={message.id}>
                   <MessageContent>
                     <MessageResponse>{message.content}</MessageResponse>
-
-                    {message.sources && message.sources.length > 0 && (
-                      <div className="text-muted-foreground text-xs">
-                        <Collapsible style={{ height: 42 * message.sources.length }}>
-                          <CollapsibleTrigger className="mb-2 flex items-center justify-between gap-2">
-                            <span>
-                              Used {message.sources.length} source
-                              {message.sources.length > 1 ? 's' : ''}
-                            </span>
-                            <ChevronDown className="size-4" />
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="flex flex-col gap-1.5">
-                              {message.sources.map((source, index) => (
-                                <div key={index} className="flex items-center gap-1.5">
-                                  {source.url ? (
-                                    <a
-                                      href={source.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="hover:text-foreground flex items-center gap-1 truncate underline decoration-dotted underline-offset-2 transition-colors"
-                                    >
-                                      <span className="truncate">{source.title}</span>
-                                      <ExternalLink className="h-3 w-3 shrink-0" />
-                                    </a>
-                                  ) : (
-                                    <span className="truncate">{source.title}</span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      </div>
-                    )}
+                    {message.sources.length > 0 && <MessageSource sources={message.sources} />}
                   </MessageContent>
                 </Message>
               ))}
@@ -225,6 +196,44 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
           </PromptInputFooter>
         </PromptInput>
       </div>
+    </div>
+  );
+};
+
+const MessageSource = ({ sources }: { sources: MessageSources }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="text-muted-foreground text-xs">
+      <Collapsible style={{ height: 42 * sources.length }} open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger className="mb-2 flex items-center justify-between gap-2">
+          <span>
+            Used {sources.length} {sources.length > 1 ? 'sources' : 'source'}
+          </span>
+          <ChevronDown className={cn('size-4 transition-transform', isOpen && 'rotate-x-180')} />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="flex flex-col gap-1.5">
+            {sources.map((source, index) => (
+              <div key={index} className="flex items-center gap-1.5">
+                {source.url ? (
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-foreground flex items-center gap-1 truncate underline decoration-dotted underline-offset-2 transition-colors"
+                  >
+                    <span className="truncate">{source.title}</span>
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                  </a>
+                ) : (
+                  <span className="truncate">{source.title}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };

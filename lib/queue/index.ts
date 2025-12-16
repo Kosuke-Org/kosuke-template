@@ -21,11 +21,16 @@ export {
   type SubscriptionSyncJobData,
 } from './queues/subscriptions';
 
+// Documents queue
+export { documentsQueue, addIndexDocumentJob, type IndexDocumentJobData } from './queues/documents';
+
 // Workers (for worker.ts)
 export { subscriptionWorker } from './workers/subscriptions';
+export { documentsWorker } from './workers/documents';
 
 // Job processors (for testing/debugging)
 export { processSubscriptionSync } from './jobs/sync-subscriptions';
+export { processIndexDocument } from './jobs/index-document';
 
 /**
  * Schedule all recurring jobs

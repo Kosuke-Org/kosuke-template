@@ -1,41 +1,83 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+
+import type { inferRouterInputs } from '@trpc/server';
+
 import { trpc } from '@/lib/trpc/client';
+import type { AppRouter } from '@/lib/trpc/router';
 
 import { useToast } from '@/hooks/use-toast';
 
-interface UseDocumentsOptions {
-  organizationId: string;
-  searchQuery?: string;
-  page?: number;
-  pageSize?: number;
-}
+type RouterInput = inferRouterInputs<AppRouter>;
 
-export function useDocuments(options: UseDocumentsOptions) {
+type DocumentsListQueryParams = RouterInput['documents']['list'];
+
+export function useDocuments(options: DocumentsListQueryParams) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
+  const trackedDocumentsRef = useRef<Set<string>>(new Set());
 
   const { data, isLoading, error, refetch } = trpc.documents.list.useQuery(
     {
       organizationId: options.organizationId,
       searchQuery: options.searchQuery,
-      page: options.page ?? 1,
-      pageSize: options.pageSize ?? 20,
+      page: options.page,
+      pageSize: options.pageSize,
     },
     {
       staleTime: 1000 * 60 * 2, // 2 minutes
       enabled: !!options.organizationId,
       placeholderData: (previousData) => previousData,
+      refetchInterval: (query) => {
+        const documents = query.state.data?.documents || [];
+        const hasInProgress = documents.some((doc) => doc.status === 'in_progress');
+        return hasInProgress ? 3000 : false;
+      },
     }
   );
 
+  // Track in-progress documents and show toasts on status change
+  useEffect(() => {
+    if (!data?.documents) return;
+
+    data.documents.forEach(({ status, id, displayName }) => {
+      if (status === 'in_progress') {
+        trackedDocumentsRef.current.add(id);
+      }
+
+      if (!trackedDocumentsRef.current.has(id)) return;
+
+      if (status === 'ready') {
+        toast({
+          title: 'Success',
+          description: `"${displayName}" indexed successfully and ready to use`,
+        });
+        trackedDocumentsRef.current.delete(id);
+      }
+
+      if (status === 'error') {
+        toast({
+          title: 'Indexing Failed',
+          description: `"${displayName}" indexing failed.`,
+          variant: 'destructive',
+        });
+        trackedDocumentsRef.current.delete(id);
+      }
+    });
+  }, [data?.documents, toast]);
+
   const uploadMutation = trpc.documents.upload.useMutation({
-    onSuccess: () => {
+    onSuccess: (newDocument) => {
       toast({
-        title: 'Success',
-        description: 'Document uploaded successfully',
+        title: 'Uploading',
+        description: 'Document uploaded to storage, indexing in progress...',
       });
       utils.documents.list.invalidate();
+
+      if (newDocument.status === 'in_progress') {
+        trackedDocumentsRef.current.add(newDocument.id);
+      }
     },
     onError: (error) => {
       toast({

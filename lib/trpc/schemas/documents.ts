@@ -44,7 +44,7 @@ export const createChatSessionSchema = z.object({
 });
 
 export const sendChatMessageSchema = z.object({
-  sessionId: z.uuid(),
+  chatSessionId: z.uuid(),
   organizationId: z.uuid(),
   content: z.string().min(1),
 });
@@ -56,27 +56,27 @@ export const listChatSessionsSchema = z.object({
 });
 
 export const getSessionSchema = z.object({
-  sessionId: z.uuid(),
+  chatSessionId: z.uuid(),
   organizationId: z.uuid(),
 });
 
 export const getMessagesSchema = z.object({
-  sessionId: z.uuid(),
+  chatSessionId: z.uuid(),
   organizationId: z.uuid(),
 });
 
 export const generateAIResponseSchema = z.object({
-  sessionId: z.uuid(),
+  chatSessionId: z.uuid(),
   organizationId: z.uuid(),
 });
 
 export const deleteChatSessionSchema = z.object({
-  sessionId: z.uuid(),
+  chatSessionId: z.uuid(),
   organizationId: z.uuid(),
 });
 
 export const updateChatSessionTitleSchema = z.object({
-  sessionId: z.uuid(),
+  chatSessionId: z.uuid(),
   organizationId: z.uuid(),
   title: z.string().min(1).max(255),
 });

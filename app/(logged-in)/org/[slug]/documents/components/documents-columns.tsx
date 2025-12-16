@@ -2,11 +2,12 @@
 
 import type { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { MoreHorizontal, Trash2 } from 'lucide-react';
+import { Loader2, MoreHorizontal, Trash2 } from 'lucide-react';
 
 import type { DocumentWithUser } from '@/lib/types';
 import { formatBytes } from '@/lib/utils';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -27,6 +28,20 @@ export function getDocumentsColumns(actions: ColumnActionsProps): ColumnDef<Docu
       accessorKey: 'displayName',
       header: 'Name',
       cell: ({ row }) => <span className="font-medium">{row.original.displayName}</span>,
+    },
+    {
+      id: 'status',
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ row }) => (
+        <Badge
+          variant={row.original.status === 'in_progress' ? 'secondary' : 'default'}
+          className="capitalize"
+        >
+          {row.original.status === 'in_progress' && <Loader2 className="h-3 w-3 animate-spin" />}
+          {row.original.status === 'in_progress' ? 'Indexing' : row.original.status}
+        </Badge>
+      ),
     },
     {
       id: 'size',

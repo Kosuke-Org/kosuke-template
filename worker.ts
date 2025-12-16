@@ -9,6 +9,8 @@
  *   - Production: bun run workers:start
  */
 import {
+  documentsQueue,
+  documentsWorker,
   gracefulShutdown,
   scheduleAllJobs,
   subscriptionQueue,
@@ -25,10 +27,11 @@ async function main() {
     console.log('[WORKER] ✅ Worker process initialized and ready');
     console.log('[WORKER] 📊 Active workers:');
     console.log('[WORKER]   - Subscriptions (concurrency: 2)\n');
+    console.log('[WORKER]   - Documents (concurrency: 5)\n');
 
     // Store references for graceful shutdown
-    const workers = [subscriptionWorker];
-    const queues = [subscriptionQueue];
+    const workers = [subscriptionWorker, documentsWorker];
+    const queues = [subscriptionQueue, documentsQueue];
 
     // Graceful shutdown handlers
     process.on('SIGTERM', async () => {

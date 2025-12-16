@@ -21,6 +21,7 @@ export const orderStatusEnum = pgEnum('order_status', [
   'cancelled',
 ]);
 export const chatMessageRoleEnum = pgEnum('chat_message_role', ['user', 'assistant']);
+export const documentStatusEnum = pgEnum('document_status', ['in_progress', 'ready', 'error']);
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -248,11 +249,12 @@ export const documents = pgTable('documents', {
     .references(() => users.id),
   displayName: text('display_name').notNull(),
   // Google Document resource identifier (format: fileSearchStores/*/documents/*) - used for deletion
-  documentResourceName: text('document_resource_name').notNull(),
-  fileSearchStoreName: text('file_search_store_name').notNull(), // File Search Store this document belongs to
+  documentResourceName: text('document_resource_name'), // Nullable until File Search upload completes
+  fileSearchStoreName: text('file_search_store_name'), // Nullable until File Search upload completes
   storageUrl: text('storage_url').notNull(), // S3 or local storage URL
   mimeType: text('mime_type').notNull(),
   sizeBytes: text('size_bytes').notNull(), // Stored as text to preserve large numbers
+  status: documentStatusEnum('status').notNull().default('in_progress'), // Upload status
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -278,7 +280,7 @@ export const chatSessions = pgTable('chat_sessions', {
 // Chat Messages - Individual messages in a chat session
 export const chatMessages = pgTable('chat_messages', {
   id: uuid('id').defaultRandom().primaryKey(),
-  sessionId: uuid('session_id')
+  chatSessionId: uuid('chat_session_id')
     .notNull()
     .references(() => chatSessions.id, {
       onDelete: 'cascade',
@@ -354,7 +356,7 @@ export const chatSessionRelations = relations(chatSessions, ({ one, many }) => (
 
 export const chatMessageRelations = relations(chatMessages, ({ one }) => ({
   session: one(chatSessions, {
-    fields: [chatMessages.sessionId],
+    fields: [chatMessages.chatSessionId],
     references: [chatSessions.id],
   }),
 }));
@@ -428,3 +430,4 @@ export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];
 export type OrgRole = (typeof orgRoleEnum.enumValues)[number];
 export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
 export type ChatMessageRole = (typeof chatMessageRoleEnum.enumValues)[number];
+export type DocumentStatus = (typeof documentStatusEnum.enumValues)[number];
