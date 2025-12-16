@@ -77,9 +77,9 @@ export default function DocumentsPage() {
   };
 
   const handleUploadDocument = async (file: File, displayName: string) => {
-    const fileBase64 = await fileToBase64(file);
+    const fileData = await fileToBase64(file);
 
-    await uploadDocument({ file, displayName, fileBase64 });
+    await uploadDocument({ file, displayName, fileData });
   };
 
   const handleDeleteClick = (id: string, displayName: string) => {
@@ -89,9 +89,18 @@ export default function DocumentsPage() {
 
   const handleDeleteConfirm = async () => {
     if (!documentToDelete) return;
-    await deleteDocument(documentToDelete.id);
-    setDeleteDialogOpen(false);
-    setDocumentToDelete(null);
+    deleteDocument(
+      {
+        id: documentToDelete.id,
+        organizationId: activeOrganization?.id ?? '',
+      },
+      {
+        onSuccess: () => {
+          setDeleteDialogOpen(false);
+          setDocumentToDelete(null);
+        },
+      }
+    );
   };
 
   if (isLoadingOrg || isLoading || !activeOrganization) {
@@ -128,7 +137,7 @@ export default function DocumentsPage() {
       />
 
       <UploadDocumentDialog
-        open={uploadDialogOpen}
+        open={uploadDialogOpen || isUploading}
         onOpenChange={setUploadDialogOpen}
         onUpload={handleUploadDocument}
         isUploading={isUploading}

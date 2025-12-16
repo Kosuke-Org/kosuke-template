@@ -12,7 +12,7 @@ import { documents, organizations } from '@/lib/db/schema';
 import type { IndexDocumentJobData } from '@/lib/queue/queues/documents';
 
 export async function processIndexDocument({
-  fileBase64,
+  fileData,
   storageUrl,
   displayName,
   mimeType,
@@ -33,9 +33,9 @@ export async function processIndexDocument({
   try {
     let fileBuffer: Buffer;
 
-    if (fileBase64) {
-      // Direct upload - buffer passed from upload mutation
-      const base64Data = fileBase64.split(',')[1] || fileBase64;
+    if (fileData) {
+      // Direct upload - data passed from upload mutation (data URL or base64)
+      const base64Data = fileData.split(',')[1] || fileData;
       fileBuffer = Buffer.from(base64Data, 'base64');
     } else {
       // Retry - fetch from storage using native fetch
@@ -137,7 +137,11 @@ export async function processIndexDocument({
 
     console.error('[JOB] Document indexing failed:', {
       documentId,
+      organizationId,
+      displayName,
+      mimeType,
       error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
       duration: `${duration}ms`,
     });
 

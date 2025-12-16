@@ -15,7 +15,7 @@ import {
   Trash2,
 } from 'lucide-react';
 
-import { ChatSession } from '@/lib/db/schema';
+import { ChatSession } from '@/lib/types/documents';
 
 import { useChat } from '@/hooks/use-chat';
 import { useOrganization } from '@/hooks/use-organization';

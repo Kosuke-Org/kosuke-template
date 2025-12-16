@@ -33,10 +33,11 @@ export interface IndexDocumentJobData {
   mimeType: string;
 
   /**
-   * File buffer as base64 (optional - only for initial upload)
+   * File data as base64 or data URL (optional - only for initial upload)
+   * Accepts either a data URL (data:mime/type;base64,...) or plain base64 string
    * If not provided, will fetch from storageUrl (used for retries)
    */
-  fileBase64?: string;
+  fileData?: string;
 }
 
 export const documentsQueue = createQueue<IndexDocumentJobData>(QUEUE_NAMES.DOCUMENTS);

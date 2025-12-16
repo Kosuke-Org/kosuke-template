@@ -68,7 +68,7 @@ export const documentsRouter = router({
    * Returns immediately after S3 upload - indexing happens async
    */
   upload: orgProcedure.input(uploadDocumentSchema).mutation(async ({ ctx, input }) => {
-    const { organizationId, displayName, mimeType, sizeBytes, fileBase64 } = input;
+    const { organizationId, displayName, mimeType, sizeBytes, fileData } = input;
     const { userId } = ctx;
 
     // Get organization to check it exists
@@ -84,7 +84,7 @@ export const documentsRouter = router({
     }
 
     // Convert base64 to buffer (strip data URL prefix if present)
-    const base64Data = fileBase64.split(',')[1] || fileBase64;
+    const base64Data = fileData.split(',')[1] || fileData;
     const fileBuffer = Buffer.from(base64Data, 'base64');
     const file = new File([fileBuffer], displayName, { type: mimeType });
 
@@ -112,7 +112,7 @@ export const documentsRouter = router({
       storageUrl,
       displayName,
       mimeType,
-      fileBase64, // Pass buffer directly
+      fileData,
     });
 
     console.log('[DOCUMENTS] 📤 Document uploaded to storage, queued for indexing:', {
@@ -126,8 +126,9 @@ export const documentsRouter = router({
   /**
    * Delete a document from S3, File Search Store, and database
    */
-  delete: orgProcedure.input(deleteDocumentSchema).mutation(async ({ input }) => {
+  delete: orgProcedure.input(deleteDocumentSchema).mutation(async ({ ctx, input }) => {
     const { organizationId, id } = input;
+    const { membership } = ctx;
 
     const document = await db.query.documents.findFirst({
       where: and(eq(documents.id, id), eq(documents.organizationId, organizationId)),
@@ -137,6 +138,17 @@ export const documentsRouter = router({
       throw new TRPCError({
         code: 'NOT_FOUND',
         message: 'Document not found',
+      });
+    }
+
+    // Check user permissions: only owners/admins or document owner can delete
+    const isOwnerOrAdmin = membership.role === 'owner' || membership.role === 'admin';
+    const isDocumentOwner = document.userId === ctx.userId;
+
+    if (!isOwnerOrAdmin && !isDocumentOwner) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'You do not have permission to delete this document',
       });
     }
 

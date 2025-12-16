@@ -13,6 +13,8 @@ type RouterInput = inferRouterInputs<AppRouter>;
 
 type DocumentsListQueryParams = RouterInput['documents']['list'];
 
+const DOCUMENT_STATUS_POLL_INTERVAL = 3000;
+
 export function useDocuments(options: DocumentsListQueryParams) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
@@ -32,7 +34,7 @@ export function useDocuments(options: DocumentsListQueryParams) {
       refetchInterval: (query) => {
         const documents = query.state.data?.documents || [];
         const hasInProgress = documents.some((doc) => doc.status === 'in_progress');
-        return hasInProgress ? 3000 : false;
+        return hasInProgress ? DOCUMENT_STATUS_POLL_INTERVAL : false;
       },
     }
   );
@@ -105,24 +107,15 @@ export function useDocuments(options: DocumentsListQueryParams) {
     },
   });
 
-  const uploadDocument = async (params: {
-    file: File;
-    displayName: string;
-    fileBase64: string;
-  }) => {
+  const uploadDocument = async (params: { file: File; displayName: string; fileData: string }) => {
+    const { file, displayName, fileData } = params;
+
     await uploadMutation.mutateAsync({
       organizationId: options.organizationId,
-      displayName: params.displayName,
-      mimeType: params.file.type,
-      sizeBytes: params.file.size.toString(),
-      fileBase64: params.fileBase64,
-    });
-  };
-
-  const deleteDocument = async (documentId: string) => {
-    await deleteMutation.mutateAsync({
-      id: documentId,
-      organizationId: options.organizationId,
+      displayName,
+      mimeType: file.type,
+      sizeBytes: file.size.toString(),
+      fileData,
     });
   };
 
@@ -136,7 +129,7 @@ export function useDocuments(options: DocumentsListQueryParams) {
     error,
     refetch,
     uploadDocument,
-    deleteDocument,
+    deleteDocument: deleteMutation.mutate,
     isUploading: uploadMutation.isPending,
     isDeleting: deleteMutation.isPending,
   };

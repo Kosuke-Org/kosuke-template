@@ -349,7 +349,8 @@ export const chatRouter = router({
     if (orgDocuments.length === 0) {
       throw new TRPCError({
         code: 'PRECONDITION_FAILED',
-        message: 'Organization does not have any documents uploaded',
+        message:
+          'No documents available. Please upload documents before chatting with the assistant.',
       });
     }
 

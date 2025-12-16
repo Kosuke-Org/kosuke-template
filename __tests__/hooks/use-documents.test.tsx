@@ -108,7 +108,7 @@ describe('useDocuments', () => {
     });
 
     (trpc.documents.delete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
+      mutate: vi.fn(),
       isPending: false,
     });
   });
@@ -165,7 +165,7 @@ describe('useDocuments', () => {
     await result.current.uploadDocument({
       file: mockFile,
       displayName: 'New Document.pdf',
-      fileBase64: 'base64encodedcontent',
+      fileData: 'base64encodedcontent',
     });
 
     expect(mockMutateAsync).toHaveBeenCalledWith({
@@ -173,7 +173,7 @@ describe('useDocuments', () => {
       displayName: 'New Document.pdf',
       mimeType: 'application/pdf',
       sizeBytes: mockFile.size.toString(),
-      fileBase64: 'base64encodedcontent',
+      fileData: 'base64encodedcontent',
     });
 
     expect(mockToast).toHaveBeenCalledWith({
@@ -202,7 +202,7 @@ describe('useDocuments', () => {
     await result.current.uploadDocument({
       file: mockFile,
       displayName: 'New Document.pdf',
-      fileBase64: 'base64encodedcontent',
+      fileData: 'base64encodedcontent',
     });
 
     expect(mockToast).toHaveBeenCalledWith({
@@ -213,21 +213,21 @@ describe('useDocuments', () => {
   });
 
   it('should delete document successfully', async () => {
-    const mockMutateAsync = vi.fn().mockImplementation(() => {
+    const mockMutate = vi.fn().mockImplementation(() => {
       const options = (trpc.documents.delete.useMutation as Mock).mock.calls[0][0];
       options.onSuccess();
     });
 
     (trpc.documents.delete.useMutation as Mock).mockReturnValue({
-      mutateAsync: mockMutateAsync,
+      mutate: mockMutate,
       isPending: false,
     });
 
     const { result } = renderHook(() => useDocuments(defaultOptions), { wrapper });
 
-    await result.current.deleteDocument('doc_1');
+    await result.current.deleteDocument({ id: 'doc_1', organizationId: 'org_123' });
 
-    expect(mockMutateAsync).toHaveBeenCalledWith({
+    expect(mockMutate).toHaveBeenCalledWith({
       id: 'doc_1',
       organizationId: 'org_123',
     });
@@ -241,7 +241,7 @@ describe('useDocuments', () => {
 
   it('should show destructive toast on delete document error', async () => {
     (trpc.documents.delete.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn().mockImplementation(() => {
+      mutate: vi.fn().mockImplementation(() => {
         const options = (trpc.documents.delete.useMutation as Mock).mock.calls[0][0];
         options.onError(new Error('Failed to delete document'));
       }),
@@ -250,7 +250,7 @@ describe('useDocuments', () => {
 
     const { result } = renderHook(() => useDocuments(defaultOptions), { wrapper });
 
-    await result.current.deleteDocument('doc_1');
+    await result.current.deleteDocument({ id: 'doc_1', organizationId: 'org_123' });
 
     expect(mockToast).toHaveBeenCalledWith({
       title: 'Error',

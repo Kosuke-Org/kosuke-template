@@ -99,9 +99,10 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
 
   // Track if we've already triggered AI response for the current last message
   const lastProcessedMessageId = useRef<string | null>(null);
+  const isProcessingRef = useRef(false);
 
   useEffect(() => {
-    if (isLoading || !messages.length) return;
+    if (isLoading || !messages.length || isProcessingRef.current) return;
 
     const lastMessage = messages[messages.length - 1];
 
@@ -112,8 +113,11 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
       !isGeneratingResponse &&
       !isSendingMessage
     ) {
+      isProcessingRef.current = true;
       lastProcessedMessageId.current = lastMessage.id;
-      generateAIResponse();
+      generateAIResponse().finally(() => {
+        isProcessingRef.current = false;
+      });
     }
   }, [messages, isLoading, isGeneratingResponse, isSendingMessage, generateAIResponse]);
 

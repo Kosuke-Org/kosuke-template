@@ -21,7 +21,8 @@ export const uploadDocumentSchema = z.object({
       message: `File size must be between 1 byte and ${MAX_FILE_SIZE / 1024 / 1024}MB`,
     }
   ),
-  fileBase64: z.string().min(1, 'File content is required'),
+  // Accepts either a data URL (data:mime/type;base64,...) or plain base64 string
+  fileData: z.string().min(1, 'File content is required'),
 });
 
 export const listDocumentsSchema = z.object({
