@@ -70,22 +70,26 @@ export const chatRouter = router({
   /**
    * List all chat sessions for an organization
    */
-  listSessions: orgProcedure.input(listChatSessionsSchema).query(async ({ input }) => {
+  listSessions: orgProcedure.input(listChatSessionsSchema).query(async ({ ctx, input }) => {
     const { page, pageSize, organizationId } = input;
     const offset = (page - 1) * pageSize;
 
-    // Get total count
+    // Get total count for user's sessions only
     const totalResult = await db
       .select({ count: chatSessions.id })
       .from(chatSessions)
-      .where(eq(chatSessions.organizationId, organizationId));
+      .where(
+        and(eq(chatSessions.organizationId, organizationId), eq(chatSessions.userId, ctx.userId))
+      );
     const total = totalResult.length;
 
     // Get paginated results
     const sessions = await db
       .select()
       .from(chatSessions)
-      .where(eq(chatSessions.organizationId, organizationId))
+      .where(
+        and(eq(chatSessions.organizationId, organizationId), eq(chatSessions.userId, ctx.userId))
+      )
       .orderBy(desc(chatSessions.updatedAt))
       .limit(pageSize)
       .offset(offset);
@@ -99,13 +103,14 @@ export const chatRouter = router({
     };
   }),
 
-  getSession: orgProcedure.input(getSessionSchema).query(async ({ input }) => {
+  getSession: orgProcedure.input(getSessionSchema).query(async ({ ctx, input }) => {
     const { organizationId, chatSessionId } = input;
 
     const session = await db.query.chatSessions.findFirst({
       where: and(
         eq(chatSessions.id, chatSessionId),
-        eq(chatSessions.organizationId, organizationId)
+        eq(chatSessions.organizationId, organizationId),
+        eq(chatSessions.userId, ctx.userId)
       ),
     });
 
@@ -122,14 +127,15 @@ export const chatRouter = router({
   /**
    * Get all messages for a chat session
    */
-  getMessages: orgProcedure.input(getMessagesSchema).query(async ({ input }) => {
+  getMessages: orgProcedure.input(getMessagesSchema).query(async ({ ctx, input }) => {
     const { organizationId, chatSessionId } = input;
 
     // Verify session exists and belongs to organization
     const session = await db.query.chatSessions.findFirst({
       where: and(
         eq(chatSessions.id, chatSessionId),
-        eq(chatSessions.organizationId, organizationId)
+        eq(chatSessions.organizationId, organizationId),
+        eq(chatSessions.userId, ctx.userId)
       ),
     });
 
@@ -268,14 +274,15 @@ export const chatRouter = router({
   /**
    * Send a message (save user message only)
    */
-  sendMessage: orgProcedure.input(sendChatMessageSchema).mutation(async ({ input }) => {
+  sendMessage: orgProcedure.input(sendChatMessageSchema).mutation(async ({ ctx, input }) => {
     const { organizationId, chatSessionId, content } = input;
 
     // Verify session exists and belongs to organization
     const session = await db.query.chatSessions.findFirst({
       where: and(
         eq(chatSessions.id, chatSessionId),
-        eq(chatSessions.organizationId, organizationId)
+        eq(chatSessions.organizationId, organizationId),
+        eq(chatSessions.userId, ctx.userId)
       ),
     });
 
@@ -309,102 +316,105 @@ export const chatRouter = router({
    * Generate AI response for the latest user message in a session
    * Uses organization's documents as context via File Search tool
    */
-  generateAIResponse: orgProcedure.input(generateAIResponseSchema).mutation(async ({ input }) => {
-    const { organizationId, chatSessionId } = input;
+  generateAIResponse: orgProcedure
+    .input(generateAIResponseSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { organizationId, chatSessionId } = input;
 
-    // Get session with messages
-    const session = await db.query.chatSessions.findFirst({
-      where: and(
-        eq(chatSessions.id, chatSessionId),
-        eq(chatSessions.organizationId, organizationId)
-      ),
-      with: {
-        messages: {
-          orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+      // Get session with messages
+      const session = await db.query.chatSessions.findFirst({
+        where: and(
+          eq(chatSessions.id, chatSessionId),
+          eq(chatSessions.organizationId, organizationId),
+          eq(chatSessions.userId, ctx.userId)
+        ),
+        with: {
+          messages: {
+            orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+          },
         },
-      },
-    });
-
-    if (!session) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Chat session not found',
       });
-    }
 
-    if (session.messages.length === 0) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'No messages in session',
-      });
-    }
+      if (!session) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Chat session not found',
+        });
+      }
 
-    // Get unique file search store names from organization's documents
-    const orgDocuments = await db
-      .select({ fileSearchStoreName: documents.fileSearchStoreName })
-      .from(documents)
-      .where(eq(documents.organizationId, organizationId))
-      .limit(1);
+      if (session.messages.length === 0) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'No messages in session',
+        });
+      }
 
-    if (orgDocuments.length === 0) {
-      throw new TRPCError({
-        code: 'PRECONDITION_FAILED',
-        message:
-          'No documents available. Please upload documents before chatting with the assistant.',
-      });
-    }
+      // Get unique file search store names from organization's documents
+      const orgDocuments = await db
+        .select({ fileSearchStoreName: documents.fileSearchStoreName })
+        .from(documents)
+        .where(eq(documents.organizationId, organizationId))
+        .limit(1);
 
-    const fileSearchStoreName = orgDocuments[0].fileSearchStoreName;
+      if (orgDocuments.length === 0) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message:
+            'No documents available. Please upload documents before chatting with the assistant.',
+        });
+      }
 
-    // Build conversation history (all messages, map 'assistant' to 'model' for Gemini API)
-    const conversationHistory = session.messages.map((msg) => ({
-      role: msg.role === 'assistant' ? ('model' as const) : ('user' as const),
-      parts: [{ text: msg.content }],
-    }));
+      const fileSearchStoreName = orgDocuments[0].fileSearchStoreName;
 
-    try {
-      // Generate AI response with file search
-      const aiResponse = await generateContent({
-        contents: conversationHistory,
-        config: {
-          tools: [
-            {
-              fileSearch: {
-                fileSearchStoreNames: fileSearchStoreName ? [fileSearchStoreName] : undefined,
+      // Build conversation history (all messages, map 'assistant' to 'model' for Gemini API)
+      const conversationHistory = session.messages.map((msg) => ({
+        role: msg.role === 'assistant' ? ('model' as const) : ('user' as const),
+        parts: [{ text: msg.content }],
+      }));
+
+      try {
+        // Generate AI response with file search
+        const aiResponse = await generateContent({
+          contents: conversationHistory,
+          config: {
+            tools: [
+              {
+                fileSearch: {
+                  fileSearchStoreNames: fileSearchStoreName ? [fileSearchStoreName] : undefined,
+                },
               },
-            },
-          ],
-        },
-      });
+            ],
+          },
+        });
 
-      // Save AI response to database with grounding metadata (if available)
-      const [assistantMessage] = await db
-        .insert(chatMessages)
-        .values({
-          chatSessionId,
-          role: 'assistant',
-          content: aiResponse.text,
-          groundingMetadata: aiResponse.groundingMetadata
-            ? JSON.stringify(aiResponse.groundingMetadata)
-            : null,
-        })
-        .returning();
+        // Save AI response to database with grounding metadata (if available)
+        const [assistantMessage] = await db
+          .insert(chatMessages)
+          .values({
+            chatSessionId,
+            role: 'assistant',
+            content: aiResponse.text,
+            groundingMetadata: aiResponse.groundingMetadata
+              ? JSON.stringify(aiResponse.groundingMetadata)
+              : null,
+          })
+          .returning();
 
-      // Update session timestamp
-      await db
-        .update(chatSessions)
-        .set({ updatedAt: new Date() })
-        .where(eq(chatSessions.id, chatSessionId));
+        // Update session timestamp
+        await db
+          .update(chatSessions)
+          .set({ updatedAt: new Date() })
+          .where(eq(chatSessions.id, chatSessionId));
 
-      return {
-        message: assistantMessage,
-        groundingMetadata: aiResponse.groundingMetadata,
-      };
-    } catch (error) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to generate AI response',
-      });
-    }
-  }),
+        return {
+          message: assistantMessage,
+          groundingMetadata: aiResponse.groundingMetadata,
+        };
+      } catch (error) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error instanceof Error ? error.message : 'Failed to generate AI response',
+        });
+      }
+    }),
 });
