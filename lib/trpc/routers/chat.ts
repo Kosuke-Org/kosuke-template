@@ -5,6 +5,7 @@ import type { GroundingMetadata } from '@/lib/ai/client';
 import { generateContent } from '@/lib/ai/client';
 import { db } from '@/lib/db/drizzle';
 import { chatMessages, chatSessions, documents } from '@/lib/db/schema';
+import { orgProcedure, router } from '@/lib/trpc/init';
 import {
   createChatSessionSchema,
   deleteChatSessionSchema,
@@ -15,8 +16,6 @@ import {
   sendChatMessageSchema,
   updateChatSessionTitleSchema,
 } from '@/lib/trpc/schemas/documents';
-
-import { protectedProcedure, router } from '../init';
 
 interface ExtendedRetrievedContext {
   title?: string;
@@ -71,23 +70,7 @@ export const chatRouter = router({
   /**
    * List all chat sessions for an organization
    */
-  listSessions: protectedProcedure.input(listChatSessionsSchema).query(async ({ ctx, input }) => {
-    // Verify user is member of organization
-    const membership = await db.query.orgMemberships.findFirst({
-      where: (memberships, { and, eq }) =>
-        and(
-          eq(memberships.organizationId, input.organizationId),
-          eq(memberships.userId, ctx.userId)
-        ),
-    });
-
-    if (!membership) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: 'You do not have access to this organization',
-      });
-    }
-
+  listSessions: orgProcedure.input(listChatSessionsSchema).query(async ({ input }) => {
     const { page, pageSize, organizationId } = input;
     const offset = (page - 1) * pageSize;
 
@@ -116,25 +99,11 @@ export const chatRouter = router({
     };
   }),
 
-  getSession: protectedProcedure.input(getSessionSchema).query(async ({ ctx, input }) => {
-    // Verify user is member of organization
-    const membership = await db.query.orgMemberships.findFirst({
-      where: (memberships, { and, eq }) =>
-        and(
-          eq(memberships.organizationId, input.organizationId),
-          eq(memberships.userId, ctx.userId)
-        ),
-    });
-
-    if (!membership) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: 'You do not have access to this organization',
-      });
-    }
+  getSession: orgProcedure.input(getSessionSchema).query(async ({ input }) => {
+    const { organizationId, sessionId } = input;
 
     const session = await db.query.chatSessions.findFirst({
-      where: eq(chatSessions.id, input.sessionId),
+      where: and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)),
     });
 
     if (!session) {
@@ -150,29 +119,12 @@ export const chatRouter = router({
   /**
    * Get all messages for a chat session
    */
-  getMessages: protectedProcedure.input(getMessagesSchema).query(async ({ ctx, input }) => {
-    // Verify user is member of organization
-    const membership = await db.query.orgMemberships.findFirst({
-      where: (memberships, { and, eq }) =>
-        and(
-          eq(memberships.organizationId, input.organizationId),
-          eq(memberships.userId, ctx.userId)
-        ),
-    });
-
-    if (!membership) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: 'You do not have access to this organization',
-      });
-    }
+  getMessages: orgProcedure.input(getMessagesSchema).query(async ({ input }) => {
+    const { organizationId, sessionId } = input;
 
     // Verify session exists and belongs to organization
     const session = await db.query.chatSessions.findFirst({
-      where: and(
-        eq(chatSessions.id, input.sessionId),
-        eq(chatSessions.organizationId, input.organizationId)
-      ),
+      where: and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)),
     });
 
     if (!session) {
@@ -186,14 +138,14 @@ export const chatRouter = router({
     const rawMessages = await db
       .select()
       .from(chatMessages)
-      .where(eq(chatMessages.sessionId, input.sessionId))
+      .where(eq(chatMessages.sessionId, sessionId))
       .orderBy(asc(chatMessages.createdAt));
 
     // Get all documents for the organization to match with sources
     const orgDocuments = await db
       .select()
       .from(documents)
-      .where(eq(documents.organizationId, input.organizationId));
+      .where(eq(documents.organizationId, organizationId));
 
     // Enrich messages with source URLs
     const messagesWithSources = await Promise.all(
@@ -246,147 +198,72 @@ export const chatRouter = router({
   /**
    * Create a new chat session (optionally with initial message)
    */
-  createSession: protectedProcedure
-    .input(createChatSessionSchema)
-    .mutation(async ({ ctx, input }) => {
-      // Verify user is member of organization
-      const membership = await db.query.orgMemberships.findFirst({
-        where: (memberships, { and, eq }) =>
-          and(
-            eq(memberships.organizationId, input.organizationId),
-            eq(memberships.userId, ctx.userId)
-          ),
+  createSession: orgProcedure.input(createChatSessionSchema).mutation(async ({ ctx, input }) => {
+    const { organizationId, title, initialMessage } = input;
+
+    // Set title from initial message if provided, otherwise use default
+    const sessionTitle = initialMessage
+      ? initialMessage.slice(0, 50) + (initialMessage.length > 50 ? '...' : '')
+      : title || 'New Chat';
+
+    const [session] = await db
+      .insert(chatSessions)
+      .values({
+        organizationId,
+        userId: ctx.userId,
+        title: sessionTitle,
+      })
+      .returning();
+
+    // If initial message provided, save it (but don't wait for AI response)
+    if (initialMessage) {
+      await db.insert(chatMessages).values({
+        sessionId: session.id,
+        role: 'user',
+        content: initialMessage,
       });
+    }
 
-      if (!membership) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have access to this organization',
-        });
-      }
-
-      // Set title from initial message if provided, otherwise use default
-      const title = input.initialMessage
-        ? input.initialMessage.slice(0, 50) + (input.initialMessage.length > 50 ? '...' : '')
-        : input.title || 'New Chat';
-
-      const [session] = await db
-        .insert(chatSessions)
-        .values({
-          organizationId: input.organizationId,
-          userId: ctx.userId,
-          title,
-        })
-        .returning();
-
-      // If initial message provided, save it (but don't wait for AI response)
-      if (input.initialMessage) {
-        await db.insert(chatMessages).values({
-          sessionId: session.id,
-          role: 'user',
-          content: input.initialMessage,
-        });
-      }
-
-      return session;
-    }),
+    return session;
+  }),
 
   /**
    * Delete a chat session
    */
-  deleteSession: protectedProcedure
-    .input(deleteChatSessionSchema)
-    .mutation(async ({ ctx, input }) => {
-      // Verify user is member of organization
-      const membership = await db.query.orgMemberships.findFirst({
-        where: (memberships, { and, eq }) =>
-          and(
-            eq(memberships.organizationId, input.organizationId),
-            eq(memberships.userId, ctx.userId)
-          ),
-      });
+  deleteSession: orgProcedure.input(deleteChatSessionSchema).mutation(async ({ input }) => {
+    const { organizationId, sessionId } = input;
 
-      if (!membership) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have access to this organization',
-        });
-      }
+    // Delete session (messages will cascade delete)
+    await db
+      .delete(chatSessions)
+      .where(and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)));
 
-      // Delete session (messages will cascade delete)
-      await db
-        .delete(chatSessions)
-        .where(
-          and(
-            eq(chatSessions.id, input.sessionId),
-            eq(chatSessions.organizationId, input.organizationId)
-          )
-        );
-
-      return { success: true };
-    }),
+    return { success: true };
+  }),
 
   /**
    * Update chat session title
    */
-  updateSession: protectedProcedure
-    .input(updateChatSessionTitleSchema)
-    .mutation(async ({ ctx, input }) => {
-      // Verify user is member of organization
-      const membership = await db.query.orgMemberships.findFirst({
-        where: (memberships, { and, eq }) =>
-          and(
-            eq(memberships.organizationId, input.organizationId),
-            eq(memberships.userId, ctx.userId)
-          ),
-      });
+  updateSession: orgProcedure.input(updateChatSessionTitleSchema).mutation(async ({ input }) => {
+    const { organizationId, sessionId, title } = input;
 
-      if (!membership) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have access to this organization',
-        });
-      }
+    await db
+      .update(chatSessions)
+      .set({ title, updatedAt: new Date() })
+      .where(and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)));
 
-      await db
-        .update(chatSessions)
-        .set({ title: input.title, updatedAt: new Date() })
-        .where(
-          and(
-            eq(chatSessions.id, input.sessionId),
-            eq(chatSessions.organizationId, input.organizationId)
-          )
-        );
-
-      return { success: true };
-    }),
+    return { success: true };
+  }),
 
   /**
    * Send a message (save user message only)
    */
-  sendMessage: protectedProcedure.input(sendChatMessageSchema).mutation(async ({ ctx, input }) => {
-    // Verify user is member of organization
-    const membership = await db.query.orgMemberships.findFirst({
-      where: (memberships, { and, eq }) =>
-        and(
-          eq(memberships.organizationId, input.organizationId),
-          eq(memberships.userId, ctx.userId)
-        ),
-    });
-
-    if (!membership) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: 'You do not have access to this organization',
-      });
-    }
+  sendMessage: orgProcedure.input(sendChatMessageSchema).mutation(async ({ input }) => {
+    const { organizationId, sessionId, content } = input;
 
     // Verify session exists and belongs to organization
     const session = await db.query.chatSessions.findFirst({
-      where: and(
-        eq(chatSessions.id, input.sessionId),
-        eq(chatSessions.organizationId, input.organizationId)
-      ),
+      where: and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)),
     });
 
     if (!session) {
@@ -399,16 +276,16 @@ export const chatRouter = router({
     const [userMessage] = await db
       .insert(chatMessages)
       .values({
-        sessionId: input.sessionId,
+        sessionId,
         role: 'user',
-        content: input.content,
+        content,
       })
       .returning();
 
     await db
       .update(chatSessions)
       .set({ updatedAt: new Date() })
-      .where(eq(chatSessions.id, input.sessionId));
+      .where(eq(chatSessions.id, sessionId));
 
     return {
       userMessage,
@@ -419,117 +296,98 @@ export const chatRouter = router({
    * Generate AI response for the latest user message in a session
    * Uses organization's documents as context via File Search tool
    */
-  generateAIResponse: protectedProcedure
-    .input(generateAIResponseSchema)
-    .mutation(async ({ ctx, input }) => {
-      // Verify user is member of organization
-      const membership = await db.query.orgMemberships.findFirst({
-        where: (memberships, { and, eq }) =>
-          and(
-            eq(memberships.organizationId, input.organizationId),
-            eq(memberships.userId, ctx.userId)
-          ),
+  generateAIResponse: orgProcedure.input(generateAIResponseSchema).mutation(async ({ input }) => {
+    const { organizationId, sessionId } = input;
+
+    // Get session with messages
+    const session = await db.query.chatSessions.findFirst({
+      where: and(eq(chatSessions.id, sessionId), eq(chatSessions.organizationId, organizationId)),
+      with: {
+        messages: {
+          orderBy: (messages, { asc }) => [asc(messages.createdAt)],
+        },
+      },
+    });
+
+    if (!session) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Chat session not found',
       });
+    }
 
-      if (!membership) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'You do not have access to this organization',
-        });
-      }
+    if (session.messages.length === 0) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'No messages in session',
+      });
+    }
 
-      // Get session with messages
-      const session = await db.query.chatSessions.findFirst({
-        where: and(
-          eq(chatSessions.id, input.sessionId),
-          eq(chatSessions.organizationId, input.organizationId)
-        ),
-        with: {
-          messages: {
-            orderBy: (messages, { asc }) => [asc(messages.createdAt)],
-          },
+    // Get unique file search store names from organization's documents
+    const orgDocuments = await db
+      .select({ fileSearchStoreName: documents.fileSearchStoreName })
+      .from(documents)
+      .where(eq(documents.organizationId, organizationId))
+      .limit(1);
+
+    if (orgDocuments.length === 0) {
+      throw new TRPCError({
+        code: 'PRECONDITION_FAILED',
+        message: 'Organization does not have any documents uploaded',
+      });
+    }
+
+    const fileSearchStoreName = orgDocuments[0].fileSearchStoreName;
+
+    // Build conversation history (all messages, map 'assistant' to 'model' for Gemini API)
+    const conversationHistory = session.messages.map((msg) => ({
+      role: msg.role === 'assistant' ? ('model' as const) : ('user' as const),
+      parts: [{ text: msg.content }],
+    }));
+
+    try {
+      // Generate AI response with file search
+      const aiResponse = await generateContent({
+        contents: conversationHistory,
+        config: {
+          tools: [
+            {
+              fileSearch: {
+                fileSearchStoreNames: [fileSearchStoreName],
+              },
+            },
+          ],
         },
       });
 
-      if (!session) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Chat session not found',
-        });
-      }
+      // Save AI response to database with grounding metadata (if available)
+      const [assistantMessage] = await db
+        .insert(chatMessages)
+        .values({
+          sessionId,
+          role: 'assistant',
+          content: aiResponse.text,
+          groundingMetadata: aiResponse.groundingMetadata
+            ? JSON.stringify(aiResponse.groundingMetadata)
+            : null,
+        })
+        .returning();
 
-      if (session.messages.length === 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'No messages in session',
-        });
-      }
+      // Update session timestamp
+      await db
+        .update(chatSessions)
+        .set({ updatedAt: new Date() })
+        .where(eq(chatSessions.id, sessionId));
 
-      // Get unique file search store names from organization's documents
-      const orgDocuments = await db
-        .select({ fileSearchStoreName: documents.fileSearchStoreName })
-        .from(documents)
-        .where(eq(documents.organizationId, input.organizationId))
-        .limit(1);
-
-      if (orgDocuments.length === 0) {
-        throw new TRPCError({
-          code: 'PRECONDITION_FAILED',
-          message: 'Organization does not have any documents uploaded',
-        });
-      }
-
-      const fileSearchStoreName = orgDocuments[0].fileSearchStoreName;
-
-      // Build conversation history (all messages, map 'assistant' to 'model' for Gemini API)
-      const conversationHistory = session.messages.map((msg) => ({
-        role: msg.role === 'assistant' ? ('model' as const) : ('user' as const),
-        parts: [{ text: msg.content }],
-      }));
-
-      try {
-        // Generate AI response with file search
-        const aiResponse = await generateContent({
-          contents: conversationHistory,
-          config: {
-            tools: [
-              {
-                fileSearch: {
-                  fileSearchStoreNames: [fileSearchStoreName],
-                },
-              },
-            ],
-          },
-        });
-
-        // Save AI response to database with grounding metadata (if available)
-        const [assistantMessage] = await db
-          .insert(chatMessages)
-          .values({
-            sessionId: input.sessionId,
-            role: 'assistant',
-            content: aiResponse.text,
-            groundingMetadata: aiResponse.groundingMetadata
-              ? JSON.stringify(aiResponse.groundingMetadata)
-              : null,
-          })
-          .returning();
-
-        // Update session timestamp
-        await db
-          .update(chatSessions)
-          .set({ updatedAt: new Date() })
-          .where(eq(chatSessions.id, input.sessionId));
-
-        return {
-          message: assistantMessage,
-          groundingMetadata: aiResponse.groundingMetadata,
-        };
-      } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to generate AI response',
-        });
-      }
-    }),
+      return {
+        message: assistantMessage,
+        groundingMetadata: aiResponse.groundingMetadata,
+      };
+    } catch (error) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: error instanceof Error ? error.message : 'Failed to generate AI response',
+      });
+    }
+  }),
 });

@@ -8,6 +8,7 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import superjson from 'superjson';
 
 import { auth } from '@/lib/auth/providers';
+import { db } from '@/lib/db/drizzle';
 import { USER_ROLES } from '@/lib/types/organization';
 
 /**
@@ -96,6 +97,44 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
       orgRole: ctx.orgRole,
       activeOrganizationSlug: ctx.activeOrganizationSlug,
       getUser: ctx.getUser,
+    },
+  });
+});
+
+/**
+ * Organization procedure - requires authentication and organization membership
+ * Validates that the user is a member of the organization specified in input.organizationId
+ *
+ * Use this for any route that accepts organizationId as input and needs to verify access
+ */
+export const orgProcedure = protectedProcedure.use(async ({ ctx, next, getRawInput }) => {
+  const rawInput = (await getRawInput()) as { organizationId?: string };
+  const organizationId = rawInput.organizationId;
+
+  if (!organizationId) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'organizationId is required',
+    });
+  }
+
+  const membership = await db.query.orgMemberships.findFirst({
+    where: (memberships, { and, eq }) =>
+      and(eq(memberships.organizationId, organizationId), eq(memberships.userId, ctx.userId)),
+  });
+
+  if (!membership) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'You do not have access to this organization',
+    });
+  }
+
+  return next({
+    ctx: {
+      ...ctx,
+      organizationId,
+      membership,
     },
   });
 });
