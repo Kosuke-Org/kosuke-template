@@ -6,6 +6,7 @@ import type { inferRouterInputs } from '@trpc/server';
 
 import { trpc } from '@/lib/trpc/client';
 import type { AppRouter } from '@/lib/trpc/router';
+import { downloadFromUrl } from '@/lib/utils';
 
 import { useToast } from '@/hooks/use-toast';
 
@@ -119,6 +120,23 @@ export function useDocuments(options: DocumentsListQueryParams) {
     });
   };
 
+  const downloadDocument = async (documentId: string) => {
+    try {
+      const result = await utils.documents.getDownloadUrl.fetch({
+        id: documentId,
+        organizationId: options.organizationId,
+      });
+
+      downloadFromUrl(result.url, result.displayName);
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to download document',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return {
     documents: data?.documents ?? [],
     total: data?.total ?? 0,
@@ -129,6 +147,7 @@ export function useDocuments(options: DocumentsListQueryParams) {
     error,
     refetch,
     uploadDocument,
+    downloadDocument,
     deleteDocument: deleteMutation.mutate,
     isUploading: uploadMutation.isPending,
     isDeleting: deleteMutation.isPending,

@@ -42,6 +42,7 @@ next-env.d.ts
 
 # uploads (user files)
 /public/uploads/*
+uploads/*
 !/public/uploads/.gitkeep
 .env.cli
 

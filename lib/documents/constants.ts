@@ -203,3 +203,70 @@ const TEXT_MIME_TYPES = [
 export const SUPPORTED_MIME_TYPES = [...APPLICATION_MIME_TYPES, ...TEXT_MIME_TYPES] as const;
 
 export type SupportedMimeType = (typeof SUPPORTED_MIME_TYPES)[number];
+
+/**
+ * Maps file extensions to their corresponding MIME types
+ * Based on Google Gemini File Search API supported formats
+ */
+const EXTENSION_TO_MIME_TYPE: Record<string, string> = {
+  // Application types
+  '.pdf': 'application/pdf',
+  '.doc': 'application/msword',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xls': 'application/vnd.ms-excel',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.ppt': 'application/vnd.ms-powerpoint',
+  '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  '.odt': 'application/vnd.oasis.opendocument.text',
+  '.json': 'application/json',
+  '.xml': 'application/xml',
+  '.zip': 'application/zip',
+  '.sql': 'application/sql',
+  '.tex': 'application/x-latex',
+  '.php': 'application/x-php',
+  '.sh': 'application/x-sh',
+  '.dart': 'application/dart',
+
+  // Text types - Common programming languages
+  '.txt': 'text/plain',
+  '.md': 'text/markdown',
+  '.markdown': 'text/markdown',
+  '.html': 'text/html',
+  '.htm': 'text/html',
+  '.css': 'text/css',
+  '.js': 'text/javascript',
+  '.mjs': 'text/javascript',
+  '.jsx': 'text/jsx',
+  '.ts': 'text/typescript',
+  '.tsx': 'text/tsx',
+  '.csv': 'text/csv',
+  '.tsv': 'text/tab-separated-values',
+  '.rtf': 'text/rtf',
+  '.yaml': 'text/yaml',
+  '.yml': 'text/yaml',
+
+  // Programming languages
+  '.py': 'text/x-python',
+  '.java': 'text/x-java',
+  '.c': 'text/x-c',
+  '.cpp': 'text/x-c++src',
+  '.h': 'text/x-chdr',
+  '.hpp': 'text/x-c++hdr',
+  '.cs': 'text/x-csharp',
+  '.go': 'text/x-go',
+  '.rs': 'text/x-rust',
+  '.rb': 'text/x-ruby-script',
+  '.swift': 'text/x-swift',
+  '.kt': 'text/x-kotlin',
+  '.scala': 'text/x-scala',
+  '.r': 'text/x-r-markdown',
+};
+
+/**
+ * Gets the MIME type for a file based on its extension
+ * Returns 'application/octet-stream' for unknown file types
+ */
+export function getContentTypeByExtension(filePath: string): string {
+  const ext = filePath.substring(filePath.lastIndexOf('.')).toLowerCase();
+  return EXTENSION_TO_MIME_TYPE[ext] || 'application/octet-stream';
+}

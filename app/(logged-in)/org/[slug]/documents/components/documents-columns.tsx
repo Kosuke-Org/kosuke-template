@@ -2,7 +2,7 @@
 
 import type { ColumnDef } from '@tanstack/react-table';
 import { format } from 'date-fns';
-import { Loader2, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Download, Loader2, MoreHorizontal, Trash2 } from 'lucide-react';
 
 import type { DocumentWithUser } from '@/lib/types';
 import { formatBytes } from '@/lib/utils';
@@ -18,10 +18,11 @@ import {
 
 interface ColumnActionsProps {
   onDelete: (id: string, displayName: string) => void;
+  onDownload: (storageUrl: string, documentId: string) => void;
 }
 
 export function getDocumentsColumns(actions: ColumnActionsProps): ColumnDef<DocumentWithUser>[] {
-  const { onDelete } = actions;
+  const { onDelete, onDownload } = actions;
   return [
     {
       id: 'name',
@@ -76,6 +77,15 @@ export function getDocumentsColumns(actions: ColumnActionsProps): ColumnDef<Docu
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDownload(doc.storageUrl, doc.id);
+                  }}
+                >
+                  <Download className="h-4 w-4" />
+                  Download
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();

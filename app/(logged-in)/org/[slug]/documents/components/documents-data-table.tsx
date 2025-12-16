@@ -33,6 +33,7 @@ interface DocumentsDataTableProps {
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   onDelete: (id: string, displayName: string) => void;
+  onDownload: (storageUrl: string, documentId: string) => void;
 }
 
 export function DocumentsDataTable({
@@ -47,8 +48,12 @@ export function DocumentsDataTable({
   onPageChange,
   onPageSizeChange,
   onDelete,
+  onDownload,
 }: DocumentsDataTableProps) {
-  const columns = useMemo(() => getDocumentsColumns({ onDelete }), [onDelete]);
+  const columns = useMemo(
+    () => getDocumentsColumns({ onDelete, onDownload }),
+    [onDelete, onDownload]
+  );
 
   // eslint-disable-next-line
   const table = useReactTable({

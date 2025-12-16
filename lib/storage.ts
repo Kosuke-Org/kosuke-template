@@ -3,9 +3,16 @@
 import { mkdir, unlink, writeFile } from 'fs/promises';
 import path from 'path';
 
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
+// Store uploads outside public directory to prevent direct access
+const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
 
 // S3 Client configuration
 let s3Client: S3Client | null = null;
@@ -37,6 +44,26 @@ function getS3Client(): S3Client {
 
   s3Client = new S3Client(config);
   return s3Client;
+}
+
+export async function getPresignedDownloadUrl(storageKey: string, expiresInSeconds = 60 * 5) {
+  if (process.env.NODE_ENV === 'production' && process.env.S3_BUCKET) {
+    const s3 = getS3Client();
+    const command = new GetObjectCommand({
+      Bucket: process.env.S3_BUCKET,
+      Key: storageKey,
+    });
+
+    const url = await getSignedUrl(s3, command, {
+      expiresIn: expiresInSeconds,
+    });
+
+    return url;
+  } else {
+    // Development: Return authenticated API route
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return `${baseUrl}/api/uploads/${storageKey}`;
+  }
 }
 
 /**
@@ -169,7 +196,8 @@ export async function uploadDocument(file: File, organizationId: string): Promis
       });
 
       await s3.send(command);
-      return getS3Url(key);
+
+      return key;
     } else {
       // Use local file system for development
       const filePath = path.join(UPLOAD_DIR, key);
@@ -179,8 +207,7 @@ export async function uploadDocument(file: File, organizationId: string): Promis
       const buffer = Buffer.from(await file.arrayBuffer());
       await writeFile(filePath, buffer);
 
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      return `${baseUrl}/uploads/${key}`;
+      return key;
     }
   } catch (error) {
     console.error('Error uploading document:', error);

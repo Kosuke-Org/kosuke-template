@@ -37,6 +37,11 @@ export const deleteDocumentSchema = z.object({
   organizationId: z.uuid(),
 });
 
+export const getDownloadUrlSchema = z.object({
+  id: z.uuid(),
+  organizationId: z.uuid(),
+});
+
 // Chat schemas
 export const createChatSessionSchema = z.object({
   organizationId: z.uuid(),
