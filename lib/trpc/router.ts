@@ -6,6 +6,8 @@ import { router } from './init';
 import { adminRouter } from './routers/admin';
 import { authRouter } from './routers/auth';
 import { billingRouter } from './routers/billing';
+import { chatRouter } from './routers/chat';
+import { documentsRouter } from './routers/documents';
 import { engineRouter } from './routers/engine';
 import { ordersRouter } from './routers/orders';
 import { organizationsRouter } from './routers/organizations';
@@ -21,6 +23,8 @@ export const appRouter = router({
   engine: engineRouter,
   orders: ordersRouter,
   admin: adminRouter,
+  documents: documentsRouter,
+  chat: chatRouter,
 });
 
 export type AppRouter = typeof appRouter;

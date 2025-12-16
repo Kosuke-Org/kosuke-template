@@ -10,6 +10,7 @@
  */
 export const QUEUE_NAMES = {
   SUBSCRIPTIONS: 'subscription-sync',
+  DOCUMENTS: 'documents',
   // Add more queues here as needed
 } as const;
 
@@ -20,5 +21,7 @@ export const JOB_NAMES = {
   // Subscription queue jobs
   SYNC_SUBSCRIPTIONS: 'sync-subscriptions',
   SYNC_SUBSCRIPTIONS_SCHEDULED: 'sync-subscriptions-scheduled',
+  // Document queue jobs
+  INDEX_DOCUMENT: 'index-document',
   // Add more job names here as needed
 } as const;

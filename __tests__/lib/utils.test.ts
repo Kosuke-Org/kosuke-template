@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils';
+import { cn, formatBytes } from '@/lib/utils';
 
 describe('Utils', () => {
   describe('cn (classnames utility)', () => {
@@ -42,6 +42,15 @@ describe('Utils', () => {
       expect(result).toContain('py-2');
       // px-4 is overridden by px-6 in tailwind-merge behavior
       expect(result).not.toContain('px-4');
+    });
+  });
+
+  describe('formatBytes', () => {
+    it('should format bytes correctly', () => {
+      expect(formatBytes(0)).toBe('0 Bytes');
+      expect(formatBytes(1024)).toBe('1 KB');
+      expect(formatBytes(1024 * 1024)).toBe('1 MB');
+      expect(formatBytes(1024 * 1024 * 1024)).toBe('1 GB');
     });
   });
 });

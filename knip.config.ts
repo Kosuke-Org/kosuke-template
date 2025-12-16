@@ -5,8 +5,9 @@ const knipConfig = {
     'engine/**',
     'cli/**',
     'proxy.ts',
-    // Shadcn/UI components, we keep them as part of the template
+    // Shadcn/UI components or custom registries are part of the template
     'components/ui/**',
+    'components/ai-elements/**',
     // Chart/skeleton components are template examples
     'components/skeletons.tsx',
     'components/charts/**',
@@ -22,7 +23,6 @@ const knipConfig = {
   ignoreDependencies: [
     // Shadcn/UI dependencies (only used in components/ui/** which is ignored)
     '@radix-ui/*',
-    'cmdk',
     'embla-carousel-react',
     'react-resizable-panels',
     'tailwindcss',

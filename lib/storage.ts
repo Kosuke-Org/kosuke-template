@@ -149,6 +149,93 @@ export async function deleteProfileImage(imageUrl: string): Promise<void> {
 }
 
 /**
+ * Uploads a document to S3 or local storage based on environment
+ */
+export async function uploadDocument(file: File, organizationId: string): Promise<string> {
+  try {
+    const timestamp = Date.now();
+    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const key = `documents/${organizationId}/${timestamp}-${sanitizedFileName}`;
+
+    if (process.env.NODE_ENV === 'production' && process.env.S3_BUCKET) {
+      const s3 = getS3Client();
+      const buffer = Buffer.from(await file.arrayBuffer());
+
+      const command = new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET,
+        Key: key,
+        Body: buffer,
+        ContentType: file.type,
+      });
+
+      await s3.send(command);
+      return getS3Url(key);
+    } else {
+      // Use local file system for development
+      const filePath = path.join(UPLOAD_DIR, key);
+
+      await mkdir(path.dirname(filePath), { recursive: true });
+
+      const buffer = Buffer.from(await file.arrayBuffer());
+      await writeFile(filePath, buffer);
+
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      return `${baseUrl}/uploads/${key}`;
+    }
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    throw new Error('Failed to upload document');
+  }
+}
+
+/**
+ * Deletes a document from S3 or local storage
+ */
+export async function deleteDocument(documentUrl: string): Promise<void> {
+  try {
+    // Check if it's an S3 URL
+    if (
+      process.env.NODE_ENV === 'production' &&
+      process.env.S3_BUCKET &&
+      (documentUrl.includes(process.env.S3_ENDPOINT || '') ||
+        documentUrl.includes('amazonaws.com') ||
+        documentUrl.includes('digitaloceanspaces.com'))
+    ) {
+      const s3 = getS3Client();
+
+      const url = new URL(documentUrl);
+      let key: string;
+
+      if (process.env.S3_ENDPOINT) {
+        key = url.pathname.substring(1); // Remove leading /
+        const bucketPrefix = `${process.env.S3_BUCKET}/`;
+        if (key.startsWith(bucketPrefix)) {
+          key = key.substring(bucketPrefix.length);
+        }
+      } else {
+        // For AWS S3: bucket.s3.region.amazonaws.com/key
+        key = url.pathname.substring(1); // Remove leading /
+      }
+
+      const command = new DeleteObjectCommand({
+        Bucket: process.env.S3_BUCKET,
+        Key: key,
+      });
+
+      await s3.send(command);
+    } else if (documentUrl.includes('/uploads/')) {
+      // Delete from local file system
+      const relativePath = documentUrl.split('/uploads/')[1];
+      const filePath = path.join(UPLOAD_DIR, relativePath);
+      await unlink(filePath);
+    }
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    // Don't throw, as this should not block the delete process
+  }
+}
+
+/**
  * Gets the file extension from a filename
  */
 function getExtension(filename: string): string {

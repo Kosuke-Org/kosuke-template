@@ -20,6 +20,9 @@ export const orderStatusEnum = pgEnum('order_status', [
   'delivered',
   'cancelled',
 ]);
+export const chatMessageRoleEnum = pgEnum('chat_message_role', ['user', 'assistant']);
+export const documentStatusEnum = pgEnum('document_status', ['in_progress', 'ready', 'error']);
+
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   email: text('email').notNull().unique(),
@@ -233,6 +236,61 @@ export const orderHistory = pgTable('order_history', {
   createdAt: timestamp('created_at').defaultNow().notNull(), // When this status was set
 });
 
+// Documents - Files uploaded to Google File Search Store
+export const documents = pgTable('documents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
+  displayName: text('display_name').notNull(),
+  // Google Document resource identifier (format: fileSearchStores/*/documents/*) - used for deletion
+  documentResourceName: text('document_resource_name'), // Nullable until File Search upload completes
+  fileSearchStoreName: text('file_search_store_name'), // Nullable until File Search upload completes
+  storageUrl: text('storage_url').notNull(), // S3 or local storage URL
+  mimeType: text('mime_type').notNull(),
+  sizeBytes: text('size_bytes').notNull(), // Stored as text to preserve large numbers
+  status: documentStatusEnum('status').notNull().default('in_progress'), // Upload status
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Chat Sessions - Conversation sessions with documents
+export const chatSessions = pgTable('chat_sessions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, {
+      onDelete: 'cascade',
+    }),
+  title: text('title').notNull(), // Auto-generated from first message
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Chat Messages - Individual messages in a chat session
+export const chatMessages = pgTable('chat_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  chatSessionId: uuid('chat_session_id')
+    .notNull()
+    .references(() => chatSessions.id, {
+      onDelete: 'cascade',
+    }),
+  role: chatMessageRoleEnum('role').notNull(),
+  content: text('content').notNull(),
+  groundingMetadata: text('grounding_metadata'), // JSON string with citation info
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export const userRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
   members: many(orgMemberships),
@@ -270,6 +328,36 @@ export const invitationRelations = relations(invitations, ({ one }) => ({
   user: one(users, {
     fields: [invitations.inviterId],
     references: [users.id],
+  }),
+}));
+
+export const documentRelations = relations(documents, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [documents.organizationId],
+    references: [organizations.id],
+  }),
+  user: one(users, {
+    fields: [documents.userId],
+    references: [users.id],
+  }),
+}));
+
+export const chatSessionRelations = relations(chatSessions, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [chatSessions.organizationId],
+    references: [organizations.id],
+  }),
+  user: one(users, {
+    fields: [chatSessions.userId],
+    references: [users.id],
+  }),
+  messages: many(chatMessages),
+}));
+
+export const chatMessageRelations = relations(chatMessages, ({ one }) => ({
+  session: one(chatSessions, {
+    fields: [chatMessages.chatSessionId],
+    references: [chatSessions.id],
   }),
 }));
 
@@ -330,8 +418,16 @@ export type Order = InferSelectModel<typeof orders>;
 export type NewOrder = InferInsertModel<typeof orders>;
 export type OrderHistory = InferSelectModel<typeof orderHistory>;
 export type NewOrderHistory = InferInsertModel<typeof orderHistory>;
+export type Document = InferSelectModel<typeof documents>;
+export type NewDocument = InferInsertModel<typeof documents>;
+export type ChatSession = InferSelectModel<typeof chatSessions>;
+export type NewChatSession = InferInsertModel<typeof chatSessions>;
+export type ChatMessage = InferSelectModel<typeof chatMessages>;
+export type NewChatMessage = InferInsertModel<typeof chatMessages>;
 
 // Infer enum types from schema
 export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];
 export type OrgRole = (typeof orgRoleEnum.enumValues)[number];
 export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
+export type ChatMessageRole = (typeof chatMessageRoleEnum.enumValues)[number];
+export type DocumentStatus = (typeof documentStatusEnum.enumValues)[number];
