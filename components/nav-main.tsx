@@ -69,8 +69,8 @@ export function NavMain({
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.url}>
                           <SidebarMenuSubButton asChild>
-                            <div className="w-fullitems-center flex justify-between">
-                              <Link href={subItem.url}>
+                            <div>
+                              <Link href={subItem.url} className="flex-1">
                                 <span className="block max-w-[150px] truncate">
                                   {subItem.title}
                                 </span>
