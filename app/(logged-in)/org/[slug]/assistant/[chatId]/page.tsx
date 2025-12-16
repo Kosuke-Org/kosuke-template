@@ -93,7 +93,7 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
     isSendingMessage,
     isGeneratingResponse,
   } = useChatSession({
-    chatSessionId: chatId,
+    chatSessionId: sessionQuery.data?.id ?? '',
     organizationId: activeOrganization?.id ?? '',
   });
 
@@ -127,7 +127,7 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
     await sendMessage(messageContent);
   };
 
-  if (isLoading || isLoadingAuth || isLoadingOrg) {
+  if (isLoading || isLoadingAuth || isLoadingOrg || sessionQuery.isLoading) {
     return <ChatPageSkeleton />;
   }
 
