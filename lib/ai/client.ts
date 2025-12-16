@@ -28,12 +28,14 @@ export function createFileSearchStore(config: CreateFileSearchStoreParameters['c
  * Upload a file directly to a File Search Store
  */
 export async function uploadToFileSearchStore(params: UploadToFileSearchStoreParameters) {
+  const { file, fileSearchStoreName, config } = params;
   const operation = await ai.fileSearchStores.uploadToFileSearchStore({
-    file: params.file,
-    fileSearchStoreName: params.fileSearchStoreName,
+    file,
+    fileSearchStoreName,
     config: {
-      displayName: params.config?.displayName,
-      mimeType: params.config?.mimeType,
+      displayName: config?.displayName,
+      mimeType: config?.mimeType,
+      customMetadata: config?.customMetadata,
     },
   });
 
