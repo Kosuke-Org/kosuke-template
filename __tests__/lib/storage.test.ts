@@ -10,14 +10,14 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getKeyFromPathname } from '@/lib/storage';
+import { getKeyFromPathname, isS3Url } from '@/lib/storage';
 
 vi.mock('fs/promises');
 vi.mock('@aws-sdk/client-s3');
 vi.mock('@aws-sdk/s3-request-presigner');
 
 describe('Storage', () => {
-  let storage: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  let storage: typeof import('@/lib/storage');
   const mockSend = vi.fn().mockResolvedValue({});
 
   vi.mocked(S3Client).mockImplementation(
@@ -69,7 +69,6 @@ describe('Storage', () => {
       vi.mocked(getSignedUrl).mockResolvedValue(mockUrl);
 
       const url = await storage.getPresignedDownloadUrl('documents/org-1/file.pdf', 300);
-      console.log(url);
       expect(url).toBe(mockUrl);
       expect(getSignedUrl).toHaveBeenCalledWith(expect.any(Object), expect.any(GetObjectCommand), {
         expiresIn: 300,
@@ -221,5 +220,20 @@ describe('Storage', () => {
       const key = getKeyFromPathname('/test-bucket/documents/org-123/1234567890-file.pdf');
       expect(key).toBe('documents/org-123/1234567890-file.pdf');
     });
+  });
+
+  describe('isS3Url', () => {
+    it('should return true if the URL is an S3 URL', () => {
+      vi.stubEnv('NODE_ENV', 'production');
+      vi.stubEnv('S3_BUCKET', 'test-bucket');
+      vi.stubEnv('S3_ENDPOINT', 'https://s3.example.com');
+      const url = 'https://s3.example.com/test-bucket/documents/org-123/1234567890-file.pdf';
+      expect(isS3Url(url)).toBe(true);
+    });
+  });
+
+  it('should return false if the URL is not an S3 URL', () => {
+    const url = 'https://example.com/documents/org-123/1234567890-file.pdf';
+    expect(isS3Url(url)).toBe(false);
   });
 });
