@@ -59,6 +59,7 @@ export default function DocumentsPage() {
     totalPages,
     isLoading,
     uploadDocument,
+    downloadDocument,
     deleteDocument,
     isUploading,
     isDeleting,
@@ -85,6 +86,10 @@ export default function DocumentsPage() {
   const handleDeleteClick = (id: string, displayName: string) => {
     setDocumentToDelete({ id, displayName });
     setDeleteDialogOpen(true);
+  };
+
+  const handleDownload = async (_storageUrl: string, documentId: string) => {
+    await downloadDocument(documentId);
   };
 
   const handleDeleteConfirm = async () => {
@@ -134,6 +139,7 @@ export default function DocumentsPage() {
         onPageChange={setPage}
         onPageSizeChange={setPageSize}
         onDelete={handleDeleteClick}
+        onDownload={handleDownload}
       />
 
       <UploadDocumentDialog

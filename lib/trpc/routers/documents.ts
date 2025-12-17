@@ -5,10 +5,11 @@ import { deleteDocumentFromFileSearchStore, deleteFileSearchStore } from '@/lib/
 import { db } from '@/lib/db/drizzle';
 import { documents, organizations, users } from '@/lib/db/schema';
 import { addIndexDocumentJob } from '@/lib/queue/queues/documents';
-import { deleteDocument, uploadDocument } from '@/lib/storage';
+import { deleteDocument, getPresignedDownloadUrl, uploadDocument } from '@/lib/storage';
 import { orgProcedure, router } from '@/lib/trpc/init';
 import {
   deleteDocumentSchema,
+  getDownloadUrlSchema,
   listDocumentsSchema,
   uploadDocumentSchema,
 } from '@/lib/trpc/schemas/documents';
@@ -39,13 +40,12 @@ export const documentsRouter = router({
     const results = await db
       .select({
         id: documents.id,
-        organizationId: documents.organizationId,
         displayName: documents.displayName,
         sizeBytes: documents.sizeBytes,
         status: documents.status,
-        fileSearchStoreName: documents.fileSearchStoreName,
         createdAt: documents.createdAt,
         userDisplayName: users.displayName,
+        storageUrl: documents.storageUrl,
       })
       .from(documents)
       .leftJoin(users, eq(documents.userId, users.id))
@@ -60,6 +60,33 @@ export const documentsRouter = router({
       page,
       pageSize,
       totalPages: Math.ceil(total / pageSize),
+    };
+  }),
+
+  /**
+   * Get a presigned download URL for a document
+   * Production: Returns S3 presigned URL (5 min expiry)
+   * Development: Returns authenticated API route URL
+   */
+  getDownloadUrl: orgProcedure.input(getDownloadUrlSchema).query(async ({ input }) => {
+    const { id, organizationId } = input;
+
+    const document = await db.query.documents.findFirst({
+      where: and(eq(documents.id, id), eq(documents.organizationId, organizationId)),
+    });
+
+    if (!document) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Document not found',
+      });
+    }
+
+    const downloadUrl = await getPresignedDownloadUrl(document.storageUrl);
+
+    return {
+      url: downloadUrl,
+      displayName: document.displayName,
     };
   }),
 
@@ -120,7 +147,7 @@ export const documentsRouter = router({
       displayName,
     });
 
-    return newDocument;
+    return { id: newDocument.id, status: newDocument.status };
   }),
 
   /**

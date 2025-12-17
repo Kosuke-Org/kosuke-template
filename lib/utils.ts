@@ -63,13 +63,21 @@ export function downloadFile(data: string, filename: string, mimeType?: string) 
     blob = new Blob([data], { type: mimeType || 'text/csv;charset=utf-8;' });
   }
 
-  const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  link.setAttribute('href', url);
-  link.setAttribute('download', filename);
-  link.style.visibility = 'hidden';
+  downloadFromUrl(url, filename);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Downloads a file from a URL (S3 presigned URL or API route)
+ * Used for downloading documents, images, etc.
+ */
+export function downloadFromUrl(url: string, filename: string) {
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.target = '_blank'; // Fallback: open in new tab if download fails
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
 }

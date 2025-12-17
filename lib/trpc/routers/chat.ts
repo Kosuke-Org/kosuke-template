@@ -5,6 +5,7 @@ import type { GroundingMetadata } from '@/lib/ai/client';
 import { generateContent } from '@/lib/ai/client';
 import { db } from '@/lib/db/drizzle';
 import { chatMessages, chatSessions, documents } from '@/lib/db/schema';
+import { getPresignedDownloadUrl } from '@/lib/storage';
 import { orgProcedure, router } from '@/lib/trpc/init';
 import {
   createChatSessionSchema,
@@ -175,19 +176,21 @@ export const chatRouter = router({
           const relevantSources = extractRelevantSources(groundingMetadata);
 
           // Match sources with database documents
-          const sourcesWithUrls = relevantSources.map((source) => {
-            const doc = orgDocuments.find(
-              (d) =>
-                d.displayName === source.title &&
-                d.fileSearchStoreName === source.fileSearchStoreName
-            );
+          const sourcesWithUrls = await Promise.all(
+            relevantSources.map(async (source) => {
+              const doc = orgDocuments.find(
+                (d) =>
+                  d.displayName === source.title &&
+                  d.fileSearchStoreName === source.fileSearchStoreName
+              );
 
-            return {
-              title: source.title,
-              url: doc?.storageUrl || null,
-              documentId: doc?.id || null,
-            };
-          });
+              return {
+                title: source.title,
+                url: doc?.storageUrl ? await getPresignedDownloadUrl(doc.storageUrl) : null,
+                documentId: doc?.id || null,
+              };
+            })
+          );
 
           return {
             ...message,
