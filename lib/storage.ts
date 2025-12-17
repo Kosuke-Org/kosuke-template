@@ -264,8 +264,14 @@ export async function deleteDocument(documentUrl: string): Promise<void> {
 
       await s3.send(command);
     } else if (documentUrl.includes('/uploads/')) {
+      const parts = documentUrl.split('/uploads/');
+      if (parts.length < 2) {
+        console.error('Invalid upload URL format');
+        return;
+      }
+
       // Delete from local file system
-      const relativePath = documentUrl.split('/uploads/')[1];
+      const relativePath = parts[1];
       const filePath = path.join(UPLOAD_DIR, relativePath);
       await unlink(filePath);
     }
