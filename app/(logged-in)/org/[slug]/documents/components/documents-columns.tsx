@@ -93,7 +93,7 @@ export function getDocumentsColumns(actions: ColumnActionsProps): ColumnDef<Docu
                   }}
                   className="text-destructive focus:text-destructive"
                 >
-                  <Trash2 className="text-destructive size-4" />
+                  <Trash2 className="text-destructive h-4 w-4" />
                   Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>

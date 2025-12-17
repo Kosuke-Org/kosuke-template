@@ -84,11 +84,12 @@ export async function GET(request: NextRequest, props: { params: Promise<{ path:
     // Determine content type from file extension using centralized constants
     const contentType = getContentTypeByExtension(filePath);
 
+    const DOWNLOAD_CACHE_MAX_AGE = 60 * 60; // 1 hour
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${document[0].displayName}"`,
-        'Cache-Control': 'private, max-age=3600', // Cache for 1 hour
+        'Cache-Control': `private, max-age=${DOWNLOAD_CACHE_MAX_AGE}`,
       },
     });
   } catch (error) {
