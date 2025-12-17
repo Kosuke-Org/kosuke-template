@@ -5,7 +5,7 @@ import { Suspense, use, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 import { inferRouterOutputs } from '@trpc/server';
-import { ChevronDown, ExternalLink, Loader2, MessageSquare } from 'lucide-react';
+import { Check, ChevronDown, Copy, ExternalLink, Loader2, MessageSquare } from 'lucide-react';
 
 import { trpc } from '@/lib/trpc/client';
 import { AppRouter } from '@/lib/trpc/router';
@@ -21,7 +21,13 @@ import {
   ConversationEmptyState,
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
-import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
+import {
+  Message,
+  MessageAction,
+  MessageActions,
+  MessageContent,
+  MessageResponse,
+} from '@/components/ai-elements/message';
 import {
   PromptInput,
   PromptInputBody,
@@ -149,7 +155,7 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
   return (
     <div className="mx-auto flex size-full max-w-3xl flex-col">
       <Conversation>
-        <ConversationContent className="pb-8">
+        <ConversationContent className="gap-4">
           {messages.length === 0 ? (
             <ConversationEmptyState
               icon={<MessageSquare className="size-12" />}
@@ -158,14 +164,19 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
             />
           ) : (
             <>
-              {messages.map((message) => (
-                <Message from={message.role} key={message.id}>
-                  <MessageContent>
-                    <MessageResponse>{message.content}</MessageResponse>
+              {messages.map((message) => {
+                return (
+                  <Message from={message.role} key={message.id}>
+                    <MessageContent>
+                      <MessageResponse>{message.content}</MessageResponse>
+                    </MessageContent>
+                    <MessageActions className={cn(message.role === 'user' && 'justify-end')}>
+                      <CopyMessageAction message={message.content || ''} />
+                    </MessageActions>
                     {message.sources.length > 0 && <MessageSource sources={message.sources} />}
-                  </MessageContent>
-                </Message>
-              ))}
+                  </Message>
+                );
+              })}
               {isGeneratingResponse && (
                 <Message from="assistant" key="assistant">
                   <MessageContent>
@@ -209,36 +220,57 @@ const MessageSource = ({ sources }: { sources: MessageSources }) => {
 
   return (
     <div className="text-muted-foreground text-xs">
-      <Collapsible style={{ height: 42 * sources.length }} open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger className="mb-2 flex items-center justify-between gap-2">
+      <Collapsible
+        // 24 is the height per line + collapse trigger height (16px)
+        style={{ height: 24 * sources.length + 16 }}
+        open={isOpen}
+        onOpenChange={setIsOpen}
+      >
+        <CollapsibleTrigger className="flex items-center justify-between gap-2">
           <span>
             Used {sources.length} {sources.length > 1 ? 'sources' : 'source'}
           </span>
           <ChevronDown className={cn('size-4 transition-transform', isOpen && 'rotate-x-180')} />
         </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div className="flex flex-col gap-1.5">
-            {sources.map((source, index) => (
-              <div key={index} className="flex items-center gap-1.5">
-                {source.url ? (
-                  <a
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-foreground flex items-center gap-1 truncate underline decoration-dotted underline-offset-2 transition-colors"
-                  >
-                    <span className="truncate">{source.title}</span>
-                    <ExternalLink className="h-3 w-3 shrink-0" />
-                  </a>
-                ) : (
+        <CollapsibleContent className="mt-2 flex flex-col gap-1.5">
+          {sources.map((source, index) => (
+            <div key={index}>
+              {source.url ? (
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground flex items-center gap-1 truncate underline decoration-dotted underline-offset-2 transition-colors"
+                >
                   <span className="truncate">{source.title}</span>
-                )}
-              </div>
-            ))}
-          </div>
+                  <ExternalLink className="h-3 w-3 shrink-0" />
+                </a>
+              ) : (
+                <span className="truncate">{source.title}</span>
+              )}
+            </div>
+          ))}
         </CollapsibleContent>
       </Collapsible>
     </div>
+  );
+};
+
+const CopyMessageAction = ({ message }: { message: string }) => {
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopyMessage = async () => {
+    await navigator.clipboard.writeText(message);
+    setIsCopied(true);
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
+  };
+
+  return (
+    <MessageAction onClick={handleCopyMessage} tooltip="Copy">
+      {isCopied ? <Check /> : <Copy />}
+    </MessageAction>
   );
 };
 
