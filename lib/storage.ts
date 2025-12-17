@@ -14,6 +14,27 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 // Store uploads outside public directory to prevent direct access
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
 
+/**
+ * Extract S3 key from URL pathname
+ * Handles both AWS S3 and S3-compatible services (DigitalOcean Spaces, MinIO, etc.)
+ * @param pathname - The pathname from a URL (e.g., /documents/file.pdf or /bucket/documents/file.pdf)
+ * @returns The S3 key without leading slash and bucket prefix (e.g., documents/file.pdf)
+ */
+export function getKeyFromPathname(pathname: string): string {
+  let key = pathname.substring(1); // Remove leading /
+
+  // For S3-compatible services with custom endpoints, the pathname may include the bucket name
+  // Example: /my-bucket/documents/file.pdf -> documents/file.pdf
+  if (process.env.S3_ENDPOINT && process.env.S3_BUCKET) {
+    const bucketPrefix = `${process.env.S3_BUCKET}/`;
+    if (key.startsWith(bucketPrefix)) {
+      key = key.substring(bucketPrefix.length);
+    }
+  }
+
+  return key;
+}
+
 // S3 Client configuration
 let s3Client: S3Client | null = null;
 
@@ -143,19 +164,7 @@ export async function deleteProfileImage(imageUrl: string): Promise<void> {
 
       // Extract key from URL
       const url = new URL(imageUrl);
-      let key: string;
-
-      if (process.env.S3_ENDPOINT) {
-        // For S3-compatible services: endpoint/bucket/key
-        key = url.pathname.substring(1); // Remove leading /
-        const bucketPrefix = `${process.env.S3_BUCKET}/`;
-        if (key.startsWith(bucketPrefix)) {
-          key = key.substring(bucketPrefix.length);
-        }
-      } else {
-        // For AWS S3: bucket.s3.region.amazonaws.com/key
-        key = url.pathname.substring(1); // Remove leading /
-      }
+      const key = getKeyFromPathname(url.pathname);
 
       const command = new DeleteObjectCommand({
         Bucket: process.env.S3_BUCKET,
@@ -231,18 +240,7 @@ export async function deleteDocument(documentUrl: string): Promise<void> {
       const s3 = getS3Client();
 
       const url = new URL(documentUrl);
-      let key: string;
-
-      if (process.env.S3_ENDPOINT) {
-        key = url.pathname.substring(1); // Remove leading /
-        const bucketPrefix = `${process.env.S3_BUCKET}/`;
-        if (key.startsWith(bucketPrefix)) {
-          key = key.substring(bucketPrefix.length);
-        }
-      } else {
-        // For AWS S3: bucket.s3.region.amazonaws.com/key
-        key = url.pathname.substring(1); // Remove leading /
-      }
+      const key = getKeyFromPathname(url.pathname);
 
       const command = new DeleteObjectCommand({
         Bucket: process.env.S3_BUCKET,
