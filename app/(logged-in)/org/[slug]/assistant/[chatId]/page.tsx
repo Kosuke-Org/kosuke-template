@@ -4,6 +4,7 @@ import { Suspense, use, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
+import { Collapsible, CollapsibleContent } from '@radix-ui/react-collapsible';
 import { inferRouterOutputs } from '@trpc/server';
 import { Check, ChevronDown, Copy, ExternalLink, Loader2, MessageSquare } from 'lucide-react';
 
@@ -12,7 +13,7 @@ import { AppRouter } from '@/lib/trpc/router';
 import { cn } from '@/lib/utils';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useChatSession } from '@/hooks/use-chat';
+import { useChat } from '@/hooks/use-chat';
 import { useOrganization } from '@/hooks/use-organization';
 
 import {
@@ -36,11 +37,11 @@ import {
   PromptInputTextarea,
 } from '@/components/ai-elements/prompt-input';
 import { Button } from '@/components/ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Skeleton } from '@/components/ui/skeleton';
 
-type RouterOutputs = inferRouterOutputs<AppRouter>;
-type MessageSources = RouterOutputs['chat']['getMessages']['messages'][number]['sources'];
+type Source =
+  inferRouterOutputs<AppRouter>['chat']['getMessages']['messages'][number]['metadata']['sources'][number];
 
 const ChatPageSkeleton = () => {
   return (
@@ -79,7 +80,7 @@ const ChatPageSkeleton = () => {
 const ChatContent = ({ chatId }: { chatId: string }) => {
   const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
   const { isLoading: isLoadingAuth } = useAuth();
-  const [inputMessage, setInputMessage] = useState('');
+  const initialMessageSentRef = useRef(false);
 
   const sessionQuery = trpc.chat.getSession.useQuery(
     {
@@ -91,49 +92,32 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
     }
   );
 
-  const {
-    messages,
-    isLoading,
-    sendMessage,
-    generateAIResponse,
-    isSendingMessage,
-    isGeneratingResponse,
-  } = useChatSession({
+  const { messages, input, isLoading, handleInputChange, handleSubmit } = useChat({
     chatSessionId: sessionQuery.data?.id ?? '',
     organizationId: activeOrganization?.id ?? '',
   });
 
-  // Track if we've already triggered AI response for the current last message
-  const lastProcessedMessageId = useRef<string | null>(null);
-  const isProcessingRef = useRef(false);
-
+  // Auto-send initial message from sessionStorage when chat loads
   useEffect(() => {
-    if (isLoading || !messages.length || isProcessingRef.current) return;
-
-    const lastMessage = messages[messages.length - 1];
-
-    // Check if last message is from user and we haven't processed it yet
     if (
-      lastMessage.role === 'user' &&
-      lastMessage.id !== lastProcessedMessageId.current &&
-      !isGeneratingResponse &&
-      !isSendingMessage
+      !initialMessageSentRef.current &&
+      messages.length === 0 &&
+      !isLoading &&
+      sessionQuery.data?.id
     ) {
-      isProcessingRef.current = true;
-      lastProcessedMessageId.current = lastMessage.id;
-      generateAIResponse().finally(() => {
-        isProcessingRef.current = false;
-      });
+      const storageKey = `chat-initial-${sessionQuery.data.id}`;
+      const initialMessage = sessionStorage.getItem(storageKey);
+
+      if (initialMessage) {
+        initialMessageSentRef.current = true;
+        sessionStorage.removeItem(storageKey);
+
+        handleSubmit({ text: initialMessage, files: [] });
+      }
     }
-  }, [messages, isLoading, isGeneratingResponse, isSendingMessage, generateAIResponse]);
+  }, [messages.length, isLoading, sessionQuery.data?.id, handleSubmit]);
 
-  const handleSendMessage = async () => {
-    const messageContent = inputMessage.trim();
-    setInputMessage('');
-    await sendMessage(messageContent);
-  };
-
-  if (isLoading || isLoadingAuth || isLoadingOrg || sessionQuery.isLoading) {
+  if (isLoadingAuth || isLoadingOrg || sessionQuery.isLoading) {
     return <ChatPageSkeleton />;
   }
 
@@ -141,7 +125,17 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
     return (
       <div className="flex h-full flex-col items-center justify-center text-center">
         <div>
-          <h3 className="text-lg font-semibold">{sessionQuery.error.message}</h3>
+          {sessionQuery.error.data?.code === 'NOT_FOUND' ? (
+            <h3 className="text-lg font-semibold">{sessionQuery.error.message}</h3>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold">Something went wrong</h3>
+              <p className="text-muted-foreground text-sm">
+                Please try again later. If the problem persists, please contact support.
+              </p>
+            </>
+          )}
+
           <Button asChild variant="link">
             <Link href={`/org/${activeOrganization?.slug}/assistant`}>
               Go back to the assistant page
@@ -164,29 +158,41 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
             />
           ) : (
             <>
-              {messages.map((message) => {
+              {messages.map((message, index) => {
+                // Extract text content from UIMessage parts
+                const textContent =
+                  message.parts
+                    ?.filter((part) => part.type === 'text')
+                    .map((part) => part.text || '')
+                    .join(' ') || '';
+
+                const metadata = message.metadata as { sources?: Source[] } | undefined;
+                const isLastMessage = index === messages.length - 1;
+                const isStreaming = isLoading && isLastMessage && message.role === 'assistant';
+                const showActions = !isStreaming && textContent.trim().length > 0;
+                const showSources =
+                  !isStreaming && metadata?.sources && metadata.sources.length > 0;
+
                 return (
                   <Message from={message.role} key={message.id}>
                     <MessageContent>
-                      <MessageResponse>{message.content}</MessageResponse>
+                      {isStreaming && !textContent && (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="size-4 animate-spin" />
+                          <MessageResponse>Thinking...</MessageResponse>
+                        </div>
+                      )}
+                      <MessageResponse>{textContent}</MessageResponse>
                     </MessageContent>
-                    <MessageActions className={cn(message.role === 'user' && 'justify-end')}>
-                      <CopyMessageAction message={message.content || ''} />
-                    </MessageActions>
-                    {message.sources.length > 0 && <MessageSource sources={message.sources} />}
+                    {showActions && (
+                      <MessageActions className={cn(message.role === 'user' && 'justify-end')}>
+                        <CopyMessageAction message={textContent} />
+                      </MessageActions>
+                    )}
+                    {showSources && <MessageSource sources={metadata.sources ?? []} />}
                   </Message>
                 );
               })}
-              {isGeneratingResponse && (
-                <Message from="assistant" key="assistant">
-                  <MessageContent>
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="size-4 animate-spin" />
-                      <MessageResponse>Thinking...</MessageResponse>
-                    </div>
-                  </MessageContent>
-                </Message>
-              )}
             </>
           )}
         </ConversationContent>
@@ -194,19 +200,19 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
       </Conversation>
 
       <div className="sticky bottom-0">
-        <PromptInput onSubmit={handleSendMessage} className="bg-background pb-8">
+        <PromptInput onSubmit={handleSubmit} className="bg-background pb-8">
           <PromptInputBody>
             <PromptInputTextarea
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
+              value={input}
+              onChange={handleInputChange}
               className="min-h-6"
               autoFocus={true}
             />
           </PromptInputBody>
           <PromptInputFooter className="justify-end">
             <PromptInputSubmit
-              disabled={!inputMessage.trim() || isSendingMessage || isGeneratingResponse}
-              status={isSendingMessage || isGeneratingResponse ? 'submitted' : 'ready'}
+              disabled={!input?.trim() || isLoading}
+              status={isLoading ? 'submitted' : 'ready'}
             />
           </PromptInputFooter>
         </PromptInput>
@@ -215,7 +221,7 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
   );
 };
 
-const MessageSource = ({ sources }: { sources: MessageSources }) => {
+const MessageSource = ({ sources }: { sources: Source[] }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -233,8 +239,8 @@ const MessageSource = ({ sources }: { sources: MessageSources }) => {
           <ChevronDown className={cn('size-4 transition-transform', isOpen && 'rotate-x-180')} />
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2 flex flex-col gap-1.5">
-          {sources.map((source, index) => (
-            <div key={index}>
+          {sources.map((source) => (
+            <div key={source.url}>
               {source.url ? (
                 <a
                   href={source.url}

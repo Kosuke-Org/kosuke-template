@@ -1,14 +1,22 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
+import { useChat as useAIChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import type { UIMessage } from 'ai';
+
 import { trpc } from '@/lib/trpc/client';
 
 import { useToast } from '@/hooks/use-toast';
+
+import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 
 interface UseChatOptions {
   organizationId: string;
 }
 
-export function useChat(options: UseChatOptions) {
+export function useChatSession(options: UseChatOptions) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
@@ -67,17 +75,10 @@ export function useChat(options: UseChatOptions) {
     },
   });
 
-  const createSession = async ({
-    title,
-    initialMessage,
-  }: {
-    title?: string;
-    initialMessage?: string;
-  }) => {
-    return await createSessionMutation.mutateAsync({
+  const createSession = async ({ title }: { title?: string }) => {
+    return createSessionMutation.mutateAsync({
       organizationId: options.organizationId,
       title,
-      initialMessage,
     });
   };
 
@@ -107,89 +108,70 @@ export function useChat(options: UseChatOptions) {
   };
 }
 
-export function useChatSession({
+export function useChat({
   chatSessionId,
   organizationId,
 }: {
   chatSessionId: string;
   organizationId: string;
 }) {
-  const { toast } = useToast();
   const utils = trpc.useUtils();
+  const [input, setInput] = useState('');
 
-  const invalidateMessages = async () => {
-    await utils.chat.getMessages.invalidate({ chatSessionId, organizationId });
-  };
-
-  const messagesQuery = trpc.chat.getMessages.useQuery(
-    {
-      chatSessionId,
-      organizationId,
-    },
-    {
-      staleTime: 1000 * 30, // 30 seconds
-      enabled: !!chatSessionId && !!organizationId,
-      refetchInterval: false,
-    }
+  const { data: messagesData } = trpc.chat.getMessages.useQuery(
+    { chatSessionId, organizationId },
+    { enabled: !!chatSessionId && !!organizationId, staleTime: 1000 * 30 }
   );
 
-  const sendMessageMutation = trpc.chat.sendMessage.useMutation({
-    onSuccess: () => {
-      invalidateMessages();
+  const { messages, sendMessage, regenerate, status, setMessages } = useAIChat({
+    id: chatSessionId,
+    messages: (messagesData?.messages ?? []) as unknown as UIMessage[],
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+      body: { organizationId, chatSessionId },
+    }),
+    onFinish: () => {
+      // Invalidate messages query to sync with database
+      utils.chat.getMessages.invalidate({ chatSessionId, organizationId });
     },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const generateAIResponseMutation = trpc.chat.generateAIResponse.useMutation({
-    onSuccess: async () => {
-      await invalidateMessages();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
+    onError: (error: Error) => {
+      console.error('Chat error:', error);
     },
   });
 
-  const sendMessage = async (content: string) => {
-    await sendMessageMutation.mutateAsync({
-      chatSessionId,
-      organizationId,
-      content,
-    });
+  // Update messages when data is refetched
+  useEffect(() => {
+    if (messagesData?.messages && messages.length === 0) {
+      setMessages(messagesData.messages as unknown as UIMessage[]);
 
-    await generateAIResponseMutation.mutateAsync({
-      chatSessionId,
-      organizationId,
-    });
+      // If there's a user message but no assistant response, trigger the AI
+      const hasUserMessage = messagesData.messages.some((m) => m.role === 'user');
+      const hasAssistantMessage = messagesData.messages.some((m) => m.role === 'assistant');
+
+      if (hasUserMessage && !hasAssistantMessage) {
+        // Trigger AI response for the initial message
+        regenerate();
+      }
+    }
+  }, [messagesData?.messages, messages.length, setMessages, regenerate]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
   };
 
-  const generateAIResponse = async () => {
-    try {
-      await generateAIResponseMutation.mutateAsync({
-        chatSessionId,
-        organizationId,
-      });
-    } catch (_) {
-      // handled in onError
-    }
+  const handleSubmit = async (message: PromptInputMessage, e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!message.text.trim()) return;
+
+    setInput('');
+    await sendMessage({ text: message.text });
   };
 
   return {
-    messages: messagesQuery.data?.messages ?? [],
-    isLoading: messagesQuery.isLoading,
-    sendMessage,
-    generateAIResponse,
-    isSendingMessage: sendMessageMutation.isPending,
-    isGeneratingResponse: generateAIResponseMutation.isPending,
-    invalidateMessages,
+    messages,
+    input,
+    isLoading: status === 'submitted' || status === 'streaming',
+    handleInputChange,
+    handleSubmit,
   };
 }

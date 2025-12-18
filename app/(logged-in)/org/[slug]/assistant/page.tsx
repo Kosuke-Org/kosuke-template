@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useChat } from '@/hooks/use-chat';
+import { useChatSession } from '@/hooks/use-chat';
 import { useDocuments } from '@/hooks/use-documents';
 import { useOrganization } from '@/hooks/use-organization';
 
@@ -40,15 +40,19 @@ const AssistantInput = () => {
 
   const router = useRouter();
   const { organization: activeOrganization } = useOrganization();
-  const { createSession, isCreatingSession } = useChat({
+  const { createSession, isCreatingSession } = useChatSession({
     organizationId: activeOrganization?.id ?? '',
   });
 
-  const handleSubmit = async (message: PromptInputMessage) => {
+  const handleSubmitPromptInput = async (inputMessage: PromptInputMessage) => {
+    const message = inputMessage.text.trim();
+
     try {
-      const session = await createSession({
-        initialMessage: message.text.trim(),
-      });
+      const title = message.slice(0, 50) + (message.length > 50 ? '...' : '');
+      const session = await createSession({ title });
+
+      // Store initial message in sessionStorage for the chat page to pick up
+      sessionStorage.setItem(`chat-initial-${session.id}`, message);
 
       router.push(`/org/${activeOrganization?.slug}/assistant/${session.id}`);
     } catch (error) {
@@ -57,7 +61,7 @@ const AssistantInput = () => {
   };
 
   return (
-    <PromptInput onSubmit={handleSubmit}>
+    <PromptInput onSubmit={handleSubmitPromptInput}>
       <PromptInputBody>
         <PromptInputTextarea className="min-h-10" disabled={isCreatingSession} autoFocus={true} />
       </PromptInputBody>
