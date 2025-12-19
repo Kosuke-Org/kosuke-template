@@ -113,7 +113,7 @@
     "react-dom": "^19.2.1",
     "react-email": "^5.0.5",
     "react-hook-form": "^7.68.0",
-    "react-resizable-panels": "^3.0.6",
+    "react-resizable-panels": "^4.0.7",
     "recharts": "2.15.4",
     "resend": "^6.5.2",
     "sonner": "^2.0.7",
