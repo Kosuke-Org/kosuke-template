@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 
 import { useChat as useAIChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import type { UIMessage } from 'ai';
 
 import { trpc } from '@/lib/trpc/client';
 
@@ -120,12 +119,15 @@ export function useChat({
 
   const { data: messagesData } = trpc.chat.getMessages.useQuery(
     { chatSessionId, organizationId },
-    { enabled: !!chatSessionId && !!organizationId, staleTime: 1000 * 30 }
+    {
+      enabled: !!chatSessionId && !!organizationId,
+      staleTime: 1000 * 30,
+    }
   );
 
   const { messages, sendMessage, regenerate, status, setMessages } = useAIChat({
     id: chatSessionId,
-    messages: (messagesData?.messages ?? []) as unknown as UIMessage[],
+    messages: messagesData?.messages ?? [],
     transport: new DefaultChatTransport({
       api: '/api/chat',
       body: { organizationId, chatSessionId },
@@ -139,21 +141,29 @@ export function useChat({
     },
   });
 
-  // Update messages when data is refetched
+  // Only sync from database on initial load or when switching chats
+  // Don't sync after streaming finishes to avoid flicker
   useEffect(() => {
-    if (messagesData?.messages && messages.length === 0) {
-      setMessages(messagesData.messages as unknown as UIMessage[]);
-
-      // If there's a user message but no assistant response, trigger the AI
-      const hasUserMessage = messagesData.messages.some((m) => m.role === 'user');
-      const hasAssistantMessage = messagesData.messages.some((m) => m.role === 'assistant');
-
-      if (hasUserMessage && !hasAssistantMessage) {
-        // Trigger AI response for the initial message
-        regenerate();
-      }
+    // Only sync when:
+    // 1. We have data from the database
+    // 2. We're not currently streaming
+    // 3. Local messages are empty (initial load) OR chatSessionId changed
+    if (messagesData?.messages && status === 'ready' && messages.length === 0) {
+      setMessages(messagesData.messages);
     }
-  }, [messagesData?.messages, messages.length, setMessages, regenerate]);
+  }, [chatSessionId, messagesData?.messages, setMessages, status, messages.length]);
+
+  // Handle dangling user message (auto-regenerate if needed)
+  useEffect(() => {
+    if (!messagesData?.messages || messages.length === 0) return;
+
+    const hasUserMessage = messagesData.messages.some((m) => m.role === 'user');
+    const hasAssistantMessage = messagesData.messages.some((m) => m.role === 'assistant');
+
+    if (hasUserMessage && !hasAssistantMessage && messages.length > 0) {
+      regenerate();
+    }
+  }, [messagesData?.messages, messages.length, regenerate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);

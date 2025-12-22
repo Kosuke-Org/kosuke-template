@@ -3,11 +3,10 @@ import type { GroundingMetadata } from '@google/genai';
 import { UIMessage, convertToModelMessages, streamText } from 'ai';
 import { and, eq } from 'drizzle-orm';
 
-import { extractRelevantSources } from '@/lib/ai/utils';
+import { extractDocumentIdFromFilename, extractRelevantSources } from '@/lib/ai/utils';
 import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
 import { chatMessages, chatSessions, documents, llmLogs } from '@/lib/db/schema';
-import { getPresignedDownloadUrl } from '@/lib/storage';
 
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 const googleGenerativeAIProvider = createGoogleGenerativeAI({
@@ -56,10 +55,6 @@ export async function POST(req: Request) {
 
   const startTime = Date.now();
 
-  // Collect sources from grounding metadata
-  let collectedSources: Array<{ documentId: string; title: string; url: string }> = [];
-  let sourcesPromise: Promise<void> | null = null;
-
   const result = streamText({
     model: googleGenerativeAIProvider(DEFAULT_MODEL),
     messages: convertToModelMessages(messages),
@@ -74,97 +69,51 @@ export async function POST(req: Request) {
 
   return result.toUIMessageStreamResponse({
     originalMessages: messages,
-    messageMetadata: async ({ part }) => {
-      // Extract sources from Google's grounding metadata
+    messageMetadata: ({ part }) => {
+      // Extract sources from grounding metadata during streaming
+      // Sources are automatically attached to message metadata by AI SDK
       if (part.type === 'finish-step' && part.providerMetadata?.google?.groundingMetadata) {
         const metadata = part.providerMetadata.google.groundingMetadata as GroundingMetadata;
-
-        // Extract only cited sources
         const relevantSources = extractRelevantSources(metadata);
 
-        if (relevantSources.length === 0) {
-          return { sources: [] };
-        }
-
-        // Create a promise to track source extraction completion
-        sourcesPromise = (async () => {
-          // Match sources to actual documents in database and get presigned URLs
-          const sourcesWithData = await Promise.all(
-            relevantSources.map(async (source) => {
-              // Find document by title in the organization
-              const doc = await db.query.documents.findFirst({
-                where: and(
-                  eq(documents.organizationId, chatSession.organizationId),
-                  eq(documents.fileSearchStoreName, source.fileSearchStoreName),
-                  eq(documents.displayName, source.title)
-                ),
-              });
-
-              if (!doc) return null;
-
-              const url = doc.storageUrl ? await getPresignedDownloadUrl(doc.storageUrl) : null;
+        if (relevantSources.length > 0) {
+          // Extract document IDs from filenames (format: {documentId}-{originalName})
+          // Generate proxy URLs with organizationId for access control
+          const sourcesWithIds = relevantSources
+            .map((source) => {
+              const documentId = extractDocumentIdFromFilename(source.title);
+              if (!documentId) return null;
 
               return {
-                documentId: doc.id,
-                title: doc.displayName, // Use current displayName from DB (in case it was edited)
-                url,
+                documentId,
+                title: source.title.replace(`${documentId}-`, ''), // Remove documentId prefix for display
+                url: `/api/documents/${chatSession.organizationId}/${documentId}`,
               };
             })
-          );
+            .filter((s): s is { documentId: string; title: string; url: string } => s !== null);
 
-          // Filter out null entries (documents not found) and entries without URLs
-          const validSources = sourcesWithData.filter(
-            (s): s is { documentId: string; title: string; url: string } =>
-              s !== null && s.url !== null
-          );
-
-          // Store sources for use in onFinish
-          collectedSources = validSources;
-        })();
-
-        // Wait for sources to be collected before returning
-        await sourcesPromise;
-
-        return { sources: collectedSources };
+          return { sources: sourcesWithIds };
+        }
       }
 
-      // Return collected sources for all other parts (maintains sources across stream)
-      return collectedSources.length > 0 ? { sources: collectedSources } : undefined;
+      return undefined;
     },
     async onFinish({ messages: updatedMessages, finishReason }) {
       try {
-        // Wait for sources to be collected if the promise exists
-        if (sourcesPromise) {
-          await sourcesPromise;
-        }
-
         // Only save NEW messages (not already in the database)
         // Use existingMessageCount from DB to determine what's new
         // This handles the case where useAIChat optimistically adds messages to local state
         const newMessages = updatedMessages.slice(existingMessageCount);
 
         if (newMessages.length > 0) {
-          // Manually attach sources to assistant message metadata
-          // Store document IDs and titles (not URLs) - presigned URLs will be generated on retrieval
-          const messagesToInsert = newMessages.map((msg: UIMessage) => {
-            const metadata =
-              msg.role === 'assistant' && collectedSources.length > 0
-                ? {
-                    sources: collectedSources.map((s) => ({
-                      documentId: s.documentId, // Store stable document ID
-                      title: s.title, // Store display name for UI
-                      // Don't store URL - it will be generated fresh on retrieval
-                    })),
-                  }
-                : msg.metadata || null;
-
-            return {
-              chatSessionId,
-              role: msg.role,
-              parts: JSON.stringify(msg.parts), // Store UIMessagePart[] array
-              metadata: metadata ? JSON.stringify(metadata) : null,
-            };
-          });
+          // Messages already have metadata attached by messageMetadata callback
+          // Just serialize and save to database
+          const messagesToInsert = newMessages.map((msg: UIMessage) => ({
+            chatSessionId,
+            role: msg.role,
+            parts: JSON.stringify(msg.parts), // Store UIMessagePart[] array
+            metadata: msg.metadata ? JSON.stringify(msg.metadata) : null,
+          }));
 
           await db.insert(chatMessages).values(messagesToInsert);
         }

@@ -3,8 +3,7 @@ import { UIDataTypes, UIMessagePart, UITools } from 'ai';
 import { and, asc, desc, eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db/drizzle';
-import { chatMessages, chatSessions, documents } from '@/lib/db/schema';
-import { getPresignedDownloadUrl } from '@/lib/storage';
+import { chatMessages, chatSessions } from '@/lib/db/schema';
 import { orgProcedure, router } from '@/lib/trpc/init';
 import {
   createChatSessionSchema,
@@ -77,7 +76,8 @@ export const chatRouter = router({
   }),
 
   /**
-   * Get all messages for a chat session in UIMessage format with enriched source URLs
+   * Get all messages for a chat session in UIMessage format
+   * Sources contain document IDs + proxy URLs for downloads
    */
   getMessages: orgProcedure.input(getMessagesSchema).query(async ({ ctx, input }) => {
     const { organizationId, chatSessionId } = input;
@@ -105,70 +105,25 @@ export const chatRouter = router({
       .where(eq(chatMessages.chatSessionId, chatSessionId))
       .orderBy(asc(chatMessages.createdAt));
 
-    // Get all documents for the organization to match with sources
-    const orgDocuments = await db
-      .select()
-      .from(documents)
-      .where(eq(documents.organizationId, organizationId));
+    // Parse messages and return with metadata (sources contain documentId + title + url)
+    const messages = rawMessages.map((message) => {
+      const parts = JSON.parse(message.parts) as UIMessagePart<UIDataTypes, UITools>[];
+      const metadata = message.metadata ? JSON.parse(message.metadata) : undefined;
 
-    // Enrich messages with source URLs
-    const messagesWithSources = await Promise.all(
-      rawMessages.map(async (message) => {
-        // Enrich source-document parts with presigned URLs
-        let enrichedMetadata = message.metadata ? JSON.parse(message.metadata) : undefined;
-        if (enrichedMetadata?.sources && Array.isArray(enrichedMetadata.sources)) {
-          enrichedMetadata = {
-            ...enrichedMetadata,
-            sources: await Promise.all(
-              enrichedMetadata.sources.map(
-                async (source: { documentId: string; title: string; url?: string }) => {
-                  // Match source with database document by ID (stable identifier)
-                  const doc = orgDocuments.find((d) => d.id === source.documentId);
+      return {
+        id: message.id,
+        role: message.role,
+        parts,
+        metadata: metadata as
+          | {
+              sources: { documentId: string; title: string; url: string }[];
+            }
+          | undefined,
+        createdAt: message.createdAt,
+      };
+    });
 
-                  // Generate fresh presigned URL if document found with storage key
-                  if (doc?.storageUrl) {
-                    try {
-                      const presignedUrl = await getPresignedDownloadUrl(doc.storageUrl);
-                      return {
-                        title: doc.displayName, // Use current display name (in case it was edited)
-                        url: presignedUrl,
-                      };
-                    } catch (error) {
-                      console.error('Failed to generate presigned URL for source:', error);
-                      // Return with current title but no URL
-                      return {
-                        title: doc.displayName,
-                        url: undefined,
-                      };
-                    }
-                  }
-
-                  // Document not found or no storage URL
-                  return {
-                    title: source.title, // Use stored title as fallback
-                    url: undefined,
-                  };
-                }
-              )
-            ),
-          };
-        }
-
-        const parts = JSON.parse(message.parts) as UIMessagePart<UIDataTypes, UITools>[];
-
-        return {
-          id: message.id,
-          role: message.role,
-          parts,
-          metadata: enrichedMetadata as {
-            sources: { title: string; url?: string }[];
-          },
-          createdAt: message.createdAt,
-        };
-      })
-    );
-
-    return { messages: messagesWithSources };
+    return { messages };
   }),
 
   /**

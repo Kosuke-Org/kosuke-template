@@ -48,3 +48,16 @@ export function extractRelevantSources(groundingMetadata: GroundingMetadata) {
 
   return uniqueSources.filter((source) => source.title);
 }
+
+/**
+ * Extract document ID from filename
+ * Filenames are stored as: {documentId}-{originalDisplayName}
+ * Document IDs are UUIDs in format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+ * Example: "643692fb-45a0-430f-868f-0ad6b8392fe5-Hello-world.rtf" -> "643692fb-45a0-430f-868f-0ad6b8392fe5"
+ */
+export function extractDocumentIdFromFilename(filename: string): string | null {
+  // Match UUID pattern (8-4-4-4-12 hex digits) at the start of the filename
+  const uuidPattern = /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-/i;
+  const match = filename.match(uuidPattern);
+  return match ? match[1] : null;
+}
