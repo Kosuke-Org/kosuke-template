@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 import { Collapsible, CollapsibleContent } from '@radix-ui/react-collapsible';
 import { inferRouterOutputs } from '@trpc/server';
-import { Check, ChevronDown, Copy, ExternalLink, Loader2, MessageSquare } from 'lucide-react';
+import { Check, ChevronDown, Copy, ExternalLink, Loader2 } from 'lucide-react';
 
 import { trpc } from '@/lib/trpc/client';
 import { AppRouter } from '@/lib/trpc/router';
@@ -19,7 +19,6 @@ import { useOrganization } from '@/hooks/use-organization';
 import {
   Conversation,
   ConversationContent,
-  ConversationEmptyState,
   ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
 import {
@@ -38,44 +37,10 @@ import {
 } from '@/components/ai-elements/prompt-input';
 import { Button } from '@/components/ui/button';
 import { CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Skeleton } from '@/components/ui/skeleton';
 
-type Source =
-  inferRouterOutputs<AppRouter>['chat']['getMessages']['messages'][number]['metadata']['sources'][number];
-
-const ChatPageSkeleton = () => {
-  return (
-    <div className="mx-auto flex size-full max-w-3xl flex-col">
-      <div className="flex-1">
-        <div className="flex flex-col gap-8 p-4">
-          {Array.from({ length: 10 }).map((_, i) => {
-            const isUser = i % 2 === 0;
-            return (
-              <div
-                key={i}
-                className={cn(
-                  'flex w-full max-w-[95%] flex-col gap-2',
-                  isUser && 'ml-auto justify-end'
-                )}
-              >
-                <div
-                  className={cn(
-                    'text-foreground',
-                    isUser && 'bg-secondary text-foreground ml-auto rounded-lg'
-                  )}
-                >
-                  <Skeleton className={`h-7 ${isUser ? 'w-64' : 'w-96'}`} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <Skeleton className="mb-8 h-24 w-full" />
-    </div>
-  );
-};
+type Source = NonNullable<
+  inferRouterOutputs<AppRouter>['chat']['getMessages']['messages'][number]['metadata']
+>['sources'][number];
 
 const ChatContent = ({ chatId }: { chatId: string }) => {
   const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
@@ -118,7 +83,7 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
   }, [messages.length, isLoading, sessionQuery.data?.id, handleSubmit]);
 
   if (isLoadingAuth || isLoadingOrg || sessionQuery.isLoading) {
-    return <ChatPageSkeleton />;
+    return null;
   }
 
   if (sessionQuery.isError) {
@@ -150,51 +115,40 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
     <div className="mx-auto flex size-full max-w-3xl flex-col">
       <Conversation>
         <ConversationContent className="gap-4">
-          {messages.length === 0 ? (
-            <ConversationEmptyState
-              icon={<MessageSquare className="size-12" />}
-              title="Start a conversation"
-              description="Type a message below to begin chatting"
-            />
-          ) : (
-            <>
-              {messages.map((message, index) => {
-                // Extract text content from UIMessage parts
-                const textContent =
-                  message.parts
-                    ?.filter((part) => part.type === 'text')
-                    .map((part) => part.text || '')
-                    .join(' ') || '';
+          {messages.map((message, index) => {
+            // Extract text content from UIMessage parts
+            const textContent =
+              message.parts
+                ?.filter((part) => part.type === 'text')
+                .map((part) => part.text || '')
+                .join(' ') || '';
 
-                const metadata = message.metadata as { sources?: Source[] } | undefined;
-                const isLastMessage = index === messages.length - 1;
-                const isStreaming = isLoading && isLastMessage && message.role === 'assistant';
-                const showActions = !isStreaming && textContent.trim().length > 0;
-                const showSources =
-                  !isStreaming && metadata?.sources && metadata.sources.length > 0;
+            const metadata = message.metadata as { sources?: Source[] } | undefined;
+            const isLastMessage = index === messages.length - 1;
+            const isStreaming = isLoading && isLastMessage && message.role === 'assistant';
+            const showActions = !isStreaming && textContent.trim().length > 0;
+            const showSources = !isStreaming && metadata?.sources && metadata.sources.length > 0;
 
-                return (
-                  <Message from={message.role} key={message.id}>
-                    <MessageContent>
-                      {isStreaming && !textContent && (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="size-4 animate-spin" />
-                          <MessageResponse>Thinking...</MessageResponse>
-                        </div>
-                      )}
-                      <MessageResponse>{textContent}</MessageResponse>
-                    </MessageContent>
-                    {showActions && (
-                      <MessageActions className={cn(message.role === 'user' && 'justify-end')}>
-                        <CopyMessageAction message={textContent} />
-                      </MessageActions>
-                    )}
-                    {showSources && <MessageSource sources={metadata.sources ?? []} />}
-                  </Message>
-                );
-              })}
-            </>
-          )}
+            return (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {isStreaming && !textContent && (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="size-4 animate-spin" />
+                      <MessageResponse>Thinking...</MessageResponse>
+                    </div>
+                  )}
+                  <MessageResponse>{textContent}</MessageResponse>
+                </MessageContent>
+                {showActions && (
+                  <MessageActions className={cn(message.role === 'user' && 'justify-end')}>
+                    <CopyMessageAction message={textContent} />
+                  </MessageActions>
+                )}
+                {showSources && <MessageSource sources={metadata.sources ?? []} />}
+              </Message>
+            );
+          })}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
@@ -284,7 +238,7 @@ export default function ChatPage({ params }: { params: Promise<{ chatId: string 
   const resolvedParams = use(params);
 
   return (
-    <Suspense fallback={<ChatPageSkeleton />}>
+    <Suspense>
       <ChatContent chatId={resolvedParams.chatId} />
     </Suspense>
   );

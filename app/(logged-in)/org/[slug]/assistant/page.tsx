@@ -19,21 +19,6 @@ import {
   usePromptInputController,
 } from '@/components/ai-elements/prompt-input';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-
-const AssistantPageSkeleton = () => {
-  return (
-    <div className="bg-background flex h-full items-center justify-center">
-      <div className="w-full max-w-3xl space-y-6 px-4">
-        <div className="space-y-2 text-center">
-          <Skeleton className="mx-auto h-10 w-64" />
-          <Skeleton className="mx-auto h-6 w-96" />
-        </div>
-        <Skeleton className="h-20 w-full" />
-      </div>
-    </div>
-  );
-};
 
 const AssistantInput = () => {
   const { textInput } = usePromptInputController();
@@ -86,7 +71,7 @@ export default function AssistantPage() {
   });
 
   if (isLoadingOrg || isLoadingDocuments || isLoadingAuth) {
-    return <AssistantPageSkeleton />;
+    return null;
   }
 
   if (documents.length === 0) {
