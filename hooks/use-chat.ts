@@ -11,11 +11,16 @@ import { useToast } from '@/hooks/use-toast';
 
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
 
-interface UseChatOptions {
+interface UseChatSessionOptions {
   organizationId: string;
 }
 
-export function useChatSession(options: UseChatOptions) {
+interface UseChatOptions {
+  chatSessionId: string;
+  organizationId: string;
+}
+
+export function useChatSession(options: UseChatSessionOptions) {
   const { toast } = useToast();
   const utils = trpc.useUtils();
 
@@ -107,13 +112,8 @@ export function useChatSession(options: UseChatOptions) {
   };
 }
 
-export function useChat({
-  chatSessionId,
-  organizationId,
-}: {
-  chatSessionId: string;
-  organizationId: string;
-}) {
+export function useChat(options: UseChatOptions) {
+  const { chatSessionId, organizationId } = options;
   const utils = trpc.useUtils();
   const [input, setInput] = useState('');
 
@@ -133,7 +133,6 @@ export function useChat({
       body: { organizationId, chatSessionId },
     }),
     onFinish: () => {
-      // Invalidate messages query to sync with database
       utils.chat.getMessages.invalidate({ chatSessionId, organizationId });
     },
     onError: (error: Error) => {

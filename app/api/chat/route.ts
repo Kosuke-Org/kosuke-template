@@ -1,26 +1,53 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import type { GroundingMetadata } from '@google/genai';
+import * as Sentry from '@sentry/nextjs';
 import { UIMessage, convertToModelMessages, streamText } from 'ai';
 import { and, eq } from 'drizzle-orm';
 
 import { extractDocumentIdFromFilename, extractRelevantSources } from '@/lib/ai/utils';
+import { ApiResponseHandler } from '@/lib/api/responses';
 import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
 import { chatMessages, chatSessions, documents, llmLogs } from '@/lib/db/schema';
+import { chatRequestSchema } from '@/lib/types/chat';
 
 const DEFAULT_MODEL = 'gemini-2.5-flash';
 const googleGenerativeAIProvider = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_AI_API_KEY,
 });
 
+/**
+ * Chat streaming endpoint with RAG (Retrieval-Augmented Generation)
+ *
+ * Handles:
+ * - Authentication and session validation
+ * - Request body validation with Zod
+ * - Streaming responses with Google Gemini
+ * - Message persistence with source metadata
+ * - LLM call logging for observability
+ * - Error tracking with Sentry
+ *
+ * @param req - Request with messages array and chat session ID
+ * @returns Streaming response with UIMessage format
+ */
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: req.headers });
 
   if (!session?.user?.id) {
-    return new Response('Unauthorized', { status: 401 });
+    return ApiResponseHandler.unauthorized();
   }
 
-  const { messages, id: chatSessionId } = await req.json();
+  let validatedBody;
+  try {
+    const body = await req.json();
+    validatedBody = chatRequestSchema.parse(body);
+  } catch (error) {
+    return ApiResponseHandler.badRequest(
+      error instanceof Error ? error.message : 'Unknown validation error'
+    );
+  }
+
+  const { messages, id: chatSessionId } = validatedBody;
 
   // Validate and load session
   const chatSession = await db.query.chatSessions.findFirst({
@@ -28,7 +55,7 @@ export async function POST(req: Request) {
   });
 
   if (!chatSession) {
-    return new Response('Session not found', { status: 404 });
+    return ApiResponseHandler.notFound('Chat session not found');
   }
 
   // Get existing messages count from database to determine what's new
@@ -68,7 +95,7 @@ export async function POST(req: Request) {
   });
 
   return result.toUIMessageStreamResponse({
-    originalMessages: messages,
+    originalMessages: messages as UIMessage[],
     messageMetadata: ({ part }) => {
       // Extract sources from grounding metadata during streaming
       // Sources are automatically attached to message metadata by AI SDK
@@ -108,7 +135,7 @@ export async function POST(req: Request) {
         if (newMessages.length > 0) {
           // Messages already have metadata attached by messageMetadata callback
           // Just serialize and save to database
-          const messagesToInsert = newMessages.map((msg: UIMessage) => ({
+          const messagesToInsert = newMessages.map((msg) => ({
             chatSessionId,
             role: msg.role,
             parts: JSON.stringify(msg.parts), // Store UIMessagePart[] array
@@ -152,6 +179,25 @@ export async function POST(req: Request) {
         });
       } catch (error) {
         console.error('Error saving messages or logging:', error);
+
+        // Log to Sentry for monitoring and alerting
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'chat',
+            operation: 'save_messages',
+            chatSessionId,
+            userId: session.user.id,
+            organizationId: chatSession.organizationId,
+          },
+          contexts: {
+            chat: {
+              chatSessionId,
+              messageCount: updatedMessages.length,
+              finishReason,
+            },
+          },
+        });
+
         // Don't throw - streaming already completed successfully
       }
     },

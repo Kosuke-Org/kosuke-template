@@ -1,6 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { UIDataTypes, UIMessagePart, UITools } from 'ai';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db/drizzle';
 import { chatMessages, chatSessions } from '@/lib/db/schema';
@@ -13,6 +12,7 @@ import {
   listChatSessionsSchema,
   updateChatSessionTitleSchema,
 } from '@/lib/trpc/schemas/documents';
+import { messageMetadataSchema } from '@/lib/types/chat';
 
 // Sources are now stored in message metadata (not parts)
 // Metadata format: { sources: [{ documentId: string, title: string, url?: string }] }
@@ -20,19 +20,19 @@ import {
 export const chatRouter = router({
   /**
    * List all chat sessions for an organization
+   * Uses efficient SQL COUNT() for pagination
    */
   listSessions: orgProcedure.input(listChatSessionsSchema).query(async ({ ctx, input }) => {
     const { page, pageSize, organizationId } = input;
     const offset = (page - 1) * pageSize;
 
-    // Get total count for user's sessions only
-    const totalResult = await db
-      .select({ count: chatSessions.id })
+    // Get total count using SQL COUNT() function (efficient)
+    const [{ count: total }] = await db
+      .select({ count: count() })
       .from(chatSessions)
       .where(
         and(eq(chatSessions.organizationId, organizationId), eq(chatSessions.userId, ctx.userId))
       );
-    const total = totalResult.length;
 
     // Get paginated results
     const sessions = await db
@@ -78,6 +78,7 @@ export const chatRouter = router({
   /**
    * Get all messages for a chat session in UIMessage format
    * Sources contain document IDs + proxy URLs for downloads
+   * Uses Zod validation for runtime type safety
    */
   getMessages: orgProcedure.input(getMessagesSchema).query(async ({ ctx, input }) => {
     const { organizationId, chatSessionId } = input;
@@ -105,22 +106,36 @@ export const chatRouter = router({
       .where(eq(chatMessages.chatSessionId, chatSessionId))
       .orderBy(asc(chatMessages.createdAt));
 
-    // Parse messages and return with metadata (sources contain documentId + title + url)
+    // Parse messages with runtime validation
     const messages = rawMessages.map((message) => {
-      const parts = JSON.parse(message.parts) as UIMessagePart<UIDataTypes, UITools>[];
-      const metadata = message.metadata ? JSON.parse(message.metadata) : undefined;
+      try {
+        const parts = JSON.parse(message.parts);
+        const metadata = message.metadata ? JSON.parse(message.metadata) : undefined;
 
-      return {
-        id: message.id,
-        role: message.role,
-        parts,
-        metadata: metadata as
-          | {
-              sources: { documentId: string; title: string; url: string }[];
-            }
-          | undefined,
-        createdAt: message.createdAt,
-      };
+        // Validate metadata structure (contains document sources)
+        if (metadata) {
+          messageMetadataSchema.parse(metadata);
+        }
+
+        return {
+          id: message.id,
+          role: message.role,
+          parts,
+          metadata,
+          createdAt: message.createdAt,
+        };
+      } catch (error) {
+        console.error('Message validation failed:', {
+          messageId: message.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to parse message data',
+          cause: error,
+        });
+      }
     });
 
     return { messages };

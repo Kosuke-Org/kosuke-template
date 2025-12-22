@@ -5,11 +5,11 @@ import { Suspense, use, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 import { Collapsible, CollapsibleContent } from '@radix-ui/react-collapsible';
-import { inferRouterOutputs } from '@trpc/server';
+import type { UIMessagePart } from 'ai';
 import { Check, ChevronDown, Copy, ExternalLink, Loader2 } from 'lucide-react';
 
 import { trpc } from '@/lib/trpc/client';
-import { AppRouter } from '@/lib/trpc/router';
+import type { MessageSource as MessageSourceType } from '@/lib/types/chat';
 import { cn } from '@/lib/utils';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -37,10 +37,6 @@ import {
 } from '@/components/ai-elements/prompt-input';
 import { Button } from '@/components/ui/button';
 import { CollapsibleTrigger } from '@/components/ui/collapsible';
-
-type Source = NonNullable<
-  inferRouterOutputs<AppRouter>['chat']['getMessages']['messages'][number]['metadata']
->['sources'][number];
 
 const ChatContent = ({ chatId }: { chatId: string }) => {
   const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
@@ -119,11 +115,11 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
             // Extract text content from UIMessage parts
             const textContent =
               message.parts
-                ?.filter((part) => part.type === 'text')
-                .map((part) => part.text || '')
+                ?.filter((part: UIMessagePart<never, never>) => part.type === 'text')
+                .map((part: UIMessagePart<never, never>) => ('text' in part ? part.text : '') || '')
                 .join(' ') || '';
 
-            const metadata = message.metadata as { sources?: Source[] } | undefined;
+            const metadata = message.metadata as { sources?: MessageSourceType[] } | undefined;
             const isLastMessage = index === messages.length - 1;
             const isStreaming = isLoading && isLastMessage && message.role === 'assistant';
             const showActions = !isStreaming && textContent.trim().length > 0;
@@ -175,7 +171,7 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
   );
 };
 
-const MessageSource = ({ sources }: { sources: Source[] }) => {
+const MessageSource = ({ sources }: { sources: MessageSourceType[] }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
