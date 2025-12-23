@@ -1,5 +1,7 @@
 'use client';
 
+import { useTheme } from 'next-themes';
+import Image from 'next/image';
 import Link from 'next/link';
 
 import { CreditCard, LogOut, Menu, Settings, Shield, User } from 'lucide-react';
@@ -36,6 +38,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
   const { profileImageUrl, initials, displayName, primaryEmail } = useUserAvatar();
   const { signOut: handleSignOut } = useAuthActions();
   const { isAdmin } = usePermissions();
+  const { theme } = useTheme();
   const { organization: activeOrganization } = useOrganization();
   const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
   const settingsUrl = '/settings';
@@ -52,7 +55,12 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
     >
       <div className="container flex h-10 items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <span className="text-xl font-bold">Kosuke Template</span>
+          <Image
+            src={theme === 'dark' ? '/logos/logo-dark.svg' : '/logos/logo.svg'}
+            alt="Kosuke Template"
+            width={160}
+            height={28}
+          />
         </Link>
 
         {/* Desktop navigation */}
