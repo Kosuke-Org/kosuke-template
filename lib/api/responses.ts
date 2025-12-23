@@ -44,6 +44,21 @@ export class ApiResponseHandler {
   }
 
   /**
+   * Create a forbidden response (403)
+   */
+
+  static forbidden(message: string): NextResponse {
+    return NextResponse.json({ error: message, code: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  /**
+   * Create an internal server error response (500)
+   */
+  static internalServerError(message: string): NextResponse {
+    return NextResponse.json({ error: message, code: 'INTERNAL_SERVER_ERROR' }, { status: 500 });
+  }
+
+  /**
    * Create a not found response (404)
    */
   static notFound(message: string): NextResponse {

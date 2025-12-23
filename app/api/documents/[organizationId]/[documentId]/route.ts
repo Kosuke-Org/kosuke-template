@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { and, eq } from 'drizzle-orm';
 
+import { ApiResponseHandler } from '@/lib/api/responses';
 import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
 import { documents, orgMemberships } from '@/lib/db/schema';
@@ -32,7 +33,7 @@ export async function GET(
 
     // Validate required parameters
     if (!documentId || !organizationId) {
-      return NextResponse.json({ error: 'Missing documentId or organizationId' }, { status: 400 });
+      return ApiResponseHandler.badRequest('Missing documentId or organizationId');
     }
 
     // Authenticate user
@@ -40,7 +41,7 @@ export async function GET(
     const user = session?.user;
 
     if (!user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return ApiResponseHandler.unauthorized();
     }
 
     // Check if user has access to this organization
@@ -53,10 +54,7 @@ export async function GET(
       .limit(1);
 
     if (membership.length === 0) {
-      return NextResponse.json(
-        { error: 'You do not have access to this organization' },
-        { status: 403 }
-      );
+      return ApiResponseHandler.forbidden('You do not have access to this organization');
     }
 
     // Verify the document exists and belongs to this organization
@@ -67,13 +65,13 @@ export async function GET(
       .limit(1);
 
     if (document.length === 0) {
-      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+      return ApiResponseHandler.notFound('Document not found');
     }
 
     const doc = document[0];
 
     if (!doc.storageUrl) {
-      return NextResponse.json({ error: 'Document has no storage URL' }, { status: 404 });
+      return ApiResponseHandler.notFound('Document has no storage URL');
     }
 
     // Generate presigned URL
@@ -83,6 +81,8 @@ export async function GET(
     return NextResponse.redirect(presignedUrl);
   } catch (error) {
     console.error('Error serving document:', error);
-    return NextResponse.json({ error: 'Failed to serve document' }, { status: 500 });
+    return ApiResponseHandler.internalServerError(
+      error instanceof Error ? error.message : 'Failed to serve document'
+    );
   }
 }
