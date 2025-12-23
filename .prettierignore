@@ -13,5 +13,4 @@ yarn.lock
 pnpm-lock.yaml
 bun.lock
 lib/db/migrations
-engine
 cli

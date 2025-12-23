@@ -6,11 +6,6 @@
         "directory": ".",
         "is_entrypoint": true,
         "external_connection_variable": "NEXT_PUBLIC_APP_URL"
-      },
-      "engine": {
-        "type": "python",
-        "directory": "./engine",
-        "connection_variable": "ENGINE_URL"
       }
     },
     "storages": {

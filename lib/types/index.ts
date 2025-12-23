@@ -35,9 +35,6 @@ export type {
 // Billing enums
 export { SubscriptionState } from './billing';
 
-// Engine types
-export type { CurrencyCode, CurrencyConvertRequest, CurrencyConvertResponse } from './engine';
-
 // Document and Chat types
 export type { DocumentWithUser } from './documents';
 

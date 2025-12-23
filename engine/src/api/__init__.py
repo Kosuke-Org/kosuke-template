@@ -1,1 +1,0 @@
-"""Currency API endpoints."""

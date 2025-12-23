@@ -102,8 +102,6 @@ import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-import { CurrencyConverter } from './components/currency-converter';
-
 const users = [
   {
     id: 1,
@@ -762,20 +760,6 @@ export default function Page() {
                   ))}
                 </div>
               </ScrollArea>
-            </CardContent>
-          </Card>
-        </section>
-
-        {/* Currency Converter Example to show how to use the engine service */}
-        <section className="space-y-4">
-          <h3 className="text-2xl font-semibold">Currency Converter Example</h3>
-          <Card>
-            <CardHeader>
-              <CardTitle>Currency Converter</CardTitle>
-              <CardDescription>Example integration with the engine service</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CurrencyConverter />
             </CardContent>
           </Card>
         </section>

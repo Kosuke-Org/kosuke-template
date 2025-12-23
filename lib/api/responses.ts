@@ -30,6 +30,42 @@ interface ApiSuccess<T> {
  */
 export class ApiResponseHandler {
   /**
+   * Create an unauthorized response (401)
+   */
+  static unauthorized(): NextResponse {
+    return NextResponse.json({ error: 'Unauthorized', code: 'UNAUTHORIZED' }, { status: 401 });
+  }
+
+  /**
+   * Create a bad request response (400)
+   */
+  static badRequest(message: string): NextResponse {
+    return NextResponse.json({ error: message, code: 'BAD_REQUEST' }, { status: 400 });
+  }
+
+  /**
+   * Create a forbidden response (403)
+   */
+
+  static forbidden(message: string): NextResponse {
+    return NextResponse.json({ error: message, code: 'FORBIDDEN' }, { status: 403 });
+  }
+
+  /**
+   * Create an internal server error response (500)
+   */
+  static internalServerError(message: string): NextResponse {
+    return NextResponse.json({ error: message, code: 'INTERNAL_SERVER_ERROR' }, { status: 500 });
+  }
+
+  /**
+   * Create a not found response (404)
+   */
+  static notFound(message: string): NextResponse {
+    return NextResponse.json({ error: message, code: 'NOT_FOUND' }, { status: 404 });
+  }
+
+  /**
    * Create a success response (200)
    */
   static success<T>(data: T, meta?: MetadataObject): NextResponse<ApiSuccess<T>> {

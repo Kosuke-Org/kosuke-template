@@ -14,8 +14,6 @@ const eslintConfig = defineConfig([
     'next-env.d.ts',
     'node_modules/**',
     'coverage/**',
-    'engine/**',
-    '.venv/**',
     // Shadcn/UI components or custom registries, we ignore them because they are auto-generated
     'components/ui/**',
     'components/ai-elements/**',

@@ -8,7 +8,6 @@ import { authRouter } from './routers/auth';
 import { billingRouter } from './routers/billing';
 import { chatRouter } from './routers/chat';
 import { documentsRouter } from './routers/documents';
-import { engineRouter } from './routers/engine';
 import { ordersRouter } from './routers/orders';
 import { organizationsRouter } from './routers/organizations';
 import { tasksRouter } from './routers/tasks';
@@ -20,7 +19,6 @@ export const appRouter = router({
   user: userRouter,
   organizations: organizationsRouter,
   billing: billingRouter,
-  engine: engineRouter,
   orders: ordersRouter,
   admin: adminRouter,
   documents: documentsRouter,
