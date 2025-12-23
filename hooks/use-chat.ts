@@ -153,16 +153,21 @@ export function useChat(options: UseChatOptions) {
   }, [chatSessionId, messagesData?.messages, setMessages, status, messages.length]);
 
   // Handle dangling user message (auto-regenerate if needed)
+  // Only regenerate if:
+  // 1. Database has messages
+  // 2. Database has at least one user message but NO assistant messages (dangling state)
+  // 3. Local messages state is empty (haven't started regenerating yet)
   useEffect(() => {
-    if (!messagesData?.messages || messages.length === 0) return;
+    if (!messagesData?.messages.length) return;
 
     const hasUserMessage = messagesData.messages.some((m) => m.role === 'user');
     const hasAssistantMessage = messagesData.messages.some((m) => m.role === 'assistant');
 
-    if (hasUserMessage && !hasAssistantMessage && messages.length > 0) {
+    if (hasUserMessage && !hasAssistantMessage && messages.length === 0) {
       regenerate();
     }
-  }, [messagesData?.messages, messages.length, regenerate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messagesData?.messages, messages.length]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
