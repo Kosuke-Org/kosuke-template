@@ -16,9 +16,6 @@ function validateEnvironmentVariables() {
 
     // Next.js
     { key: 'NEXT_PUBLIC_APP_URL', description: 'Application URL' },
-
-    // Engine
-    { key: 'ENGINE_URL', description: 'Python microservice base URL' },
   ];
 
   const missingVars = requiredEnvVars.filter(({ key }) => !process.env[key]);
