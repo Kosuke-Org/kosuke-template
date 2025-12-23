@@ -1,8 +1,6 @@
 const knipConfig = {
   $schema: 'https://unpkg.com/knip@latest/schema.json',
   ignore: [
-    '.venv/**',
-    'engine/**',
     'cli/**',
     'proxy.ts',
     // Shadcn/UI components or custom registries are part of the template
@@ -32,7 +30,7 @@ const knipConfig = {
     'drizzle-zod',
     '@trpc/next',
   ],
-  ignoreBinaries: ['uv', 'shadcn'],
+  ignoreBinaries: ['shadcn'],
   rules: {
     files: 'error',
     dependencies: 'error',

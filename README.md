@@ -90,9 +90,6 @@ POSTGRES_URL=postgres://postgres:postgres@localhost:54321/postgres
 # Redis (via Docker on kosuke_network)
 REDIS_URL=redis://redis:6379
 
-# Engine (Python FastAPI microservice on kosuke_network)
-ENGINE_URL=http://engine:8000
-
 # Stripe Billing
 STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_SECRET_KEY=sk_test_...
@@ -152,7 +149,6 @@ The template includes a complete Docker setup for local development with hot rel
 - **workers**: BullMQ background workers with hot reload
 - **postgres**: PostgreSQL database (port 54321)
 - **redis**: Redis for caching & jobs (port 6379)
-- **engine**: Python FastAPI microservice (port 8000)
 
 **Common Commands**:
 

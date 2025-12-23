@@ -17,6 +17,7 @@ import path from 'path';
 
 import { and, eq } from 'drizzle-orm';
 
+import { ApiResponseHandler } from '@/lib/api';
 import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
 import { documents, orgMemberships } from '@/lib/db/schema';
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ path:
     const user = session?.user;
 
     if (!user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return ApiResponseHandler.unauthorized();
     }
 
     // Reconstruct the file path from the URL segments
@@ -39,13 +40,13 @@ export async function GET(request: NextRequest, props: { params: Promise<{ path:
 
     // Security: Prevent directory traversal attacks
     if (filePath.includes('..') || filePath.startsWith('/')) {
-      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
+      return ApiResponseHandler.badRequest('Invalid file path');
     }
 
     // Extract organizationId from the path (documents/{organizationId}/...)
     const pathParts = filePath.split('/');
     if (pathParts[0] !== 'documents' || !pathParts[1]) {
-      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 });
+      return ApiResponseHandler.badRequest('Invalid file path');
     }
 
     const organizationId = pathParts[1];
@@ -60,10 +61,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ path:
       .limit(1);
 
     if (membership.length === 0) {
-      return NextResponse.json(
-        { error: 'You do not have access to this organization' },
-        { status: 403 }
-      );
+      return ApiResponseHandler.forbidden('You do not have access to this organization');
     }
 
     // Verify the document exists in the database and belongs to this organization
@@ -74,7 +72,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ path:
       .limit(1);
 
     if (document.length === 0) {
-      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+      return ApiResponseHandler.notFound('Document not found');
     }
 
     // Serve the file from local storage
@@ -94,6 +92,6 @@ export async function GET(request: NextRequest, props: { params: Promise<{ path:
     });
   } catch (error) {
     console.error('Error serving file:', error);
-    return NextResponse.json({ error: 'File not found' }, { status: 404 });
+    return ApiResponseHandler.notFound('File not found');
   }
 }
