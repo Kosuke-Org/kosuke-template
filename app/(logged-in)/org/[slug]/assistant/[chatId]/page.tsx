@@ -5,7 +5,6 @@ import { Suspense, use, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 import { Collapsible, CollapsibleContent } from '@radix-ui/react-collapsible';
-import type { UIMessagePart } from 'ai';
 import { Check, ChevronDown, Copy, ExternalLink, Loader2 } from 'lucide-react';
 
 import { trpc } from '@/lib/trpc/client';
@@ -115,8 +114,8 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
             // Extract text content from UIMessage parts
             const textContent =
               message.parts
-                ?.filter((part: UIMessagePart<never, never>) => part.type === 'text')
-                .map((part: UIMessagePart<never, never>) => ('text' in part ? part.text : '') || '')
+                ?.filter((part) => part.type === 'text')
+                .map((part) => ('text' in part ? part.text : '') || '')
                 .join(' ') || '';
 
             const metadata = message.metadata as { sources?: MessageSourceType[] } | undefined;

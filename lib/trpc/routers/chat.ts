@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { UIDataTypes, UIMessagePart, UITools } from 'ai';
 import { and, asc, count, desc, eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db/drizzle';
@@ -109,7 +110,8 @@ export const chatRouter = router({
     // Parse messages with runtime validation
     const messages = rawMessages.map((message) => {
       try {
-        const parts = JSON.parse(message.parts);
+        const parts = JSON.parse(message.parts) as UIMessagePart<UIDataTypes, UITools>[];
+
         const metadata = message.metadata ? JSON.parse(message.metadata) : undefined;
 
         // Validate metadata structure (contains document sources)
