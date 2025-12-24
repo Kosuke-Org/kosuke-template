@@ -17,7 +17,7 @@ import {
 
 import { ChatSession } from '@/lib/types/documents';
 
-import { useChat } from '@/hooks/use-chat';
+import { useChatSession } from '@/hooks/use-chat';
 import { useOrganization } from '@/hooks/use-organization';
 import { usePermissions } from '@/hooks/use-permissions';
 
@@ -42,7 +42,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { chatId } = useParams();
   const { organization: activeOrganization, isLoading } = useOrganization();
   const { isAdmin } = usePermissions();
-  const { sessions, deleteSession, isDeletingSession } = useChat({
+  const { sessions, deleteSession, isDeletingSession } = useChatSession({
     organizationId: activeOrganization?.id ?? '',
   });
   const router = useRouter();
@@ -51,7 +51,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const handleDeleteConfirm = async () => {
     if (sessionToDelete) {
-      await deleteSession(sessionToDelete.id);
+      deleteSession(sessionToDelete.id);
 
       if (chatId === sessionToDelete.id) {
         router.push(`/org/${activeOrganization?.slug}/assistant`);

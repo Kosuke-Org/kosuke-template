@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import { type Mock, vi } from 'vitest';
+import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { trpc } from '@/lib/trpc/client';
 
@@ -35,12 +35,6 @@ vi.mock('@/lib/trpc/client', () => ({
       getMessages: {
         useQuery: vi.fn(),
       },
-      sendMessage: {
-        useMutation: vi.fn(),
-      },
-      generateAIResponse: {
-        useMutation: vi.fn(),
-      },
     },
     useUtils: () => ({
       chat: {
@@ -55,7 +49,18 @@ vi.mock('@/lib/trpc/client', () => ({
   },
 }));
 
-describe('useChat', () => {
+// Mock AI SDK's useChat hook
+vi.mock('@ai-sdk/react', () => ({
+  useChat: vi.fn(() => ({
+    messages: [],
+    sendMessage: vi.fn(),
+    regenerate: vi.fn(),
+    status: 'idle',
+    setMessages: vi.fn(),
+  })),
+}));
+
+describe('useChatSession', () => {
   let queryClient: QueryClient;
 
   const mockSessions = [
@@ -126,7 +131,7 @@ describe('useChat', () => {
   );
 
   it('should fetch chat sessions successfully', async () => {
-    const { result } = renderHook(() => useChat(defaultOptions), { wrapper });
+    const { result } = renderHook(() => useChatSession(defaultOptions), { wrapper });
 
     await waitFor(() => {
       expect(result.current.sessions).toEqual(mockSessions);
@@ -154,17 +159,15 @@ describe('useChat', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useChat(defaultOptions), { wrapper });
+    const { result } = renderHook(() => useChatSession(defaultOptions), { wrapper });
 
     const newSession = await result.current.createSession({
       title: 'New Chat',
-      initialMessage: 'Hello',
     });
 
     expect(mockMutateAsync).toHaveBeenCalledWith({
       organizationId: 'org_123',
       title: 'New Chat',
-      initialMessage: 'Hello',
     });
 
     expect(newSession).toEqual(mockNewSession);
@@ -180,7 +183,7 @@ describe('useChat', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useChat(defaultOptions), { wrapper });
+    const { result } = renderHook(() => useChatSession(defaultOptions), { wrapper });
 
     await result.current.createSession({ title: 'New Chat' });
 
@@ -202,7 +205,7 @@ describe('useChat', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useChat(defaultOptions), { wrapper });
+    const { result } = renderHook(() => useChatSession(defaultOptions), { wrapper });
 
     await result.current.deleteSession('session_1');
 
@@ -227,7 +230,7 @@ describe('useChat', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useChat(defaultOptions), { wrapper });
+    const { result } = renderHook(() => useChatSession(defaultOptions), { wrapper });
 
     await result.current.deleteSession('session_1');
 
@@ -249,7 +252,7 @@ describe('useChat', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useChat(defaultOptions), { wrapper });
+    const { result } = renderHook(() => useChatSession(defaultOptions), { wrapper });
 
     await result.current.updateChatSession('session_1', 'Updated Title');
 
@@ -271,7 +274,7 @@ describe('useChat', () => {
       isPending: false,
     });
 
-    const { result } = renderHook(() => useChat(defaultOptions), { wrapper });
+    const { result } = renderHook(() => useChatSession(defaultOptions), { wrapper });
 
     await result.current.updateChatSession('session_1', 'Updated Title');
 
@@ -294,7 +297,7 @@ describe('useChat', () => {
       refetch: vi.fn(),
     });
 
-    const { result } = renderHook(() => useChat(invalidOptions), { wrapper });
+    const { result } = renderHook(() => useChatSession(invalidOptions), { wrapper });
 
     expect(trpc.chat.listSessions.useQuery).toHaveBeenCalledWith(
       {
@@ -311,7 +314,7 @@ describe('useChat', () => {
   });
 });
 
-describe('useChatSession', () => {
+describe('useChat', () => {
   let queryClient: QueryClient;
 
   const mockMessages = [
@@ -360,112 +363,31 @@ describe('useChatSession', () => {
       error: null,
       refetch: vi.fn(),
     });
-
-    // Setup default mutation mocks
-    (trpc.chat.sendMessage.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
-
-    (trpc.chat.generateAIResponse.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn(),
-      isPending: false,
-    });
   });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 
-  it('should fetch messages successfully', async () => {
-    const { result } = renderHook(() => useChatSession(defaultSessionOptions), { wrapper });
+  it('should initialize with empty messages and not loading', () => {
+    const { result } = renderHook(() => useChat(defaultSessionOptions), { wrapper });
+
+    expect(result.current.messages).toEqual([]);
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it('should handle input changes', async () => {
+    const { result } = renderHook(() => useChat(defaultSessionOptions), { wrapper });
+
+    const mockEvent = {
+      target: { value: 'Hello, AI!' },
+    } as React.ChangeEvent<HTMLTextAreaElement>;
+
+    result.current.handleInputChange(mockEvent);
 
     await waitFor(() => {
-      expect(result.current.messages).toEqual(mockMessages);
-      expect(result.current.isLoading).toBe(false);
+      expect(result.current.input).toEqual('Hello, AI!');
     });
-  });
-
-  it('should send message and generate AI response successfully', async () => {
-    const mockSendMutateAsync = vi.fn().mockImplementation(() => {
-      const options = (trpc.chat.sendMessage.useMutation as Mock).mock.calls[0][0];
-      options.onSuccess();
-    });
-
-    const mockGenerateMutateAsync = vi.fn().mockImplementation(() => {
-      const options = (trpc.chat.generateAIResponse.useMutation as Mock).mock.calls[0][0];
-      options.onSuccess();
-    });
-
-    (trpc.chat.sendMessage.useMutation as Mock).mockReturnValue({
-      mutateAsync: mockSendMutateAsync,
-      isPending: false,
-    });
-
-    (trpc.chat.generateAIResponse.useMutation as Mock).mockReturnValue({
-      mutateAsync: mockGenerateMutateAsync,
-      isPending: false,
-    });
-
-    const { result } = renderHook(() => useChatSession(defaultSessionOptions), { wrapper });
-
-    await result.current.sendMessage('Hello, AI!');
-
-    expect(mockSendMutateAsync).toHaveBeenCalledWith({
-      chatSessionId: 'session_1',
-      organizationId: 'org_123',
-      content: 'Hello, AI!',
-    });
-
-    expect(mockGenerateMutateAsync).toHaveBeenCalledWith({
-      chatSessionId: 'session_1',
-      organizationId: 'org_123',
-    });
-
-    expect(mockInvalidate).toHaveBeenCalled();
-  });
-
-  it('should show destructive toast on send message error', async () => {
-    (trpc.chat.sendMessage.useMutation as Mock).mockReturnValue({
-      mutateAsync: vi.fn().mockImplementation(() => {
-        const options = (trpc.chat.sendMessage.useMutation as Mock).mock.calls[0][0];
-        options.onError(new Error('Failed to send message'));
-      }),
-      isPending: false,
-    });
-
-    const { result } = renderHook(() => useChatSession(defaultSessionOptions), { wrapper });
-
-    await result.current.sendMessage('Hello, AI!');
-
-    expect(mockToast).toHaveBeenCalledWith({
-      title: 'Error',
-      description: 'Failed to send message',
-      variant: 'destructive',
-    });
-  });
-
-  it('should generate AI response independently', async () => {
-    const mockGenerateMutateAsync = vi.fn().mockImplementation(() => {
-      const options = (trpc.chat.generateAIResponse.useMutation as Mock).mock.calls[0][0];
-      options.onSuccess();
-    });
-
-    (trpc.chat.generateAIResponse.useMutation as Mock).mockReturnValue({
-      mutateAsync: mockGenerateMutateAsync,
-      isPending: false,
-    });
-
-    const { result } = renderHook(() => useChatSession(defaultSessionOptions), { wrapper });
-
-    await result.current.generateAIResponse();
-
-    expect(mockGenerateMutateAsync).toHaveBeenCalledWith({
-      chatSessionId: 'session_1',
-      organizationId: 'org_123',
-    });
-
-    expect(mockInvalidate).toHaveBeenCalled();
   });
 
   it('should not fetch messages when chatSessionId is missing', () => {
@@ -481,7 +403,7 @@ describe('useChatSession', () => {
       refetch: vi.fn(),
     });
 
-    const { result } = renderHook(() => useChatSession(invalidOptions), { wrapper });
+    const { result } = renderHook(() => useChat(invalidOptions), { wrapper });
 
     expect(trpc.chat.getMessages.useQuery).toHaveBeenCalledWith(
       {
@@ -509,7 +431,7 @@ describe('useChatSession', () => {
       refetch: vi.fn(),
     });
 
-    const { result } = renderHook(() => useChatSession(invalidOptions), { wrapper });
+    const { result } = renderHook(() => useChat(invalidOptions), { wrapper });
 
     expect(trpc.chat.getMessages.useQuery).toHaveBeenCalledWith(
       {
@@ -522,13 +444,5 @@ describe('useChatSession', () => {
     );
 
     expect(result.current.messages).toEqual([]);
-  });
-
-  it('should invalidate messages manually', async () => {
-    const { result } = renderHook(() => useChatSession(defaultSessionOptions), { wrapper });
-
-    await result.current.invalidateMessages();
-
-    expect(mockInvalidate).toHaveBeenCalled();
   });
 });

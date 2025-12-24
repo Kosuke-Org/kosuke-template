@@ -1,88 +1,39 @@
 import { TRPCError } from '@trpc/server';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { UIDataTypes, UIMessagePart, UITools } from 'ai';
+import { and, asc, count, desc, eq } from 'drizzle-orm';
 
-import type { GroundingMetadata } from '@/lib/ai/client';
-import { generateContent } from '@/lib/ai/client';
 import { db } from '@/lib/db/drizzle';
-import { chatMessages, chatSessions, documents } from '@/lib/db/schema';
-import { getPresignedDownloadUrl } from '@/lib/storage';
+import { chatMessages, chatSessions } from '@/lib/db/schema';
 import { orgProcedure, router } from '@/lib/trpc/init';
 import {
   createChatSessionSchema,
   deleteChatSessionSchema,
-  generateAIResponseSchema,
   getMessagesSchema,
   getSessionSchema,
   listChatSessionsSchema,
-  sendChatMessageSchema,
   updateChatSessionTitleSchema,
 } from '@/lib/trpc/schemas/documents';
+import { messageMetadataSchema } from '@/lib/types/chat';
 
-interface ExtendedRetrievedContext {
-  title?: string;
-  text?: string;
-  uri?: string;
-  fileSearchStore?: string;
-}
-
-/**
- * Extract relevant sources from grounding metadata
- * Returns only documents that were actually cited in the response
- */
-function extractRelevantSources(groundingMetadata: GroundingMetadata) {
-  // If no grounding chunks, return empty array
-  if (!groundingMetadata.groundingChunks || groundingMetadata.groundingChunks.length === 0) {
-    return [];
-  }
-
-  // Get indices of chunks that were actually cited in the response
-  const citedChunkIndices = new Set(
-    (groundingMetadata.groundingSupports || []).flatMap(
-      (support) => support.groundingChunkIndices || []
-    )
-  );
-
-  // If no grounding supports, show all chunks (fallback)
-  const relevantChunks =
-    citedChunkIndices.size > 0
-      ? groundingMetadata.groundingChunks.filter((_, index) => citedChunkIndices.has(index))
-      : groundingMetadata.groundingChunks;
-
-  // Deduplicate by document title and extract relevant info
-  const uniqueSources = Array.from(
-    new Map(
-      relevantChunks.map((chunk) => {
-        const retrievedContext = chunk.retrievedContext as ExtendedRetrievedContext;
-        return [
-          retrievedContext?.title,
-          {
-            title: retrievedContext?.title || '',
-            fileSearchStoreName: retrievedContext?.fileSearchStore || '',
-          },
-        ];
-      })
-    ).values()
-  );
-
-  return uniqueSources.filter((source) => source.title);
-}
+// Sources are now stored in message metadata (not parts)
+// Metadata format: { sources: [{ documentId: string, title: string, url?: string }] }
 
 export const chatRouter = router({
   /**
    * List all chat sessions for an organization
+   * Uses efficient SQL COUNT() for pagination
    */
   listSessions: orgProcedure.input(listChatSessionsSchema).query(async ({ ctx, input }) => {
     const { page, pageSize, organizationId } = input;
     const offset = (page - 1) * pageSize;
 
-    // Get total count for user's sessions only
-    const totalResult = await db
-      .select({ count: chatSessions.id })
+    // Get total count using SQL COUNT() function (efficient)
+    const [{ count: total }] = await db
+      .select({ count: count() })
       .from(chatSessions)
       .where(
         and(eq(chatSessions.organizationId, organizationId), eq(chatSessions.userId, ctx.userId))
       );
-    const total = totalResult.length;
 
     // Get paginated results
     const sessions = await db
@@ -126,7 +77,9 @@ export const chatRouter = router({
   }),
 
   /**
-   * Get all messages for a chat session
+   * Get all messages for a chat session in UIMessage format
+   * Sources contain document IDs + proxy URLs for downloads
+   * Uses Zod validation for runtime type safety
    */
   getMessages: orgProcedure.input(getMessagesSchema).query(async ({ ctx, input }) => {
     const { organizationId, chatSessionId } = input;
@@ -154,90 +107,56 @@ export const chatRouter = router({
       .where(eq(chatMessages.chatSessionId, chatSessionId))
       .orderBy(asc(chatMessages.createdAt));
 
-    // Get all documents for the organization to match with sources
-    const orgDocuments = await db
-      .select()
-      .from(documents)
-      .where(eq(documents.organizationId, organizationId));
+    // Parse messages with runtime validation
+    const messages = rawMessages.map((message) => {
+      try {
+        const parts = JSON.parse(message.parts) as UIMessagePart<UIDataTypes, UITools>[];
 
-    // Enrich messages with source URLs
-    const messagesWithSources = await Promise.all(
-      rawMessages.map(async (message) => {
-        // Only process messages with grounding metadata
-        if (!message.groundingMetadata) {
-          return {
-            ...message,
-            sources: [],
-          };
+        const metadata = message.metadata ? JSON.parse(message.metadata) : undefined;
+
+        // Validate metadata structure (contains document sources)
+        if (metadata) {
+          messageMetadataSchema.parse(metadata);
         }
 
-        try {
-          const groundingMetadata = JSON.parse(message.groundingMetadata) as GroundingMetadata;
-          const relevantSources = extractRelevantSources(groundingMetadata);
+        return {
+          id: message.id,
+          role: message.role,
+          parts,
+          metadata,
+          createdAt: message.createdAt,
+        };
+      } catch (error) {
+        console.error('Message validation failed:', {
+          messageId: message.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
 
-          // Match sources with database documents
-          const sourcesWithUrls = await Promise.all(
-            relevantSources.map(async (source) => {
-              const doc = orgDocuments.find(
-                (d) =>
-                  d.displayName === source.title &&
-                  d.fileSearchStoreName === source.fileSearchStoreName
-              );
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Failed to parse message data',
+          cause: error,
+        });
+      }
+    });
 
-              return {
-                title: source.title,
-                url: doc?.storageUrl ? await getPresignedDownloadUrl(doc.storageUrl) : null,
-                documentId: doc?.id || null,
-              };
-            })
-          );
-
-          return {
-            ...message,
-            sources: sourcesWithUrls,
-          };
-        } catch (error) {
-          // If parsing fails, return message without sources
-          console.error('Failed to parse grounding metadata:', error);
-          return {
-            ...message,
-            sources: [],
-          };
-        }
-      })
-    );
-
-    return { messages: messagesWithSources };
+    return { messages };
   }),
 
   /**
-   * Create a new chat session (optionally with initial message)
+   * Create a new chat session
    */
   createSession: orgProcedure.input(createChatSessionSchema).mutation(async ({ ctx, input }) => {
-    const { organizationId, title, initialMessage } = input;
-
-    // Set title from initial message if provided, otherwise use default
-    const sessionTitle = initialMessage
-      ? initialMessage.slice(0, 50) + (initialMessage.length > 50 ? '...' : '')
-      : title || 'New Chat';
+    const { organizationId, title } = input;
 
     const [session] = await db
       .insert(chatSessions)
       .values({
         organizationId,
         userId: ctx.userId,
-        title: sessionTitle,
+        title,
       })
       .returning();
-
-    // If initial message provided, save it (but don't wait for AI response)
-    if (initialMessage) {
-      await db.insert(chatMessages).values({
-        chatSessionId: session.id,
-        role: 'user',
-        content: initialMessage,
-      });
-    }
 
     return session;
   }),
@@ -273,151 +192,4 @@ export const chatRouter = router({
 
     return { success: true };
   }),
-
-  /**
-   * Send a message (save user message only)
-   */
-  sendMessage: orgProcedure.input(sendChatMessageSchema).mutation(async ({ ctx, input }) => {
-    const { organizationId, chatSessionId, content } = input;
-
-    // Verify session exists and belongs to organization
-    const session = await db.query.chatSessions.findFirst({
-      where: and(
-        eq(chatSessions.id, chatSessionId),
-        eq(chatSessions.organizationId, organizationId),
-        eq(chatSessions.userId, ctx.userId)
-      ),
-    });
-
-    if (!session) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Chat session not found',
-      });
-    }
-
-    const [userMessage] = await db
-      .insert(chatMessages)
-      .values({
-        chatSessionId,
-        role: 'user',
-        content,
-      })
-      .returning();
-
-    await db
-      .update(chatSessions)
-      .set({ updatedAt: new Date() })
-      .where(eq(chatSessions.id, chatSessionId));
-
-    return {
-      userMessage,
-    };
-  }),
-
-  /**
-   * Generate AI response for the latest user message in a session
-   * Uses organization's documents as context via File Search tool
-   */
-  generateAIResponse: orgProcedure
-    .input(generateAIResponseSchema)
-    .mutation(async ({ ctx, input }) => {
-      const { organizationId, chatSessionId } = input;
-
-      // Get session with messages
-      const session = await db.query.chatSessions.findFirst({
-        where: and(
-          eq(chatSessions.id, chatSessionId),
-          eq(chatSessions.organizationId, organizationId),
-          eq(chatSessions.userId, ctx.userId)
-        ),
-        with: {
-          messages: {
-            orderBy: (messages, { asc }) => [asc(messages.createdAt)],
-          },
-        },
-      });
-
-      if (!session) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Chat session not found',
-        });
-      }
-
-      if (session.messages.length === 0) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'No messages in session',
-        });
-      }
-
-      // Get unique file search store names from organization's documents
-      const orgDocuments = await db
-        .select({ fileSearchStoreName: documents.fileSearchStoreName })
-        .from(documents)
-        .where(eq(documents.organizationId, organizationId))
-        .limit(1);
-
-      if (orgDocuments.length === 0) {
-        throw new TRPCError({
-          code: 'PRECONDITION_FAILED',
-          message:
-            'No documents available. Please upload documents before chatting with the assistant.',
-        });
-      }
-
-      const fileSearchStoreName = orgDocuments[0].fileSearchStoreName;
-
-      // Build conversation history (all messages, map 'assistant' to 'model' for Gemini API)
-      const conversationHistory = session.messages.map((msg) => ({
-        role: msg.role === 'assistant' ? ('model' as const) : ('user' as const),
-        parts: [{ text: msg.content }],
-      }));
-
-      try {
-        // Generate AI response with file search
-        const aiResponse = await generateContent({
-          contents: conversationHistory,
-          config: {
-            tools: [
-              {
-                fileSearch: {
-                  fileSearchStoreNames: fileSearchStoreName ? [fileSearchStoreName] : undefined,
-                },
-              },
-            ],
-          },
-        });
-
-        // Save AI response to database with grounding metadata (if available)
-        const [assistantMessage] = await db
-          .insert(chatMessages)
-          .values({
-            chatSessionId,
-            role: 'assistant',
-            content: aiResponse.text,
-            groundingMetadata: aiResponse.groundingMetadata
-              ? JSON.stringify(aiResponse.groundingMetadata)
-              : null,
-          })
-          .returning();
-
-        // Update session timestamp
-        await db
-          .update(chatSessions)
-          .set({ updatedAt: new Date() })
-          .where(eq(chatSessions.id, chatSessionId));
-
-        return {
-          message: assistantMessage,
-          groundingMetadata: aiResponse.groundingMetadata,
-        };
-      } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to generate AI response',
-        });
-      }
-    }),
 });

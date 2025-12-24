@@ -2,6 +2,7 @@ import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle
 import {
   boolean,
   index,
+  integer,
   pgEnum,
   pgTable,
   text,
@@ -20,7 +21,7 @@ export const orderStatusEnum = pgEnum('order_status', [
   'delivered',
   'cancelled',
 ]);
-export const chatMessageRoleEnum = pgEnum('chat_message_role', ['user', 'assistant']);
+export const chatMessageRoleEnum = pgEnum('chat_message_role', ['user', 'assistant', 'system']);
 export const documentStatusEnum = pgEnum('document_status', ['in_progress', 'ready', 'error']);
 
 export const users = pgTable('users', {
@@ -286,10 +287,47 @@ export const chatMessages = pgTable('chat_messages', {
       onDelete: 'cascade',
     }),
   role: chatMessageRoleEnum('role').notNull(),
-  content: text('content').notNull(),
-  groundingMetadata: text('grounding_metadata'), // JSON string with citation info
+  parts: text('parts').notNull(), // JSON string of UIMessagePart[] array
+  metadata: text('metadata'), // JSON string for message metadata
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+// LLM Logs - General-purpose AI logging for all LLM operations
+export const llmLogs = pgTable(
+  'llm_logs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    timestamp: timestamp('timestamp').defaultNow().notNull(),
+    endpoint: text('endpoint').notNull(), // 'chat', 'embeddings', 'summarization', etc.
+    model: text('model').notNull(),
+    systemPrompt: text('system_prompt'),
+    userPrompt: text('user_prompt'), // JSON string of UIMessagePart[] array
+    response: text('response'), // JSON string of UIMessagePart[] array
+    tokensUsed: integer('tokens_used'),
+    promptTokens: integer('prompt_tokens'),
+    completionTokens: integer('completion_tokens'),
+    reasoningTokens: integer('reasoning_tokens'),
+    cachedInputTokens: integer('cached_input_tokens'),
+    responseTimeMs: integer('response_time_ms'),
+    finishReason: text('finish_reason'), // 'stop', 'length', 'content-filter', 'tool-calls', 'error', 'other', 'unknown'
+    errorMessage: text('error_message'),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'set null',
+    }),
+    chatSessionId: uuid('chat_session_id').references(() => chatSessions.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    timestampIdx: index('idx_llm_logs_timestamp').on(table.timestamp.desc()),
+    endpointIdx: index('idx_llm_logs_endpoint').on(table.endpoint),
+    userIdx: index('idx_llm_logs_user_id').on(table.userId),
+    orgIdx: index('idx_llm_logs_org_id').on(table.organizationId),
+    chatIdx: index('idx_llm_logs_chat_session_id').on(table.chatSessionId),
+  })
+);
 
 export const userRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
@@ -424,6 +462,8 @@ export type ChatSession = InferSelectModel<typeof chatSessions>;
 export type NewChatSession = InferInsertModel<typeof chatSessions>;
 export type ChatMessage = InferSelectModel<typeof chatMessages>;
 export type NewChatMessage = InferInsertModel<typeof chatMessages>;
+export type LLMLog = InferSelectModel<typeof llmLogs>;
+export type NewLLMLog = InferInsertModel<typeof llmLogs>;
 
 // Infer enum types from schema
 export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];

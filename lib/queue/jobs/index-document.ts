@@ -81,7 +81,7 @@ export async function processIndexDocument({
       file: blob,
       fileSearchStoreName,
       config: {
-        displayName,
+        displayName: `${documentId}-${displayName}`,
         mimeType,
         customMetadata: [
           // Can later be used for querying the document
