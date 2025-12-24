@@ -39,7 +39,6 @@ export function useAdminLlmLogs(params?: UseAdminLlmLogsParams) {
   const filters: LlmLogsListFilters = {
     searchQuery: searchQuery || undefined,
     organizationId: params?.organizationId,
-    userId: params?.userId,
     chatSessionId: params?.chatSessionId,
     dateFrom: params?.dateFrom,
     dateTo: params?.dateTo,

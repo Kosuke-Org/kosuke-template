@@ -111,7 +111,6 @@ export const adminLlmLogsListSchema = z
   .object({
     searchQuery: z.string().optional(),
     organizationId: z.uuid().optional(),
-    userId: z.uuid().optional(),
     chatSessionId: z.uuid().optional(),
     dateFrom: z.date().optional(),
     dateTo: z.date().optional(),

@@ -837,7 +837,8 @@ export const adminRouter = router({
     /**
      * List LLM logs with filters and pagination
      */
-    list: superAdminProcedure.input(adminLlmLogsListSchema).query(async ({ input }) => {
+    list: superAdminProcedure.input(adminLlmLogsListSchema).query(async ({ input, ctx }) => {
+      const { userId } = ctx;
       const page = input?.page ?? 1;
       const pageSize = input?.pageSize ?? 20;
       const offset = (page - 1) * pageSize;
@@ -853,11 +854,6 @@ export const adminRouter = router({
       // Organization filter
       if (input?.organizationId) {
         conditions.push(eq(llmLogs.organizationId, input.organizationId));
-      }
-
-      // User filter
-      if (input?.userId) {
-        conditions.push(eq(llmLogs.userId, input.userId));
       }
 
       // Chat session filter
@@ -906,7 +902,9 @@ export const adminRouter = router({
         .from(llmLogs)
         .leftJoin(users, eq(llmLogs.userId, users.id))
         .leftJoin(organizations, eq(llmLogs.organizationId, organizations.id))
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .where(
+          and(conditions.length > 0 ? and(...conditions) : undefined, eq(llmLogs.userId, userId))
+        )
         .orderBy(sql`${llmLogs.timestamp} DESC`)
         .limit(pageSize)
         .offset(offset);
