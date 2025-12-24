@@ -556,6 +556,22 @@ if (isLoading) {
 - Animate skeletons with Shadcn's built-in pulse animation
 - Match skeleton padding/spacing to actual component styles
 
+| Criteria                       | 3                                                                                                                              | 4                                                                                                     | 5                                                                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| UI/UX Design                   | Acceptable design with a basic layout; some minor usability issues may persist.                                                | Good design with clear visual hierarchy; most users find the experience intuitive.                    | Outstanding, user-centric UI/UX with an intuitive, attractive, and seamless interface that guides users effortlessly.                   |
+| Accessibility                  | Basic accessibility in place (e.g., alt text and acceptable contrast), though full compliance isn't achieved.                  | Mostly accessible; adheres to most accessibility standards with only minor issues.                    | Fully accessible design that meets or exceeds WCAG 2.1 AA standards, ensuring every user can navigate the app effortlessly.             |
+| Performance                    | Average load times; the app is usable but further optimizations could enhance user experience.                                 | Fast performance; most assets are optimized and pages load quickly on most connections.               | Exceptional performance with assets optimized to load in ~3 seconds or less, even on slower networks.                                   |
+| Responsiveness                 | Generally responsive; most components reflow correctly, though a few minor issues may appear on uncommon screen sizes.         | Highly responsive; the design adapts well to a variety of devices with very few issues.               | Completely responsive; the layout and content seamlessly adapt to any screen size, ensuring a consistent experience across all devices. |
+| Visual Consistency             | Moderately consistent; most design elements follow a common style guide with a few exceptions.                                 | Visually cohesive; nearly all UI elements align with a unified design language with minor deviations. | Total visual consistency; every component adheres to a unified design system, reinforcing the brand and improving user familiarity.     |
+| Navigation & Usability         | Acceptable navigation; users can complete tasks but may experience a brief learning curve.                                     | Well-structured navigation with clear menus and labels; users find it easy to locate content.         | Exceptional navigation; an intuitive and streamlined interface ensures that users can find information quickly and easily.              |
+| Mobile Optimization            | Mobile-friendly in most areas; the experience is acceptable though not fully polished for all mobile nuances.                  | Optimized for mobile; the design performs well on smartphones with only minor issues to address.      | Fully mobile-first; the app offers a smooth, fast, and engaging mobile experience with well-sized touch targets and rapid load times.   |
+| Code Quality & Maintainability | Reasonable code quality; standard practices are mostly followed but could benefit from improved organization or documentation. | Clean, well-commented code adhering to modern best practices; relatively easy to maintain and scale.  | Exemplary code quality; modular, semantic, and thoroughly documented code ensures excellent maintainability and scalability.            |
+
+When building new components or updating existing ones, act as a world class designer.
+Your job is to take this prototype and turn it into a impeccably designed web application.
+This application should be in the top applications and should be a winner of an Apple design award.
+Use the Rubric guidelines as a guide. You should ship only components that have 5 in each category.
+
 **Loading Hierarchy:**
 
 ```typescript
@@ -1360,6 +1376,13 @@ app/(logged-in)/org/[slug]/{feature}/
 - **Global reusable components** go in `components/ui/` or `components/`
 - **NEVER create separate skeleton files** - define skeletons within the page/component files
 - **Export schemas from centralized locations** - `lib/trpc/schemas/{feature}.ts`
+
+**Detail Page Navigation - MANDATORY:**
+
+- **NEVER create back buttons in detail pages** - Users should use browser back button or breadcrumbs
+- Detail pages should focus on content, not navigation controls
+- The sidebar and breadcrumbs provide sufficient navigation context
+- Removing back buttons keeps the UI clean and consistent across all detail views
 
 #### **📊 Table Implementation Pattern**
 
@@ -3016,17 +3039,280 @@ import { tasks } from '@/lib/db/schema'; // OK in database queries
 
 ### SEO Management - MANDATORY
 
-**When adding new public pages, ALWAYS update:**
+When adding new pages, features, or content to the Kosuke Template, **ALWAYS** update the corresponding SEO files. This ensures consistent search engine optimization and professional presentation.
 
-- **Sitemap** (`app/sitemap.ts`) - Add new public pages with appropriate priority
-- **Page Metadata** - Add proper title, description, and OpenGraph tags
-- **Robots.txt** (`app/robots.ts`) - Allow/block routes as needed
+## 🎯 SEO Files That Must Be Updated
 
-**For major features (pricing, blog), CONSIDER adding:**
+### 1. **Sitemap** (`app/sitemap.ts`) - ALWAYS UPDATE
 
-- **Structured Data** (`components/structured-data.tsx`) - Enhances search results
+**When to update:**
 
-For detailed SEO guidelines and examples, use the `seo` rule only when needed.
+- Adding any new public page
+- Adding blog posts, documentation, or content pages
+- Adding pricing pages, about pages, contact pages
+
+**How to update:**
+
+```typescript
+// Add new static pages
+{
+  url: `${baseUrl}/pricing`,
+  lastModified: new Date(),
+  changeFrequency: 'monthly',
+  priority: 0.8,
+},
+
+// Add dynamic pages (blog, docs, etc.)
+...blogPosts.map((post) => ({
+  url: `${baseUrl}/blog/${post.slug}`,
+  lastModified: post.updatedAt,
+  changeFrequency: 'weekly',
+  priority: 0.7,
+})),
+```
+
+**Priority Guidelines:**
+
+- Homepage (`/`): `1.0`
+- Main features/pricing: `0.8`
+- Blog posts/docs: `0.7`
+- About/contact: `0.6`
+- Legal pages: `0.5`
+
+### 2. **Robots.txt** (`app/robots.txt/route.ts`) - UPDATE WHEN NEEDED
+
+**When to update:**
+
+- Adding public pages that should be indexed
+- Adding pages that should NOT be indexed (admin, internal tools)
+- Adding new API routes that should be blocked
+
+**How to update:**
+
+```typescript
+// Allow new public pages
+Allow: /pricing
+Allow: /blog
+Allow: /docs
+
+// Block new private/internal pages
+Disallow: /admin
+Disallow: /internal
+Disallow: /api/internal
+```
+
+### 3. **Structured Data** - UPDATE FOR MAJOR FEATURES
+
+**When to update:**
+
+- Adding pricing/billing features
+- Adding blog/content features
+- Changing core product offering
+- Adding organization/company information
+
+**Examples:**
+
+**For Pricing Pages:**
+
+```typescript
+export function PricingStructuredData({ plans }: { plans: PricingPlan[] }) {
+  const offers = plans.map(plan => ({
+    '@type': 'Offer',
+    name: plan.name,
+    price: plan.price,
+    priceCurrency: 'USD',
+    description: plan.description,
+  }));
+
+  return (
+    <Script
+      id="pricing-structured-data"
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: 'Kosuke Template',
+          offers: offers,
+        }),
+      }}
+    />
+  );
+}
+```
+
+**For Blog Posts:**
+
+```typescript
+export function ArticleStructuredData({ post }: { post: BlogPost }) {
+  return (
+    <Script
+      id="article-structured-data"
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{
+        __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: post.title,
+          description: post.excerpt,
+          author: {
+            '@type': 'Person',
+            name: post.author.name,
+          },
+          datePublished: post.publishedAt,
+          dateModified: post.updatedAt,
+          image: post.image,
+        }),
+      }}
+    />
+  );
+}
+```
+
+### 4. **Page Metadata** - ALWAYS ADD FOR NEW PUBLIC PAGES
+
+**For every new public page, add proper metadata:**
+
+```typescript
+// Static page metadata
+export const metadata: Metadata = {
+  title: 'Page Title',
+  description: 'Clear, compelling description under 160 characters',
+  keywords: ['relevant', 'keywords', 'for', 'this', 'page'],
+  openGraph: {
+    title: 'Page Title | Kosuke Template',
+    description: 'Same description as above',
+    type: 'website', // or 'article' for blog posts
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Page Title | Kosuke Template',
+    description: 'Same description as above',
+  },
+};
+
+// Dynamic page metadata
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const data = await fetchPageData(params.slug);
+
+  return {
+    title: data.title,
+    description: data.description,
+    // ... rest of metadata
+  };
+}
+```
+
+### 5. **Web Manifest** (`public/site.webmanifest`) - UPDATE FOR BRANDING CHANGES
+
+**When to update:**
+
+- Changing app name or branding
+- Adding new icon sizes
+- Changing theme colors
+
+## 📋 SEO Checklist for New Features
+
+### ✅ Adding a New Public Page
+
+- [ ] Add to `app/sitemap.ts` with appropriate priority
+- [ ] Add proper SEO metadata to the page component
+- [ ] Ensure robots.txt allows the page (if not already covered)
+- [ ] Add structured data if it's a major feature page
+- [ ] Test with Google Search Console
+
+### ✅ Adding Pricing/Billing Features
+
+- [ ] Update `SoftwareStructuredData` to reflect new pricing
+- [ ] Add pricing-specific structured data
+- [ ] Add pricing page to sitemap with high priority (0.8)
+- [ ] Update homepage metadata to mention pricing if relevant
+
+### ✅ Adding Blog/Documentation
+
+- [ ] Create dynamic sitemap entries for posts
+- [ ] Add article structured data component
+- [ ] Allow blog routes in robots.txt
+- [ ] Set up proper metadata generation for posts
+- [ ] Consider adding RSS feed
+
+### ✅ Adding User-Generated Content
+
+- [ ] Block user profile pages from indexing (robots.txt)
+- [ ] Only index public content
+- [ ] Add proper canonical URLs to prevent duplicate content
+- [ ] Use noindex meta tag for private/draft content
+
+## 🚫 SEO Anti-Patterns to Avoid
+
+### ❌ Don't Index These Pages
+
+- User dashboards (`/dashboard`, `/org/*`)
+- Authentication pages (`/sign-in`, `/sign-up`)
+- API routes (`/api/*`)
+- Admin interfaces
+- User-generated private content
+- Draft/preview content
+
+### ❌ Don't Forget These Updates
+
+- Sitemap when adding public pages
+- Structured data when changing core features
+- SEO metadata for every new public page
+- Robots.txt when adding sensitive routes
+
+## 🔧 SEO Testing Commands
+
+```bash
+# Test sitemap generation
+curl http://localhost:3000/sitemap.xml
+
+# Test robots.txt
+curl http://localhost:3000/robots.txt
+
+# Test structured data with Google's tool
+# https://search.google.com/test/rich-results
+
+# Test metadata with social media debuggers
+# Facebook: https://developers.facebook.com/tools/debug/
+# Twitter: https://cards-dev.twitter.com/validator
+```
+
+## 📊 SEO Performance Monitoring
+
+### Required Setup
+
+1. **Google Search Console** - Monitor search performance
+2. **Google Analytics** - Track organic traffic
+3. **Core Web Vitals** - Already tracked via Sentry
+
+### Regular Tasks
+
+- Monitor search console for crawl errors
+- Check sitemap submission status
+- Review structured data errors
+- Monitor page load speeds
+- Track keyword rankings for main terms
+
+## 🎯 Template-Specific SEO Strategy
+
+### Primary Keywords
+
+- "Next.js template"
+- "React starter template"
+- "TypeScript boilerplate"
+- "Full-stack template"
+- "Production-ready template"
+
+### Content Strategy
+
+- Focus on developer pain points
+- Highlight time-saving benefits
+- Showcase included features
+- Provide clear setup instructions
+- Maintain technical accuracy
+
+Remember: **SEO is not optional** - it's essential for template discoverability and professional presentation. Always update SEO files when adding new features!
 
 ### Contributing Guidelines - MUST FOLLOW
 
@@ -3041,6 +3327,61 @@ For detailed SEO guidelines and examples, use the `seo` rule only when needed.
 - Always run database migrations when schema changes are made
 - Test authentication flows and subscription management thoroughly
 - Implement proper error handling for all external service integrations
+
+#### **SDK and Package Usage - MANDATORY**
+
+**ALWAYS prefer native SDKs over HTTP requests when available. ALWAYS check the LATEST version and documentation online before implementation.**
+
+- ✅ **Use official SDKs** - Stripe SDK, Resend SDK, Better Auth SDK, etc.
+- ✅ **Check latest documentation** - Always verify current API patterns and best practices
+- ✅ **Verify package versions** - Check npm/GitHub for the latest stable version
+- ✅ **Follow official examples** - Use patterns from official documentation
+- ❌ **NEVER use raw HTTP requests** - If an official SDK exists, use it
+- ❌ **NEVER assume API patterns** - Always check current documentation
+
+```typescript
+// ✅ CORRECT - Use official Stripe SDK
+// ✅ CORRECT - Use official Resend SDK
+import { Resend } from 'resend';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+const session = await stripe.checkout.sessions.create({
+  /* ... */
+});
+
+// ❌ WRONG - Raw HTTP request when SDK exists
+const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` },
+  body: JSON.stringify({
+    /* ... */
+  }),
+});
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+await resend.emails.send({
+  /* ... */
+});
+
+// ❌ WRONG - Raw HTTP request when SDK exists
+await fetch('https://api.resend.com/emails', {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+  body: JSON.stringify({
+    /* ... */
+  }),
+});
+```
+
+**Why Use Native SDKs?**
+
+- ✅ **Type safety** - Full TypeScript support with proper types
+- ✅ **Error handling** - Built-in error handling and retries
+- ✅ **Automatic updates** - SDK handles API changes gracefully
+- ✅ **Better DX** - Autocomplete, documentation, and examples
+- ✅ **Maintained** - Official support and bug fixes
+- ✅ **Best practices** - Implements recommended patterns
 
 #### **Color Usage - MANDATORY**
 

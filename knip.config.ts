@@ -29,6 +29,17 @@ const knipConfig = {
     // They are used but not imported in the codebase
     'drizzle-zod',
     '@trpc/next',
+    // Essential template packages - part of the starter template feature set
+    '@dnd-kit/core',
+    '@dnd-kit/sortable',
+    '@dnd-kit/utilities',
+    '@tanstack/react-table',
+    'date-fns',
+    'framer-motion',
+    'react-day-picker',
+    'recharts',
+    'xlsx',
+    'zustand',
   ],
   ignoreBinaries: ['shadcn'],
   rules: {
