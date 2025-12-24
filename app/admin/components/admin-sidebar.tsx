@@ -4,7 +4,15 @@ import * as React from 'react';
 
 import Link from 'next/link';
 
-import { Activity, ArrowLeft, Building2, LayoutDashboard, Shield, Users } from 'lucide-react';
+import {
+  Activity,
+  ArrowLeft,
+  Building2,
+  FileText,
+  LayoutDashboard,
+  Shield,
+  Users,
+} from 'lucide-react';
 
 import { AUTH_ROUTES } from '@/lib/auth';
 
@@ -42,6 +50,16 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
       title: 'Jobs',
       url: '/admin/jobs',
       icon: Activity,
+    },
+    {
+      title: 'RAG Management',
+      url: '/admin/rag',
+      icon: Database,
+    },
+    {
+      title: 'LLM Logs',
+      url: '/admin/llm-logs',
+      icon: FileText,
     },
   ];
 
