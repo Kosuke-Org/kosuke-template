@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthActions } from '@/hooks/use-auth';
+import { useClient } from '@/hooks/use-client';
 import { useOrganization } from '@/hooks/use-organization';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useUserAvatar } from '@/hooks/use-user-avatar';
@@ -39,7 +40,14 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
   const { signOut: handleSignOut } = useAuthActions();
   const { isAdmin } = usePermissions();
   const { theme } = useTheme();
+  const { isClient } = useClient();
   const { organization: activeOrganization } = useOrganization();
+  const logoUrl = isClient
+    ? theme === 'dark'
+      ? '/logos/logo-dark.svg'
+      : '/logos/logo.svg'
+    : '/logos/logo-dark.svg';
+
   const dashboardUrl = activeOrganization ? `/org/${activeOrganization.slug}/dashboard` : '/';
   const settingsUrl = '/settings';
   const billingUrl = '/settings/billing';
@@ -55,12 +63,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
     >
       <div className="container flex h-10 items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Image
-            src={theme === 'dark' ? '/logos/logo-dark.svg' : '/logos/logo.svg'}
-            alt="Kosuke Template"
-            width={160}
-            height={28}
-          />
+          <Image src={logoUrl} alt="Kosuke Template" width={160} height={28} />
         </Link>
 
         {/* Desktop navigation */}
