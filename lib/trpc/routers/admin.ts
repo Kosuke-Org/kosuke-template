@@ -874,7 +874,9 @@ export const adminRouter = router({
       const [{ count: total }] = await db
         .select({ count: count() })
         .from(llmLogs)
-        .where(conditions.length > 0 ? and(...conditions) : undefined);
+        .where(
+          and(conditions.length > 0 ? and(...conditions) : undefined, eq(llmLogs.userId, userId))
+        );
 
       // Get paginated results with joins
       const results = await db
