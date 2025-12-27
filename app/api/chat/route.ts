@@ -175,7 +175,7 @@ export async function POST(req: Request) {
           finishReason: finishReason,
           userId: session.user.id,
           organizationId: chatSession.organizationId,
-          chatSessionId,
+          chatSessionId: chatSession.id,
         });
       } catch (error) {
         console.error('Error saving messages or logging:', error);
@@ -185,13 +185,13 @@ export async function POST(req: Request) {
           tags: {
             feature: 'chat',
             operation: 'save_messages',
-            chatSessionId,
+            chatSessionId: chatSession.id,
             userId: session.user.id,
             organizationId: chatSession.organizationId,
           },
           contexts: {
             chat: {
-              chatSessionId,
+              chatSessionId: chatSession.id,
               messageCount: updatedMessages.length,
               finishReason,
             },

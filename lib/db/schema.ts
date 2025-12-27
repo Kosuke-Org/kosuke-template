@@ -320,13 +320,13 @@ export const llmLogs = pgTable(
     }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
-  (table) => ({
-    timestampIdx: index('idx_llm_logs_timestamp').on(table.timestamp.desc()),
-    endpointIdx: index('idx_llm_logs_endpoint').on(table.endpoint),
-    userIdx: index('idx_llm_logs_user_id').on(table.userId),
-    orgIdx: index('idx_llm_logs_org_id').on(table.organizationId),
-    chatIdx: index('idx_llm_logs_chat_session_id').on(table.chatSessionId),
-  })
+  (table) => [
+    index('idx_llm_logs_timestamp').on(table.timestamp.desc()),
+    index('idx_llm_logs_endpoint').on(table.endpoint),
+    index('idx_llm_logs_user_id').on(table.userId),
+    index('idx_llm_logs_org_id').on(table.organizationId),
+    index('idx_llm_logs_chat_session_id').on(table.chatSessionId),
+  ]
 );
 
 export const userRelations = relations(users, ({ many }) => ({

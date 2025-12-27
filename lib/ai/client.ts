@@ -6,17 +6,17 @@ import type {
 } from '@google/genai';
 import { GoogleGenAI } from '@google/genai';
 
-let _ai: GoogleGenAI | null = null;
+let aiClient: GoogleGenAI | null = null;
 
 function getClient(): GoogleGenAI {
-  if (!_ai) {
+  if (!aiClient) {
     const apiKey = process.env.GOOGLE_AI_API_KEY;
     if (!apiKey) {
       throw new Error('GOOGLE_AI_API_KEY environment variable is required');
     }
-    _ai = new GoogleGenAI({ apiKey });
+    aiClient = new GoogleGenAI({ apiKey });
   }
-  return _ai;
+  return aiClient;
 }
 
 /**
