@@ -1,10 +1,13 @@
 'use client';
 
 import { format } from 'date-fns';
+import { Check, Copy } from 'lucide-react';
 
 import { useAdminLlmLog } from '@/hooks/use-admin-llm-logs';
+import { useClipboard } from '@/hooks/use-clipboard';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sheet,
@@ -179,9 +182,7 @@ export function LlmLogDrawer({ logId, open, onOpenChange }: LlmLogDrawerProps) {
               <section className="space-y-2 pb-4">
                 <h3 className="text-md font-semibold">System Prompt</h3>
                 {log.systemPrompt ? (
-                  <pre className="bg-muted overflow-x-auto rounded-md p-4 text-xs whitespace-pre">
-                    {log.systemPrompt}
-                  </pre>
+                  <CodeBlock content={log.systemPrompt} />
                 ) : (
                   <p className="text-muted-foreground text-sm">No system prompt found</p>
                 )}
@@ -191,9 +192,7 @@ export function LlmLogDrawer({ logId, open, onOpenChange }: LlmLogDrawerProps) {
               <section className="space-y-2 pb-4">
                 <h3 className="text-md font-semibold">User Prompt</h3>
                 {log.userPrompt ? (
-                  <pre className="bg-muted rounded-md p-4 text-xs whitespace-pre-wrap">
-                    {log.userPrompt}
-                  </pre>
+                  <CodeBlock content={log.userPrompt} />
                 ) : (
                   <p className="text-muted-foreground text-sm">No user prompt found</p>
                 )}
@@ -203,16 +202,7 @@ export function LlmLogDrawer({ logId, open, onOpenChange }: LlmLogDrawerProps) {
               {log.response && (
                 <section className="space-y-2 pb-4">
                   <h3 className="text-md font-semibold">Response</h3>
-                  <pre className="bg-muted rounded-md p-4 text-xs whitespace-pre-wrap">
-                    {(() => {
-                      try {
-                        const parsed = JSON.parse(log.response);
-                        return JSON.stringify(parsed, null, 2);
-                      } catch {
-                        return log.response;
-                      }
-                    })()}
-                  </pre>
+                  <CodeBlock content={log.response} />
                 </section>
               )}
 
@@ -234,3 +224,32 @@ export function LlmLogDrawer({ logId, open, onOpenChange }: LlmLogDrawerProps) {
     </Sheet>
   );
 }
+
+const CodeBlock = ({ content }: { content: string }) => {
+  const { isCopied, onCopy } = useClipboard();
+
+  const formatContent = (text: string): string => {
+    try {
+      const parsed = JSON.parse(text);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return text;
+    }
+  };
+
+  const formattedContent = formatContent(content);
+
+  return (
+    <div className="group relative">
+      <pre className="bg-muted rounded-md p-4 text-xs whitespace-pre-wrap">{formattedContent}</pre>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100"
+        onClick={() => onCopy(content)}
+      >
+        {isCopied ? <Check /> : <Copy />}
+      </Button>
+    </div>
+  );
+};

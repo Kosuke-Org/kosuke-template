@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 
 import { useAuth } from '@/hooks/use-auth';
 import { useChat } from '@/hooks/use-chat';
+import { useClipboard } from '@/hooks/use-clipboard';
 import { useOrganization } from '@/hooks/use-organization';
 
 import {
@@ -212,14 +213,10 @@ const MessageSource = ({ sources }: { sources: MessageSourceType[] }) => {
 };
 
 const CopyMessageAction = ({ message }: { message: string }) => {
-  const [isCopied, setIsCopied] = useState(false);
+  const { isCopied, onCopy } = useClipboard();
 
-  const handleCopyMessage = async () => {
-    await navigator.clipboard.writeText(message);
-    setIsCopied(true);
-    setTimeout(() => {
-      setIsCopied(false);
-    }, 2000);
+  const handleCopyMessage = () => {
+    onCopy(message);
   };
 
   return (
