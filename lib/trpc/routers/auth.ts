@@ -1,6 +1,5 @@
 import { TRPCError } from '@trpc/server';
 import { eq, like } from 'drizzle-orm';
-import z from 'zod';
 
 import { AUTH_ERRORS, TEST_OTP } from '@/lib/auth/constants';
 import { auth } from '@/lib/auth/providers';
@@ -14,17 +13,22 @@ import { db } from '@/lib/db/drizzle';
 import { users, verifications } from '@/lib/db/schema';
 
 import { publicProcedure, router } from '../init';
+import { requestOtpSchema } from '../schemas/auth';
 
 export const authRouter = router({
   requestOtp: publicProcedure
-    .input(
-      z.object({
-        email: z.email({ message: 'Invalid email address' }),
-        type: z.enum(['sign-in', 'email-verification']),
-      })
-    )
+    // prettier-ignore
+    .input(requestOtpSchema)
     .mutation(async ({ input }) => {
       const { email, type } = input;
+
+      // Terms validation only for sign-up (email-verification)
+      if (type === 'email-verification' && !input.terms) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'You must agree to the terms of service',
+        });
+      }
 
       const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
@@ -58,6 +62,12 @@ export const authRouter = router({
             email,
             emailVerified: false,
             displayName: '',
+            // set initial notification settings
+            notificationSettings: JSON.stringify({
+              emailNotifications: false,
+              marketingEmails: input.marketing ?? false,
+              securityAlerts: false,
+            }),
           });
 
           await auth.api.sendVerificationOTP({ body: { email, type } });
