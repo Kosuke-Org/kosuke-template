@@ -11,6 +11,8 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+const PUBLIC_UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
+
 // Store uploads outside public directory to prevent direct access
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
 const EXPIRATION_TIME = 60 * 5;
@@ -155,9 +157,9 @@ export async function uploadProfileImage(file: File, userId: string): Promise<st
       return getS3Url(filename);
     } else {
       // Use local file system for development
-      const filePath = path.join(UPLOAD_DIR, filename);
+      const filePath = path.join(PUBLIC_UPLOAD_DIR, filename);
 
-      await mkdir(UPLOAD_DIR, { recursive: true });
+      await mkdir(PUBLIC_UPLOAD_DIR, { recursive: true });
 
       const buffer = Buffer.from(await file.arrayBuffer());
       await writeFile(filePath, buffer);
@@ -193,7 +195,7 @@ export async function deleteProfileImage(imageUrl: string): Promise<void> {
     } else if (imageUrl.includes('/uploads/')) {
       // Delete from local file system
       const filename = path.basename(imageUrl);
-      const filePath = path.join(UPLOAD_DIR, filename);
+      const filePath = path.join(PUBLIC_UPLOAD_DIR, filename);
       await unlink(filePath);
     }
   } catch (error) {
