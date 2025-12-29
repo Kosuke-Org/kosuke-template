@@ -36,3 +36,4 @@ process.env.POSTGRES_URL = 'postgresql://postgres:postgres@localhost:5432/kosuke
 process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
 process.env.BETTER_AUTH_SECRET = 'test-secret-key-for-testing-only';
 process.env.GOOGLE_AI_API_KEY = 'test-google-ai-api-key';
+process.env.RESEND_API_KEY = 'test-resend-api-key';

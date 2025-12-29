@@ -173,12 +173,30 @@ export function useAuthActions() {
     return signInMutation.mutate({ email, type: 'sign-in' });
   };
 
-  const handleSendSignUpOTP = ({ email }: { email: string }) => {
-    return signUpMutation.mutate({ email, type: 'email-verification' });
+  const handleSendSignUpOTP = ({
+    email,
+    terms,
+    marketing,
+  }: {
+    email: string;
+    terms: boolean;
+    marketing?: boolean;
+  }) => {
+    return signUpMutation.mutate({ email, type: 'email-verification', terms, marketing });
   };
 
-  const handleSendOTP = ({ email }: { email: string }) => {
-    if (isSignUpFlow) return handleSendSignUpOTP({ email });
+  const handleSendOTP = ({
+    email,
+    terms,
+    marketing,
+  }: {
+    email: string;
+    terms?: boolean;
+    marketing?: boolean;
+  }) => {
+    if (isSignUpFlow) {
+      return handleSendSignUpOTP({ email, terms: terms ?? false, marketing });
+    }
     return handleSendSignInOTP({ email });
   };
 

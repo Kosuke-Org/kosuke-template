@@ -222,7 +222,7 @@ describe('useAuthActions', () => {
       const { result } = renderHook(() => useAuthActions(), { wrapper });
 
       act(() => {
-        result.current.signUp({ email: 'test@example.com' });
+        result.current.signUp({ email: 'test@example.com', terms: true });
       });
 
       expect(mockRouterPush).toHaveBeenCalledWith(
@@ -237,7 +237,7 @@ describe('useAuthActions', () => {
       const { result } = renderHook(() => useAuthActions(), { wrapper });
 
       act(() => {
-        result.current.signUp({ email: 'test@example.com' });
+        result.current.signUp({ email: 'test@example.com', terms: true });
       });
 
       expect(mockRouterPush).toHaveBeenCalledWith(AUTH_ROUTES.VERIFY_EMAIL);

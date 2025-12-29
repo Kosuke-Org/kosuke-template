@@ -1,6 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { eq, like } from 'drizzle-orm';
-import z from 'zod';
+import { like } from 'drizzle-orm';
 
 import { AUTH_ERRORS, TEST_OTP } from '@/lib/auth/constants';
 import { auth } from '@/lib/auth/providers';
@@ -11,26 +10,32 @@ import {
   isTestEmail,
 } from '@/lib/auth/utils';
 import { db } from '@/lib/db/drizzle';
-import { users, verifications } from '@/lib/db/schema';
+import { verifications } from '@/lib/db/schema';
+import { createUser, getUserByEmail } from '@/lib/services';
 
 import { publicProcedure, router } from '../init';
+import { requestOtpSchema } from '../schemas/auth';
 
 export const authRouter = router({
   requestOtp: publicProcedure
-    .input(
-      z.object({
-        email: z.email({ message: 'Invalid email address' }),
-        type: z.enum(['sign-in', 'email-verification']),
-      })
-    )
+    // prettier-ignore
+    .input(requestOtpSchema)
     .mutation(async ({ input }) => {
       const { email, type } = input;
 
-      const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      // Terms validation only for sign-up (email-verification)
+      if (type === 'email-verification' && !input.terms) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'You must agree to the terms of service',
+        });
+      }
+
+      const existingUser = await getUserByEmail(email);
 
       if (type === 'sign-in') {
-        if (existingUser.length === 0) {
-          // Don’t send OTP if user doesn’t exist
+        if (!existingUser) {
+          // Don't send OTP if user doesn't exist
           throw new TRPCError({
             code: 'NOT_FOUND',
             message: AUTH_ERRORS.USER_NOT_FOUND,
@@ -52,18 +57,39 @@ export const authRouter = router({
       }
 
       if (type === 'email-verification') {
+        const marketingConsent = input.marketing;
+
+        console.log('[AUTH] User registration started', {
+          email,
+          marketingConsent,
+          timestamp: new Date().toISOString(),
+        });
+
         // Create an unverified user - it'll be verified after the otp is verified
-        if (existingUser.length === 0) {
-          await db.insert(users).values({
+        if (!existingUser) {
+          const user = await createUser({
             email,
             emailVerified: false,
             displayName: '',
+            notificationSettings: {
+              emailNotifications: false,
+              marketingEmails: marketingConsent,
+              securityAlerts: false,
+            },
           });
+
+          console.log('[AUTH] User created successfully', {
+            email,
+            userId: user.id,
+          });
+
+          // Marketing consent will be handled by database hook after email verification
+          // This ensures we only add verified emails to marketing lists
 
           await auth.api.sendVerificationOTP({ body: { email, type } });
           await createSignInAttempt(email);
         } else {
-          // Don’t send OTP if user already exists
+          // Don't send OTP if user already exists
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'User already exists',

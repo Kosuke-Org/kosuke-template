@@ -11,9 +11,12 @@ import { desc, eq } from 'drizzle-orm';
 import { db } from '@/lib/db/drizzle';
 import * as schema from '@/lib/db/schema';
 import { orgMemberships, organizations, users } from '@/lib/db/schema';
+import { removeContactFromMarketingSegment } from '@/lib/email';
 import { sendInvitationEmail } from '@/lib/email/invitation';
 import { sendOTPEmail } from '@/lib/email/otp';
 import { redis } from '@/lib/redis';
+import { getUserById } from '@/lib/services';
+import { handleSignUpMarketingConsent } from '@/lib/services/notification-service';
 
 import { TEST_OTP } from '../constants';
 import { isTestEmail } from '../utils';
@@ -68,6 +71,45 @@ export const auth = betterAuth({
     },
   },
   databaseHooks: {
+    user: {
+      update: {
+        after: async ({ id, emailVerified }) => {
+          // Handle marketing consent after email verification
+          // This ensures we only add verified emails to marketing lists (GDPR/CAN-SPAM compliant)
+          if (emailVerified) {
+            const user = await getUserById(id);
+
+            if (!user) return;
+
+            if (user.notificationSettings) {
+              try {
+                const settings = JSON.parse(user.notificationSettings);
+                if (settings.marketingEmails) {
+                  console.log(
+                    '[AUTH] User verified with marketing consent, adding to audience:',
+                    user.email
+                  );
+                  await handleSignUpMarketingConsent(user.email, settings.marketingEmails);
+                }
+              } catch (error) {
+                console.error('[AUTH] Failed to parse notification settings:', error);
+              }
+            }
+          }
+        },
+      },
+      delete: {
+        before: async (user) => {
+          // Remove user from marketing segment before deletion
+          // This ensures we maintain a clean marketing list and respect user data deletion
+          const fullUser = await getUserById(user.id);
+          if (fullUser?.email) {
+            console.log('[AUTH] Removing deleted user from marketing audience:', fullUser.email);
+            await removeContactFromMarketingSegment(fullUser.email);
+          }
+        },
+      },
+    },
     session: {
       create: {
         before: async (session) => {

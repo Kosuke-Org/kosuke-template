@@ -1,16 +1,24 @@
 /**
  * tRPC router for user operations
  * Handles user settings and profile management
+ * Uses service layer for business logic and data access
  */
 import { headers } from 'next/headers';
 
 import { TRPCError } from '@trpc/server';
-import { eq } from 'drizzle-orm';
 
 import { AUTH_ERRORS } from '@/lib/auth/constants';
 import { auth } from '@/lib/auth/providers';
-import { db } from '@/lib/db/drizzle';
-import { users } from '@/lib/db/schema';
+import {
+  ERRORS,
+  deleteUserProfileImage,
+  getNotificationSettings,
+  getUserById,
+  isUserAdmin,
+  updateDisplayName,
+  updateNotificationSettings,
+} from '@/lib/services';
+import { syncMarketingPreference } from '@/lib/services/notification-service';
 import { deleteProfileImage, uploadProfileImage } from '@/lib/storage';
 
 import { protectedProcedure, router } from '../init';
@@ -26,22 +34,7 @@ export const userRouter = router({
    * Get current user from database
    */
   getUser: protectedProcedure.input(getUserSchema).query(async ({ input }) => {
-    const [user] = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        emailVerified: users.emailVerified,
-        displayName: users.displayName,
-        profileImageUrl: users.profileImageUrl,
-        stripeCustomerId: users.stripeCustomerId,
-        notificationSettings: users.notificationSettings,
-        role: users.role,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-      })
-      .from(users)
-      .where(eq(users.id, input.userId))
-      .limit(1);
+    const user = await getUserById(input.userId);
 
     if (!user) {
       throw new TRPCError({ code: 'NOT_FOUND', message: AUTH_ERRORS.USER_NOT_FOUND });
@@ -54,31 +47,7 @@ export const userRouter = router({
    * Get user's notification settings
    */
   getNotificationSettings: protectedProcedure.query(async ({ ctx }) => {
-    const user = await db
-      .select({ notificationSettings: users.notificationSettings })
-      .from(users)
-      .where(eq(users.id, ctx.userId))
-      .limit(1);
-
-    if (!user.length) {
-      throw new TRPCError({ code: 'NOT_FOUND', message: AUTH_ERRORS.USER_NOT_FOUND });
-    }
-
-    const defaultSettings = {
-      emailNotifications: true,
-      marketingEmails: false,
-      securityAlerts: true,
-    };
-
-    if (!user[0].notificationSettings) {
-      return defaultSettings;
-    }
-
-    try {
-      return JSON.parse(user[0].notificationSettings);
-    } catch {
-      return defaultSettings;
-    }
+    return await getNotificationSettings(ctx.userId);
   }),
 
   /**
@@ -87,15 +56,17 @@ export const userRouter = router({
   updateNotificationSettings: protectedProcedure
     .input(notificationSettingsSchema)
     .mutation(async ({ input, ctx }) => {
-      await db
-        .update(users)
-        .set({
-          notificationSettings: JSON.stringify(input),
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, ctx.userId));
+      // Update settings and get old/new values
+      const { oldSettings, newSettings, userEmail } = await updateNotificationSettings(
+        ctx.userId,
+        input
+      );
 
-      return input;
+      // Handle side effects (e.g., Resend audience sync)
+      // This is our "signal-like" behavior
+      await syncMarketingPreference(userEmail, oldSettings, newSettings);
+
+      return newSettings;
     }),
 
   /**
@@ -147,23 +118,24 @@ export const userRouter = router({
    * Delete profile image
    */
   deleteProfileImage: protectedProcedure.mutation(async ({ ctx }) => {
-    const userId = ctx.userId;
-    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    try {
+      const imageUrl = await deleteUserProfileImage(ctx.userId);
 
-    if (!user?.profileImageUrl) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'No profile image to delete',
-      });
+      await deleteProfileImage(imageUrl);
+
+      return {
+        success: true,
+        message: 'Profile image deleted successfully',
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new TRPCError({
+          code: error.cause === ERRORS.NOT_FOUND ? 'NOT_FOUND' : 'BAD_REQUEST',
+          message: error.message,
+        });
+      }
+      throw error;
     }
-
-    await deleteProfileImage(user.profileImageUrl);
-    await db.update(users).set({ profileImageUrl: null }).where(eq(users.id, userId));
-
-    return {
-      success: true,
-      message: 'Profile image deleted successfully',
-    };
   }),
 
   /**
@@ -172,17 +144,11 @@ export const userRouter = router({
   updateDisplayName: protectedProcedure
     .input(updateDisplayNameSchema)
     .mutation(async ({ input, ctx }) => {
-      await db
-        .update(users)
-        .set({
-          displayName: input.displayName,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, ctx.userId));
+      const { displayName } = await updateDisplayName(ctx.userId, input.displayName);
 
       return {
         success: true,
-        displayName: input.displayName,
+        displayName,
         message: 'Display name updated successfully',
       };
     }),
@@ -191,7 +157,6 @@ export const userRouter = router({
    * Check if current user is a super admin
    */
   isAdmin: protectedProcedure.query(async ({ ctx }) => {
-    const user = await ctx.getUser();
-    return user?.role === 'admin';
+    return await isUserAdmin(ctx.userId);
   }),
 });
