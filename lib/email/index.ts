@@ -72,6 +72,20 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const RATE_LIMIT_DELAY = 600; // 600ms = ~1.67 req/sec (safe buffer for 2 req/sec limit)
 
 /**
+ * Validate email address format
+ * Defensive check to prevent API errors from malformed emails
+ *
+ * @note In practice, emails come from Better Auth (pre-validated) or database,
+ * but this provides a safety net against future bugs or misuse
+ */
+function validateEmail(email: string): void {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
+    throw new Error('Invalid email address');
+  }
+}
+
+/**
  * Create a Resend contact immediately
  * This is typically called as part of user registration flow
  */
@@ -140,9 +154,12 @@ export const getOrCreateMarketingSegment = async () => {
       // interface CreateSegmentResponseSuccess extends Pick<Segment, 'name' | 'id'> {
       //  object: 'segment';
       // }
-      if (createSegmentResponse.data) {
-        segment = createSegmentResponse.data as unknown as Segment;
+      if (!createSegmentResponse.data) {
+        console.error('Failed to create segment - no data returned');
+        return null;
       }
+
+      segment = createSegmentResponse.data as unknown as Segment;
     }
 
     return segment;
@@ -157,6 +174,8 @@ export const getOrCreateMarketingSegment = async () => {
  * - Creates contact if it doesn't exist
  * - Creates "Marketing" segment if it doesn't exist
  * - Adds contact to the Marketing segment
+ *
+ * @note Email is assumed to be pre-validated (from database or Better Auth)
  */
 export async function addContactToMarketingSegment(email: string) {
   if (!resend) {
@@ -227,6 +246,8 @@ export async function addContactToMarketingSegment(email: string) {
  * This operation is queued because it's not time-sensitive and involves multiple API calls.
  */
 export async function setAudienceForMarketingEmail(email: string) {
+  validateEmail(email);
+
   if (!resend) {
     return;
   }
@@ -244,6 +265,8 @@ export async function setAudienceForMarketingEmail(email: string) {
 /**
  * Remove contact from marketing segment (direct call, used by queue jobs)
  * Used when users opt out of marketing emails
+ *
+ * @note Email is assumed to be pre-validated (from database or Better Auth)
  */
 export async function removeContactFromMarketingSegmentDirect(email: string) {
   if (!resend) {
@@ -292,6 +315,8 @@ export async function removeContactFromMarketingSegmentDirect(email: string) {
  * This operation is queued because it's not time-sensitive.
  */
 export async function removeContactFromMarketingSegment(email: string) {
+  validateEmail(email);
+
   if (!resend) {
     return;
   }
