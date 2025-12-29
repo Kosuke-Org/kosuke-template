@@ -12,7 +12,6 @@ import {
 import { db } from '@/lib/db/drizzle';
 import { verifications } from '@/lib/db/schema';
 import { createUser, getUserByEmail } from '@/lib/services';
-import { handleSignUpMarketingConsent } from '@/lib/services/notification-service';
 
 import { publicProcedure, router } from '../init';
 import { requestOtpSchema } from '../schemas/auth';
@@ -58,10 +57,17 @@ export const authRouter = router({
       }
 
       if (type === 'email-verification') {
-        const marketingConsent = input.marketing ?? false;
+        const marketingConsent = input.marketing;
+
+        console.log('[AUTH] User registration started', {
+          email,
+          marketingConsent,
+          timestamp: new Date().toISOString(),
+        });
+
         // Create an unverified user - it'll be verified after the otp is verified
         if (!existingUser) {
-          await createUser({
+          const user = await createUser({
             email,
             emailVerified: false,
             displayName: '',
@@ -72,7 +78,13 @@ export const authRouter = router({
             },
           });
 
-          await handleSignUpMarketingConsent(email, marketingConsent);
+          console.log('[AUTH] User created successfully', {
+            email,
+            userId: user.id,
+          });
+
+          // Marketing consent will be handled by database hook after email verification
+          // This ensures we only add verified emails to marketing lists
 
           await auth.api.sendVerificationOTP({ body: { email, type } });
           await createSignInAttempt(email);

@@ -11,7 +11,7 @@ export const signUpSchema = z.object({
   terms: z.boolean().refine((val) => val === true, {
     message: 'You must agree to the terms of service',
   }),
-  marketing: z.boolean().optional(),
+  marketing: z.boolean().optional().default(false),
 });
 
 export const requestOtpSchema = z.discriminatedUnion('type', [signInSchema, signUpSchema]);
