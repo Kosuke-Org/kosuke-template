@@ -15,7 +15,14 @@ import { useAuthActions } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
 // Omit 'type' from the schema for the form, as it will be added during submission
@@ -24,7 +31,7 @@ const signUpFormSchema = signUpSchema.omit({ type: true });
 type SignUpFormData = z.infer<typeof signUpFormSchema>;
 
 export const SignUp = () => {
-  const { signUp, isSigningUp } = useAuthActions();
+  const { signUp, isSigningUp, signUpError } = useAuthActions();
 
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpFormSchema),
@@ -52,7 +59,7 @@ export const SignUp = () => {
               name="email"
               control={form.control}
               render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+                <Field data-invalid={fieldState.invalid || !!signUpError}>
                   <FieldLabel htmlFor="email">Email</FieldLabel>
                   <Input
                     {...field}
@@ -60,9 +67,15 @@ export const SignUp = () => {
                     id="email"
                     type="email"
                     placeholder="Enter your email address"
-                    aria-invalid={fieldState.invalid}
+                    aria-invalid={fieldState.invalid || !!signUpError}
                   />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {signUpError ? (
+                    <FieldError errors={[{ message: signUpError.message }]}>
+                      {signUpError.message}
+                    </FieldError>
+                  ) : (
+                    fieldState.invalid && <FieldError errors={[fieldState.error]} />
+                  )}
                 </Field>
               )}
             />
@@ -80,15 +93,17 @@ export const SignUp = () => {
                       onCheckedChange={field.onChange}
                       aria-invalid={fieldState.invalid}
                     />
-                    <FieldLabel htmlFor="terms" className="font-light">
-                      <span>
-                        I have read and agree to the{' '}
-                        <Link href="/terms" className="underline underline-offset-4">
-                          terms of service.
-                        </Link>
-                      </span>
-                    </FieldLabel>
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    <FieldContent>
+                      <FieldLabel htmlFor="terms" className="font-light">
+                        <span>
+                          I have read and agree to the{' '}
+                          <Link href="/terms" className="underline underline-offset-4">
+                            terms of service.
+                          </Link>
+                        </span>
+                      </FieldLabel>
+                      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    </FieldContent>
                   </Field>
                 )}
               />
@@ -104,7 +119,7 @@ export const SignUp = () => {
                       onCheckedChange={field.onChange}
                     />
                     <FieldLabel htmlFor="marketing" className="font-light">
-                      <span>I consent to marketing use of my data.</span>
+                      I consent to marketing use of my data.
                     </FieldLabel>
                   </Field>
                 )}

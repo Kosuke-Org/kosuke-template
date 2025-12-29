@@ -24,7 +24,7 @@ const signInFormSchema = signInSchema.omit({ type: true });
 type SignInFormData = z.infer<typeof signInFormSchema>;
 
 export const SignIn = () => {
-  const { signIn, isSigningIn } = useAuthActions();
+  const { signIn, isSigningIn, signInError } = useAuthActions();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams?.get('redirect');
 
@@ -57,7 +57,7 @@ export const SignIn = () => {
               name="email"
               control={form.control}
               render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
+                <Field data-invalid={fieldState.invalid || !!signInError}>
                   <FieldLabel htmlFor="email">Email</FieldLabel>
                   <Input
                     {...field}
@@ -65,9 +65,15 @@ export const SignIn = () => {
                     id="email"
                     type="email"
                     placeholder="Enter your email address"
-                    aria-invalid={fieldState.invalid}
+                    aria-invalid={fieldState.invalid || !!signInError}
                   />
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {signInError ? (
+                    <FieldError errors={[{ message: signInError.message }]}>
+                      {signInError.message}
+                    </FieldError>
+                  ) : (
+                    fieldState.invalid && <FieldError errors={[fieldState.error]} />
+                  )}
                 </Field>
               )}
             />
