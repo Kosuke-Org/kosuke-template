@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { LoaderCircle } from 'lucide-react';
+import { z } from 'zod';
+
+import { signInSchema } from '@/lib/trpc/schemas/auth';
 
 import { useAuthActions } from '@/hooks/use-auth';
 
@@ -14,9 +18,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 
+// Omit 'type' from the schema for the form, as it will be added during submission
+const signInFormSchema = signInSchema.omit({ type: true });
+
+type SignInFormData = z.infer<typeof signInFormSchema>;
+
 export const SignIn = () => {
-  const [email, setEmail] = useState('');
-  const { signIn, isSigningIn, signInError } = useAuthActions();
+  const { signIn, isSigningIn } = useAuthActions();
   const searchParams = useSearchParams();
   const redirectUrl = searchParams?.get('redirect');
 
@@ -25,8 +33,14 @@ export const SignIn = () => {
       ? `/sign-up?redirect=${redirectUrl}`
       : '/sign-up';
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const form = useForm<SignInFormData>({
+    resolver: zodResolver(signInFormSchema),
+    defaultValues: {
+      email: '',
+    },
+  });
+
+  const handleSubmit = ({ email }: SignInFormData) => {
     signIn({ email });
   };
 
@@ -37,26 +51,27 @@ export const SignIn = () => {
         <CardDescription>Welcome back! Please sign in to continue</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={form.handleSubmit(handleSubmit)}>
           <FieldGroup>
-            <Field data-invalid={!!signInError}>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="Enter your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                aria-invalid={!!signInError}
-              />
-              {signInError && (
-                <FieldError errors={[{ message: signInError.message }]}>
-                  {signInError.message}
-                </FieldError>
+            <Controller
+              name="email"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor="email">Email</FieldLabel>
+                  <Input
+                    {...field}
+                    required
+                    id="email"
+                    type="email"
+                    placeholder="Enter your email address"
+                    aria-invalid={fieldState.invalid}
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
               )}
-            </Field>
+            />
+
             <Field>
               <Button type="submit" disabled={isSigningIn}>
                 {isSigningIn && <LoaderCircle className="animate-spin" />}

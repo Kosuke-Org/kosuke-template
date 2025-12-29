@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const signInSchema = z.object({
+export const signInSchema = z.object({
   email: z.email({ message: 'Invalid email address' }),
   type: z.literal('sign-in'),
 });
