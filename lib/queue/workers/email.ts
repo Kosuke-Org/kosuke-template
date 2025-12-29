@@ -17,6 +17,9 @@ import type {
  * This worker only handles background marketing operations.
  *
  * Rate limiting strategy:
+ * - Worker processes 1 job per 2 seconds (max: 1, duration: 2000ms)
+ * - Each job makes 3-4 API calls with 600ms delays between them
+ * - This respects Resend's 2 req/sec limit: max 4 calls in 2.4 seconds = 1.67 avg req/sec
  * - Resend free tier: 2 requests/second
  */
 export const emailWorker = new Worker<
