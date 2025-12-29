@@ -24,13 +24,24 @@ export {
 // Documents queue
 export { documentsQueue, addIndexDocumentJob, type IndexDocumentJobData } from './queues/documents';
 
+// Email queue (background operations only)
+export {
+  emailQueue,
+  addToMarketingSegmentJob,
+  removeFromMarketingSegmentJob,
+  type AddToMarketingSegmentJobData,
+  type RemoveFromMarketingSegmentJobData,
+} from './queues/email';
+
 // Workers (for worker.ts)
 export { subscriptionWorker } from './workers/subscriptions';
 export { documentsWorker } from './workers/documents';
+export { emailWorker } from './workers/email';
 
 // Job processors (for testing/debugging)
 export { processSubscriptionSync } from './jobs/sync-subscriptions';
 export { processIndexDocument } from './jobs/index-document';
+export { processAddToMarketingSegment, processRemoveFromMarketingSegment } from './jobs/email';
 
 /**
  * Schedule all recurring jobs

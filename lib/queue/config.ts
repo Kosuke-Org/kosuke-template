@@ -11,6 +11,7 @@
 export const QUEUE_NAMES = {
   SUBSCRIPTIONS: 'subscription-sync',
   DOCUMENTS: 'documents',
+  EMAIL: 'email',
   // Add more queues here as needed
 } as const;
 
@@ -23,5 +24,8 @@ export const JOB_NAMES = {
   SYNC_SUBSCRIPTIONS_SCHEDULED: 'sync-subscriptions-scheduled',
   // Document queue jobs
   INDEX_DOCUMENT: 'index-document',
+  // Email queue jobs (background operations only)
+  ADD_TO_MARKETING_SEGMENT: 'add-to-marketing-segment',
+  REMOVE_FROM_MARKETING_SEGMENT: 'remove-from-marketing-segment',
   // Add more job names here as needed
 } as const;

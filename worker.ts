@@ -11,6 +11,8 @@
 import {
   documentsQueue,
   documentsWorker,
+  emailQueue,
+  emailWorker,
   gracefulShutdown,
   scheduleAllJobs,
   subscriptionQueue,
@@ -26,12 +28,13 @@ async function main() {
 
     console.log('[WORKER] ✅ Worker process initialized and ready');
     console.log('[WORKER] 📊 Active workers:');
-    console.log('[WORKER]   - Subscriptions (concurrency: 2)\n');
-    console.log('[WORKER]   - Documents (concurrency: 5)\n');
+    console.log('[WORKER]   - Subscriptions (concurrency: 2)');
+    console.log('[WORKER]   - Documents (concurrency: 5)');
+    console.log('[WORKER]   - Email (concurrency: 1, rate limited: 2 req/sec)\n');
 
     // Store references for graceful shutdown
-    const workers = [subscriptionWorker, documentsWorker];
-    const queues = [subscriptionQueue, documentsQueue];
+    const workers = [subscriptionWorker, documentsWorker, emailWorker];
+    const queues = [subscriptionQueue, documentsQueue, emailQueue];
 
     // Graceful shutdown handlers
     process.on('SIGTERM', async () => {

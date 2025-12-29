@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { eq, like } from 'drizzle-orm';
+import { like } from 'drizzle-orm';
 
 import { AUTH_ERRORS, TEST_OTP } from '@/lib/auth/constants';
 import { auth } from '@/lib/auth/providers';
@@ -10,7 +10,9 @@ import {
   isTestEmail,
 } from '@/lib/auth/utils';
 import { db } from '@/lib/db/drizzle';
-import { users, verifications } from '@/lib/db/schema';
+import { verifications } from '@/lib/db/schema';
+import { createUser, getUserByEmail } from '@/lib/services';
+import { handleSignUpMarketingConsent } from '@/lib/services/notification-service';
 
 import { publicProcedure, router } from '../init';
 import { requestOtpSchema } from '../schemas/auth';
@@ -30,11 +32,11 @@ export const authRouter = router({
         });
       }
 
-      const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const existingUser = await getUserByEmail(email);
 
       if (type === 'sign-in') {
-        if (existingUser.length === 0) {
-          // Don’t send OTP if user doesn’t exist
+        if (!existingUser) {
+          // Don't send OTP if user doesn't exist
           throw new TRPCError({
             code: 'NOT_FOUND',
             message: AUTH_ERRORS.USER_NOT_FOUND,
@@ -56,24 +58,26 @@ export const authRouter = router({
       }
 
       if (type === 'email-verification') {
+        const marketingConsent = input.marketing ?? false;
         // Create an unverified user - it'll be verified after the otp is verified
-        if (existingUser.length === 0) {
-          await db.insert(users).values({
+        if (!existingUser) {
+          await createUser({
             email,
             emailVerified: false,
             displayName: '',
-            // set initial notification settings
-            notificationSettings: JSON.stringify({
+            notificationSettings: {
               emailNotifications: false,
-              marketingEmails: input.marketing ?? false,
+              marketingEmails: marketingConsent,
               securityAlerts: false,
-            }),
+            },
           });
+
+          await handleSignUpMarketingConsent(email, marketingConsent);
 
           await auth.api.sendVerificationOTP({ body: { email, type } });
           await createSignInAttempt(email);
         } else {
-          // Don’t send OTP if user already exists
+          // Don't send OTP if user already exists
           throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'User already exists',
