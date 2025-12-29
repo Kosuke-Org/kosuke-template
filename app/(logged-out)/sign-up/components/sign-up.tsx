@@ -33,7 +33,7 @@ type SignUpFormData = z.infer<typeof signUpFormSchema>;
 export const SignUp = () => {
   const { signUp, isSigningUp, signUpError } = useAuthActions();
 
-  const form = useForm<SignUpFormData>({
+  const form = useForm({
     resolver: zodResolver(signUpFormSchema),
     defaultValues: {
       email: '',
@@ -97,9 +97,15 @@ export const SignUp = () => {
                       <FieldLabel htmlFor="terms" className="font-light">
                         <span>
                           I have read and agree to the{' '}
-                          <Link href="/terms" className="underline underline-offset-4">
-                            terms of service.
+                          <Link
+                            href="/terms"
+                            className="underline underline-offset-4"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            terms of service
                           </Link>
+                          .
                         </span>
                       </FieldLabel>
                       {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
