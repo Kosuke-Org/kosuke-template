@@ -19,18 +19,35 @@
       }
     },
     "environment": {
-      "BETTER_AUTH_SECRET": "mysecretusedbythesandoxenviornment",
-      "RESEND_API_KEY": "__KSK__RESEND_API_KEY",
-      "RESEND_FROM_EMAIL": "noreply@kosuke.ai",
-      "RESEND_FROM_NAME": "Kosuke Template",
-      "RESEND_REPLY_TO": "noreply@kosuke.ai",
-      "STRIPE_SECRET_KEY": "sk_test_xxx",
-      "STRIPE_PUBLISHABLE_KEY": "pk_test_xxx",
-      "STRIPE_PRO_PRICE_ID": "price_xxx",
-      "STRIPE_BUSINESS_PRICE_ID": "price_xxx",
-      "STRIPE_WEBHOOK_SECRET": "whsec_xxx",
-      "STRIPE_SUCCESS_URL": "http://localhost:3000/settings/billing",
-      "STRIPE_CANCEL_URL": "http://localhost:3000/settings/billing"
+      "preview": {
+        "BETTER_AUTH_SECRET": "mysecretusedbythesandoxenviornment",
+        "RESEND_API_KEY": "__KSK__RESEND_API_KEY",
+        "RESEND_FROM_EMAIL": "noreply@kosuke.ai",
+        "RESEND_FROM_NAME": "Kosuke Template",
+        "RESEND_REPLY_TO": "noreply@kosuke.ai",
+        "STRIPE_SECRET_KEY": "sk_test_xxx",
+        "STRIPE_PUBLISHABLE_KEY": "pk_test_xxx",
+        "STRIPE_PRO_PRICE_ID": "price_xxx",
+        "STRIPE_BUSINESS_PRICE_ID": "price_xxx",
+        "STRIPE_WEBHOOK_SECRET": "whsec_xxx",
+        "STRIPE_SUCCESS_URL": "http://localhost:3000/settings/billing",
+        "STRIPE_CANCEL_URL": "http://localhost:3000/settings/billing"
+      },
+      "production" : {
+        "GOOGLE_AI_API_KEY": "",
+        "BETTER_AUTH_SECRET": "",
+        "RESEND_API_KEY": "",
+        "RESEND_FROM_EMAIL": "",
+        "RESEND_FROM_NAME": "",
+        "RESEND_REPLY_TO": "",
+        "STRIPE_SECRET_KEY": "",
+        "STRIPE_PUBLISHABLE_KEY": "",
+        "STRIPE_PRO_PRICE_ID": "",
+        "STRIPE_BUSINESS_PRICE_ID": "",
+        "STRIPE_WEBHOOK_SECRET": "",
+        "STRIPE_SUCCESS_URL": "",
+        "STRIPE_CANCEL_URL": ""
+      } 
     }
   }
 }
