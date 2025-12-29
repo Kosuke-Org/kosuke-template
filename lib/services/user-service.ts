@@ -81,7 +81,7 @@ export async function updateNotificationSettings(
     .limit(1);
 
   if (!user) {
-    throw new Error('User not found');
+    throw new Error(ERROR_MESSAGES.USER_NOT_FOUND, { cause: ERRORS.NOT_FOUND });
   }
 
   const oldSettings: NotificationSettings = user.notificationSettings
@@ -122,7 +122,7 @@ export async function updateDisplayName(userId: string, displayName: string) {
     });
 
   if (!updated) {
-    throw new Error('User not found');
+    throw new Error(ERROR_MESSAGES.USER_NOT_FOUND, { cause: ERRORS.NOT_FOUND });
   }
 
   return updated;
