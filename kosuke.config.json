@@ -19,7 +19,7 @@
       }
     },
     "environment": {
-      "GOOGLE_AI_API_KEY" : "__KSK__GOOGLE_AI_API_KEY",
+      "GOOGLE_AI_API_KEY": "__KSK__GOOGLE_AI_API_KEY",
       "BETTER_AUTH_SECRET": "mysecretusedbythesandoxenviornment",
       "RESEND_API_KEY": "__KSK__RESEND_API_KEY",
       "RESEND_FROM_EMAIL": "noreply@kosuke.ai",
