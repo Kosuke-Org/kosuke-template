@@ -3,6 +3,8 @@
 import * as React from 'react';
 
 import { useAdminLlmLogs } from '@/hooks/use-admin-llm-logs';
+import { useTablePagination } from '@/hooks/use-table-pagination';
+import { useTableSearch } from '@/hooks/use-table-search';
 
 import { TableSkeleton } from '@/components/data-table/data-table-skeleton';
 
@@ -14,22 +16,26 @@ export default function AdminLlmLogsPage() {
   const [selectedLogId, setSelectedLogId] = React.useState<string | null>(null);
   const [logDrawerOpen, setLogDrawerOpen] = React.useState(false);
 
-  const {
-    logs,
-    total: logsTotal,
-    page: logsPage,
-    pageSize: logsPageSize,
-    totalPages: logsTotalPages,
-    isLoading: logsLoading,
-    searchValue: logsSearch,
-    setSearchValue: setLogsSearch,
-    pagination: logsPagination,
-  } = useAdminLlmLogs();
+  const { inputValue, searchValue, setSearchValue } = useTableSearch({
+    initialValue: '',
+    debounceMs: 500,
+  });
+
+  const pagination = useTablePagination({
+    initialPage: 1,
+    initialPageSize: 20,
+  });
+
+  const { data, isLoading } = useAdminLlmLogs({
+    searchQuery: searchValue.trim() || undefined,
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+  });
 
   const handleLogsSearchChange = (value: string) => {
-    setLogsSearch(value);
-    if (logsPagination.page !== 1) {
-      logsPagination.goToFirstPage();
+    setSearchValue(value);
+    if (pagination.page !== 1) {
+      pagination.goToFirstPage();
     }
   };
 
@@ -49,20 +55,20 @@ export default function AdminLlmLogsPage() {
         </p>
       </div>
 
-      {logsLoading ? (
+      {isLoading ? (
         <TableSkeleton />
       ) : (
         <LlmLogsDataTable
           columns={llmLogsColumns}
-          logs={logs}
-          total={logsTotal}
-          page={logsPage}
-          pageSize={logsPageSize}
-          totalPages={logsTotalPages}
-          searchQuery={logsSearch}
+          logs={data?.logs ?? []}
+          total={data?.total ?? 0}
+          page={data?.page ?? 1}
+          pageSize={data?.pageSize ?? 20}
+          totalPages={data?.totalPages ?? 0}
+          searchQuery={inputValue}
           onSearchChange={handleLogsSearchChange}
-          onPageChange={logsPagination.setPage}
-          onPageSizeChange={logsPagination.setPageSize}
+          onPageChange={pagination.setPage}
+          onPageSizeChange={pagination.setPageSize}
           onRowClick={handleLogRowClick}
         />
       )}
