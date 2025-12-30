@@ -1530,128 +1530,214 @@ return <BrowserOnlyComponent />;
 
 **Use these hooks for ALL table operations to maintain consistency and avoid duplication:**
 
-- **`useTableSearch`** - Search functionality with debouncing
+- **`useTableSearch`** - Debounced search with immediate input value and debounced query value
 - **`useTableFilters`** - Filter state management with pending state
 - **`useTableSorting`** - Sort state management with direction handling
 - **`useTablePagination`** - Pagination state with page size management
 
-#### **🔧 Implementation Patterns**
+#### **🔧 Implementation Pattern**
 
-**✅ CORRECT - Using table hooks:**
+**The correct pattern is to use table hooks in the page component and pass everything as props to the data table component. This follows the "controlled component" pattern where the page orchestrates all state and data fetching.**
+
+**✅ CORRECT - Page component with table hooks:**
 
 ```typescript
-// hooks/use-feature-table.ts
+// app/(logged-in)/org/[slug]/features/page.tsx
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+import { trpc } from '@/lib/trpc/client';
 import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useTableSearch } from '@/hooks/use-table-search';
 import { useTableSorting } from '@/hooks/use-table-sorting';
 
-export function useFeatureTable() {
-  const search = useTableSearch();
-  const filters = useTableFilters();
-  const sorting = useTableSorting();
-  const pagination = useTablePagination();
+import { FeatureDataTable } from './components/feature-data-table';
 
-  // Combine all table state
-  const tableState = {
-    searchQuery: search.searchQuery,
-    filters: filters.activeFilters,
-    sortBy: sorting.sortBy,
-    sortOrder: sorting.sortOrder,
-    page: pagination.page,
-    pageSize: pagination.pageSize,
+export default function FeaturesPage() {
+  const router = useRouter();
+
+  // Use individual table hooks
+  const { inputValue, searchValue, setSearchValue } = useTableSearch({
+    initialValue: '',
+    debounceMs: 300,
+  });
+
+  const { sortBy, sortOrder, handleSort } = useTableSorting<'name' | 'createdAt'>({
+    initialSortBy: 'createdAt',
+    initialSortOrder: 'desc',
+  });
+
+  const { page, pageSize, setPage, setPageSize, goToFirstPage } = useTablePagination({
+    initialPage: 1,
+    initialPageSize: 10,
+  });
+
+  const { filters, updateFilter, resetFilters } = useTableFilters({
+    selectedStatuses: [] as FeatureStatus[],
+    // ... other filters
+  });
+
+  // Fetch data using the table state
+  const { data, isLoading } = trpc.feature.list.useQuery({
+    searchQuery: searchValue.trim() || undefined,
+    statuses: filters.selectedStatuses.length > 0 ? filters.selectedStatuses : undefined,
+    page,
+    limit: pageSize,
+    sortBy,
+    sortOrder,
+  });
+
+  const handleClearFilters = () => {
+    resetFilters();
+    goToFirstPage();
   };
 
-  return {
-    // Search
-    searchQuery: search.searchQuery,
-    onSearchChange: search.setSearchQuery,
-    clearSearch: search.clearSearch,
-
-    // Filters
-    activeFilters: filters.activeFilters,
-    onFiltersChange: filters.setFilters,
-    clearFilters: filters.clearFilters,
-    hasActiveFilters: filters.hasActiveFilters,
-
-    // Sorting
-    sortBy: sorting.sortBy,
-    sortOrder: sorting.sortOrder,
-    onSortChange: sorting.setSorting,
-
-    // Pagination
-    page: pagination.page,
-    pageSize: pagination.pageSize,
-    onPageChange: pagination.setPage,
-    onPageSizeChange: pagination.setPageSize,
-
-    // Combined state for API calls
-    tableState,
-  };
+  return (
+    <div className="space-y-6">
+      <FeatureDataTable
+        features={data?.features ?? []}
+        total={data?.total ?? 0}
+        page={page}
+        pageSize={pageSize}
+        totalPages={data?.totalPages ?? 0}
+        isLoading={isLoading}
+        // Filter props - pass inputValue for immediate UI updates
+        searchQuery={inputValue}
+        selectedStatuses={filters.selectedStatuses}
+        // Sorting props
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        // Event handlers
+        onSearchChange={setSearchValue}
+        onStatusesChange={(statuses) => {
+          updateFilter('selectedStatuses', statuses);
+          goToFirstPage();
+        }}
+        onClearFilters={handleClearFilters}
+        onSortChange={handleSort}
+        // Pagination handlers
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        // Action handlers
+        onView={(id) => router.push(`/features/${id}`)}
+        onEdit={(id) => {/* ... */}}
+        onDelete={(id) => {/* ... */}}
+      />
+    </div>
+  );
 }
 ```
 
-**✅ CORRECT - Table component usage:**
+**✅ CORRECT - Data table as controlled component:**
 
 ```typescript
 // components/feature-data-table.tsx
 'use client';
 
-import { useFeatureTable } from '@/hooks/use-feature-table';
+import { useMemo } from 'react';
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-export function FeatureDataTable() {
-  const {
-    searchQuery,
-    onSearchChange,
-    activeFilters,
-    onFiltersChange,
-    sortBy,
-    sortOrder,
-    onSortChange,
-    page,
-    onPageChange,
-    tableState,
-  } = useFeatureTable();
+interface FeatureDataTableProps {
+  // Data props
+  features: FeatureWithDetails[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  isLoading: boolean;
+  // Filter props
+  searchQuery: string;
+  selectedStatuses: FeatureStatus[];
+  // Sorting props
+  sortBy: 'name' | 'createdAt';
+  sortOrder: 'asc' | 'desc';
+  // Event handlers
+  onSearchChange: (query: string) => void;
+  onStatusesChange: (statuses: FeatureStatus[]) => void;
+  onClearFilters: () => void;
+  onSortChange: (column: 'name' | 'createdAt') => void;
+  // Pagination handlers
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  // Action handlers
+  onView: (id: string) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+}
 
-  // Use tableState for API calls
-  const { data, isLoading } = trpc.feature.list.useQuery(tableState);
+export function FeatureDataTable({
+  features,
+  total,
+  page,
+  pageSize,
+  totalPages,
+  isLoading,
+  searchQuery,
+  selectedStatuses,
+  sortBy,
+  sortOrder,
+  onSearchChange,
+  onStatusesChange,
+  onClearFilters,
+  onSortChange,
+  onPageChange,
+  onPageSizeChange,
+  onView,
+  onEdit,
+  onDelete,
+}: FeatureDataTableProps) {
+  const columns = useMemo(
+    () => getFeatureColumns({ onView, onEdit, onDelete }, { sortBy, sortOrder, onSort: onSortChange }),
+    [onView, onEdit, onDelete, sortBy, sortOrder, onSortChange]
+  );
+
+  const table = useReactTable({
+    data: features,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    manualSorting: true,
+    pageCount: totalPages,
+    state: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
+    },
+  });
 
   return (
-    <div>
-      {/* Search */}
-      <Input
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-        placeholder="Search..."
-      />
+    <>
+      {/* Search and Filters */}
+      <div className="flex items-center gap-3">
+        <Input
+          placeholder="Search..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+        />
+        <FeatureFilters
+          selectedStatuses={selectedStatuses}
+          onStatusesChange={onStatusesChange}
+        />
+        {/* ... */}
+      </div>
 
-      {/* Filters */}
-      <FeatureFilters
-        activeFilters={activeFilters}
-        onFiltersChange={onFiltersChange}
-      />
-
-      {/* Table with sorting */}
+      {/* Table */}
       <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead onClick={() => onSortChange('name')}>
-              Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        {/* Table body */}
+        {/* ... table implementation */}
       </Table>
 
       {/* Pagination */}
-      <Pagination
-        currentPage={page}
+      <DataTablePagination
+        table={table}
+        totalRecords={total}
         onPageChange={onPageChange}
-        totalPages={data?.totalPages}
+        onPageSizeChange={onPageSizeChange}
       />
-    </div>
+    </>
   );
 }
 ```
@@ -1668,6 +1754,17 @@ const [page, setPage] = useState(1);
 const [pageSize, setPageSize] = useState(10);
 
 // This creates duplication across every table component!
+```
+
+**❌ WRONG - Data fetching inside data table component:**
+
+```typescript
+// ❌ NO! Don't fetch data inside the table component
+export function FeatureDataTable() {
+  // Don't do this - data fetching should be in the page component
+  const { data } = trpc.feature.list.useQuery({...});
+  // ...
+}
 ```
 
 #### **🏗️ Common Table Components**
@@ -1687,40 +1784,40 @@ const [pageSize, setPageSize] = useState(10);
 - ✅ **Type Safety** - Proper TypeScript integration
 - ✅ **Testing** - Centralized logic is easier to test
 - ✅ **Maintenance** - Updates in one place affect all tables
-- ✅ **Performance** - Optimized debouncing and state management
+- ✅ **Performance** - Optimized debouncing with separate input and query values
+- ✅ **UX** - Responsive input field with debounced API calls
 
-#### **🔧 Hook Integration with tRPC**
+#### **📊 Table Hook Details**
 
-```typescript
-// hooks/use-feature-table.ts
-export function useFeatureTable() {
-  const tableHooks = useTableHooks();
+**`useTableSearch`** - Debounced search with separate input and query values:
 
-  // Use table state for tRPC queries
-  const { data, isLoading } = trpc.feature.list.useQuery(tableHooks.tableState, {
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    keepPreviousData: true, // Smooth pagination
-  });
+- `inputValue` - Immediate value for input field (responsive UI)
+- `searchValue` - Debounced value for API queries (optimized performance)
+- `setSearchValue` - Updates both values with debouncing
 
-  return {
-    ...tableHooks,
-    data,
-    isLoading,
-  };
-}
-```
+**`useTableFilters`** - Generic filter state management:
 
-#### **📊 Table State Management**
+- `filters` - Current filter values
+- `updateFilter` - Update a single filter
+- `updateFilters` - Update multiple filters at once
+- `resetFilters` - Reset all filters to initial values
+- `clearFilter` - Clear a single filter
 
-**Table hooks provide:**
+**`useTableSorting`** - Column-based sorting:
 
-- **Search**: Debounced search with clear functionality
-- **Filters**: Multi-filter support with pending state
-- **Sorting**: Column-based sorting with direction
-- **Pagination**: Page and page size management
-- **Reset**: Clear all filters and reset to defaults
+- `sortBy` - Current sort column
+- `sortOrder` - Current sort direction ('asc' | 'desc')
+- `handleSort` - Toggle sort for a column
 
-**Always use these hooks for table operations to maintain consistency and avoid code duplication.**
+**`useTablePagination`** - Page and page size management:
+
+- `page` - Current page number
+- `pageSize` - Items per page
+- `setPage` - Change page
+- `setPageSize` - Change page size
+- `goToFirstPage` - Reset to page 1
+
+**Always use these hooks in page components and pass state/handlers as props to data table components.**
 
 ### Table + Detail Page Implementation Patterns
 
@@ -1987,12 +2084,10 @@ export default function FeaturePage() {
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const pagination = useTablePagination({ initialPage: 1, initialPageSize: 20 });
-  const { searchValue, setSearchValue } = useTableSearch({
+
+  const { inputValue, searchValue, setSearchValue } = useTableSearch({
     initialValue: '',
     debounceMs: 500,
-    onSearchChange: () => {
-      // Actual search happens via searchValue in query
-    },
   });
 
   // Reset to first page when search value changes
@@ -2005,7 +2100,7 @@ export default function FeaturePage() {
 
   const { data, isLoading, refetch } = trpc.feature.list.useQuery(
     {
-      searchQuery: searchValue.trim() || undefined,
+      searchQuery: searchValue.trim() || undefined, // Use debounced value for API
       page: pagination.page,
       pageSize: pagination.pageSize,
     },
@@ -2058,7 +2153,7 @@ export default function FeaturePage() {
         page={data?.page ?? 1}
         pageSize={data?.pageSize ?? 20}
         totalPages={data?.totalPages ?? 0}
-        searchQuery={searchValue}
+        searchQuery={inputValue}
         onSearchChange={handleSearchChange}
         onPageChange={pagination.setPage}
         onPageSizeChange={pagination.setPageSize}
