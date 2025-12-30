@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { ColumnDef } from '@tanstack/react-table';
 import { AlertTriangle, Check, FileX2, MoreHorizontal, Trash2 } from 'lucide-react';
 
-import type { Stores } from '@/lib/services/rag-service';
+import type { FileSearchStore } from '@/lib/types';
 
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +33,7 @@ export function getStoresColumns({
   onDeleteStore,
   onDeleteAllDocuments,
   onDeleteDanglingDocuments,
-}: ColumnActionsProps): ColumnDef<Stores>[] {
+}: ColumnActionsProps): ColumnDef<FileSearchStore>[] {
   return [
     {
       accessorKey: 'displayName',

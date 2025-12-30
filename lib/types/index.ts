@@ -38,6 +38,9 @@ export { SubscriptionState } from './billing';
 // Document and Chat types
 export type { DocumentWithUser } from './documents';
 
+// RAG types
+export type { FileSearchStore } from './rag';
+
 // Note: API types are now handled by lib/api module
 // Import from '@/lib/api' for API-related types and utilities
 

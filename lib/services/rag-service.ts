@@ -13,7 +13,11 @@ import {
   getOrganizationsWithDocuments,
 } from '@/lib/services/documents-service';
 
-export interface Stores extends FileSearchStore {
+/**
+ * Internal type: Enriched File Search Store with sync status and organization info
+ * This extends the Google API FileSearchStore with our custom fields
+ */
+interface EnrichedStore extends FileSearchStore {
   // Override to make these required since we filter out stores without names
   name: string;
   displayName: string;
@@ -28,7 +32,10 @@ export interface Stores extends FileSearchStore {
   } | null;
 }
 
-interface DocumentWithSync {
+/**
+ * Internal type: Document with sync status between local DB and Google File Search Store
+ */
+interface DocumentWithSyncStatus {
   id: string;
   displayName: string;
   status: 'in_progress' | 'ready' | 'error';
@@ -89,7 +96,7 @@ async function enrichStoresWithSyncStatus(
   stores: FileSearchStore[],
   localCountMap: Map<string, number>,
   orgsWithDocs: Array<{ id: string; name: string; slug: string }>
-): Promise<Stores[]> {
+): Promise<EnrichedStore[]> {
   return stores.map((store) => {
     const localCount = localCountMap.get(store.name!) || 0;
     // Use activeDocumentsCount from the store metadata instead of fetching all documents
@@ -122,7 +129,7 @@ async function enrichStoresWithSyncStatus(
 function mergeDocumentsWithSyncStatus(
   localDocs: DocumentWithOrganization[],
   searchStoreDocuments: Document[]
-): DocumentWithSync[] {
+): DocumentWithSyncStatus[] {
   const searchStoreDocumentsMap = new Map(searchStoreDocuments.map((doc) => [doc.name, doc]));
 
   return localDocs.map((localDoc) => {
@@ -154,7 +161,7 @@ function mergeDocumentsWithSyncStatus(
 function findOrphanedDocuments(
   searchStoreDocuments: Document[],
   localDocuments: DocumentWithOrganization[]
-): DocumentWithSync[] {
+): DocumentWithSyncStatus[] {
   const localResourceNames = new Set(
     localDocuments
       .map((doc) => doc.documentResourceName)
@@ -183,7 +190,7 @@ function findOrphanedDocuments(
  * @throws Error from database operations (propagated naturally)
  * @throws Error from Google API operations (wrapped with context)
  */
-export async function listStores(): Promise<{ stores: Stores[] }> {
+export async function listStores(): Promise<{ stores: EnrichedStore[] }> {
   const orgsWithDocs = await getOrganizationsWithDocuments();
   const orgSlugs = new Set(orgsWithDocs.map((org) => org.slug));
 
@@ -214,7 +221,7 @@ export async function listStores(): Promise<{ stores: Stores[] }> {
  */
 export async function getStoreDocuments(
   fileSearchStoreName: string
-): Promise<{ documents: DocumentWithSync[] }> {
+): Promise<{ documents: DocumentWithSyncStatus[] }> {
   // Both DB and Google API errors will propagate with their context
   const fileSearchStoreDocuments = await getFileSearchStoreDocuments(fileSearchStoreName);
   const localDocuments = await getDocumentsByFileSearchStore(fileSearchStoreName);

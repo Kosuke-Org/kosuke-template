@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 
 import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-import type { Stores } from '@/lib/services/rag-service';
+import type { FileSearchStore } from '@/lib/types';
 
 import { TableSkeleton } from '@/components/data-table/data-table-skeleton';
 import {
@@ -24,7 +24,7 @@ import {
 import { getStoresColumns } from './stores-columns';
 
 interface StoresDataTableProps {
-  stores: Stores[];
+  stores: FileSearchStore[];
   isLoading?: boolean;
   onDeleteStore: (name: string, displayName: string) => void;
   onDeleteAllDocuments: (name: string, displayName: string) => void;
