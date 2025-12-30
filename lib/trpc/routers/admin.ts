@@ -19,17 +19,23 @@ import { db } from '@/lib/db/drizzle';
 import { chatSessions, llmLogs, orgMemberships, organizations, users } from '@/lib/db/schema';
 import { createQueue } from '@/lib/queue/client';
 import { QUEUE_NAMES } from '@/lib/queue/config';
+import * as ragService from '@/lib/services/rag-service';
 import { ORG_ROLES } from '@/lib/types/organization';
+import { handleApiError } from '@/lib/utils';
 
 import { router, superAdminProcedure } from '../init';
 import {
   adminCreateMembershipSchema,
   adminCreateOrgSchema,
   adminCreateUserSchema,
+  adminDeleteAllDocumentsSchema,
+  adminDeleteDanglingDocumentsSchema,
+  adminDeleteFileSearchStoreSchema,
   adminDeleteMembershipSchema,
   adminDeleteOrgSchema,
   adminDeleteUserSchema,
   adminGetLlmLogSchema,
+  adminGetStoreDocumentsSchema,
   adminJobListFiltersSchema,
   adminLlmLogsListSchema,
   adminMembershipListFiltersSchema,
@@ -826,6 +832,76 @@ export const adminRouter = router({
           jobId: job.id,
           jobName: input.jobName,
         };
+      }),
+  }),
+
+  // ============================================================
+  // RAG (FILE SEARCH STORES) MANAGEMENT
+  // ============================================================
+
+  rag: router({
+    /**
+     * List Google File Search Stores for organizations that have documents
+     * Only shows stores that belong to organizations in the database
+     */
+    listStores: superAdminProcedure.query(async () => {
+      try {
+        return await ragService.listStores();
+      } catch (error) {
+        handleApiError(error);
+      }
+    }),
+
+    /**
+     * Get documents for a specific File Search Store with sync status
+     */
+    getStoreDocuments: superAdminProcedure
+      .input(adminGetStoreDocumentsSchema)
+      .query(async ({ input }) => {
+        try {
+          return await ragService.getStoreDocuments(input.storeName);
+        } catch (error) {
+          handleApiError(error);
+        }
+      }),
+
+    /**
+     * Delete a File Search Store (only if it has no documents)
+     */
+    deleteStore: superAdminProcedure
+      .input(adminDeleteFileSearchStoreSchema)
+      .mutation(async ({ input }) => {
+        try {
+          await ragService.deleteStore(input.storeName);
+        } catch (error) {
+          handleApiError(error);
+        }
+      }),
+
+    /**
+     * Delete all documents from a File Search Store
+     */
+    deleteAllDocuments: superAdminProcedure
+      .input(adminDeleteAllDocumentsSchema)
+      .mutation(async ({ input }) => {
+        try {
+          return await ragService.deleteAllDocuments(input.storeName);
+        } catch (error) {
+          handleApiError(error);
+        }
+      }),
+
+    /**
+     * Delete dangling documents (documents in File Search Store but not in database)
+     */
+    deleteDanglingDocuments: superAdminProcedure
+      .input(adminDeleteDanglingDocumentsSchema)
+      .mutation(async ({ input }) => {
+        try {
+          return await ragService.deleteDanglingDocuments(input.storeName);
+        } catch (error) {
+          handleApiError(error);
+        }
       }),
   }),
 

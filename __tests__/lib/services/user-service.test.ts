@@ -97,9 +97,7 @@ describe('User Service', () => {
 
       vi.mocked(db.select).mockReturnValue(mockSelect());
 
-      const result = await getUserById(mockUserId);
-
-      expect(result).toBeNull();
+      await expect(getUserById(mockUserId)).rejects.toThrow(ERROR_MESSAGES.USER_NOT_FOUND);
     });
   });
 

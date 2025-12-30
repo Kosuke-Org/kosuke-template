@@ -106,6 +106,23 @@ export const adminTriggerScheduledJobSchema = z.object({
   data: z.record(z.string(), z.unknown()).optional(),
 });
 
+// RAG (File Search Stores) Schemas
+export const adminGetStoreDocumentsSchema = z.object({
+  storeName: z.string(),
+});
+
+export const adminDeleteFileSearchStoreSchema = z.object({
+  storeName: z.string(),
+});
+
+export const adminDeleteAllDocumentsSchema = z.object({
+  storeName: z.string(),
+});
+
+export const adminDeleteDanglingDocumentsSchema = z.object({
+  storeName: z.string(),
+});
+
 // LLM Logs Schemas
 export const adminLlmLogsListSchema = z
   .object({

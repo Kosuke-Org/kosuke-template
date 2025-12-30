@@ -12,6 +12,7 @@ import type { NotificationSettings } from '@/lib/types';
 
 /**
  * Get user by ID
+ * @throws Error if user not found
  */
 export async function getUserById(userId: string) {
   const [user] = await db
@@ -31,7 +32,13 @@ export async function getUserById(userId: string) {
     .where(eq(users.id, userId))
     .limit(1);
 
-  return user || null;
+  if (!user) {
+    throw new Error(ERROR_MESSAGES.USER_NOT_FOUND, {
+      cause: ERRORS.NOT_FOUND,
+    });
+  }
+
+  return user;
 }
 
 /**

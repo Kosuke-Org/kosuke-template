@@ -74,9 +74,8 @@ export async function POST(req: Request) {
     .limit(1);
 
   if (orgDocs.length === 0 || !orgDocs[0].fileSearchStoreName) {
-    return new Response(
-      'No documents available. Please upload documents before chatting with the assistant.',
-      { status: 412 }
+    return ApiResponseHandler.badRequest(
+      'No documents available. Please upload documents before chatting with the assistant.'
     );
   }
 

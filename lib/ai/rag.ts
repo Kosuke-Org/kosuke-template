@@ -55,8 +55,8 @@ export async function uploadToFileSearchStore(params: UploadToFileSearchStorePar
 /**
  * Delete a File Search Store
  */
-export async function deleteFileSearchStore({ name }: DeleteFileSearchStoreParameters) {
-  return getClient().fileSearchStores.delete({ name });
+export function deleteFileSearchStore({ name, config }: DeleteFileSearchStoreParameters) {
+  return getClient().fileSearchStores.delete({ name, config });
 }
 
 /**
@@ -69,4 +69,18 @@ export function deleteDocumentFromFileSearchStore({ name }: DeleteDocumentParame
       force: true,
     },
   });
+}
+
+/**
+ * List all File Search Stores
+ */
+export function listFileSearchStores() {
+  return getClient().fileSearchStores.list();
+}
+
+/**
+ * List all documents in a File Search Store
+ */
+export function listDocuments(fileSearchStoreName: string) {
+  return getClient().fileSearchStores.documents.list({ parent: fileSearchStoreName });
 }

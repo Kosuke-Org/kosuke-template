@@ -6,7 +6,7 @@
  */
 import { eq } from 'drizzle-orm';
 
-import { createFileSearchStore, uploadToFileSearchStore } from '@/lib/ai/client';
+import { createFileSearchStore, uploadToFileSearchStore } from '@/lib/ai/rag';
 import { db } from '@/lib/db/drizzle';
 import { documents, organizations } from '@/lib/db/schema';
 import type { IndexDocumentJobData } from '@/lib/queue/queues/documents';
