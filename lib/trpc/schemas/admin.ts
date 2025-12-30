@@ -105,3 +105,20 @@ export const adminTriggerScheduledJobSchema = z.object({
   jobName: z.string(),
   data: z.record(z.string(), z.unknown()).optional(),
 });
+
+// LLM Logs Schemas
+export const adminLlmLogsListSchema = z
+  .object({
+    searchQuery: z.string().optional(),
+    organizationId: z.uuid().optional(),
+    chatSessionId: z.uuid().optional(),
+    dateFrom: z.date().optional(),
+    dateTo: z.date().optional(),
+    page: z.number().min(1).default(1),
+    pageSize: z.number().min(1).max(100).default(20),
+  })
+  .optional();
+
+export const adminGetLlmLogSchema = z.object({
+  id: z.uuid(),
+});
