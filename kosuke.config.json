@@ -82,7 +82,7 @@
         "_comment": "Available plans: starter (512MB/0.5CPU/$7), standard (2GB/1CPU/$25), pro (4GB/2CPU/$85), pro_plus (8GB/4CPU/$175), pro_max (16GB/4CPU/$225), pro_ultra (32GB/8CPU/$450)"
       },
       "postgres": {
-        "plan": "basic-256mb",
+        "plan": "basic_256mb",
         "_comment": "Available plans: basic-256mb ($6), basic-1gb ($19), basic-4gb ($75), pro-4gb ($55), pro-8gb ($110), pro-16gb ($220), pro-32gb ($440), pro-64gb ($880)"
       },
       "redis": {
