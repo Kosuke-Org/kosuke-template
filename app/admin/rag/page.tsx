@@ -4,10 +4,12 @@ import * as React from 'react';
 
 import { Loader2 } from 'lucide-react';
 
-import { trpc } from '@/lib/trpc/client';
-
-import { useAdminFileSearchStores } from '@/hooks/use-admin-rag';
-import { useToast } from '@/hooks/use-toast';
+import {
+  useAdminFileSearchStores,
+  useDeleteAllDocuments,
+  useDeleteDanglingDocuments,
+  useDeleteStore,
+} from '@/hooks/use-admin-rag';
 
 import {
   AlertDialog,
@@ -22,50 +24,95 @@ import {
 
 import { StoresDataTable } from './components/stores-data-table';
 
+type DialogType = 'deleteStore' | 'deleteAllDocuments' | 'deleteDanglingDocuments';
+
 export default function AdminRagPage() {
-  const { toast } = useToast();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [storeToDelete, setStoreToDelete] = React.useState<{
+  const [dialogType, setDialogType] = React.useState<DialogType | null>(null);
+  const [storeToAction, setStoreToAction] = React.useState<{
     name: string;
     displayName: string;
   } | null>(null);
 
   // File Search Stores state
-  const {
-    data: storesData,
-    isLoading: storesLoading,
-    refetch: refetchStores,
-  } = useAdminFileSearchStores();
+  const { data: storesData, isLoading: storesLoading } = useAdminFileSearchStores();
+
+  const closeDialog = () => {
+    setDeleteDialogOpen(false);
+    setDialogType(null);
+    setStoreToAction(null);
+  };
 
   // Mutations
-  const deleteStore = trpc.admin.rag.deleteStore.useMutation({
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: 'File Search Store deleted successfully',
-      });
-      setDeleteDialogOpen(false);
-      setStoreToDelete(null);
-      refetchStores();
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
+  const deleteStore = useDeleteStore({ onSettled: closeDialog });
+  const deleteAllDocuments = useDeleteAllDocuments({ onSettled: closeDialog });
+  const deleteDanglingDocuments = useDeleteDanglingDocuments({ onSettled: closeDialog });
 
-  const handleDeleteClick = (name: string, displayName: string) => {
-    setStoreToDelete({ name, displayName });
+  const handleDeleteStoreClick = (name: string, displayName: string) => {
+    setStoreToAction({ name, displayName });
+    setDialogType('deleteStore');
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (!storeToDelete) return;
-    deleteStore.mutate({ name: storeToDelete.name });
+  const handleDeleteAllDocumentsClick = (name: string, displayName: string) => {
+    setStoreToAction({ name, displayName });
+    setDialogType('deleteAllDocuments');
+    setDeleteDialogOpen(true);
   };
+
+  const handleDeleteDanglingDocumentsClick = (name: string, displayName: string) => {
+    setStoreToAction({ name, displayName });
+    setDialogType('deleteDanglingDocuments');
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirm = () => {
+    if (!storeToAction) return;
+
+    switch (dialogType) {
+      case 'deleteStore':
+        deleteStore.mutate({ storeName: storeToAction.name });
+        break;
+      case 'deleteAllDocuments':
+        deleteAllDocuments.mutate({ storeName: storeToAction.name });
+        break;
+      case 'deleteDanglingDocuments':
+        deleteDanglingDocuments.mutate({ storeName: storeToAction.name });
+        break;
+    }
+  };
+
+  const isLoading =
+    deleteStore.isPending || deleteAllDocuments.isPending || deleteDanglingDocuments.isPending;
+
+  const getDialogContent = () => {
+    if (!storeToAction) return null;
+
+    switch (dialogType) {
+      case 'deleteStore':
+        return {
+          title: 'Delete File Search Store?',
+          description: `Are you sure you want to delete "${storeToAction.displayName}"? This will permanently remove the File Search Store. This action cannot be undone.`,
+          action: 'Delete Store',
+        };
+      case 'deleteAllDocuments':
+        return {
+          title: 'Delete All Documents?',
+          description: `Are you sure you want to delete all documents from "${storeToAction.displayName}"? This will permanently remove all documents from the File Search Store. This action cannot be undone.`,
+          action: 'Delete All Documents',
+        };
+      case 'deleteDanglingDocuments':
+        return {
+          title: 'Delete Dangling Documents?',
+          description: `Are you sure you want to delete dangling documents from "${storeToAction.displayName}"? This will permanently remove documents that exist in the File Search Store but not in the database. This action cannot be undone.`,
+          action: 'Delete Dangling Documents',
+        };
+      default:
+        return null;
+    }
+  };
+
+  const dialogContent = getDialogContent();
 
   return (
     <div className="space-y-6">
@@ -79,27 +126,22 @@ export default function AdminRagPage() {
       <StoresDataTable
         stores={storesData?.stores ?? []}
         isLoading={storesLoading}
-        onDelete={handleDeleteClick}
+        onDeleteStore={handleDeleteStoreClick}
+        onDeleteAllDocuments={handleDeleteAllDocumentsClick}
+        onDeleteDanglingDocuments={handleDeleteDanglingDocumentsClick}
       />
 
-      {/* Delete Store Dialog */}
-      <AlertDialog
-        open={deleteDialogOpen || deleteStore.isPending}
-        onOpenChange={setDeleteDialogOpen}
-      >
+      <AlertDialog open={deleteDialogOpen || isLoading} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete File Search Store?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {storeToDelete &&
-                `Are you sure you want to delete "${storeToDelete.displayName}"? This will permanently remove the File Search Store from Google and all associated documents. This action cannot be undone.`}
-            </AlertDialogDescription>
+            <AlertDialogTitle>{dialogContent?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{dialogContent?.description}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteStore.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleteStore.isPending}>
-              {deleteStore.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              Delete
+            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirm} disabled={isLoading}>
+              {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {dialogContent?.action}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

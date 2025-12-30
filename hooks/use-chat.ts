@@ -114,6 +114,8 @@ export function useChatSession(options: UseChatSessionOptions) {
 
 export function useChat(options: UseChatOptions) {
   const { chatSessionId, organizationId } = options;
+  const { toast } = useToast();
+
   const utils = trpc.useUtils();
   const [input, setInput] = useState('');
 
@@ -136,7 +138,23 @@ export function useChat(options: UseChatOptions) {
       utils.chat.getMessages.invalidate({ chatSessionId, organizationId });
     },
     onError: (error: Error) => {
-      console.error('Chat error:', error);
+      // Parse error message - AI SDK may pass JSON string from API error responses
+      let errorMessage = error.message || 'Failed to send message';
+
+      try {
+        const parsed = JSON.parse(errorMessage);
+        if (parsed.error) {
+          errorMessage = parsed.error;
+        }
+      } catch {
+        // Not JSON, use the message as-is
+      }
+
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     },
   });
 

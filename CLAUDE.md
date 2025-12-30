@@ -203,7 +203,7 @@ const result = await db.select().from(tableName).where(eq(tableName.userId, user
 #### **Service File Structure**
 
 ```typescript
-// lib/services/user.service.ts
+// lib/services/user-service.ts
 import { and, eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db/drizzle';
@@ -268,7 +268,7 @@ export async function updateNotificationSettings(
 // lib/trpc/routers/user.ts
 import { z } from 'zod';
 
-import * as userService from '@/lib/services/user.service';
+import * as userService from '@/lib/services/user-service';
 
 import { protectedProcedure, router } from '../init';
 
@@ -485,7 +485,7 @@ export const userRouter = router({
 });
 
 // ✅ From Server Component
-import * as userService from '@/lib/services/user.service';
+import * as userService from '@/lib/services/user-service';
 
 async function ProfilePage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -495,14 +495,14 @@ async function ProfilePage() {
 
 // ✅ From Server Action
 'use server';
-import * as userService from '@/lib/services/user.service';
+import * as userService from '@/lib/services/user-service';
 
 export async function updateUserAction(userId: string, data: UpdateUserInput) {
   return await userService.updateUser(userId, data);
 }
 
 // ✅ From API Route
-import * as userService from '@/lib/services/user.service';
+import * as userService from '@/lib/services/user-service';
 
 export async function GET(req: Request) {
   const user = await userService.getUserById(userId);
@@ -510,7 +510,7 @@ export async function GET(req: Request) {
 }
 
 // ✅ From Cron Job
-import * as userService from '@/lib/services/user.service';
+import * as userService from '@/lib/services/user-service';
 
 export async function GET() {
   const inactiveUsers = await userService.getInactiveUsers();
@@ -2784,8 +2784,8 @@ export const usedFunction = () => {}; // Keep
 ```plaintext
 lib/
 ├── services/              # Business logic layer (SERVER-ONLY)
-│   ├── user.service.ts    # User-related business logic
-│   ├── task.service.ts    # Task-related business logic
+│   ├── user-service.ts    # User-related business logic
+│   ├── task-service.ts    # Task-related business logic
 │   └── ...
 ├── trpc/                  # API layer (calls services)
 │   ├── init.ts            # tRPC initialization, context, procedures
@@ -2797,8 +2797,8 @@ lib/
 │   │   ├── user.ts
 │   │   └── ...
 │   ├── routers/           # Feature-specific routers (thin layer)
-│   │   ├── tasks.ts       # Calls task.service.ts
-│   │   ├── user.ts        # Calls user.service.ts
+│   │   ├── tasks.ts       # Calls task-service.ts
+│   │   ├── user.ts        # Calls user-service.ts
 │   │   └── ...
 │   └── index.ts
 └── db/
@@ -2813,7 +2813,7 @@ lib/
 **✅ CORRECT - Service with business logic:**
 
 ```typescript
-// lib/services/user.service.ts
+// lib/services/user-service.ts
 import { eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db/drizzle';
@@ -2877,7 +2877,7 @@ export async function getUserById(userId: string) {
 // lib/trpc/routers/user.ts
 import { z } from 'zod';
 
-import * as userService from '@/lib/services/user.service';
+import * as userService from '@/lib/services/user-service';
 
 import { protectedProcedure, router } from '../init';
 
@@ -2907,7 +2907,7 @@ export const userRouter = router({
 ```typescript
 // app/(logged-in)/settings/page.tsx
 import { auth } from '@/lib/auth/providers';
-import * as userService from '@/lib/services/user.service';
+import * as userService from '@/lib/services/user-service';
 
 export default async function SettingsPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -2962,12 +2962,12 @@ export const userRouter = router({
 **Services are easy to test because they're pure functions with no framework dependencies.**
 
 ```typescript
-// __tests__/lib/services/user.service.test.ts
+// __tests__/lib/services/user-service.test.ts
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { db } from '@/lib/db/drizzle';
 import { notificationSettings, users } from '@/lib/db/schema';
-import * as userService from '@/lib/services/user.service';
+import * as userService from '@/lib/services/user-service';
 
 describe('UserService', () => {
   let testUserId: string;
@@ -3072,8 +3072,8 @@ lib/trpc/
 │   ├── user.ts      # User validation schemas
 │   └── ...
 ├── routers/         # Feature-specific routers (THIN LAYER - calls services)
-│   ├── tasks.ts     # Validates input, calls task.service.ts
-│   ├── user.ts      # Validates input, calls user.service.ts
+│   ├── tasks.ts     # Validates input, calls task-service.ts
+│   ├── user.ts      # Validates input, calls user-service.ts
 │   └── ...
 └── index.ts         # Exports (re-exports client-safe schemas)
 ```
@@ -3203,7 +3203,7 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
 
 ```typescript
 // lib/trpc/routers/tasks.ts
-import * as taskService from '@/lib/services/task.service';
+import * as taskService from '@/lib/services/task-service';
 
 import { protectedProcedure, router } from '../init';
 import { createTaskSchema, taskListFiltersSchema } from '../schemas/tasks';
@@ -3335,7 +3335,7 @@ export function useTasks(filters?: { completed?: boolean }) {
 - Services handle authorization logic and throw appropriate errors
 
 ```typescript
-// lib/services/task.service.ts
+// lib/services/task-service.ts
 export async function updateTask(
   userId: string,
   taskId: string,
@@ -3551,7 +3551,7 @@ function TaskList() {
 
 // ✅ Server Component → Service (direct)
 import { auth } from '@/lib/auth/providers';
-import * as taskService from '@/lib/services/task.service';
+import * as taskService from '@/lib/services/task-service';
 
 async function TaskList() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -3561,14 +3561,14 @@ async function TaskList() {
 
 // ✅ Server Action → Service (direct)
 'use server';
-import * as taskService from '@/lib/services/task.service';
+import * as taskService from '@/lib/services/task-service';
 
 export async function createTaskAction(userId: string, data: CreateTaskInput) {
   return await taskService.createTask(userId, data);
 }
 
 // ✅ Cron Job → Service (direct)
-import * as taskService from '@/lib/services/task.service';
+import * as taskService from '@/lib/services/task-service';
 
 export async function GET() {
   const overdueTasks = await taskService.getOverdueTasks();
@@ -3577,7 +3577,7 @@ export async function GET() {
 }
 
 // ✅ API Route → Service (direct)
-import * as userService from '@/lib/services/user.service';
+import * as userService from '@/lib/services/user-service';
 
 export async function POST(req: Request) {
   const { userId } = await req.json();

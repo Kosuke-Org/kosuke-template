@@ -8,7 +8,7 @@
 import Link from 'next/link';
 
 import { ColumnDef } from '@tanstack/react-table';
-import { CheckCircle2, MoreHorizontal, Trash2, XCircle } from 'lucide-react';
+import { AlertTriangle, Check, FileX2, MoreHorizontal, Trash2 } from 'lucide-react';
 
 import type { Stores } from '@/lib/services/rag-service';
 
@@ -19,14 +19,21 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
 interface ColumnActionsProps {
-  onDelete: (name: string, displayName: string) => void;
+  onDeleteStore: (name: string, displayName: string) => void;
+  onDeleteAllDocuments: (name: string, displayName: string) => void;
+  onDeleteDanglingDocuments: (name: string, displayName: string) => void;
 }
 
-export function getStoresColumns({ onDelete }: ColumnActionsProps): ColumnDef<Stores>[] {
+export function getStoresColumns({
+  onDeleteStore,
+  onDeleteAllDocuments,
+  onDeleteDanglingDocuments,
+}: ColumnActionsProps): ColumnDef<Stores>[] {
   return [
     {
       accessorKey: 'displayName',
@@ -50,35 +57,46 @@ export function getStoresColumns({ onDelete }: ColumnActionsProps): ColumnDef<St
     },
     {
       accessorKey: 'documentCount',
-      header: () => <DataTableColumnHeader title="Documents" />,
-      cell: ({ row }) => (
-        <div className="text-sm">
-          <span className="font-medium">{row.original.documentCount}</span>
-        </div>
-      ),
+      header: () => <DataTableColumnHeader title="Total documents" />,
+      cell: ({ row }) => {
+        return (
+          <div className="text-sm">
+            <div className="font-medium">{row.original.documentCount}</div>
+          </div>
+        );
+      },
     },
     {
       accessorKey: 'syncStatus',
       header: () => <DataTableColumnHeader title="Status" />,
-      cell: ({ row }) => (
-        <Badge variant={row.original.syncStatus === 'synced' ? 'default' : 'destructive'}>
-          {row.original.syncStatus === 'synced' ? (
-            <>
-              <CheckCircle2 className="h-4 w-4" /> Synced
-            </>
-          ) : (
-            <>
-              <XCircle className="h-4 w-4" /> Mismatch
-            </>
-          )}
-        </Badge>
-      ),
+      cell: ({ row }) => {
+        const { documentCount, localCount, syncStatus } = row.original;
+        const danglingCount = documentCount - localCount;
+        const hasDangling = syncStatus === 'mismatch' && danglingCount > 0;
+        return (
+          <>
+            {hasDangling ? (
+              <div className="text-muted-foreground flex items-center gap-1 text-xs">
+                <AlertTriangle className="h-3 w-3 text-amber-500" />
+                {danglingCount} dangling documents
+              </div>
+            ) : (
+              <Badge variant="default">
+                {syncStatus === 'synced' && <Check className="h-4 w-4" />} Synced
+              </Badge>
+            )}
+          </>
+        );
+      },
     },
     {
       id: 'actions',
       enableHiding: false,
       cell: ({ row }) => {
-        const { name, displayName } = row.original;
+        const { name, displayName, documentCount, localCount, syncStatus } = row.original;
+        const danglingCount = documentCount - localCount;
+        const hasDanglingDocs = syncStatus === 'mismatch' && danglingCount > 0;
+        const hasDocuments = documentCount > 0;
 
         return (
           <div className="flex justify-end">
@@ -90,15 +108,42 @@ export function getStoresColumns({ onDelete }: ColumnActionsProps): ColumnDef<St
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {hasDocuments && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteAllDocuments(name, displayName);
+                      }}
+                      className="text-amber-600 focus:text-amber-600"
+                    >
+                      <FileX2 className="h-4 w-4 text-amber-600" />
+                      Delete All Documents
+                    </DropdownMenuItem>
+                    {hasDanglingDocs && (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteDanglingDocuments(name, displayName);
+                        }}
+                        className="text-amber-600 focus:text-amber-600"
+                      >
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        Delete Dangling Documents ({danglingCount})
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    onDelete(name, displayName);
+                    onDeleteStore(name, displayName);
                   }}
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash2 className="text-destructive h-4 w-4" />
-                  Delete
+                  Delete Store
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

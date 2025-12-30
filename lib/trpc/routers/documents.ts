@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, ilike } from 'drizzle-orm';
 
-import { deleteDocumentFromFileSearchStore, deleteFileSearchStore } from '@/lib/ai/client';
+import { deleteDocumentFromFileSearchStore, deleteFileSearchStore } from '@/lib/ai/rag';
 import { db } from '@/lib/db/drizzle';
 import { documents, organizations, users } from '@/lib/db/schema';
 import { addIndexDocumentJob } from '@/lib/queue/queues/documents';

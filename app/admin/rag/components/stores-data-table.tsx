@@ -26,11 +26,27 @@ import { getStoresColumns } from './stores-columns';
 interface StoresDataTableProps {
   stores: Stores[];
   isLoading?: boolean;
-  onDelete: (name: string, displayName: string) => void;
+  onDeleteStore: (name: string, displayName: string) => void;
+  onDeleteAllDocuments: (name: string, displayName: string) => void;
+  onDeleteDanglingDocuments: (name: string, displayName: string) => void;
 }
 
-export function StoresDataTable({ stores, isLoading, onDelete }: StoresDataTableProps) {
-  const columns = useMemo(() => getStoresColumns({ onDelete }), [onDelete]);
+export function StoresDataTable({
+  stores,
+  isLoading,
+  onDeleteStore,
+  onDeleteAllDocuments,
+  onDeleteDanglingDocuments,
+}: StoresDataTableProps) {
+  const columns = useMemo(
+    () =>
+      getStoresColumns({
+        onDeleteStore,
+        onDeleteAllDocuments,
+        onDeleteDanglingDocuments,
+      }),
+    [onDeleteStore, onDeleteAllDocuments, onDeleteDanglingDocuments]
+  );
 
   // eslint-disable-next-line
   const table = useReactTable({

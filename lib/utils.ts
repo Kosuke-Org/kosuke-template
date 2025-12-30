@@ -1,3 +1,5 @@
+import { ApiError } from '@google/genai';
+import { TRPCError } from '@trpc/server';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -80,4 +82,58 @@ export function downloadFromUrl(url: string, filename: string) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+/**
+ * Centralized error mapping for Google API errors
+ * Maps HTTP status codes to appropriate tRPC error codes
+ */
+function mapApiErrorToTRPC(error: ApiError): TRPCError {
+  const statusCodeMap: Record<
+    number,
+    'BAD_REQUEST' | 'NOT_FOUND' | 'CONFLICT' | 'PRECONDITION_FAILED'
+  > = {
+    400: 'BAD_REQUEST',
+    404: 'NOT_FOUND',
+    409: 'CONFLICT',
+    412: 'PRECONDITION_FAILED',
+  };
+
+  const code = statusCodeMap[error.status] || 'INTERNAL_SERVER_ERROR';
+
+  // Extract clean error message from Google API error
+  // Google API errors come as JSON strings like: {"error":{"code":400,"message":"..."}}
+  let parsedMessage = error.message;
+  try {
+    const parsed = JSON.parse(error.message);
+    if (parsed.error?.message) {
+      parsedMessage = parsed.error.message;
+    }
+  } catch {
+    parsedMessage = error.message;
+  }
+
+  return new TRPCError({
+    code,
+    message: parsedMessage,
+  });
+}
+
+/**
+ * Centralized error handler for external API errors
+ * Always wraps errors in TRPCError and never leaks raw errors to client
+ */
+export function handleApiError(error: unknown, errorMessage?: string): never {
+  if (error instanceof ApiError) {
+    throw mapApiErrorToTRPC(error);
+  }
+
+  if (error instanceof Error) {
+    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
+  }
+
+  throw new TRPCError({
+    code: 'INTERNAL_SERVER_ERROR',
+    message: errorMessage,
+  });
 }
