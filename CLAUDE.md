@@ -17,19 +17,37 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
 - `./app`: Next.js 16 App Router pages and layouts
   - `./app/(logged-in)`: Protected routes for authenticated users
     - Feature modules should include their own `components/` directory
-    - Example: `./app/(logged-in)/tasks/components/` for task-specific components
-  - `./app/(logged-out)`: Public routes for unauthenticated users
+    - Example: `./app/(logged-in)/org/[slug]/tasks/components/` for task-specific components
+  - `./app/(logged-out)`: Public routes for unauthenticated users (sign-in, sign-up, etc.)
+  - `./app/admin`: Admin dashboard routes
   - `./app/api`: API routes (billing webhooks, user management, cron jobs)
 - `./components`: Global reusable UI components shared across multiple modules
   - `./components/ui`: Shadcn UI components (pre-installed, don't reinstall)
+  - `./components/data-table`: Reusable table components
+  - `./components/ai-elements`: AI chat and streaming components
 - `./lib`: Core utilities and configurations
+  - `./lib/services`: **Business logic layer** (database operations, authorization)
+  - `./lib/trpc`: Type-safe API layer (thin layer calling services)
+    - `./lib/trpc/routers`: Feature-specific routers
+    - `./lib/trpc/schemas`: Zod validation schemas (client-safe)
   - `./lib/db`: Drizzle ORM schema, migrations, and database utilities
   - `./lib/auth`: Better Auth authentication utilities
   - `./lib/billing`: Stripe billing integration
   - `./lib/email`: Resend email templates and utilities
-  - `./lib/storage`: Vercel Blob storage utilities
-- `./public`: Static assets
-- `./cli`: Interactive setup guide for project configuration
+  - `./lib/storage`: S3/local storage utilities
+  - `./lib/types`: Centralized TypeScript type definitions
+  - `./lib/api`: API infrastructure types and utilities
+  - `./lib/queue`: Background job processing with BullMQ
+  - **Feature-specific directories**: Each feature (organizations, documents, ai, seo, etc.) has its own folder
+- `./hooks`: Custom React hooks for client components
+- `./emails`: Email templates (React Email)
+- `./store`: Zustand state management stores
+- `./public`: Static assets (images, icons, logos)
+- `./uploads`: User-uploaded files (development only)
+- `.__tests__`: Test files mirroring the project structure
+  - `.__tests__/lib/services`: Service layer tests (PRIORITY)
+  - `.__tests__/hooks`: Hook tests
+  - `.__tests__/lib`: Utility and library tests
 
 ### Essential Commands & Database Operations
 
@@ -143,6 +161,362 @@ export const tableName = pgTable('table_name', {
 export type Status = (typeof statusEnum.enumValues)[number];
 
 const result = await db.select().from(tableName).where(eq(tableName.userId, userId));
+```
+
+### Service Layer Pattern - MANDATORY
+
+**ALL business logic and database operations MUST be in the service layer (`lib/services/`). Services are the single source of truth for data operations.**
+
+#### **Why Service Layer?**
+
+- ✅ **Reusability** - Services can be called from tRPC, Server Components, Server Actions, cron jobs, API routes
+- ✅ **Testability** - Pure functions with no framework dependencies are easy to test
+- ✅ **Separation of Concerns** - Business logic separate from API/presentation layers
+- ✅ **Type Safety** - Full TypeScript support across all layers
+- ✅ **Maintainability** - Single source of truth for business logic
+- ✅ **Performance** - Server Components can call services directly (no HTTP overhead)
+- ✅ **Authorization** - Centralized authorization logic in one place
+
+#### **Service Layer Rules**
+
+**✅ DO:**
+
+- Put ALL database queries in services
+- Put ALL business logic in services (calculations, validations, transformations)
+- Put authorization checks in services
+- Export named functions (not default exports)
+- Use descriptive function names (`getUserById`, `updateNotificationSettings`, `createTask`)
+- Return typed results (never `any`)
+- Throw meaningful errors
+- Write tests for every service function
+
+**❌ DON'T:**
+
+- Put database queries in tRPC routers
+- Put business logic in tRPC routers
+- Put database queries in components
+- Put business logic in hooks
+- Use default exports
+- Return untyped results
+- Swallow errors silently
+
+#### **Service File Structure**
+
+```typescript
+// lib/services/user.service.ts
+import { and, eq } from 'drizzle-orm';
+
+import { db } from '@/lib/db/drizzle';
+import { notificationSettings, users } from '@/lib/db/schema';
+
+// Types (can be defined inline if service-specific)
+export interface NotificationSettings {
+  emailNotifications: boolean;
+  marketingEmails: boolean;
+  securityAlerts: boolean;
+}
+
+// Service functions
+export async function getUserById(userId: string) {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return user ?? null;
+}
+
+export async function getNotificationSettings(userId: string): Promise<NotificationSettings> {
+  const [settings] = await db
+    .select()
+    .from(notificationSettings)
+    .where(eq(notificationSettings.userId, userId))
+    .limit(1);
+
+  if (!settings) {
+    // Business logic: Create defaults if none exist
+    const defaults = {
+      userId,
+      emailNotifications: true,
+      marketingEmails: false,
+      securityAlerts: true,
+    };
+    await db.insert(notificationSettings).values(defaults);
+    return defaults;
+  }
+
+  return settings;
+}
+
+export async function updateNotificationSettings(
+  userId: string,
+  updates: Partial<NotificationSettings>
+): Promise<NotificationSettings> {
+  const [updated] = await db
+    .update(notificationSettings)
+    .set(updates)
+    .where(eq(notificationSettings.userId, userId))
+    .returning();
+
+  if (!updated) {
+    throw new Error('Failed to update notification settings');
+  }
+
+  return updated;
+}
+```
+
+#### **tRPC Router as Thin Layer**
+
+```typescript
+// lib/trpc/routers/user.ts
+import { z } from 'zod';
+
+import * as userService from '@/lib/services/user.service';
+
+import { protectedProcedure, router } from '../init';
+
+export const userRouter = router({
+  // Thin layer - just validate and call service
+  getNotificationSettings: protectedProcedure.query(async ({ ctx }) => {
+    return await userService.getNotificationSettings(ctx.userId);
+  }),
+
+  updateNotificationSettings: protectedProcedure
+    .input(
+      z.object({
+        emailNotifications: z.boolean().optional(),
+        marketingEmails: z.boolean().optional(),
+        securityAlerts: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return await userService.updateNotificationSettings(ctx.userId, input);
+    }),
+});
+```
+
+#### **Service Testing Pattern**
+
+**ALWAYS use mocks for service tests. NEVER create real database records in tests.**
+
+```typescript
+// __tests__/lib/services/user-service.test.ts
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { db } from '@/lib/db/drizzle';
+import * as userService from '@/lib/services/user-service';
+
+// Mock the database
+vi.mock('@/lib/db/drizzle', () => ({
+  db: {
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+}));
+
+describe('UserService', () => {
+  const mockUserId = 'user-123';
+  const mockUser = {
+    id: mockUserId,
+    email: 'test@example.com',
+    emailVerified: true,
+    displayName: 'Test User',
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('getUserById', () => {
+    it('should return user when found', async () => {
+      // Mock the database query chain
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([mockUser]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const result = await userService.getUserById(mockUserId);
+
+      expect(result).toEqual(mockUser);
+      expect(db.select).toHaveBeenCalled();
+
+      // ✅ BEST PRACTICE: Validate the exact fields being selected
+      expect(db.select).toHaveBeenCalledWith({
+        id: expect.anything(),
+        email: expect.anything(),
+        emailVerified: expect.anything(),
+        displayName: expect.anything(),
+        profileImageUrl: expect.anything(),
+        stripeCustomerId: expect.anything(),
+        role: expect.anything(),
+        createdAt: expect.anything(),
+        updatedAt: expect.anything(),
+      });
+    });
+
+    it('should return null when user not found', async () => {
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const result = await userService.getUserById('non-existent');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getNotificationSettings', () => {
+    it('should create default settings if none exist', async () => {
+      const mockDefaults = {
+        emailNotifications: true,
+        marketingEmails: false,
+        securityAlerts: true,
+      };
+
+      // Mock select returning empty (no existing settings)
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      // Mock insert for creating defaults
+      const mockInsert = vi.fn().mockReturnValue({
+        values: vi.fn().mockResolvedValue(undefined),
+      });
+      vi.mocked(db.insert).mockImplementation(mockInsert);
+
+      const result = await userService.getNotificationSettings(mockUserId);
+
+      expect(result).toEqual(mockDefaults);
+      expect(db.insert).toHaveBeenCalled();
+    });
+
+    it('should return existing settings', async () => {
+      const mockSettings = {
+        emailNotifications: false,
+        marketingEmails: true,
+        securityAlerts: false,
+      };
+
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([mockSettings]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const result = await userService.getNotificationSettings(mockUserId);
+
+      expect(result).toEqual(mockSettings);
+      expect(db.insert).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('updateNotificationSettings', () => {
+    it('should update settings', async () => {
+      const updates = { emailNotifications: false };
+      const mockUpdated = {
+        emailNotifications: false,
+        marketingEmails: false,
+        securityAlerts: true,
+      };
+
+      const mockUpdate = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([mockUpdated]),
+          }),
+        }),
+      });
+      vi.mocked(db.update).mockImplementation(mockUpdate);
+
+      const result = await userService.updateNotificationSettings(mockUserId, updates);
+
+      expect(result).toEqual(mockUpdated);
+      expect(db.update).toHaveBeenCalled();
+    });
+
+    it('should throw error when update fails', async () => {
+      const mockUpdate = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+      vi.mocked(db.update).mockImplementation(mockUpdate);
+
+      await expect(
+        userService.updateNotificationSettings(mockUserId, { emailNotifications: false })
+      ).rejects.toThrow('Failed to update notification settings');
+    });
+  });
+});
+```
+
+#### **Calling Services from Different Contexts**
+
+```typescript
+// ✅ From tRPC Router
+export const userRouter = router({
+  get: protectedProcedure.query(async ({ ctx }) => {
+    return await userService.getUserById(ctx.userId);
+  }),
+});
+
+// ✅ From Server Component
+import * as userService from '@/lib/services/user.service';
+
+async function ProfilePage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  const user = await userService.getUserById(session.user.id);
+  return <div>{user?.email}</div>;
+}
+
+// ✅ From Server Action
+'use server';
+import * as userService from '@/lib/services/user.service';
+
+export async function updateUserAction(userId: string, data: UpdateUserInput) {
+  return await userService.updateUser(userId, data);
+}
+
+// ✅ From API Route
+import * as userService from '@/lib/services/user.service';
+
+export async function GET(req: Request) {
+  const user = await userService.getUserById(userId);
+  return Response.json(user);
+}
+
+// ✅ From Cron Job
+import * as userService from '@/lib/services/user.service';
+
+export async function GET() {
+  const inactiveUsers = await userService.getInactiveUsers();
+  // Process inactive users
+  return Response.json({ count: inactiveUsers.length });
+}
 ```
 
 ### Better Auth Authentication Integration
@@ -1156,128 +1530,214 @@ return <BrowserOnlyComponent />;
 
 **Use these hooks for ALL table operations to maintain consistency and avoid duplication:**
 
-- **`useTableSearch`** - Search functionality with debouncing
+- **`useTableSearch`** - Debounced search with immediate input value and debounced query value
 - **`useTableFilters`** - Filter state management with pending state
 - **`useTableSorting`** - Sort state management with direction handling
 - **`useTablePagination`** - Pagination state with page size management
 
-#### **🔧 Implementation Patterns**
+#### **🔧 Implementation Pattern**
 
-**✅ CORRECT - Using table hooks:**
+**The correct pattern is to use table hooks in the page component and pass everything as props to the data table component. This follows the "controlled component" pattern where the page orchestrates all state and data fetching.**
+
+**✅ CORRECT - Page component with table hooks:**
 
 ```typescript
-// hooks/use-feature-table.ts
+// app/(logged-in)/org/[slug]/features/page.tsx
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+import { trpc } from '@/lib/trpc/client';
 import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useTableSearch } from '@/hooks/use-table-search';
 import { useTableSorting } from '@/hooks/use-table-sorting';
 
-export function useFeatureTable() {
-  const search = useTableSearch();
-  const filters = useTableFilters();
-  const sorting = useTableSorting();
-  const pagination = useTablePagination();
+import { FeatureDataTable } from './components/feature-data-table';
 
-  // Combine all table state
-  const tableState = {
-    searchQuery: search.searchQuery,
-    filters: filters.activeFilters,
-    sortBy: sorting.sortBy,
-    sortOrder: sorting.sortOrder,
-    page: pagination.page,
-    pageSize: pagination.pageSize,
+export default function FeaturesPage() {
+  const router = useRouter();
+
+  // Use individual table hooks
+  const { inputValue, searchValue, setSearchValue } = useTableSearch({
+    initialValue: '',
+    debounceMs: 300,
+  });
+
+  const { sortBy, sortOrder, handleSort } = useTableSorting<'name' | 'createdAt'>({
+    initialSortBy: 'createdAt',
+    initialSortOrder: 'desc',
+  });
+
+  const { page, pageSize, setPage, setPageSize, goToFirstPage } = useTablePagination({
+    initialPage: 1,
+    initialPageSize: 10,
+  });
+
+  const { filters, updateFilter, resetFilters } = useTableFilters({
+    selectedStatuses: [] as FeatureStatus[],
+    // ... other filters
+  });
+
+  // Fetch data using the table state
+  const { data, isLoading } = trpc.feature.list.useQuery({
+    searchQuery: searchValue.trim() || undefined,
+    statuses: filters.selectedStatuses.length > 0 ? filters.selectedStatuses : undefined,
+    page,
+    limit: pageSize,
+    sortBy,
+    sortOrder,
+  });
+
+  const handleClearFilters = () => {
+    resetFilters();
+    goToFirstPage();
   };
 
-  return {
-    // Search
-    searchQuery: search.searchQuery,
-    onSearchChange: search.setSearchQuery,
-    clearSearch: search.clearSearch,
-
-    // Filters
-    activeFilters: filters.activeFilters,
-    onFiltersChange: filters.setFilters,
-    clearFilters: filters.clearFilters,
-    hasActiveFilters: filters.hasActiveFilters,
-
-    // Sorting
-    sortBy: sorting.sortBy,
-    sortOrder: sorting.sortOrder,
-    onSortChange: sorting.setSorting,
-
-    // Pagination
-    page: pagination.page,
-    pageSize: pagination.pageSize,
-    onPageChange: pagination.setPage,
-    onPageSizeChange: pagination.setPageSize,
-
-    // Combined state for API calls
-    tableState,
-  };
+  return (
+    <div className="space-y-6">
+      <FeatureDataTable
+        features={data?.features ?? []}
+        total={data?.total ?? 0}
+        page={page}
+        pageSize={pageSize}
+        totalPages={data?.totalPages ?? 0}
+        isLoading={isLoading}
+        // Filter props - pass inputValue for immediate UI updates
+        searchQuery={inputValue}
+        selectedStatuses={filters.selectedStatuses}
+        // Sorting props
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        // Event handlers
+        onSearchChange={setSearchValue}
+        onStatusesChange={(statuses) => {
+          updateFilter('selectedStatuses', statuses);
+          goToFirstPage();
+        }}
+        onClearFilters={handleClearFilters}
+        onSortChange={handleSort}
+        // Pagination handlers
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        // Action handlers
+        onView={(id) => router.push(`/features/${id}`)}
+        onEdit={(id) => {/* ... */}}
+        onDelete={(id) => {/* ... */}}
+      />
+    </div>
+  );
 }
 ```
 
-**✅ CORRECT - Table component usage:**
+**✅ CORRECT - Data table as controlled component:**
 
 ```typescript
 // components/feature-data-table.tsx
 'use client';
 
-import { useFeatureTable } from '@/hooks/use-feature-table';
+import { useMemo } from 'react';
+import { flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table';
 
-export function FeatureDataTable() {
-  const {
-    searchQuery,
-    onSearchChange,
-    activeFilters,
-    onFiltersChange,
-    sortBy,
-    sortOrder,
-    onSortChange,
-    page,
-    onPageChange,
-    tableState,
-  } = useFeatureTable();
+interface FeatureDataTableProps {
+  // Data props
+  features: FeatureWithDetails[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  isLoading: boolean;
+  // Filter props
+  searchQuery: string;
+  selectedStatuses: FeatureStatus[];
+  // Sorting props
+  sortBy: 'name' | 'createdAt';
+  sortOrder: 'asc' | 'desc';
+  // Event handlers
+  onSearchChange: (query: string) => void;
+  onStatusesChange: (statuses: FeatureStatus[]) => void;
+  onClearFilters: () => void;
+  onSortChange: (column: 'name' | 'createdAt') => void;
+  // Pagination handlers
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  // Action handlers
+  onView: (id: string) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
+}
 
-  // Use tableState for API calls
-  const { data, isLoading } = trpc.feature.list.useQuery(tableState);
+export function FeatureDataTable({
+  features,
+  total,
+  page,
+  pageSize,
+  totalPages,
+  isLoading,
+  searchQuery,
+  selectedStatuses,
+  sortBy,
+  sortOrder,
+  onSearchChange,
+  onStatusesChange,
+  onClearFilters,
+  onSortChange,
+  onPageChange,
+  onPageSizeChange,
+  onView,
+  onEdit,
+  onDelete,
+}: FeatureDataTableProps) {
+  const columns = useMemo(
+    () => getFeatureColumns({ onView, onEdit, onDelete }, { sortBy, sortOrder, onSort: onSortChange }),
+    [onView, onEdit, onDelete, sortBy, sortOrder, onSortChange]
+  );
+
+  const table = useReactTable({
+    data: features,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    manualSorting: true,
+    pageCount: totalPages,
+    state: {
+      pagination: {
+        pageIndex: page - 1,
+        pageSize,
+      },
+    },
+  });
 
   return (
-    <div>
-      {/* Search */}
-      <Input
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-        placeholder="Search..."
-      />
+    <>
+      {/* Search and Filters */}
+      <div className="flex items-center gap-3">
+        <Input
+          placeholder="Search..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+        />
+        <FeatureFilters
+          selectedStatuses={selectedStatuses}
+          onStatusesChange={onStatusesChange}
+        />
+        {/* ... */}
+      </div>
 
-      {/* Filters */}
-      <FeatureFilters
-        activeFilters={activeFilters}
-        onFiltersChange={onFiltersChange}
-      />
-
-      {/* Table with sorting */}
+      {/* Table */}
       <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead onClick={() => onSortChange('name')}>
-              Name {sortBy === 'name' && (sortOrder === 'asc' ? '↑' : '↓')}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        {/* Table body */}
+        {/* ... table implementation */}
       </Table>
 
       {/* Pagination */}
-      <Pagination
-        currentPage={page}
+      <DataTablePagination
+        table={table}
+        totalRecords={total}
         onPageChange={onPageChange}
-        totalPages={data?.totalPages}
+        onPageSizeChange={onPageSizeChange}
       />
-    </div>
+    </>
   );
 }
 ```
@@ -1294,6 +1754,17 @@ const [page, setPage] = useState(1);
 const [pageSize, setPageSize] = useState(10);
 
 // This creates duplication across every table component!
+```
+
+**❌ WRONG - Data fetching inside data table component:**
+
+```typescript
+// ❌ NO! Don't fetch data inside the table component
+export function FeatureDataTable() {
+  // Don't do this - data fetching should be in the page component
+  const { data } = trpc.feature.list.useQuery({...});
+  // ...
+}
 ```
 
 #### **🏗️ Common Table Components**
@@ -1313,40 +1784,40 @@ const [pageSize, setPageSize] = useState(10);
 - ✅ **Type Safety** - Proper TypeScript integration
 - ✅ **Testing** - Centralized logic is easier to test
 - ✅ **Maintenance** - Updates in one place affect all tables
-- ✅ **Performance** - Optimized debouncing and state management
+- ✅ **Performance** - Optimized debouncing with separate input and query values
+- ✅ **UX** - Responsive input field with debounced API calls
 
-#### **🔧 Hook Integration with tRPC**
+#### **📊 Table Hook Details**
 
-```typescript
-// hooks/use-feature-table.ts
-export function useFeatureTable() {
-  const tableHooks = useTableHooks();
+**`useTableSearch`** - Debounced search with separate input and query values:
 
-  // Use table state for tRPC queries
-  const { data, isLoading } = trpc.feature.list.useQuery(tableHooks.tableState, {
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    keepPreviousData: true, // Smooth pagination
-  });
+- `inputValue` - Immediate value for input field (responsive UI)
+- `searchValue` - Debounced value for API queries (optimized performance)
+- `setSearchValue` - Updates both values with debouncing
 
-  return {
-    ...tableHooks,
-    data,
-    isLoading,
-  };
-}
-```
+**`useTableFilters`** - Generic filter state management:
 
-#### **📊 Table State Management**
+- `filters` - Current filter values
+- `updateFilter` - Update a single filter
+- `updateFilters` - Update multiple filters at once
+- `resetFilters` - Reset all filters to initial values
+- `clearFilter` - Clear a single filter
 
-**Table hooks provide:**
+**`useTableSorting`** - Column-based sorting:
 
-- **Search**: Debounced search with clear functionality
-- **Filters**: Multi-filter support with pending state
-- **Sorting**: Column-based sorting with direction
-- **Pagination**: Page and page size management
-- **Reset**: Clear all filters and reset to defaults
+- `sortBy` - Current sort column
+- `sortOrder` - Current sort direction ('asc' | 'desc')
+- `handleSort` - Toggle sort for a column
 
-**Always use these hooks for table operations to maintain consistency and avoid code duplication.**
+**`useTablePagination`** - Page and page size management:
+
+- `page` - Current page number
+- `pageSize` - Items per page
+- `setPage` - Change page
+- `setPageSize` - Change page size
+- `goToFirstPage` - Reset to page 1
+
+**Always use these hooks in page components and pass state/handlers as props to data table components.**
 
 ### Table + Detail Page Implementation Patterns
 
@@ -1613,12 +2084,10 @@ export default function FeaturePage() {
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const pagination = useTablePagination({ initialPage: 1, initialPageSize: 20 });
-  const { searchValue, setSearchValue } = useTableSearch({
+
+  const { inputValue, searchValue, setSearchValue } = useTableSearch({
     initialValue: '',
     debounceMs: 500,
-    onSearchChange: () => {
-      // Actual search happens via searchValue in query
-    },
   });
 
   // Reset to first page when search value changes
@@ -1631,7 +2100,7 @@ export default function FeaturePage() {
 
   const { data, isLoading, refetch } = trpc.feature.list.useQuery(
     {
-      searchQuery: searchValue.trim() || undefined,
+      searchQuery: searchValue.trim() || undefined, // Use debounced value for API
       page: pagination.page,
       pageSize: pagination.pageSize,
     },
@@ -1684,7 +2153,7 @@ export default function FeaturePage() {
         page={data?.page ?? 1}
         pageSize={data?.pageSize ?? 20}
         totalPages={data?.totalPages ?? 0}
-        searchQuery={searchValue}
+        searchQuery={inputValue}
         onSearchChange={handleSearchChange}
         onPageChange={pagination.setPage}
         onPageSizeChange={pagination.setPageSize}
@@ -2306,9 +2775,289 @@ export const usedFunction = () => {}; // Keep
 // Ignore "unlisted dependencies" warnings
 ```
 
+### Service Layer Architecture - MANDATORY
+
+**ALWAYS separate business logic from API routes using a service layer. Services contain ALL database operations and business logic.**
+
+#### **📁 Architecture Overview**
+
+```plaintext
+lib/
+├── services/              # Business logic layer (SERVER-ONLY)
+│   ├── user.service.ts    # User-related business logic
+│   ├── task.service.ts    # Task-related business logic
+│   └── ...
+├── trpc/                  # API layer (calls services)
+│   ├── init.ts            # tRPC initialization, context, procedures
+│   ├── router.ts          # Main app router
+│   ├── client.ts          # Client-side tRPC configuration
+│   ├── server.ts          # Server-side tRPC configuration
+│   ├── schemas/           # Zod schemas (CLIENT-SAFE)
+│   │   ├── tasks.ts
+│   │   ├── user.ts
+│   │   └── ...
+│   ├── routers/           # Feature-specific routers (thin layer)
+│   │   ├── tasks.ts       # Calls task.service.ts
+│   │   ├── user.ts        # Calls user.service.ts
+│   │   └── ...
+│   └── index.ts
+└── db/
+    ├── schema.ts          # Database schema
+    └── drizzle.ts         # Database connection
+```
+
+#### **🏗️ Service Layer Pattern**
+
+**Services are the single source of truth for business logic and database operations.**
+
+**✅ CORRECT - Service with business logic:**
+
+```typescript
+// lib/services/user.service.ts
+import { eq } from 'drizzle-orm';
+
+import { db } from '@/lib/db/drizzle';
+import { notificationSettings, users } from '@/lib/db/schema';
+
+export interface NotificationSettings {
+  emailNotifications: boolean;
+  marketingEmails: boolean;
+  securityAlerts: boolean;
+}
+
+export async function getNotificationSettings(userId: string): Promise<NotificationSettings> {
+  const settings = await db
+    .select()
+    .from(notificationSettings)
+    .where(eq(notificationSettings.userId, userId))
+    .limit(1);
+
+  if (settings.length === 0) {
+    // Business logic: Create default settings if none exist
+    const defaultSettings = {
+      userId,
+      emailNotifications: true,
+      marketingEmails: false,
+      securityAlerts: true,
+    };
+    await db.insert(notificationSettings).values(defaultSettings);
+    return defaultSettings;
+  }
+
+  return settings[0];
+}
+
+export async function updateNotificationSettings(
+  userId: string,
+  updates: Partial<NotificationSettings>
+): Promise<NotificationSettings> {
+  // Business logic: Validate and update settings
+  const [updated] = await db
+    .update(notificationSettings)
+    .set(updates)
+    .where(eq(notificationSettings.userId, userId))
+    .returning();
+
+  if (!updated) {
+    throw new Error('Failed to update notification settings');
+  }
+
+  return updated;
+}
+
+export async function getUserById(userId: string) {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return user ?? null;
+}
+```
+
+**✅ CORRECT - tRPC router calling service:**
+
+```typescript
+// lib/trpc/routers/user.ts
+import { z } from 'zod';
+
+import * as userService from '@/lib/services/user.service';
+
+import { protectedProcedure, router } from '../init';
+
+export const userRouter = router({
+  getNotificationSettings: protectedProcedure.query(async ({ ctx }) => {
+    // Thin layer - just calls service
+    return await userService.getNotificationSettings(ctx.userId);
+  }),
+
+  updateNotificationSettings: protectedProcedure
+    .input(
+      z.object({
+        emailNotifications: z.boolean().optional(),
+        marketingEmails: z.boolean().optional(),
+        securityAlerts: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Thin layer - validation + service call
+      return await userService.updateNotificationSettings(ctx.userId, input);
+    }),
+});
+```
+
+**✅ CORRECT - Server Component calling service:**
+
+```typescript
+// app/(logged-in)/settings/page.tsx
+import { auth } from '@/lib/auth/providers';
+import * as userService from '@/lib/services/user.service';
+
+export default async function SettingsPage() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) redirect('/sign-in');
+
+  // Server Component can call service directly!
+  const settings = await userService.getNotificationSettings(session.user.id);
+  const user = await userService.getUserById(session.user.id);
+
+  return (
+    <div>
+      <h1>Settings</h1>
+      <p>Email: {user?.email}</p>
+      <p>Email Notifications: {settings.emailNotifications ? 'On' : 'Off'}</p>
+    </div>
+  );
+}
+```
+
+**❌ WRONG - Business logic in tRPC router:**
+
+```typescript
+// ❌ NO! Don't put database operations in routers
+export const userRouter = router({
+  getNotificationSettings: protectedProcedure.query(async ({ ctx }) => {
+    // ❌ Database logic should be in service!
+    const settings = await db
+      .select()
+      .from(notificationSettings)
+      .where(eq(notificationSettings.userId, ctx.userId))
+      .limit(1);
+
+    if (settings.length === 0) {
+      // ❌ Business logic should be in service!
+      const defaultSettings = {
+        userId: ctx.userId,
+        emailNotifications: true,
+        marketingEmails: false,
+        securityAlerts: true,
+      };
+      await db.insert(notificationSettings).values(defaultSettings);
+      return defaultSettings;
+    }
+
+    return settings[0];
+  }),
+});
+```
+
+#### **🧪 Service Testing Pattern**
+
+**Services are easy to test because they're pure functions with no framework dependencies.**
+
+```typescript
+// __tests__/lib/services/user.service.test.ts
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { db } from '@/lib/db/drizzle';
+import { notificationSettings, users } from '@/lib/db/schema';
+import * as userService from '@/lib/services/user.service';
+
+describe('UserService', () => {
+  let testUserId: string;
+
+  beforeEach(async () => {
+    // Setup: Create test user
+    const [user] = await db
+      .insert(users)
+      .values({
+        email: 'test@example.com',
+        emailVerified: false,
+      })
+      .returning();
+    testUserId = user.id;
+  });
+
+  describe('getNotificationSettings', () => {
+    it('should create default settings if none exist', async () => {
+      const settings = await userService.getNotificationSettings(testUserId);
+
+      expect(settings).toEqual({
+        emailNotifications: true,
+        marketingEmails: false,
+        securityAlerts: true,
+      });
+    });
+
+    it('should return existing settings', async () => {
+      // Create settings
+      await db.insert(notificationSettings).values({
+        userId: testUserId,
+        emailNotifications: false,
+        marketingEmails: true,
+        securityAlerts: false,
+      });
+
+      const settings = await userService.getNotificationSettings(testUserId);
+
+      expect(settings.emailNotifications).toBe(false);
+      expect(settings.marketingEmails).toBe(true);
+      expect(settings.securityAlerts).toBe(false);
+    });
+  });
+
+  describe('updateNotificationSettings', () => {
+    it('should update notification settings', async () => {
+      // Create initial settings
+      await userService.getNotificationSettings(testUserId);
+
+      // Update
+      const updated = await userService.updateNotificationSettings(testUserId, {
+        emailNotifications: false,
+      });
+
+      expect(updated.emailNotifications).toBe(false);
+      expect(updated.marketingEmails).toBe(false); // Unchanged
+      expect(updated.securityAlerts).toBe(true); // Unchanged
+    });
+  });
+});
+```
+
+#### **📋 Service Layer Benefits**
+
+- ✅ **Reusability** - Services can be called from tRPC, Server Components, API routes, cron jobs
+- ✅ **Testability** - Pure functions with no framework dependencies are easy to test
+- ✅ **Separation of Concerns** - Business logic separate from API layer
+- ✅ **Type Safety** - Full TypeScript support across all layers
+- ✅ **Maintainability** - Single source of truth for business logic
+- ✅ **Performance** - Server Components can call services directly (no HTTP overhead)
+
+#### **🔧 When to Create Services**
+
+**ALWAYS create a service when:**
+
+- Adding new database operations
+- Implementing business logic (calculations, validations, transformations)
+- Creating reusable operations needed by multiple routers/components
+- Adding complex queries with multiple table joins
+- Implementing data aggregation or statistics
+
+**Service Naming Convention:**
+
+- File: `lib/services/{domain}-service.ts`
+- Functions: Descriptive verbs (`getUserById`, `updateNotificationSettings`, `createTask`)
+- Exports: Named exports (not default exports)
+
 ### tRPC Integration - Type-Safe API Layer
 
-**tRPC provides end-to-end type safety for API routes. Use it for ALL internal API endpoints.**
+**tRPC provides end-to-end type safety for API routes. Use it as a THIN LAYER that calls services.**
 
 #### **📁 tRPC Structure**
 
@@ -2322,9 +3071,9 @@ lib/trpc/
 │   ├── tasks.ts     # Task validation schemas
 │   ├── user.ts      # User validation schemas
 │   └── ...
-├── routers/         # Feature-specific routers (SERVER-ONLY)
-│   ├── tasks.ts
-│   ├── user.ts
+├── routers/         # Feature-specific routers (THIN LAYER - calls services)
+│   ├── tasks.ts     # Validates input, calls task.service.ts
+│   ├── user.ts      # Validates input, calls user.service.ts
 │   └── ...
 └── index.ts         # Exports (re-exports client-safe schemas)
 ```
@@ -2450,20 +3199,24 @@ export const protectedProcedure = t.procedure.use(async (opts) => {
 });
 ```
 
-**Router Organization:**
+**Router Organization (Thin Layer Pattern):**
 
 ```typescript
 // lib/trpc/routers/tasks.ts
+import * as taskService from '@/lib/services/task.service';
+
 import { protectedProcedure, router } from '../init';
 import { createTaskSchema, taskListFiltersSchema } from '../schemas/tasks';
 
 export const tasksRouter = router({
   list: protectedProcedure.input(taskListFiltersSchema).query(async ({ ctx, input }) => {
-    // Implementation
+    // Thin layer - just validate input and call service
+    return await taskService.listTasks(ctx.userId, input);
   }),
 
   create: protectedProcedure.input(createTaskSchema).mutation(async ({ ctx, input }) => {
-    // Implementation
+    // Thin layer - just validate input and call service
+    return await taskService.createTask(ctx.userId, input);
   }),
 });
 ```
@@ -2576,21 +3329,41 @@ export function useTasks(filters?: { completed?: boolean }) {
 
 **Authorization & Security:**
 
-- Always verify data ownership in mutations
+- Always verify data ownership in **services** (not routers)
 - Use `protectedProcedure` for authenticated endpoints
 - Use `publicProcedure` only for truly public data
+- Services handle authorization logic and throw appropriate errors
 
 ```typescript
-// Verify ownership before updates
-const existingTask = await db
-  .select()
-  .from(tasks)
-  .where(and(eq(tasks.id, input.id), eq(tasks.userId, ctx.userId)))
-  .limit(1);
+// lib/services/task.service.ts
+export async function updateTask(
+  userId: string,
+  taskId: string,
+  updates: Partial<Task>
+): Promise<Task> {
+  // Authorization logic in service
+  const [existingTask] = await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.id, taskId), eq(tasks.userId, userId)))
+    .limit(1);
 
-if (existingTask.length === 0) {
-  throw new TRPCError({ code: 'NOT_FOUND', message: 'Task not found' });
+  if (!existingTask) {
+    throw new Error('Task not found or access denied');
+  }
+
+  const [updated] = await db.update(tasks).set(updates).where(eq(tasks.id, taskId)).returning();
+
+  return updated;
 }
+
+// lib/trpc/routers/tasks.ts
+export const tasksRouter = router({
+  update: protectedProcedure.input(updateTaskSchema).mutation(async ({ ctx, input }) => {
+    // Thin layer - service handles authorization
+    return await taskService.updateTask(ctx.userId, input.id, input);
+  }),
+});
 ```
 
 **Error Handling:**
@@ -2750,13 +3523,68 @@ const handleUpload = async (file: File) => {
 - **Webhooks** - Use standard Next.js API routes
 - **Large file uploads (>5MB)** - Use dedicated multipart upload endpoints
 - **Public APIs** - Consider REST for external consumers
+- **Server Components** - Call services directly (no HTTP overhead)
+- **Server Actions** - Call services directly
+- **Cron jobs** - Call services directly
+- **Background workers** - Call services directly
 
 #### **✅ When TO Use tRPC**
 
-- **CRUD operations** - All database operations
-- **Internal APIs** - Any communication between frontend and backend
-- **Type-safe mutations** - Form submissions, updates, deletes
-- **Protected endpoints** - Authenticated user actions
+- **Client Components** - Type-safe API calls from browser
+- **Form submissions** - Client-side mutations with validation
+- **Real-time updates** - Client-side data fetching with caching
+- **Protected client operations** - Authenticated user actions from browser
+
+#### **🔄 Service Usage Patterns**
+
+**Services can be called from multiple contexts:**
+
+```typescript
+// ✅ Client Component → tRPC → Service
+'use client';
+import { trpc } from '@/lib/trpc/client';
+
+function TaskList() {
+  const { data: tasks } = trpc.tasks.list.useQuery();
+  return <div>{/* render tasks */}</div>;
+}
+
+// ✅ Server Component → Service (direct)
+import { auth } from '@/lib/auth/providers';
+import * as taskService from '@/lib/services/task.service';
+
+async function TaskList() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  const tasks = await taskService.listTasks(session.user.id);
+  return <div>{/* render tasks */}</div>;
+}
+
+// ✅ Server Action → Service (direct)
+'use server';
+import * as taskService from '@/lib/services/task.service';
+
+export async function createTaskAction(userId: string, data: CreateTaskInput) {
+  return await taskService.createTask(userId, data);
+}
+
+// ✅ Cron Job → Service (direct)
+import * as taskService from '@/lib/services/task.service';
+
+export async function GET() {
+  const overdueTasks = await taskService.getOverdueTasks();
+  // Process overdue tasks
+  return Response.json({ processed: overdueTasks.length });
+}
+
+// ✅ API Route → Service (direct)
+import * as userService from '@/lib/services/user.service';
+
+export async function POST(req: Request) {
+  const { userId } = await req.json();
+  const user = await userService.getUserById(userId);
+  return Response.json(user);
+}
+```
 
 ### Docker Compose Configuration
 
@@ -2766,12 +3594,31 @@ const handleUpload = async (file: File) => {
 
 - Prefer a single, general `update` mutation per resource. If an `update` exists, do NOT add specialized mutations like `updatePriority`, `updateStatus`, `toggleComplete`, etc. Send only changed fields (partial input) to `update` and let the server handle patch semantics. This keeps the API surface small, maximizes type reuse, and simplifies caching/invalidations.
 
-### File Upload & Storage (Vercel Blob)
+### File Upload & Storage (S3-Compatible)
 
 - **Configuration**: Use `./lib/storage.ts` utilities
-- **Image Patterns**: Support for profile images, document uploads
-- **Validation**: Implement proper file type and size validation
-- **Cleanup**: Handle file deletion when records are removed
+- **Storage Options**:
+  - **Production**: S3-compatible storage (AWS S3, DigitalOcean Spaces, MinIO, etc.)
+  - **Development**: Local file system with authenticated API routes
+- **Environment Variables**:
+  - `S3_BUCKET`: Bucket name (required for production)
+  - `S3_REGION`: AWS region (optional, for AWS S3)
+  - `S3_ACCESS_KEY_ID`: Access key (required for production)
+  - `S3_SECRET_ACCESS_KEY`: Secret key (required for production)
+  - `S3_ENDPOINT`: Custom endpoint URL (required for non-AWS S3 services like DigitalOcean Spaces)
+- **Upload Patterns**:
+  - **Profile Images**: `uploadProfileImage(file, userId)` - Public access, stored in root
+  - **Documents**: `uploadDocument(file, organizationId)` - Private access with presigned URLs
+- **Security**:
+  - Profile images: Public read access (ACL: public-read)
+  - Documents: Private by default, access via `getPresignedDownloadUrl(key, expiresInSeconds)`
+  - Development: Authenticated API route at `/api/uploads/[...path]`
+- **File Organization**:
+  - Profile images: `profile-{userId}-{timestamp}.{ext}`
+  - Documents: `documents/{organizationId}/{timestamp}-{sanitizedFileName}`
+- **Validation**: Implement proper file type and size validation before upload
+- **Cleanup**: Use `deleteProfileImage(url)` and `deleteDocument(url)` when records are removed
+- **URL Handling**: Helper functions `isS3Url(url)` and `getKeyFromPathname(pathname)` for cross-environment compatibility
 
 ### Email Integration (Resend)
 
@@ -2840,6 +3687,7 @@ const handleUpload = async (file: File) => {
   - `lib/types/task.ts` - Re-exports Task, TaskPriority from schema (even if not extending)
   - `lib/types/index.ts` - Re-exports all domain types for easy importing
   - `lib/api/` - API infrastructure types and utilities (errors, responses, etc.)
+  - `lib/services/` - Service-specific types can be defined inline or exported if reused
 
 - **Type Hierarchy & Re-export Pattern**: Follow this priority order
   1. **Database Schema** → Define with pgEnum and export inferred types
@@ -3015,11 +3863,242 @@ import { tasks } from '@/lib/db/schema'; // OK in database queries
 
 ### Testing Strategy
 
+- **Service Tests (PRIORITY)**: Test business logic in `lib/services/` with Vitest
+  - **ALWAYS use mocks** - Mock database operations with Vitest
+  - Fast execution (no real database I/O)
+  - Isolated tests (no side effects or cleanup needed)
+  - Test file location: `__tests__/lib/services/{domain}-service.test.ts`
 - **Unit Tests**: Vitest for utility functions and components
-- **Integration Tests**: Database operations and API routes
-- **Mocking**: Use Vitest (`vi`) to mock Better Auth, Stripe, Resend APIs
-- **Coverage**: Maintain good test coverage for critical paths
+- **Integration Tests**: tRPC routers (thin layer, less critical)
+- **Mocking**: Use Vitest (`vi`) to mock database, Better Auth, Stripe, Resend APIs
+- **Coverage**: Maintain good test coverage for critical paths (focus on services)
 - **E2E**: Consider Playwright for critical user flows
+
+**Testing Priority:**
+
+1. **Services** - Highest priority (business logic, database operations)
+2. **Utilities** - Medium priority (helper functions, transformations)
+3. **Components** - Medium priority (UI logic, user interactions)
+4. **tRPC Routers** - Lower priority (thin layer, mostly validation)
+
+**Service Testing Best Practices - MANDATORY:**
+
+**✅ DO:**
+
+- Mock the database using Vitest (`vi.mock`)
+- Test business logic and edge cases
+- Test error handling
+- Test authorization checks
+- **Validate selected fields** - Verify the correct fields are being queried
+- Use descriptive test names
+- Clear mocks between tests (`vi.clearAllMocks()`)
+- Restore mocks after tests (`vi.restoreAllMocks()`)
+
+**❌ DON'T:**
+
+- Create real database records in tests
+- Rely on database state from previous tests
+- Skip cleanup (mocks handle this automatically)
+- Test database internals (test service behavior)
+- Use real database connections in unit tests
+
+**Mock Pattern for Drizzle Queries:**
+
+```typescript
+// Mock SELECT query
+const mockSelect = vi.fn().mockReturnValue({
+  from: vi.fn().mockReturnValue({
+    where: vi.fn().mockReturnValue({
+      limit: vi.fn().mockResolvedValue([mockData]),
+    }),
+  }),
+});
+vi.mocked(db.select).mockImplementation(mockSelect);
+
+// Mock INSERT query
+const mockInsert = vi.fn().mockReturnValue({
+  values: vi.fn().mockReturnValue({
+    returning: vi.fn().mockResolvedValue([mockData]),
+  }),
+});
+vi.mocked(db.insert).mockImplementation(mockInsert);
+
+// Mock UPDATE query
+const mockUpdate = vi.fn().mockReturnValue({
+  set: vi.fn().mockReturnValue({
+    where: vi.fn().mockReturnValue({
+      returning: vi.fn().mockResolvedValue([mockData]),
+    }),
+  }),
+});
+vi.mocked(db.update).mockImplementation(mockUpdate);
+
+// Mock DELETE query
+const mockDelete = vi.fn().mockReturnValue({
+  where: vi.fn().mockResolvedValue(undefined),
+});
+vi.mocked(db.delete).mockImplementation(mockDelete);
+```
+
+**Why Validate Selected Fields?**
+
+Validating the exact fields being selected in your tests ensures:
+
+- ✅ **Schema Compliance** - Service queries match the database schema
+- ✅ **No Missing Fields** - All required fields are being fetched
+- ✅ **No Extra Fields** - Prevents over-fetching unnecessary data
+- ✅ **Type Safety** - Catches field name typos or schema changes
+- ✅ **Documentation** - Tests serve as documentation of data structure
+- ✅ **Regression Prevention** - Detects when fields are accidentally removed
+
+```typescript
+// ✅ CORRECT - Validate selected fields
+expect(db.select).toHaveBeenCalledWith({
+  id: expect.anything(),
+  email: expect.anything(),
+  emailVerified: expect.anything(),
+  displayName: expect.anything(),
+  profileImageUrl: expect.anything(),
+  role: expect.anything(),
+  createdAt: expect.anything(),
+  updatedAt: expect.anything(),
+});
+
+// ❌ WRONG - Only checking if select was called
+expect(db.select).toHaveBeenCalled(); // Doesn't validate structure
+```
+
+```typescript
+// __tests__/lib/services/task-service.test.ts
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { db } from '@/lib/db/drizzle';
+import * as taskService from '@/lib/services/task-service';
+
+// Mock the database
+vi.mock('@/lib/db/drizzle', () => ({
+  db: {
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+  },
+}));
+
+describe('TaskService', () => {
+  const mockUserId = 'user-123';
+  const mockTaskId = 'task-456';
+  const mockTask = {
+    id: mockTaskId,
+    userId: mockUserId,
+    title: 'Test Task',
+    description: 'Test Description',
+    completed: false,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('createTask', () => {
+    it('should create a task', async () => {
+      const mockInsert = vi.fn().mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([mockTask]),
+        }),
+      });
+      vi.mocked(db.insert).mockImplementation(mockInsert);
+
+      const result = await taskService.createTask(mockUserId, {
+        title: 'Test Task',
+        description: 'Test Description',
+      });
+
+      expect(result).toEqual(mockTask);
+      expect(db.insert).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateTask', () => {
+    it('should update task when user owns it', async () => {
+      // Mock select to verify ownership
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([mockTask]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      // Mock update
+      const updatedTask = { ...mockTask, title: 'Updated Task' };
+      const mockUpdate = vi.fn().mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([updatedTask]),
+          }),
+        }),
+      });
+      vi.mocked(db.update).mockImplementation(mockUpdate);
+
+      const result = await taskService.updateTask(mockUserId, mockTaskId, {
+        title: 'Updated Task',
+      });
+
+      expect(result.title).toBe('Updated Task');
+      expect(db.select).toHaveBeenCalled();
+      expect(db.update).toHaveBeenCalled();
+    });
+
+    it('should throw error when user does not own task', async () => {
+      // Mock select returning empty (task not found or not owned)
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      await expect(
+        taskService.updateTask('different-user-id', mockTaskId, { title: 'Hacked' })
+      ).rejects.toThrow('Task not found or access denied');
+
+      expect(db.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteTask', () => {
+    it('should delete task when user owns it', async () => {
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([mockTask]),
+          }),
+        }),
+      });
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const mockDelete = vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      });
+      vi.mocked(db.delete).mockImplementation(mockDelete);
+
+      await taskService.deleteTask(mockUserId, mockTaskId);
+
+      expect(db.delete).toHaveBeenCalled();
+    });
+  });
+});
+```
 
 ### Security Best Practices
 

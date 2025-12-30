@@ -1,6 +1,6 @@
 /**
  * Reusable hook for debounced table search
- * Provides local debounced state that syncs to parent after delay
+ * Manages both immediate input value and debounced value internally
  */
 
 'use client';
@@ -10,33 +10,29 @@ import { useCallback, useEffect, useState } from 'react';
 interface UseTableSearchOptions {
   initialValue?: string;
   debounceMs?: number;
-  onSearchChange: (query: string) => void;
 }
 
-export function useTableSearch({
-  initialValue = '',
-  debounceMs = 500,
-  onSearchChange,
-}: UseTableSearchOptions) {
+export function useTableSearch({ initialValue = '', debounceMs = 500 }: UseTableSearchOptions) {
+  const [inputValue, setInputValue] = useState(initialValue);
   const [debouncedValue, setDebouncedValue] = useState(initialValue);
 
-  // Sync debounced value to parent after delay
   useEffect(() => {
     const timer = setTimeout(() => {
-      onSearchChange(debouncedValue);
+      setDebouncedValue(inputValue);
     }, debounceMs);
 
     return () => clearTimeout(timer);
-  }, [debouncedValue, debounceMs, onSearchChange]);
+  }, [inputValue, debounceMs]);
 
-  // Clear search
   const clearSearch = useCallback(() => {
+    setInputValue('');
     setDebouncedValue('');
   }, []);
 
   return {
+    inputValue,
     searchValue: debouncedValue,
-    setSearchValue: setDebouncedValue,
+    setSearchValue: setInputValue,
     clearSearch,
   };
 }
