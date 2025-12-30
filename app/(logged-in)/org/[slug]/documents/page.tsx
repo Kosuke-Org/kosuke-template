@@ -42,10 +42,9 @@ export default function DocumentsPage() {
     displayName: string;
   } | null>(null);
 
-  const { searchValue, setSearchValue } = useTableSearch({
+  const { inputValue, searchValue, setSearchValue } = useTableSearch({
     initialValue: '',
     debounceMs: 300,
-    onSearchChange: () => {},
   });
 
   const { page, pageSize, setPage, setPageSize, goToFirstPage } = useTablePagination({
@@ -134,7 +133,7 @@ export default function DocumentsPage() {
         page={page}
         pageSize={pageSize}
         totalPages={totalPages}
-        searchQuery={searchValue}
+        searchQuery={inputValue}
         onSearchChange={handleSearchChange}
         onPageChange={setPage}
         onPageSizeChange={setPageSize}

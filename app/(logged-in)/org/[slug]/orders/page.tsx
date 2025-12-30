@@ -58,10 +58,9 @@ export default function OrgOrdersPage() {
   const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
 
   // Reusable table hooks
-  const { searchValue, setSearchValue } = useTableSearch({
+  const { inputValue, searchValue, setSearchValue } = useTableSearch({
     initialValue: '',
     debounceMs: 300,
-    onSearchChange: () => {}, // Actual search happens via searchValue in query
   });
 
   const { sortBy, sortOrder, handleSort } = useTableSorting<'orderDate' | 'amount'>({
@@ -173,7 +172,7 @@ export default function OrgOrdersPage() {
         totalPages={totalPages}
         isLoading={isLoading}
         // Filter props
-        searchQuery={searchValue}
+        searchQuery={inputValue}
         selectedStatuses={filters.selectedStatuses}
         dateFrom={filters.dateFrom}
         dateTo={filters.dateTo}

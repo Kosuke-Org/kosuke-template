@@ -136,12 +136,9 @@ export default function OrgDetailPage({ params }: OrgDetailPageProps) {
 
   const pagination = useTablePagination({ initialPage: 1, initialPageSize: 20 });
 
-  const { searchValue, setSearchValue } = useTableSearch({
+  const { inputValue, searchValue, setSearchValue } = useTableSearch({
     initialValue: '',
     debounceMs: 500,
-    onSearchChange: () => {
-      // Actual search happens via searchValue in query
-    },
   });
 
   // Reset to first page when search value changes
@@ -413,7 +410,7 @@ export default function OrgDetailPage({ params }: OrgDetailPageProps) {
             page={membershipsData?.page ?? 1}
             pageSize={membershipsData?.pageSize ?? 20}
             totalPages={membershipsData?.totalPages ?? 0}
-            searchQuery={searchValue}
+            searchQuery={inputValue}
             onSearchChange={handleSearchChange}
             onPageChange={pagination.setPage}
             onPageSizeChange={pagination.setPageSize}
