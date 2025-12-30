@@ -17,19 +17,37 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
 - `./app`: Next.js 16 App Router pages and layouts
   - `./app/(logged-in)`: Protected routes for authenticated users
     - Feature modules should include their own `components/` directory
-    - Example: `./app/(logged-in)/tasks/components/` for task-specific components
-  - `./app/(logged-out)`: Public routes for unauthenticated users
+    - Example: `./app/(logged-in)/org/[slug]/tasks/components/` for task-specific components
+  - `./app/(logged-out)`: Public routes for unauthenticated users (sign-in, sign-up, etc.)
+  - `./app/admin`: Admin dashboard routes
   - `./app/api`: API routes (billing webhooks, user management, cron jobs)
 - `./components`: Global reusable UI components shared across multiple modules
   - `./components/ui`: Shadcn UI components (pre-installed, don't reinstall)
+  - `./components/data-table`: Reusable table components
+  - `./components/ai-elements`: AI chat and streaming components
 - `./lib`: Core utilities and configurations
+  - `./lib/services`: **Business logic layer** (database operations, authorization)
+  - `./lib/trpc`: Type-safe API layer (thin layer calling services)
+    - `./lib/trpc/routers`: Feature-specific routers
+    - `./lib/trpc/schemas`: Zod validation schemas (client-safe)
   - `./lib/db`: Drizzle ORM schema, migrations, and database utilities
   - `./lib/auth`: Better Auth authentication utilities
   - `./lib/billing`: Stripe billing integration
   - `./lib/email`: Resend email templates and utilities
-  - `./lib/storage`: Vercel Blob storage utilities
-- `./public`: Static assets
-- `./cli`: Interactive setup guide for project configuration
+  - `./lib/storage`: S3/local storage utilities
+  - `./lib/types`: Centralized TypeScript type definitions
+  - `./lib/api`: API infrastructure types and utilities
+  - `./lib/queue`: Background job processing with BullMQ
+  - **Feature-specific directories**: Each feature (organizations, documents, ai, seo, etc.) has its own folder
+- `./hooks`: Custom React hooks for client components
+- `./emails`: Email templates (React Email)
+- `./store`: Zustand state management stores
+- `./public`: Static assets (images, icons, logos)
+- `./uploads`: User-uploaded files (development only)
+- `.__tests__`: Test files mirroring the project structure
+  - `.__tests__/lib/services`: Service layer tests (PRIORITY)
+  - `.__tests__/hooks`: Hook tests
+  - `.__tests__/lib`: Utility and library tests
 
 ### Essential Commands & Database Operations
 
