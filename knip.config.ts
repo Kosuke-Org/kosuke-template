@@ -1,7 +1,6 @@
 const knipConfig = {
   $schema: 'https://unpkg.com/knip@latest/schema.json',
   ignore: [
-    'cli/**',
     'proxy.ts',
     // Shadcn/UI components or custom registries are part of the template
     'components/ui/**',
