@@ -3594,12 +3594,31 @@ export async function POST(req: Request) {
 
 - Prefer a single, general `update` mutation per resource. If an `update` exists, do NOT add specialized mutations like `updatePriority`, `updateStatus`, `toggleComplete`, etc. Send only changed fields (partial input) to `update` and let the server handle patch semantics. This keeps the API surface small, maximizes type reuse, and simplifies caching/invalidations.
 
-### File Upload & Storage (Vercel Blob)
+### File Upload & Storage (S3-Compatible)
 
 - **Configuration**: Use `./lib/storage.ts` utilities
-- **Image Patterns**: Support for profile images, document uploads
-- **Validation**: Implement proper file type and size validation
-- **Cleanup**: Handle file deletion when records are removed
+- **Storage Options**:
+  - **Production**: S3-compatible storage (AWS S3, DigitalOcean Spaces, MinIO, etc.)
+  - **Development**: Local file system with authenticated API routes
+- **Environment Variables**:
+  - `S3_BUCKET`: Bucket name (required for production)
+  - `S3_REGION`: AWS region (optional, for AWS S3)
+  - `S3_ACCESS_KEY_ID`: Access key (required for production)
+  - `S3_SECRET_ACCESS_KEY`: Secret key (required for production)
+  - `S3_ENDPOINT`: Custom endpoint URL (required for non-AWS S3 services like DigitalOcean Spaces)
+- **Upload Patterns**:
+  - **Profile Images**: `uploadProfileImage(file, userId)` - Public access, stored in root
+  - **Documents**: `uploadDocument(file, organizationId)` - Private access with presigned URLs
+- **Security**:
+  - Profile images: Public read access (ACL: public-read)
+  - Documents: Private by default, access via `getPresignedDownloadUrl(key, expiresInSeconds)`
+  - Development: Authenticated API route at `/api/uploads/[...path]`
+- **File Organization**:
+  - Profile images: `profile-{userId}-{timestamp}.{ext}`
+  - Documents: `documents/{organizationId}/{timestamp}-{sanitizedFileName}`
+- **Validation**: Implement proper file type and size validation before upload
+- **Cleanup**: Use `deleteProfileImage(url)` and `deleteDocument(url)` when records are removed
+- **URL Handling**: Helper functions `isS3Url(url)` and `getKeyFromPathname(pathname)` for cross-environment compatibility
 
 ### Email Integration (Resend)
 
