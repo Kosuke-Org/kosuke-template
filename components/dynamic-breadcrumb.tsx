@@ -35,6 +35,7 @@ const routeNames: Record<string, string> = {
   users: 'Users',
   organizations: 'Organizations',
   jobs: 'Jobs',
+  rag: 'RAG',
   'llm-logs': 'LLM Logs',
 };
 

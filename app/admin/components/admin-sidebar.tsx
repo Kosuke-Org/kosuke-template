@@ -8,6 +8,7 @@ import {
   Activity,
   ArrowLeft,
   Building2,
+  Database,
   FileText,
   LayoutDashboard,
   Shield,
@@ -50,6 +51,11 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
       title: 'Jobs',
       url: '/admin/jobs',
       icon: Activity,
+    },
+    {
+      title: 'RAG Management',
+      url: '/admin/rag',
+      icon: Database,
     },
     {
       title: 'LLM Logs',
