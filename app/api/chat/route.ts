@@ -8,7 +8,8 @@ import { extractDocumentIdFromFilename, extractRelevantSources } from '@/lib/ai/
 import { ApiResponseHandler } from '@/lib/api/responses';
 import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
-import { chatMessages, chatSessions, documents, llmLogs } from '@/lib/db/schema';
+import { chatMessages, chatSessions, documents } from '@/lib/db/schema';
+import * as llmLogsService from '@/lib/services/llm-logs-service';
 import { getRAGSettings } from '@/lib/services/rag-service';
 import { chatRequestSchema } from '@/lib/types/chat';
 
@@ -191,7 +192,7 @@ export async function POST(req: Request) {
         const lastUserMsg = updatedMessages.filter((m) => m.role === 'user').pop();
         const lastAssistantMsg = updatedMessages.filter((m) => m.role === 'assistant').pop();
 
-        await db.insert(llmLogs).values({
+        await llmLogsService.createLlmLog({
           endpoint: 'chat',
           model: DEFAULT_MODEL,
           systemPrompt: actualSystemPrompt,
