@@ -33,7 +33,7 @@
       "STRIPE_SUCCESS_URL": "http://localhost:3000/settings/billing",
       "STRIPE_CANCEL_URL": "http://localhost:3000/settings/billing"
     },
-    "test_users" : [
+    "test_users": [
       {
         "email": "jane+kosuke_test@example.com",
         "displayName": "Jane Smith",
