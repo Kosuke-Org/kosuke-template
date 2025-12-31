@@ -151,23 +151,22 @@ export function LlmLogDrawer({ logId, open, onOpenChange }: LlmLogDrawerProps) {
               {/* Context Section */}
               <section className="space-y-2 pb-4">
                 <h3 className="text-md font-semibold">Context</h3>
-                <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
                   {log.user && (
-                    <>
+                    <div>
                       <h4 className="text-muted-foreground mb-1 text-sm">User</h4>
-                      <div>
-                        <div className="text-sm font-medium">{log.user.displayName}</div>
-                        <div className="text-muted-foreground text-sm">{log.user.email}</div>
+                      <div className="text-sm font-medium">
+                        {log.user.displayName || log.user.email}
                       </div>
-                    </>
+                    </div>
                   )}
                   {log.organization && (
-                    <>
+                    <div>
                       <h4 className="text-muted-foreground mb-1 text-sm">Organization</h4>
                       <div>
                         <div className="text-sm font-medium">{log.organization.name}</div>
                       </div>
-                    </>
+                    </div>
                   )}
                   {log.chatSession && (
                     <div>
@@ -176,6 +175,16 @@ export function LlmLogDrawer({ logId, open, onOpenChange }: LlmLogDrawerProps) {
                     </div>
                   )}
                 </div>
+              </section>
+
+              {/* Config Section*/}
+              <section className="space-y-2 pb-4">
+                <h3 className="text-md font-semibold">RAG Settings</h3>
+                {log.generationConfig ? (
+                  <CodeBlock content={log.generationConfig} />
+                ) : (
+                  <p className="text-muted-foreground text-sm">No custom settings.</p>
+                )}
               </section>
 
               {/* System Prompt Section */}
