@@ -4637,6 +4637,8 @@ All color tokens are defined in `./app/globals.css` and support both light and d
 
 This rule applies to any project using Drizzle ORM with a seed script for development/testing data.
 
+**Exception:** Admin-related schema changes do not require seed file updates.
+
 #### **Why This Matters:**
 
 - Schema and seed files must stay in sync to prevent runtime errors

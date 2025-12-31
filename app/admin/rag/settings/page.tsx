@@ -103,7 +103,7 @@ export default function AdminRagSettingsPage() {
   });
 
   const onSubmit = async (data: RagSettingsFormValues) => {
-    if (!selectedOrgId) return;
+    if (!selectedOrgId || !form.formState.isValid) return;
 
     await updateSettings.mutateAsync({
       organizationId: selectedOrgId,
@@ -194,7 +194,10 @@ export default function AdminRagSettingsPage() {
                           <Textarea
                             {...field}
                             value={field.value ?? ''}
-                            onChange={(e) => field.onChange(e.target.value || null)}
+                            onChange={(e) => {
+                              const val = e.target.value.trim();
+                              field.onChange(val === '' ? null : val);
+                            }}
                             id="system-prompt"
                             aria-invalid={fieldState.invalid}
                             placeholder="Enter system instructions for the AI model..."

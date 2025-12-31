@@ -167,7 +167,6 @@ export async function POST(req: Request) {
 
         const usage = await result.totalUsage;
         const request = await result.request;
-        console.log('LLM Logs result', JSON.stringify(request, null, 2));
 
         let generationConfig: string | null = null;
         let actualSystemPrompt: string | null = null;
