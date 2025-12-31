@@ -11,6 +11,7 @@ import {
   listDocuments,
   listFileSearchStores,
 } from '@/lib/ai/rag';
+import { db } from '@/lib/db/drizzle';
 import type { DocumentWithOrganization } from '@/lib/services/documents-service';
 import {
   getDocumentCountsByStore,
@@ -21,8 +22,10 @@ import {
   deleteAllDocuments,
   deleteDanglingDocuments,
   deleteStore,
+  getRAGSettings,
   getStoreDocuments,
   listStores,
+  updateRAGSettings,
 } from '@/lib/services/rag-service';
 
 // Mock the dependencies
@@ -37,6 +40,16 @@ vi.mock('@/lib/services/documents-service', () => ({
   getOrganizationsWithDocuments: vi.fn(),
   getDocumentCountsByStore: vi.fn(),
   getDocumentsByFileSearchStore: vi.fn(),
+}));
+
+// Mock the database
+vi.mock('@/lib/db/drizzle', () => ({
+  db: {
+    select: vi.fn(),
+    update: vi.fn(),
+    insert: vi.fn(),
+    set: vi.fn(),
+  },
 }));
 
 describe('RAG Service', () => {
@@ -915,6 +928,123 @@ describe('RAG Service', () => {
       await expect(deleteDanglingDocuments(mockStoreName)).rejects.toThrow(
         'Database connection lost'
       );
+    });
+  });
+
+  describe('getRAGSettings', () => {
+    it('should return RAG settings for an organization', async () => {
+      const mockRagSettings = {
+        organizationId: mockOrgSlug,
+        systemPrompt: 'Test system prompt',
+        maxOutputTokens: 100,
+        temperature: 0.5,
+        topP: 0.5,
+        topK: 100,
+      };
+
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([mockRagSettings]),
+        }),
+      });
+
+      vi.mocked(db.select).mockImplementation(mockSelect);
+
+      const settings = await getRAGSettings(mockOrgSlug);
+      expect(settings).toEqual(mockRagSettings);
+    });
+
+    it('should return null if no RAG settings are found', async () => {
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
+      });
+
+      vi.mocked(db.select).mockImplementation(mockSelect);
+      const settings = await getRAGSettings(mockOrgSlug);
+      expect(settings).toEqual(null);
+    });
+
+    it('should return null if the organization ID is not found', async () => {
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
+      });
+
+      vi.mocked(db.select).mockImplementation(mockSelect);
+      const settings = await getRAGSettings('non-existent-org-id');
+      expect(settings).toEqual(null);
+    });
+  });
+
+  describe('updateRAGSettings', () => {
+    const mockRagSettings = {
+      organizationId: mockOrgSlug,
+      systemPrompt: 'Test system prompt',
+      maxOutputTokens: 100,
+      temperature: 0.5,
+      topP: 0.5,
+      topK: 100,
+    };
+
+    it('should update RAG settings for an organization', async () => {
+      const mockUpdatedSettings = {
+        ...mockRagSettings,
+        systemPrompt: 'Updated system prompt',
+      };
+
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([mockRagSettings]),
+        }),
+      });
+
+      const mockSet = vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([mockUpdatedSettings]),
+        }),
+      });
+
+      const mockUpdate = vi.fn().mockReturnValue({
+        set: mockSet,
+      });
+
+      vi.mocked(db.select).mockImplementation(mockSelect);
+      vi.mocked(db.update).mockImplementation(mockUpdate as never);
+
+      const settings = await updateRAGSettings(mockUpdatedSettings);
+
+      expect(db.update).toHaveBeenCalled();
+      expect(mockSet).toHaveBeenCalled();
+      expect(settings).toEqual(mockUpdatedSettings);
+    });
+
+    it("should create new RAG settings if they don't exist", async () => {
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
+      });
+
+      const mockValues = vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([mockRagSettings]),
+      });
+
+      const mockInsert = vi.fn().mockReturnValue({
+        values: mockValues,
+      });
+
+      vi.mocked(db.select).mockImplementation(mockSelect);
+      vi.mocked(db.insert).mockImplementation(mockInsert as never);
+
+      const settings = await updateRAGSettings(mockRagSettings);
+
+      expect(db.insert).toHaveBeenCalled();
+      expect(db.update).not.toHaveBeenCalled();
+      expect(mockValues).toHaveBeenCalled();
+      expect(settings).toEqual(mockRagSettings);
     });
   });
 });

@@ -9,6 +9,7 @@ import { ApiResponseHandler } from '@/lib/api/responses';
 import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
 import { chatMessages, chatSessions, documents, llmLogs } from '@/lib/db/schema';
+import { getRAGSettings } from '@/lib/services/rag-service';
 import { chatRequestSchema } from '@/lib/types/chat';
 
 const DEFAULT_MODEL = 'gemini-2.5-flash';
@@ -80,6 +81,14 @@ export async function POST(req: Request) {
   }
 
   const startTime = Date.now();
+  const ragSettings = await getRAGSettings(chatSession.organizationId);
+  const {
+    systemPrompt = null,
+    maxOutputTokens = null,
+    temperature = null,
+    topP = null,
+    topK = null,
+  } = ragSettings ?? {};
 
   const result = streamText({
     model: googleGenerativeAIProvider(DEFAULT_MODEL),
@@ -91,6 +100,11 @@ export async function POST(req: Request) {
       }),
     },
     activeTools: ['file_search'],
+    ...(systemPrompt && { system: systemPrompt }),
+    ...(maxOutputTokens && { maxOutputTokens }),
+    ...(temperature && { temperature }),
+    ...(topP && { topP }),
+    ...(topK && { topK }),
   });
 
   return result.toUIMessageStreamResponse({
@@ -150,19 +164,37 @@ export async function POST(req: Request) {
           .set({ updatedAt: new Date() })
           .where(eq(chatSessions.id, chatSessionId));
 
-        // Get usage data from result
         const usage = await result.totalUsage;
+        const request = await result.request;
+        console.log('LLM Logs result', JSON.stringify(request, null, 2));
+
+        let generationConfig: string | null = null;
+        let actualSystemPrompt: string | null = null;
+
+        try {
+          if (typeof request.body === 'string') {
+            const requestBody = JSON.parse(request.body);
+            if (requestBody.generationConfig) {
+              generationConfig = JSON.stringify(requestBody.generationConfig);
+            }
+            // Extract systemInstruction text from request and store in systemPrompt field
+            if (requestBody.systemInstruction?.parts?.[0]?.text) {
+              actualSystemPrompt = requestBody.systemInstruction.parts[0].text;
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing request body:', error);
+        }
 
         // Log LLM call
         const responseTime = Date.now() - startTime;
         const lastUserMsg = updatedMessages.filter((m) => m.role === 'user').pop();
         const lastAssistantMsg = updatedMessages.filter((m) => m.role === 'assistant').pop();
-        const systemPrompt = updatedMessages.filter((m) => m.role === 'system').pop();
 
         await db.insert(llmLogs).values({
           endpoint: 'chat',
           model: DEFAULT_MODEL,
-          systemPrompt: systemPrompt ? JSON.stringify(systemPrompt.parts) : null,
+          systemPrompt: actualSystemPrompt,
           userPrompt: lastUserMsg ? JSON.stringify(lastUserMsg.parts) : null,
           response: lastAssistantMsg ? JSON.stringify(lastAssistantMsg.parts) : null,
           tokensUsed: usage.totalTokens ?? null,
@@ -172,6 +204,7 @@ export async function POST(req: Request) {
           cachedInputTokens: usage.cachedInputTokens ?? null,
           responseTimeMs: responseTime,
           finishReason: finishReason,
+          generationConfig,
           userId: session.user.id,
           organizationId: chatSession.organizationId,
           chatSessionId: chatSession.id,

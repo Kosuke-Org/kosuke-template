@@ -1,4 +1,5 @@
 import type { Document, FileSearchStore } from '@google/genai';
+import { eq } from 'drizzle-orm';
 
 import {
   deleteDocumentFromFileSearchStore,
@@ -6,6 +7,8 @@ import {
   listDocuments,
   listFileSearchStores,
 } from '@/lib/ai/rag';
+import { db } from '@/lib/db/drizzle';
+import { type NewRagSettings, type RagSettings, ragSettings } from '@/lib/db/schema';
 import {
   type DocumentWithOrganization,
   getDocumentCountsByStore,
@@ -329,4 +332,54 @@ export async function deleteDanglingDocuments(
     message: `Deleted ${deletedCount} dangling document(s)${errors.length > 0 ? ` (${errors.length} failed)` : ''}`,
     deletedCount,
   };
+}
+
+/**
+ * Get RAG settings for an organization
+ * @param organizationId - The ID of the organization
+ * @returns The RAG settings or null if not found
+ */
+export async function getRAGSettings(
+  organizationId: NewRagSettings['organizationId']
+): Promise<RagSettings | null> {
+  const [settings] = await db
+    .select()
+    .from(ragSettings)
+    .where(eq(ragSettings.organizationId, organizationId));
+
+  return settings ?? null;
+}
+
+/**
+ * Update RAG settings for an organization
+ * Creates settings if they don't exist
+ * @param settings - The settings to update
+ * @returns The updated RAG settings
+ */
+export async function updateRAGSettings(settings: NewRagSettings): Promise<RagSettings> {
+  const { organizationId, ...updates } = settings;
+  // Check if settings exist
+  const existing = await getRAGSettings(organizationId);
+
+  if (existing) {
+    // Update existing settings
+    const [updated] = await db
+      .update(ragSettings)
+      .set(updates)
+      .where(eq(ragSettings.organizationId, organizationId))
+      .returning();
+
+    return updated;
+  } else {
+    // Create new settings
+    const [created] = await db
+      .insert(ragSettings)
+      .values({
+        organizationId,
+        ...updates,
+      })
+      .returning();
+
+    return created;
+  }
 }

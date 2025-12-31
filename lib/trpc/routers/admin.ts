@@ -46,6 +46,7 @@ import {
   adminUpdateUserSchema,
   adminUserListFiltersSchema,
 } from '../schemas/admin';
+import { getRagSettingsSchema, updateRagSettingsSchema } from '../schemas/rag';
 
 export const adminRouter = router({
   // ============================================================
@@ -898,7 +899,34 @@ export const adminRouter = router({
       .input(adminDeleteDanglingDocumentsSchema)
       .mutation(async ({ input }) => {
         try {
-          return await ragService.deleteDanglingDocuments(input.storeName);
+          const result = await ragService.deleteDanglingDocuments(input.storeName);
+          return result;
+        } catch (error) {
+          handleApiError(error);
+        }
+      }),
+
+    /**
+     * Get RAG settings for an organization
+     */
+    getSettings: superAdminProcedure.input(getRagSettingsSchema).query(async ({ input }) => {
+      try {
+        const settings = await ragService.getRAGSettings(input.organizationId);
+        return settings;
+      } catch (error) {
+        handleApiError(error);
+      }
+    }),
+
+    /**
+     * Update RAG settings for an organization
+     */
+    updateSettings: superAdminProcedure
+      .input(updateRagSettingsSchema)
+      .mutation(async ({ input }) => {
+        try {
+          const result = await ragService.updateRAGSettings(input);
+          return result;
         } catch (error) {
           handleApiError(error);
         }
@@ -1006,6 +1034,8 @@ export const adminRouter = router({
           user: users,
           organization: organizations,
           chatSession: chatSessions,
+          systemPrompt: llmLogs.systemPrompt,
+          generationConfig: llmLogs.generationConfig,
         })
         .from(llmLogs)
         .leftJoin(users, eq(llmLogs.userId, users.id))
