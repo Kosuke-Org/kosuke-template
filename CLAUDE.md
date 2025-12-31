@@ -49,6 +49,17 @@ You are thoughtful, precise, and focus on delivering high-quality, maintainable 
   - `.__tests__/hooks`: Hook tests
   - `.__tests__/lib`: Utility and library tests
 
+### Configuration Management - MANDATORY
+
+**When adding external services to the template, update the `kosuke.config.json` file.**
+
+- The `kosuke.config.json` file tracks all external services, storages, and environment variables
+- When integrating a new external service (API, database, storage, etc.), you must:
+  1. Add the service configuration to `kosuke.config.json`
+  2. Add required environment variables to the `environment` section
+  3. Update both `preview` and `production` configurations if applicable
+- This ensures the template maintains a complete record of all external dependencies and their configuration
+
 ### Essential Commands & Database Operations
 
 **NEVER run `bun run dev` to start the development server - it's already running in your environment.**
@@ -803,6 +814,66 @@ import { Github } from 'lucide-react';
 - "Delete Item" (mutation) → `Button`
 - "Open Modal" (no navigation) → `Button`
 - "Next Page" (pagination) → `Link`
+
+### Modal vs Detail Page Pattern - MANDATORY
+
+**For new/edit of a single item we should always use modals, while for view go to detail page.**
+
+- **Create/Edit actions** → Use modals (Dialog component)
+  - Creating a new item
+  - Editing an existing item
+  - Quick forms and inline editing
+- **View actions** → Navigate to detail page
+  - Viewing full item details
+  - Read-only information display
+  - Complex content that requires full page space
+
+**CRITICAL: NEVER add back buttons to detail pages**
+
+- ❌ **DO NOT** create back buttons in detail pages
+- ✅ Users should use the browser back button or breadcrumbs for navigation
+- ✅ The sidebar and breadcrumbs provide sufficient navigation context
+- ✅ Removing back buttons keeps the UI clean and consistent across all detail views
+
+```typescript
+// ✅ CORRECT - Create/Edit in modal (Orders example)
+<Button onClick={() => setCreateDialogOpen(true)}>
+  <Plus className="mr-2 h-4 w-4" />
+  New Order
+</Button>
+
+<OrderDialog
+  open={createDialogOpen}
+  onOpenChange={setCreateDialogOpen}
+  onSubmit={async (values) => {
+    await createOrder({ ...values, organizationId: activeOrganization.id });
+  }}
+  mode="create"
+/>
+
+// Edit action also uses modal
+<Button onClick={() => {
+  setSelectedOrderId(order.id);
+  setEditDialogOpen(true);
+}}>
+  Edit Order
+</Button>
+
+<OrderDialog
+  open={editDialogOpen}
+  onOpenChange={setEditDialogOpen}
+  initialValues={selectedOrder}
+  mode="edit"
+/>
+
+// ✅ CORRECT - View on detail page
+<Button
+  variant="ghost"
+  onClick={() => router.push(`/org/${slug}/orders/${order.id}`)}
+>
+  View Details
+</Button>
+```
 
 ### Loading States & Skeleton Components - MANDATORY
 
@@ -2421,7 +2492,8 @@ A properly implemented table + detail page feature should have:
 - ✅ **Server-side filtering, sorting, and pagination**
 - ✅ **Type-safe tRPC integration with inferred types**
 - ✅ **Comprehensive loading states with skeletons**
-- ✅ **Inline editing on detail page with validation**
+- ✅ **Detail page for viewing only (read-only display)**
+- ✅ **Edit actions via modal dialogs (not inline editing)**
 - ✅ **Responsive design**
 - ✅ **Proper error handling**
 - ✅ **Accessibility compliance**
