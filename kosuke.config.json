@@ -32,7 +32,19 @@
       "STRIPE_WEBHOOK_SECRET": "",
       "STRIPE_SUCCESS_URL": "http://localhost:3000/settings/billing",
       "STRIPE_CANCEL_URL": "http://localhost:3000/settings/billing"
-    }
+    },
+    "test_users" : [
+      {
+        "email": "jane+kosuke_test@example.com",
+        "displayName": "Jane Smith",
+        "role": "admin"
+      },
+      {
+        "email": "john+kosuke_test@example.com",
+        "displayName": "John Doe",
+        "role": "admin"
+      }
+    ]
   },
   "production": {
     "services": {
