@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
@@ -108,6 +108,27 @@ export default function AdminRagSettingsPage() {
     await updateSettings.mutateAsync({
       organizationId: selectedOrgId,
       ...data,
+    });
+  };
+
+  const watchedValues = useWatch({
+    control: form.control,
+  });
+
+  const hasChanges =
+    watchedValues.systemPrompt !== settings?.systemPrompt ||
+    watchedValues.maxOutputTokens !== settings?.maxOutputTokens ||
+    watchedValues.temperature !== settings?.temperature ||
+    watchedValues.topP !== settings?.topP ||
+    watchedValues.topK !== settings?.topK;
+
+  const handleReset = () => {
+    form.reset({
+      systemPrompt: settings?.systemPrompt ?? null,
+      maxOutputTokens: settings?.maxOutputTokens ?? null,
+      temperature: settings?.temperature ?? null,
+      topP: settings?.topP ?? null,
+      topK: settings?.topK ?? null,
     });
   };
 
@@ -305,11 +326,16 @@ export default function AdminRagSettingsPage() {
                       />
                     </div>
 
-                    <div className="flex justify-end pt-4">
-                      <Button variant="outline" type="button" disabled={updateSettings.isPending}>
-                        Cancel
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button
+                        variant="outline"
+                        type="button"
+                        onClick={handleReset}
+                        disabled={!hasChanges || updateSettings.isPending}
+                      >
+                        Reset
                       </Button>
-                      <Button type="submit" disabled={updateSettings.isPending}>
+                      <Button type="submit" disabled={!hasChanges || updateSettings.isPending}>
                         {updateSettings.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                         Save Settings
                       </Button>
