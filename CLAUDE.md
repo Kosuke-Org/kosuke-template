@@ -200,6 +200,8 @@ const result = await db.select().from(tableName).where(eq(tableName.userId, user
 - Return typed results (never `any`)
 - Throw meaningful errors
 - Write tests for every service function
+- **Use Drizzle schema types** (`InferSelectModel`, `InferInsertModel`) for parameters and return types
+- Keep services framework-agnostic (no tRPC, Zod, or Next.js dependencies)
 
 **❌ DON'T:**
 
@@ -210,6 +212,8 @@ const result = await db.select().from(tableName).where(eq(tableName.userId, user
 - Use default exports
 - Return untyped results
 - Swallow errors silently
+- **Import Zod schemas in services** - Use Drizzle schema types instead
+- **Import tRPC types in services** - Keep services independent of API layer
 
 #### **Service File Structure**
 
@@ -273,33 +277,94 @@ export async function updateNotificationSettings(
 }
 ```
 
+#### **Service Type Patterns - MANDATORY**
+
+**ALWAYS use Drizzle schema types in services, NOT Zod schemas. Services must be framework-agnostic.**
+
+**✅ CORRECT - Use Drizzle schema types:**
+
+```typescript
+// lib/services/rag-service.ts
+import { eq } from 'drizzle-orm';
+
+import { db } from '@/lib/db/drizzle';
+import { type NewRagSettings, type RagSettings, ragSettings } from '@/lib/db/schema';
+
+// ✅ Uses InferInsertModel type (NewRagSettings)
+export async function updateRAGSettings(settings: NewRagSettings): Promise<RagSettings> {
+  const { organizationId, ...updates } = settings;
+  const existing = await getRAGSettings(organizationId);
+
+  if (existing) {
+    const [updated] = await db
+      .update(ragSettings)
+      .set(updates)
+      .where(eq(ragSettings.organizationId, organizationId))
+      .returning();
+    return updated;
+  }
+
+  const [created] = await db.insert(ragSettings).values(settings).returning();
+  return created;
+}
+```
+
+**❌ WRONG - Don't use Zod schema inference in services:**
+
+```typescript
+// ❌ NO! Don't import Zod schemas in services
+import type { z } from 'zod';
+
+import { updateRagSettingsSchema } from '@/lib/trpc/schemas/rag';
+
+// ❌ NO! Don't use Zod inference for service parameters
+export async function updateRAGSettings(
+  organizationId: string,
+  updates: Omit<z.infer<typeof updateRagSettingsSchema>, 'organizationId'>
+) {
+  // This couples the service to the API validation layer!
+}
+```
+
+**Why Drizzle Types in Services?**
+
+- ✅ **Framework independence** - Services work without tRPC/Zod
+- ✅ **Single source of truth** - Database schema drives types
+- ✅ **Reusability** - Can be called from cron jobs, scripts, other services
+- ✅ **Testability** - No framework dependencies in tests
+- ✅ **Type safety** - Guaranteed match with database operations
+
+**Type Flow Pattern:**
+
+```
+Database Schema (Drizzle)
+    ↓ InferInsertModel / InferSelectModel
+Service Layer (Pure TypeScript)
+    ↓ Validated by Zod schema
+tRPC Router (Validation Layer)
+    ↓ Type-safe API
+Client (React Components)
+```
+
 #### **tRPC Router as Thin Layer**
 
 ```typescript
-// lib/trpc/routers/user.ts
-import { z } from 'zod';
+// lib/trpc/routers/admin.ts
+import * as ragService from '@/lib/services/rag-service';
 
-import * as userService from '@/lib/services/user-service';
+import { router, superAdminProcedure } from '../init';
+import { updateRagSettingsSchema } from '../schemas/rag';
 
-import { protectedProcedure, router } from '../init';
-
-export const userRouter = router({
-  // Thin layer - just validate and call service
-  getNotificationSettings: protectedProcedure.query(async ({ ctx }) => {
-    return await userService.getNotificationSettings(ctx.userId);
+export const adminRouter = router({
+  rag: router({
+    // Thin layer - validate with Zod, pass to service
+    updateSettings: superAdminProcedure
+      .input(updateRagSettingsSchema) // ✅ Zod validation here
+      .mutation(async ({ input }) => {
+        // ✅ Direct pass-through - input matches NewRagSettings type
+        return await ragService.updateRAGSettings(input);
+      }),
   }),
-
-  updateNotificationSettings: protectedProcedure
-    .input(
-      z.object({
-        emailNotifications: z.boolean().optional(),
-        marketingEmails: z.boolean().optional(),
-        securityAlerts: z.boolean().optional(),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      return await userService.updateNotificationSettings(ctx.userId, input);
-    }),
 });
 ```
 
@@ -4643,6 +4708,8 @@ All color tokens are defined in `./app/globals.css` and support both light and d
 **Whenever the database schema file (@schema.ts) is updated, the seed file MUST be updated accordingly.**
 
 This rule applies to any project using Drizzle ORM with a seed script for development/testing data.
+
+**Exception:** Admin-related schema changes do not require seed file updates.
 
 #### **Why This Matters:**
 

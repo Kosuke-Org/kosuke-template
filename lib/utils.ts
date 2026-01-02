@@ -1,5 +1,5 @@
 import { ApiError } from '@google/genai';
-import { TRPCError } from '@trpc/server';
+import { TRPCError, TRPC_ERROR_CODE_KEY } from '@trpc/server';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -120,20 +120,52 @@ function mapApiErrorToTRPC(error: ApiError): TRPCError {
 }
 
 /**
+ * Valid tRPC error codes that can be used in services
+ * Reference: https://trpc.io/docs/server/error-handling
+ */
+const VALID_TRPC_ERROR_CODES: readonly TRPC_ERROR_CODE_KEY[] = [
+  'PARSE_ERROR',
+  'BAD_REQUEST',
+  'INTERNAL_SERVER_ERROR',
+  'UNAUTHORIZED',
+  'FORBIDDEN',
+  'NOT_FOUND',
+  'METHOD_NOT_SUPPORTED',
+  'TIMEOUT',
+  'CONFLICT',
+  'PRECONDITION_FAILED',
+  'PAYLOAD_TOO_LARGE',
+  'UNPROCESSABLE_CONTENT',
+  'TOO_MANY_REQUESTS',
+  'CLIENT_CLOSED_REQUEST',
+];
+
+/**
+ * Type guard to check if a value is a valid TRPC error code
+ */
+function isTRPCErrorCode(code: unknown): code is TRPC_ERROR_CODE_KEY {
+  return typeof code === 'string' && VALID_TRPC_ERROR_CODES.includes(code as TRPC_ERROR_CODE_KEY);
+}
+
+/**
  * Centralized error handler for external API errors
  * Always wraps errors in TRPCError and never leaks raw errors to client
  */
-export function handleApiError(error: unknown, errorMessage?: string): never {
+
+export function handleApiError(error: ApiError | Error | unknown): never {
+  console.log('error', error instanceof ApiError);
+
   if (error instanceof ApiError) {
     throw mapApiErrorToTRPC(error);
   }
 
   if (error instanceof Error) {
-    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: error.message });
+    const code = isTRPCErrorCode(error.cause) ? error.cause : 'INTERNAL_SERVER_ERROR';
+    throw new TRPCError({ code, message: error.message });
   }
 
   throw new TRPCError({
     code: 'INTERNAL_SERVER_ERROR',
-    message: errorMessage,
+    message: error instanceof Error ? error.message : 'Unknown error',
   });
 }

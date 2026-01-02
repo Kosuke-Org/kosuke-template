@@ -11,6 +11,7 @@ import {
   Database,
   FileText,
   LayoutDashboard,
+  Settings,
   Shield,
   Users,
 } from 'lucide-react';
@@ -56,6 +57,13 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
       title: 'RAG Management',
       url: '/admin/rag',
       icon: Database,
+      items: [
+        {
+          title: 'Settings',
+          url: '/admin/rag/settings',
+          icon: Settings,
+        },
+      ],
     },
     {
       title: 'LLM Logs',

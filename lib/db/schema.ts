@@ -5,6 +5,7 @@ import {
   integer,
   pgEnum,
   pgTable,
+  real,
   text,
   timestamp,
   uuid,
@@ -110,7 +111,10 @@ export const organizations = pgTable('organizations', {
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
   logo: text('logo'), // TODO make nullable
   metadata: text('metadata'),
 });
@@ -175,7 +179,10 @@ export const userSubscriptions = pgTable('user_subscriptions', {
   scheduledDowngradeTier: text('scheduled_downgrade_tier'), // Target tier for scheduled downgrade (nullable)
   canceledAt: timestamp('canceled_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 // Activity Logs - Optional app-specific logging
@@ -201,7 +208,10 @@ export const tasks = pgTable('tasks', {
   priority: taskPriorityEnum('priority').notNull().default('medium'),
   dueDate: timestamp('due_date'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 // Orders - Customer orders with organization support
@@ -220,7 +230,10 @@ export const orders = pgTable('orders', {
   orderDate: timestamp('order_date').notNull().defaultNow(),
   notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 // Order History - Tracks all status changes and updates to orders
@@ -257,7 +270,29 @@ export const documents = pgTable('documents', {
   sizeBytes: text('size_bytes').notNull(), // Stored as text to preserve large numbers
   status: documentStatusEnum('status').notNull().default('in_progress'), // Upload status
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+export const ragSettings = pgTable('rag_settings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+  systemPrompt: text('system_prompt'),
+  maxOutputTokens: integer('max_output_tokens'),
+  temperature: real('temperature'),
+  topP: real('top_p'),
+  topK: integer('top_k'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 // Chat Sessions - Conversation sessions with documents
@@ -275,7 +310,10 @@ export const chatSessions = pgTable('chat_sessions', {
     }),
   title: text('title').notNull(), // Auto-generated from first message
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
 });
 
 // Chat Messages - Individual messages in a chat session
@@ -311,6 +349,7 @@ export const llmLogs = pgTable(
     responseTimeMs: integer('response_time_ms'),
     finishReason: text('finish_reason'), // 'stop', 'length', 'content-filter', 'tool-calls', 'error', 'other', 'unknown'
     errorMessage: text('error_message'),
+    generationConfig: text('generation_config'), // JSON string of generationConfig from request
     userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
     organizationId: uuid('organization_id').references(() => organizations.id, {
       onDelete: 'set null',
@@ -464,6 +503,11 @@ export type ChatMessage = InferSelectModel<typeof chatMessages>;
 export type NewChatMessage = InferInsertModel<typeof chatMessages>;
 export type LLMLog = InferSelectModel<typeof llmLogs>;
 export type NewLLMLog = InferInsertModel<typeof llmLogs>;
+export type RagSettings = InferSelectModel<typeof ragSettings>;
+export type NewRagSettings = Pick<
+  InferInsertModel<typeof ragSettings>,
+  'organizationId' | 'systemPrompt' | 'maxOutputTokens' | 'temperature' | 'topP' | 'topK'
+>;
 
 // Infer enum types from schema
 export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];

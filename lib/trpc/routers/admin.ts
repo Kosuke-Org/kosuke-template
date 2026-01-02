@@ -16,9 +16,10 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
-import { chatSessions, llmLogs, orgMemberships, organizations, users } from '@/lib/db/schema';
+import { orgMemberships, organizations, users } from '@/lib/db/schema';
 import { createQueue } from '@/lib/queue/client';
 import { QUEUE_NAMES } from '@/lib/queue/config';
+import * as llmLogsService from '@/lib/services/llm-logs-service';
 import * as ragService from '@/lib/services/rag-service';
 import { ORG_ROLES } from '@/lib/types/organization';
 import { handleApiError } from '@/lib/utils';
@@ -46,6 +47,7 @@ import {
   adminUpdateUserSchema,
   adminUserListFiltersSchema,
 } from '../schemas/admin';
+import { getRagSettingsSchema, updateRagSettingsSchema } from '../schemas/rag';
 
 export const adminRouter = router({
   // ============================================================
@@ -898,7 +900,34 @@ export const adminRouter = router({
       .input(adminDeleteDanglingDocumentsSchema)
       .mutation(async ({ input }) => {
         try {
-          return await ragService.deleteDanglingDocuments(input.storeName);
+          const result = await ragService.deleteDanglingDocuments(input.storeName);
+          return result;
+        } catch (error) {
+          handleApiError(error);
+        }
+      }),
+
+    /**
+     * Get RAG settings for an organization
+     */
+    getSettings: superAdminProcedure.input(getRagSettingsSchema).query(async ({ input }) => {
+      try {
+        const settings = await ragService.getRAGSettings(input.organizationId);
+        return settings;
+      } catch (error) {
+        handleApiError(error);
+      }
+    }),
+
+    /**
+     * Update RAG settings for an organization
+     */
+    updateSettings: superAdminProcedure
+      .input(updateRagSettingsSchema)
+      .mutation(async ({ input }) => {
+        try {
+          const result = await ragService.updateRAGSettings(input);
+          return result;
         } catch (error) {
           handleApiError(error);
         }
@@ -915,137 +944,26 @@ export const adminRouter = router({
      */
     list: superAdminProcedure.input(adminLlmLogsListSchema).query(async ({ input, ctx }) => {
       const { userId } = ctx;
-      const page = input?.page ?? 1;
-      const pageSize = input?.pageSize ?? 20;
-      const offset = (page - 1) * pageSize;
 
-      const conditions = [];
-
-      // Search filter (endpoint or model)
-      if (input?.searchQuery && input.searchQuery.trim()) {
-        const searchTerm = `%${input.searchQuery.trim()}%`;
-        conditions.push(or(ilike(llmLogs.endpoint, searchTerm), ilike(llmLogs.model, searchTerm)));
+      try {
+        return await llmLogsService.listLlmLogs({
+          ...(input ?? {}),
+          userId,
+        });
+      } catch (error) {
+        handleApiError(error);
       }
-
-      // Organization filter
-      if (input?.organizationId) {
-        conditions.push(eq(llmLogs.organizationId, input.organizationId));
-      }
-
-      // Chat session filter
-      if (input?.chatSessionId) {
-        conditions.push(eq(llmLogs.chatSessionId, input.chatSessionId));
-      }
-
-      // Date range filters
-      if (input?.dateFrom) {
-        conditions.push(sql`${llmLogs.timestamp} >= ${input.dateFrom}`);
-      }
-
-      if (input?.dateTo) {
-        conditions.push(sql`${llmLogs.timestamp} <= ${input.dateTo}`);
-      }
-
-      // Get total count
-      const [{ count: total }] = await db
-        .select({ count: count() })
-        .from(llmLogs)
-        .where(
-          and(conditions.length > 0 ? and(...conditions) : undefined, eq(llmLogs.userId, userId))
-        );
-
-      // Get paginated results with joins
-      const results = await db
-        .select({
-          id: llmLogs.id,
-          timestamp: llmLogs.timestamp,
-          endpoint: llmLogs.endpoint,
-          model: llmLogs.model,
-          tokensUsed: llmLogs.tokensUsed,
-          promptTokens: llmLogs.promptTokens,
-          completionTokens: llmLogs.completionTokens,
-          reasoningTokens: llmLogs.reasoningTokens,
-          cachedInputTokens: llmLogs.cachedInputTokens,
-          responseTimeMs: llmLogs.responseTimeMs,
-          finishReason: llmLogs.finishReason,
-          errorMessage: llmLogs.errorMessage,
-          userId: llmLogs.userId,
-          organizationId: llmLogs.organizationId,
-          chatSessionId: llmLogs.chatSessionId,
-          userEmail: users.email,
-          userDisplayName: users.displayName,
-          organizationName: organizations.name,
-          organizationSlug: organizations.slug,
-        })
-        .from(llmLogs)
-        .leftJoin(users, eq(llmLogs.userId, users.id))
-        .leftJoin(organizations, eq(llmLogs.organizationId, organizations.id))
-        .where(
-          and(conditions.length > 0 ? and(...conditions) : undefined, eq(llmLogs.userId, userId))
-        )
-        .orderBy(sql`${llmLogs.timestamp} DESC`)
-        .limit(pageSize)
-        .offset(offset);
-
-      return {
-        logs: results,
-        total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(total / pageSize),
-      };
     }),
 
     /**
      * Get single LLM log with full details
      */
     get: superAdminProcedure.input(adminGetLlmLogSchema).query(async ({ input }) => {
-      const result = await db
-        .select({
-          log: llmLogs,
-          user: users,
-          organization: organizations,
-          chatSession: chatSessions,
-        })
-        .from(llmLogs)
-        .leftJoin(users, eq(llmLogs.userId, users.id))
-        .leftJoin(organizations, eq(llmLogs.organizationId, organizations.id))
-        .leftJoin(chatSessions, eq(llmLogs.chatSessionId, chatSessions.id))
-        .where(eq(llmLogs.id, input.id))
-        .limit(1);
-
-      if (result.length === 0) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'LLM log not found',
-        });
+      try {
+        return await llmLogsService.getLlmLogById(input.id);
+      } catch (error) {
+        handleApiError(error);
       }
-
-      const { log, user, organization, chatSession } = result[0];
-
-      return {
-        ...log,
-        user: user
-          ? {
-              id: user.id,
-              email: user.email,
-              displayName: user.displayName,
-            }
-          : null,
-        organization: organization
-          ? {
-              id: organization.id,
-              name: organization.name,
-              slug: organization.slug,
-            }
-          : null,
-        chatSession: chatSession
-          ? {
-              id: chatSession.id,
-              title: chatSession.title,
-            }
-          : null,
-      };
     }),
   }),
 });
