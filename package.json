@@ -79,7 +79,7 @@
     "@trpc/react-query": "^11.8.1",
     "@trpc/server": "^11.8.1",
     "@types/pg": "^8.16.0",
-    "ai": "^5.0.108",
+    "ai": "^6.0.22",
     "better-auth": "^1.4.10",
     "bullmq": "^5.66.4",
     "class-variance-authority": "^0.7.1",
