@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 import { useChatSession } from '@/hooks/use-chat';
 import { useDocuments } from '@/hooks/use-documents';
+import { useGoogleApiKey } from '@/hooks/use-google-api-key';
 import { useOrganization } from '@/hooks/use-organization';
 
 import {
@@ -18,6 +19,7 @@ import {
   PromptInputTextarea,
   usePromptInputController,
 } from '@/components/ai-elements/prompt-input';
+import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
 
 const AssistantInput = () => {
@@ -63,6 +65,7 @@ const AssistantInput = () => {
 export default function AssistantPage() {
   const { isLoading: isLoadingAuth } = useAuth();
   const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
+  const { isConfigured: hasApiKey, isLoading: isLoadingApiKey } = useGoogleApiKey();
 
   // TODO: Add endpoint to return indexed documents count
   const { documents, isLoading: isLoadingDocuments } = useDocuments({
@@ -70,23 +73,29 @@ export default function AssistantPage() {
     pageSize: 1,
   });
 
-  if (isLoadingOrg || isLoadingDocuments || isLoadingAuth) {
+  if (isLoadingOrg || isLoadingDocuments || isLoadingAuth || isLoadingApiKey) {
     return null;
+  }
+
+  if (!hasApiKey) {
+    return (
+      <ErrorMessage
+        title="Google AI API Key required"
+        description="The GOOGLE_AI_API_KEY environment variable is not configured. Please contact your administrator to set this up."
+      />
+    );
   }
 
   if (documents.length === 0) {
     return (
-      <div className="bg-background flex h-full items-center justify-center">
-        <div className="max-w-xl space-y-2 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Kosuke Assistant</h1>
-          <p className="text-muted-foreground text-sm">
-            You haven&apos;t uploaded any documents yet. Upload documents to start asking questions.
-          </p>
-          <Button asChild variant="link">
-            <Link href={`/org/${activeOrganization?.slug}/documents`}>Go to Documents</Link>
-          </Button>
-        </div>
-      </div>
+      <ErrorMessage
+        title="Kosuke Assistant"
+        description="You haven't uploaded any documents yet. Upload documents to start asking questions."
+      >
+        <Button asChild variant="link">
+          <Link href={`/org/${activeOrganization?.slug}/documents`}>Go to Documents</Link>
+        </Button>
+      </ErrorMessage>
     );
   }
 

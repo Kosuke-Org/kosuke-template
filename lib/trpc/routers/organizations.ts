@@ -443,4 +443,14 @@ export const organizationsRouter = router({
         message: 'Organization deleted successfully',
       };
     }),
+
+  /**
+   * Check if Google AI API key is configured
+   * Used to gate AI features (Documents, Assistant) when key is missing
+   */
+  checkGoogleApiKey: protectedProcedure.query(() => {
+    return {
+      configured: !!process.env.GOOGLE_AI_API_KEY,
+    };
+  }),
 });
