@@ -8,6 +8,7 @@ import { trpc } from '@/lib/trpc/client';
 export function useSubscriptionStatus() {
   return trpc.billing.getStatus.useQuery(undefined, {
     staleTime: 1000 * 60 * 2, // 2 minutes
+    refetchOnWindowFocus: true, // Refetch when user returns from Stripe popup
   });
 }
 
@@ -17,5 +18,6 @@ export function useSubscriptionStatus() {
 export function useCanSubscribe() {
   return trpc.billing.canSubscribe.useQuery(undefined, {
     staleTime: 1000 * 60 * 2, // 2 minutes
+    refetchOnWindowFocus: true, // Refetch when user returns from Stripe popup
   });
 }

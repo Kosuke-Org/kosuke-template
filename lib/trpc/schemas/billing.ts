@@ -9,6 +9,7 @@ const subscriptionTierSchema = z.enum(['pro', 'business']);
 
 export const createCheckoutSchema = z.object({
   tier: subscriptionTierSchema,
+  redirectUrl: z.string().optional(),
 });
 
 export const syncActionSchema = z.object({
