@@ -1,0 +1,1 @@
+ALTER TYPE "public"."task_priority" ADD VALUE 'urgent';
