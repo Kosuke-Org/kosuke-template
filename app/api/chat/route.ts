@@ -39,6 +39,13 @@ export async function POST(req: Request) {
     return ApiResponseHandler.unauthorized();
   }
 
+  // Check if Google AI API key is configured
+  if (!process.env.GOOGLE_AI_API_KEY) {
+    return ApiResponseHandler.badRequest(
+      'Google AI API key is not configured. Please contact your administrator.'
+    );
+  }
+
   let validatedBody;
   try {
     const body = await req.json();

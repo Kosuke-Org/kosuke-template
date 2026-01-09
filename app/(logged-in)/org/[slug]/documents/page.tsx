@@ -12,11 +12,13 @@ import { Loader2, Upload } from 'lucide-react';
 import { fileToBase64 } from '@/lib/utils';
 
 import { useDocuments } from '@/hooks/use-documents';
+import { useGoogleApiKey } from '@/hooks/use-google-api-key';
 import { useOrganization } from '@/hooks/use-organization';
 import { useTablePagination } from '@/hooks/use-table-pagination';
 import { useTableSearch } from '@/hooks/use-table-search';
 
 import { TableSkeleton } from '@/components/data-table/data-table-skeleton';
+import { ErrorMessage } from '@/components/error-message';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +36,7 @@ import { UploadDocumentDialog } from './components/upload-document-dialog';
 
 export default function DocumentsPage() {
   const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
+  const { isConfigured: hasApiKey, isLoading: isLoadingApiKey } = useGoogleApiKey();
 
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -107,8 +110,17 @@ export default function DocumentsPage() {
     );
   };
 
-  if (isLoadingOrg || isLoading || !activeOrganization) {
+  if (isLoadingOrg || isLoading || !activeOrganization || isLoadingApiKey) {
     return <TableSkeleton />;
+  }
+
+  if (!hasApiKey) {
+    return (
+      <ErrorMessage
+        title="Google AI API Key required"
+        description="The GOOGLE_AI_API_KEY environment variable is not configured. Please contact your administrator to set this up."
+      />
+    );
   }
 
   return (

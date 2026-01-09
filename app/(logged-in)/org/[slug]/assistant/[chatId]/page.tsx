@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { useChat } from '@/hooks/use-chat';
 import { useClipboard } from '@/hooks/use-clipboard';
+import { useGoogleApiKey } from '@/hooks/use-google-api-key';
 import { useOrganization } from '@/hooks/use-organization';
 
 import {
@@ -35,12 +36,14 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from '@/components/ai-elements/prompt-input';
+import { ErrorMessage } from '@/components/error-message';
 import { Button } from '@/components/ui/button';
 import { CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const ChatContent = ({ chatId }: { chatId: string }) => {
   const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
   const { isLoading: isLoadingAuth } = useAuth();
+  const { isConfigured: hasApiKey, isLoading: isLoadingApiKey } = useGoogleApiKey();
   const initialMessageSentRef = useRef(false);
 
   const sessionQuery = trpc.chat.getSession.useQuery(
@@ -78,32 +81,37 @@ const ChatContent = ({ chatId }: { chatId: string }) => {
     }
   }, [messages.length, isLoading, sessionQuery.data?.id, handleSubmit]);
 
-  if (isLoadingAuth || isLoadingOrg || sessionQuery.isLoading) {
+  if (isLoadingAuth || isLoadingOrg || sessionQuery.isLoading || isLoadingApiKey) {
     return null;
   }
 
-  if (sessionQuery.isError) {
+  if (!hasApiKey) {
     return (
-      <div className="flex h-full flex-col items-center justify-center text-center">
-        <div>
-          {sessionQuery.error.data?.code === 'NOT_FOUND' ? (
-            <h3 className="text-lg font-semibold">{sessionQuery.error.message}</h3>
-          ) : (
-            <>
-              <h3 className="text-lg font-semibold">Something went wrong</h3>
-              <p className="text-muted-foreground text-sm">
-                Please try again later. If the problem persists, please contact support.
-              </p>
-            </>
-          )}
+      <ErrorMessage
+        title="Google AI API Key required"
+        description="The GOOGLE_AI_API_KEY environment variable is not configured. Please contact your administrator to set this up."
+      />
+    );
+  }
 
-          <Button asChild variant="link">
-            <Link href={`/org/${activeOrganization?.slug}/assistant`}>
-              Go back to the assistant page
-            </Link>
-          </Button>
-        </div>
-      </div>
+  if (sessionQuery.isError) {
+    const isNotFound = sessionQuery.error.data?.code === 'NOT_FOUND';
+
+    return (
+      <ErrorMessage
+        title={isNotFound ? sessionQuery.error.message : 'Something went wrong'}
+        description={
+          !isNotFound
+            ? 'Please try again later. If the problem persists, please contact support.'
+            : undefined
+        }
+      >
+        <Button asChild variant="link">
+          <Link href={`/org/${activeOrganization?.slug}/assistant`}>
+            Go back to the assistant page
+          </Link>
+        </Button>
+      </ErrorMessage>
     );
   }
 
