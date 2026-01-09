@@ -170,7 +170,13 @@ export default function BillingPage() {
 
   const createPortalSession = trpc.billing.createPortalSession.useMutation({
     onSuccess: (data) => {
-      window.location.href = data.url;
+      const isEmbedded = typeof window !== 'undefined' && window.self !== window.top;
+
+      if (isEmbedded) {
+        window.open(data.url, '_blank', 'noreferrer,noopener');
+      } else {
+        window.location.href = data.url;
+      }
     },
     onError: (error) => {
       toast({

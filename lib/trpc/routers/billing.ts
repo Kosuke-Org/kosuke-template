@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 
 import {
+  BILLING_URLS,
   cancelPendingDowngrade,
   cancelUserSubscription,
   createCheckoutSession,
@@ -18,6 +19,7 @@ import { createCheckoutSchema, syncActionSchema } from '../schemas/billing';
  * Billing Router
  * Handles all subscription and billing operations via tRPC
  */
+
 export const billingRouter = router({
   /**
    * Get current user's subscription status and details
@@ -85,10 +87,32 @@ export const billingRouter = router({
         });
       }
 
+      // Use client's redirectUrl if provided (embedded mode with parent URL)
+      // Otherwise fallback to env variables (standalone mode)
+      let redirectUrl: string;
+      let cancelUrl: string;
+
+      if (input.redirectUrl) {
+        // This is the name of the query param that will be used to redirect the user back to the iframe
+        const IFRAME_REDIRECT_URL_PARAM = 'iframeRedirectUrl'; // DO NOT MODIFY
+        const successUrl = new URL(input.redirectUrl);
+        successUrl.searchParams.set(IFRAME_REDIRECT_URL_PARAM, BILLING_URLS.success);
+        redirectUrl = successUrl.toString();
+
+        const cancelUrlObj = new URL(input.redirectUrl);
+        cancelUrlObj.searchParams.set(IFRAME_REDIRECT_URL_PARAM, BILLING_URLS.cancel);
+        cancelUrl = cancelUrlObj.toString();
+      } else {
+        redirectUrl = BILLING_URLS.success;
+        cancelUrl = BILLING_URLS.cancel;
+      }
+
       const result = await createCheckoutSession({
         tier: input.tier,
         userId: ctx.userId,
         customerEmail,
+        redirectUrl,
+        cancelUrl,
       });
 
       if (!result.success) {

@@ -153,7 +153,7 @@ export async function createCheckoutSession(
   params: CheckoutSessionParams
 ): Promise<OperationResult<{ url: string; id: string }>> {
   try {
-    const { tier, userId, customerEmail, metadata = {} } = params;
+    const { tier, userId, customerEmail, metadata = {}, redirectUrl, cancelUrl } = params;
 
     // Check if this is a downgrade
     const currentSubscription = await getUserSubscription(userId);
@@ -178,6 +178,7 @@ export async function createCheckoutSession(
     const customerId = await getOrCreateStripeCustomer(userId, customerEmail);
 
     // Create checkout session for upgrade or new subscription
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
@@ -187,8 +188,8 @@ export async function createCheckoutSession(
           quantity: 1,
         },
       ],
-      success_url: BILLING_URLS.success,
-      cancel_url: BILLING_URLS.cancel,
+      success_url: redirectUrl,
+      cancel_url: cancelUrl,
       metadata: {
         userId: userId,
         tier,

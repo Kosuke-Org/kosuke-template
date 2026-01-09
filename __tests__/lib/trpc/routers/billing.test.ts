@@ -16,6 +16,10 @@ vi.mock('@/lib/billing', () => ({
   reactivateUserSubscription: vi.fn(),
   createCustomerPortalSession: vi.fn(),
   cancelPendingDowngrade: vi.fn(),
+  BILLING_URLS: {
+    success: 'http://localhost:3000/settings/billing',
+    cancel: 'http://localhost:3000/settings/billing',
+  },
 }));
 
 vi.mock('@/lib/billing/stripe-sync', () => ({
@@ -193,6 +197,8 @@ describe('Billing Router', () => {
         tier: 'pro',
         userId: 'user_123',
         customerEmail: 'test@example.com',
+        cancelUrl: 'http://localhost:3000/settings/billing',
+        redirectUrl: 'http://localhost:3000/settings/billing',
       });
     });
 

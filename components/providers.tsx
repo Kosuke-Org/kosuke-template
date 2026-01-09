@@ -9,6 +9,7 @@ import superjson from 'superjson';
 import { signOut } from '@/lib/auth/client';
 import { trpc } from '@/lib/trpc/client';
 
+import { IframeMessageHandler } from '@/hooks/use-iframe-message-handler';
 import { ProfileImageProvider } from '@/hooks/use-profile-image';
 
 import { ThemeProvider } from '@/components/theme-provider';
@@ -70,6 +71,7 @@ export function Providers({ children }: { children: ReactNode }) {
           <ProfileImageProvider>
             {children}
             <Toaster />
+            <IframeMessageHandler />
           </ProfileImageProvider>
         </ThemeProvider>
       </QueryClientProvider>

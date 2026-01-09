@@ -34,6 +34,8 @@ export interface CheckoutSessionParams {
   userId: string;
   customerEmail: string;
   metadata?: Record<string, string>;
+  redirectUrl?: string;
+  cancelUrl?: string;
 }
 
 export interface OperationResult<T = unknown> {
