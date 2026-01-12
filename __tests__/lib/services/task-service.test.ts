@@ -30,7 +30,7 @@ describe('TaskService', () => {
     organizationId: mockOrgId,
     title: 'Test Task',
     description: 'Test Description',
-    completed: false,
+    completed: 'false',
     priority: 'medium',
     dueDate: new Date('2026-12-31'),
     createdAt: new Date('2026-01-01'),

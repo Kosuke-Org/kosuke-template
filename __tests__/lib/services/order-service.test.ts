@@ -456,7 +456,7 @@ describe('OrderService', () => {
 
       await expect(
         orderService.getOrderHistory({
-          orderId: 999,
+          orderId: '999',
           organizationId: mockOrganizationId,
         })
       ).rejects.toThrow('Order not found');
@@ -572,7 +572,7 @@ describe('OrderService', () => {
 
       vi.mocked(db.select).mockImplementation(mockSelect);
 
-      const updatedOrder = { ...mockOrder, status: 'completed' as OrderStatus };
+      const updatedOrder = { ...mockOrder, status: 'delivered' as OrderStatus };
 
       const mockUpdate = vi.fn().mockReturnValue({
         set: vi.fn().mockReturnValue({
@@ -594,10 +594,10 @@ describe('OrderService', () => {
         orderId: mockOrderId,
         organizationId: mockOrganizationId,
         userId: mockUserId,
-        status: 'completed',
+        status: 'delivered',
       });
 
-      expect(result.status).toBe('completed');
+      expect(result.status).toBe('delivered');
       expect(db.update).toHaveBeenCalled();
       expect(db.insert).toHaveBeenCalled(); // History entry created
     });
@@ -615,7 +615,7 @@ describe('OrderService', () => {
 
       await expect(
         orderService.updateOrder({
-          orderId: 999,
+          orderId: '999',
           organizationId: mockOrganizationId,
           userId: mockUserId,
           customerName: 'Updated Customer',
@@ -665,7 +665,7 @@ describe('OrderService', () => {
 
       await expect(
         orderService.deleteOrder({
-          orderId: 999,
+          orderId: '999',
           organizationId: mockOrganizationId,
         })
       ).rejects.toThrow('Order not found');
@@ -678,7 +678,7 @@ describe('OrderService', () => {
     it('should export orders as CSV', async () => {
       const mockOrders = [
         {
-          id: 1,
+          id: '1',
           customerName: 'Customer 1',
           status: 'pending' as OrderStatus,
           amount: '100.00',
@@ -687,7 +687,7 @@ describe('OrderService', () => {
           createdAt: new Date('2024-01-15'),
         },
         {
-          id: 2,
+          id: '2',
           customerName: 'Customer 2',
           status: 'completed' as OrderStatus,
           amount: '200.00',
@@ -719,7 +719,7 @@ describe('OrderService', () => {
     it('should export orders as Excel', async () => {
       const mockOrders = [
         {
-          id: 1,
+          id: '1',
           customerName: 'Customer 1',
           status: 'pending' as OrderStatus,
           amount: '100.00',
