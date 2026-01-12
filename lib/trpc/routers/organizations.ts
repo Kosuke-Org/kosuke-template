@@ -1,19 +1,13 @@
 /**
  * tRPC router for organization operations
- * Handles organization CRUD, member management, and invitations
+ * Thin validation layer - delegates all business logic to services
  */
 import { headers } from 'next/headers';
 
-import { TRPCError } from '@trpc/server';
-import { and, eq } from 'drizzle-orm';
-import { z } from 'zod';
-
-import { auth } from '@/lib/auth/providers';
-import { db } from '@/lib/db';
-import { invitations } from '@/lib/db/schema';
-import { generateUniqueOrgSlug, switchToNextOrganization } from '@/lib/organizations';
-import { deleteProfileImage, uploadProfileImage } from '@/lib/storage';
-import { ORG_ROLES } from '@/lib/types/organization';
+import * as invitationService from '@/lib/services/invitation-service';
+import * as memberService from '@/lib/services/member-service';
+import * as organizationService from '@/lib/services/organization-service';
+import { handleApiError } from '@/lib/utils';
 
 import { protectedProcedure, router } from '../init';
 import {
@@ -29,6 +23,7 @@ import {
   removeMemberSchema,
   updateMemberRoleSchema,
   updateOrganizationSchema,
+  uploadOrganizationLogoSchema,
 } from '../schemas/organizations';
 
 export const organizationsRouter = router({
@@ -38,29 +33,28 @@ export const organizationsRouter = router({
   getUserOrganizations: protectedProcedure
     .input(getUserOrganizationsSchema)
     .query(async ({ input }) => {
-      const result = await auth.api.listOrganizations({
-        query: {
+      try {
+        return await organizationService.getUserOrganizations({
           userId: input.userId,
-        },
-        headers: await headers(),
-      });
-
-      return result;
+          headers: await headers(),
+        });
+      } catch (error) {
+        handleApiError(error);
+      }
     }),
 
   /**
    * Get a single organization by ID
    */
   getOrganization: protectedProcedure.input(getOrganizationSchema).query(async ({ input }) => {
-    const result = await auth.api.getFullOrganization({
-      query: {
+    try {
+      return await organizationService.getOrganizationById({
         organizationId: input.organizationId,
-        membersLimit: 100,
-      },
-      headers: await headers(),
-    });
-
-    return result;
+        headers: await headers(),
+      });
+    } catch (error) {
+      handleApiError(error);
+    }
   }),
 
   /**
@@ -70,56 +64,28 @@ export const organizationsRouter = router({
     .input(getOrganizationBySlugSchema)
     .query(async ({ input }) => {
       try {
-        const result = await auth.api.getFullOrganization({
-          query: {
-            organizationSlug: input.organizationSlug,
-          },
+        return await organizationService.getOrganizationBySlug({
+          slug: input.organizationSlug,
           headers: await headers(),
         });
-
-        return result;
-      } catch {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: `Organization ${input.organizationSlug} not found`,
-        });
+      } catch (error) {
+        handleApiError(error);
       }
     }),
+
   /**
    * Create a new organization
    */
   createOrganization: protectedProcedure
     .input(createOrganizationSchema)
     .mutation(async ({ input }) => {
-      const slug = await generateUniqueOrgSlug(input.name);
-
       try {
-        const result = await auth.api.createOrganization({
-          body: {
-            name: input.name,
-            slug,
-            keepCurrentActiveOrganization: false,
-          },
+        return await organizationService.createOrganization({
+          name: input.name,
           headers: await headers(),
         });
-
-        // Explicitly set the active organization to refresh the cookie cache
-        // This ensures the session cookie is updated with the new organization
-        if (result?.id) {
-          await auth.api.setActiveOrganization({
-            body: {
-              organizationId: result.id,
-            },
-            headers: await headers(),
-          });
-        }
-
-        return result;
       } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to create organization',
-        });
+        handleApiError(error);
       }
     }),
 
@@ -130,24 +96,14 @@ export const organizationsRouter = router({
     .input(updateOrganizationSchema)
     .mutation(async ({ input }) => {
       try {
-        const result = await auth.api.updateOrganization({
-          body: {
-            data: {
-              name: input.name,
-              slug: input.slug,
-              metadata: input.metadata,
-            },
-            organizationId: input.organizationId,
-          },
+        const { organizationId, ...data } = input;
+        return await organizationService.updateOrganization({
+          organizationId,
+          data,
           headers: await headers(),
         });
-
-        return result;
       } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to update organization',
-        });
+        handleApiError(error);
       }
     }),
 
@@ -155,69 +111,15 @@ export const organizationsRouter = router({
    * Upload organization logo
    */
   uploadOrganizationLogo: protectedProcedure
-    .input(
-      z.object({
-        fileBase64: z.string(),
-        fileName: z.string(),
-        mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']),
-      })
-    )
+    .input(uploadOrganizationLogoSchema)
     .mutation(async ({ input }) => {
       try {
-        const { role } = await auth.api.getActiveMemberRole({
+        return await organizationService.uploadOrganizationLogo({
+          ...input,
           headers: await headers(),
         });
-
-        if (role !== ORG_ROLES.ADMIN && role !== ORG_ROLES.OWNER) {
-          throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'Only organization admins and owners can upload the logo',
-          });
-        }
-
-        const organization = await auth.api.getFullOrganization({
-          headers: await headers(),
-        });
-
-        if (!organization?.id) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Organization not found',
-          });
-        }
-
-        const base64Data = input.fileBase64.split(',')[1] || input.fileBase64;
-        const buffer = Buffer.from(base64Data, 'base64');
-
-        if (buffer.length > 2 * 1024 * 1024) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'File size must be less than 2MB',
-          });
-        }
-
-        const file = new File([buffer], input.fileName, { type: input.mimeType });
-        const logoUrl = await uploadProfileImage(file, organization.id);
-
-        await auth.api.updateOrganization({
-          body: {
-            data: {
-              logo: logoUrl,
-            },
-            organizationId: organization.id,
-          },
-          headers: await headers(),
-        });
-
-        return {
-          success: true,
-          message: 'Organization logo uploaded successfully',
-        };
       } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to update organization',
-        });
+        handleApiError(error);
       }
     }),
 
@@ -225,170 +127,105 @@ export const organizationsRouter = router({
    * Delete organization logo
    */
   deleteOrganizationLogo: protectedProcedure.mutation(async () => {
-    const { role } = await auth.api.getActiveMemberRole({
-      headers: await headers(),
-    });
-
-    if (role !== ORG_ROLES.ADMIN && role !== ORG_ROLES.OWNER) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: 'Only organization admins and owners can delete the logo',
+    try {
+      return await organizationService.deleteOrganizationLogo({
+        headers: await headers(),
       });
+    } catch (error) {
+      handleApiError(error);
     }
-
-    const organization = await auth.api.getFullOrganization({
-      headers: await headers(),
-    });
-
-    if (!organization?.logo) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Organization logo not found',
-      });
-    }
-
-    await deleteProfileImage(organization.logo);
-
-    await auth.api.updateOrganization({
-      body: {
-        data: {
-          logo: '',
-        },
-      },
-      headers: await headers(),
-    });
-
-    return {
-      success: true,
-      message: 'Organization logo deleted successfully',
-    };
   }),
 
   /**
    * Get organization members with user details
    */
   getOrgMembers: protectedProcedure.input(getOrgMembersSchema).query(async ({ input }) => {
-    const result = await auth.api.listMembers({
-      query: {
+    try {
+      return await memberService.getOrganizationMembers({
         organizationId: input.organizationId,
-      },
-      headers: await headers(),
-    });
-
-    return result;
+        headers: await headers(),
+      });
+    } catch (error) {
+      handleApiError(error);
+    }
   }),
 
   /**
    * Invite a member to the organization
    */
   inviteMember: protectedProcedure.input(createInvitationSchema).mutation(async ({ input }) => {
-    const { role, email, organizationId } = input;
-    const pendingInvitations = await db
-      .select()
-      .from(invitations)
-      .where(
-        and(
-          eq(invitations.email, email),
-          eq(invitations.organizationId, organizationId),
-          eq(invitations.status, 'pending')
-        )
-      );
-
-    if (pendingInvitations.length) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'User already has an invitation to this organization',
+    try {
+      return await invitationService.createInvitation({
+        email: input.email,
+        organizationId: input.organizationId,
+        role: input.role,
+        headers: await headers(),
       });
+    } catch (error) {
+      handleApiError(error);
     }
-
-    await auth.api.createInvitation({
-      body: {
-        email,
-        role,
-        organizationId,
-        resend: true,
-      },
-      headers: await headers(),
-    });
-
-    return {
-      success: true,
-      message: 'Member invited successfully',
-    };
   }),
 
+  /**
+   * Cancel an invitation
+   */
   cancelInvitation: protectedProcedure.input(cancelInvitationSchema).mutation(async ({ input }) => {
-    await auth.api.cancelInvitation({
-      body: {
+    try {
+      return await invitationService.cancelInvitation({
         invitationId: input.invitationId,
-      },
-      headers: await headers(),
-    });
-
-    return {
-      success: true,
-      message: 'Invitation cancelled successfully',
-    };
+        headers: await headers(),
+      });
+    } catch (error) {
+      handleApiError(error);
+    }
   }),
 
   /**
    * Remove a member from the organization
    */
   removeMember: protectedProcedure.input(removeMemberSchema).mutation(async ({ input }) => {
-    const { memberIdOrEmail, organizationId } = input;
-
-    await auth.api.removeMember({
-      body: {
-        memberIdOrEmail,
-        organizationId: organizationId,
-      },
-      headers: await headers(),
-    });
-
-    return {
-      success: true,
-      message: 'Member removed successfully',
-    };
+    try {
+      return await memberService.removeMember({
+        organizationId: input.organizationId,
+        memberIdOrEmail: input.memberIdOrEmail,
+        headers: await headers(),
+      });
+    } catch (error) {
+      handleApiError(error);
+    }
   }),
 
   /**
    * Update a member's role
    */
   updateMemberRole: protectedProcedure.input(updateMemberRoleSchema).mutation(async ({ input }) => {
-    const { role, memberId, organizationId } = input;
-
-    await auth.api.updateMemberRole({
-      body: {
-        role,
-        memberId,
-        organizationId,
-      },
-      headers: await headers(),
-    });
-
-    return {
-      success: true,
-      message: 'Member role updated successfully',
-    };
+    try {
+      return await memberService.updateMemberRole({
+        organizationId: input.organizationId,
+        memberId: input.memberId,
+        role: input.role,
+        headers: await headers(),
+      });
+    } catch (error) {
+      handleApiError(error);
+    }
   }),
 
+  /**
+   * Leave organization
+   */
   leaveOrganization: protectedProcedure
     .input(leaveOrganizationSchema)
     .mutation(async ({ input, ctx }) => {
-      await auth.api.leaveOrganization({
-        body: {
+      try {
+        return await memberService.leaveOrganization({
           organizationId: input.organizationId,
-        },
-        headers: await headers(),
-      });
-
-      // Switch to another organization or set active to null if none remain
-      await switchToNextOrganization(ctx.userId);
-
-      return {
-        success: true,
-        message: 'You have left the organization',
-      };
+          userId: ctx.userId,
+          headers: await headers(),
+        });
+      } catch (error) {
+        handleApiError(error);
+      }
     }),
 
   /**
@@ -397,51 +234,15 @@ export const organizationsRouter = router({
   deleteOrganization: protectedProcedure
     .input(deleteOrganizationSchema)
     .mutation(async ({ input, ctx }) => {
-      const { role } = await auth.api.getActiveMemberRole({
-        headers: await headers(),
-      });
-
-      if (role !== ORG_ROLES.OWNER) {
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Only organization owners can delete the organization',
-        });
-      }
-
-      const organization = await auth.api.getFullOrganization({
-        query: {
+      try {
+        return await organizationService.deleteOrganization({
           organizationId: input.organizationId,
-        },
-        headers: await headers(),
-      });
-
-      if (!organization) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Organization not found',
+          userId: ctx.userId,
+          headers: await headers(),
         });
+      } catch (error) {
+        handleApiError(error);
       }
-
-      // Delete organization logo if it exists
-      if (organization.logo) {
-        await deleteProfileImage(organization.logo);
-      }
-
-      // Delete the organization
-      await auth.api.deleteOrganization({
-        body: {
-          organizationId: input.organizationId,
-        },
-        headers: await headers(),
-      });
-
-      // Switch to another organization or set active to null if none remain
-      await switchToNextOrganization(ctx.userId);
-
-      return {
-        success: true,
-        message: 'Organization deleted successfully',
-      };
     }),
 
   /**
@@ -450,7 +251,7 @@ export const organizationsRouter = router({
    */
   checkGoogleApiKey: protectedProcedure.query(() => {
     return {
-      configured: !!process.env.GOOGLE_AI_API_KEY,
+      configured: organizationService.isGoogleApiKeyConfigured(),
     };
   }),
 });

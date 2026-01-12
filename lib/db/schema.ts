@@ -150,6 +150,7 @@ export const invitations = pgTable(
     role: orgRoleEnum('role').notNull(),
     status: text('status').default('pending').notNull(),
     expiresAt: timestamp('expires_at').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
     inviterId: uuid('inviter_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
