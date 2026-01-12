@@ -762,7 +762,7 @@ describe('OrderService', () => {
       await expect(
         orderService.exportOrders({
           organizationId: mockOrganizationId,
-          type: 'pdf' as any,
+          type: 'pdf' as 'csv' | 'excel', // force type to test throw error
         })
       ).rejects.toThrow('Unsupported export type: pdf');
     });
