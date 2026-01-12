@@ -105,3 +105,9 @@ export const getOrgMembersSchema = z.object({
     .default('eq'),
   filterValue: z.string().optional(),
 });
+
+export const uploadOrganizationLogoSchema = z.object({
+  fileBase64: z.string(),
+  fileName: z.string(),
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']),
+});

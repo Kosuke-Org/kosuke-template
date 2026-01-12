@@ -198,10 +198,12 @@ const result = await db.select().from(tableName).where(eq(tableName.userId, user
 - Export named functions (not default exports)
 - Use descriptive function names (`getUserById`, `updateNotificationSettings`, `createTask`)
 - Return typed results (never `any`)
-- Throw meaningful errors
+- **Throw errors with proper error codes** using `Error` with `cause` property (e.g., `throw new Error('message', { cause: ERRORS.NOT_FOUND })`)
 - Write tests for every service function
-- **Use Drizzle schema types** (`InferSelectModel`, `InferInsertModel`) for parameters and return types
+- **Use Drizzle schema types** (`InferSelectModel`, `InferInsertModel`, `OrgRole`, etc.) from `@/lib/db/schema`
+- **Use schema-based types for IDs and fields** (e.g., `User['id']`, `Organization['slug']`, `User['email']`) to ensure type safety and maintainability
 - Keep services framework-agnostic (no tRPC, Zod, or Next.js dependencies)
+- **Use object parameters for functions with 2+ arguments** (e.g., `updateUser({ userId, data })` instead of `updateUser(userId, data)`)
 
 **❌ DON'T:**
 
@@ -214,70 +216,158 @@ const result = await db.select().from(tableName).where(eq(tableName.userId, user
 - Swallow errors silently
 - **Import Zod schemas in services** - Use Drizzle schema types instead
 - **Import tRPC types in services** - Keep services independent of API layer
+- **Use multiple positional parameters** - Use object parameters instead for 2+ arguments
 
 #### **Service File Structure**
 
 ```typescript
-// lib/services/user-service.ts
-import { and, eq } from 'drizzle-orm';
+// lib/services/organization-service.ts
+import { auth } from '@/lib/auth/providers';
+import type { OrgRole, Organization, User } from '@/lib/db/schema';
+import { ERRORS } from '@/lib/services/constants';
 
-import { db } from '@/lib/db/drizzle';
-import { notificationSettings, users } from '@/lib/db/schema';
+// ✅ Service functions with object parameters (2+ args)
+// ✅ Use schema-based types for IDs (User['id'], Organization['id'])
+export async function createOrganization(params: { name: string; headers: Headers }) {
+  const slug = await generateUniqueOrgSlug(params.name);
 
-// Types (can be defined inline if service-specific)
-export interface NotificationSettings {
-  emailNotifications: boolean;
-  marketingEmails: boolean;
-  securityAlerts: boolean;
-}
-
-// Service functions
-export async function getUserById(userId: string) {
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  return user ?? null;
-}
-
-export async function getNotificationSettings(userId: string): Promise<NotificationSettings> {
-  const [settings] = await db
-    .select()
-    .from(notificationSettings)
-    .where(eq(notificationSettings.userId, userId))
-    .limit(1);
-
-  if (!settings) {
-    // Business logic: Create defaults if none exist
-    const defaults = {
-      userId,
-      emailNotifications: true,
-      marketingEmails: false,
-      securityAlerts: true,
-    };
-    await db.insert(notificationSettings).values(defaults);
-    return defaults;
+  try {
+    const result = await auth.api.createOrganization({
+      body: { name: params.name, slug },
+      headers: params.headers,
+    });
+    return result;
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'Failed to create organization', {
+      cause: ERRORS.BAD_REQUEST,
+    });
   }
-
-  return settings;
 }
 
-export async function updateNotificationSettings(
-  userId: string,
-  updates: Partial<NotificationSettings>
-): Promise<NotificationSettings> {
-  const [updated] = await db
-    .update(notificationSettings)
-    .set(updates)
-    .where(eq(notificationSettings.userId, userId))
-    .returning();
+// ✅ Single argument functions don't need object wrapper
+export function isGoogleApiKeyConfigured(): boolean {
+  return !!process.env.GOOGLE_AI_API_KEY;
+}
 
-  if (!updated) {
-    throw new Error('Failed to update notification settings');
-  }
+// ✅ Use Drizzle schema types and schema-based field types
+export async function updateMemberRole(params: {
+  organizationId: Organization['id']; // ✅ Schema-based type instead of string
+  memberId: User['id']; // ✅ Schema-based type instead of string
+  role: OrgRole; // ✅ Enum type from @/lib/db/schema
+  headers: Headers;
+}): Promise<{ success: boolean; message: string }> {
+  await auth.api.updateMemberRole({
+    body: {
+      role: params.role,
+      memberId: params.memberId,
+      organizationId: params.organizationId,
+    },
+    headers: params.headers,
+  });
 
-  return updated;
+  return {
+    success: true,
+    message: 'Member role updated successfully',
+  };
 }
 ```
 
-#### **Service Type Patterns - MANDATORY**
+````
+
+**❌ WRONG - Using plain string types instead of schema-based types:**
+
+```typescript
+// ❌ BAD - Loses type safety and connection to schema
+export async function updateMemberRole(params: {
+  organizationId: string;  // ❌ Should be Organization['id']
+  memberId: string;        // ❌ Should be User['id'] or OrgMembership['id']
+  email: string;           // ❌ Should be User['email']
+  role: string;            // ❌ Should be OrgRole enum type
+  headers: Headers;
+}) { /* ... */ }
+
+// ❌ BAD - Creating custom type aliases
+type UserId = User['id'];
+type OrgId = Organization['id'];
+
+export async function getUserOrganizations(params: { userId: UserId; headers: Headers }) {
+  // ❌ Unnecessary indirection - just use User['id'] directly
+}
+```
+
+**✅ CORRECT - Using schema-based types directly:**
+
+```typescript
+import type { Organization, User, OrgMembership, OrgRole } from '@/lib/db/schema';
+
+// ✅ GOOD - Clear type safety tied to schema
+export async function updateMemberRole(params: {
+  organizationId: Organization['id'];  // ✅ Explicitly typed from schema
+  memberId: OrgMembership['id'];       // ✅ Correct entity reference
+  role: OrgRole;                       // ✅ Enum type from schema
+  headers: Headers;
+}) { /* ... */ }
+
+// ✅ GOOD - Direct schema-based types (no unnecessary aliases)
+export async function getUserOrganizations(params: { userId: User['id']; headers: Headers }) {
+  // ✅ Clear and maintainable
+}
+
+// ✅ GOOD - Union types for flexible parameters
+export async function removeMember(params: {
+  organizationId: Organization['id'];
+  memberIdOrEmail: OrgMembership['id'] | User['email'];  // ✅ Explicit about what's accepted
+  headers: Headers;
+}) { /* ... */ }
+```
+
+#### **Error Handling in Services**
+
+Services should throw errors with proper error codes using the `cause` property. This allows tRPC routers to map errors correctly.
+
+```typescript
+// lib/services/constants.ts
+export const ERRORS = {
+  NOT_FOUND: 'NOT_FOUND',
+  BAD_REQUEST: 'BAD_REQUEST',
+  FORBIDDEN: 'FORBIDDEN',
+} as const;
+
+export const ERROR_MESSAGES = {
+  USER_NOT_FOUND: 'User not found',
+} as const;
+
+// lib/services/organization-service.ts
+import { ERRORS, ERROR_MESSAGES } from '@/lib/services/constants';
+
+export async function deleteOrganization(params: {
+  organizationId: string;
+  userId: string;
+  headers: Headers;
+}) {
+  const { role } = await auth.api.getActiveMemberRole({ headers: params.headers });
+
+  if (role !== ORG_ROLES.OWNER) {
+    // ✅ Throw with error code via cause
+    throw new Error('Only organization owners can delete the organization', {
+      cause: ERRORS.FORBIDDEN,
+    });
+  }
+
+  const organization = await getOrganizationById({
+    organizationId: params.organizationId,
+    headers: params.headers
+  });
+
+  if (!organization) {
+    throw new Error(ERROR_MESSAGES.NOT_FOUND, {
+      cause: ERRORS.NOT_FOUND
+    });
+  }
+
+  // ... rest of logic
+}
+````
 
 **ALWAYS use Drizzle schema types in services, NOT Zod schemas. Services must be framework-agnostic.**
 
@@ -348,25 +438,65 @@ Client (React Components)
 
 #### **tRPC Router as Thin Layer**
 
+**tRPC routers should be thin validation layers that delegate to services and handle errors properly.**
+
 ```typescript
-// lib/trpc/routers/admin.ts
-import * as ragService from '@/lib/services/rag-service';
+// lib/trpc/routers/organizations.ts
+import { headers } from 'next/headers';
 
-import { router, superAdminProcedure } from '../init';
-import { updateRagSettingsSchema } from '../schemas/rag';
+import * as organizationService from '@/lib/services/organization-service';
+import { handleApiError } from '@/lib/utils';
 
-export const adminRouter = router({
-  rag: router({
-    // Thin layer - validate with Zod, pass to service
-    updateSettings: superAdminProcedure
-      .input(updateRagSettingsSchema) // ✅ Zod validation here
-      .mutation(async ({ input }) => {
-        // ✅ Direct pass-through - input matches NewRagSettings type
-        return await ragService.updateRAGSettings(input);
-      }),
-  }),
+import { protectedProcedure, router } from '../init';
+import { createOrganizationSchema } from '../schemas/organizations';
+
+export const organizationsRouter = router({
+  // ✅ Thin layer - validate with Zod, call service, handle errors
+  createOrganization: protectedProcedure
+    .input(createOrganizationSchema) // ✅ Zod validation here
+    .mutation(async ({ input }) => {
+      try {
+        // ✅ Call service with object parameters
+        return await organizationService.createOrganization({
+          name: input.name,
+          headers: await headers(),
+        });
+      } catch (error) {
+        // ✅ Use handleApiError to map service errors to tRPC errors
+        handleApiError(error);
+      }
+    }),
 });
 ```
+
+**Error Handling with `handleApiError`:**
+
+```typescript
+// lib/utils.ts
+export function handleApiError(error: ApiError | Error | unknown): never {
+  if (error instanceof ApiError) {
+    throw mapApiErrorToTRPC(error);
+  }
+
+  if (error instanceof Error) {
+    // ✅ Maps error.cause to tRPC error code
+    const code = isTRPCErrorCode(error.cause) ? error.cause : 'INTERNAL_SERVER_ERROR';
+    throw new TRPCError({ code, message: error.message });
+  }
+
+  throw new TRPCError({
+    code: 'INTERNAL_SERVER_ERROR',
+    message: error instanceof Error ? error.message : 'Unknown error',
+  });
+}
+```
+
+**Pattern Benefits:**
+
+- ✅ Services throw `Error` with `cause` property
+- ✅ Router catches and maps to tRPC errors
+- ✅ No tRPC dependencies in services
+- ✅ Consistent error handling across all routers
 
 #### **Service Testing Pattern**
 
