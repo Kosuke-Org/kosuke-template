@@ -1,2 +1,4 @@
 .env
 !.env.example
+knip.config.ts
+.husky/pre-commit
