@@ -13,7 +13,7 @@ import { ERRORS } from './constants';
 /**
  * Filters for task list queries
  */
-export interface TaskListFilters {
+interface TaskListFilters {
   userId: User['id'];
   organizationId?: Organization['id'] | null;
   completed?: boolean;
