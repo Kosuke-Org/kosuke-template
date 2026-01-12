@@ -6,6 +6,11 @@
         "directory": ".",
         "is_entrypoint": true,
         "external_connection_variable": "NEXT_PUBLIC_APP_URL"
+      },
+      "worker": {
+        "type": "bun",
+        "directory": ".",
+        "start_command": "workers:dev"
       }
     },
     "storages": {
