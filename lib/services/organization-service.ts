@@ -148,7 +148,7 @@ export async function deleteOrganization(params: {
 
   if (role !== ORG_ROLES.OWNER) {
     throw new Error('Only organization owners can delete the organization', {
-      cause: ERRORS.BAD_REQUEST,
+      cause: ERRORS.FORBIDDEN,
     });
   }
 
@@ -205,7 +205,7 @@ export async function uploadOrganizationLogo(params: {
 
     if (role !== ORG_ROLES.ADMIN && role !== ORG_ROLES.OWNER) {
       throw new Error('Only organization admins and owners can upload the logo', {
-        cause: ERRORS.BAD_REQUEST,
+        cause: ERRORS.FORBIDDEN,
       });
     }
 
@@ -267,7 +267,7 @@ export async function deleteOrganizationLogo(params: {
 
   if (role !== ORG_ROLES.ADMIN && role !== ORG_ROLES.OWNER) {
     throw new Error('Only organization admins and owners can delete the logo', {
-      cause: ERRORS.BAD_REQUEST,
+      cause: ERRORS.FORBIDDEN,
     });
   }
 

@@ -1,6 +1,7 @@
 export const ERRORS = {
   NOT_FOUND: 'NOT_FOUND',
   BAD_REQUEST: 'BAD_REQUEST',
+  FORBIDDEN: 'FORBIDDEN',
 } as const;
 
 export const ERROR_MESSAGES = {

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { auth } from '@/lib/auth/providers';
 import { generateUniqueOrgSlug, switchToNextOrganization } from '@/lib/organizations';
+import { ERRORS } from '@/lib/services/constants';
 import {
   createOrganization,
   deleteOrganization,
@@ -289,10 +290,15 @@ describe('Organization Service', () => {
     it('should throw error if user is not owner', async () => {
       vi.mocked(auth.api.getActiveMemberRole).mockResolvedValue({ role: 'admin' });
 
-      await expect(
-        deleteOrganization({ organizationId: mockOrgId, userId: mockUserId, headers: mockHeaders })
-      ).rejects.toThrow('Only organization owners can delete the organization');
+      const error = await deleteOrganization({
+        organizationId: mockOrgId,
+        userId: mockUserId,
+        headers: mockHeaders,
+      }).catch((e) => e);
 
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toBe('Only organization owners can delete the organization');
+      expect(error.cause).toBe(ERRORS.FORBIDDEN);
       expect(auth.api.deleteOrganization).not.toHaveBeenCalled();
     });
 
@@ -351,10 +357,14 @@ describe('Organization Service', () => {
     it('should throw error if user is member', async () => {
       vi.mocked(auth.api.getActiveMemberRole).mockResolvedValue({ role: 'member' });
 
-      await expect(
-        uploadOrganizationLogo({ ...mockFileData, headers: mockHeaders })
-      ).rejects.toThrow('Only organization admins and owners can upload the logo');
+      const error = await uploadOrganizationLogo({
+        ...mockFileData,
+        headers: mockHeaders,
+      }).catch((e) => e);
 
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toBe('Only organization admins and owners can upload the logo');
+      expect(error.cause).toBe(ERRORS.FORBIDDEN);
       expect(uploadProfileImage).not.toHaveBeenCalled();
     });
 
@@ -428,10 +438,11 @@ describe('Organization Service', () => {
     it('should throw error if user is member', async () => {
       vi.mocked(auth.api.getActiveMemberRole).mockResolvedValue({ role: 'member' });
 
-      await expect(deleteOrganizationLogo({ headers: mockHeaders })).rejects.toThrow(
-        'Only organization admins and owners can delete the logo'
-      );
+      const error = await deleteOrganizationLogo({ headers: mockHeaders }).catch((e) => e);
 
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toBe('Only organization admins and owners can delete the logo');
+      expect(error.cause).toBe(ERRORS.FORBIDDEN);
       expect(deleteProfileImage).not.toHaveBeenCalled();
     });
 
