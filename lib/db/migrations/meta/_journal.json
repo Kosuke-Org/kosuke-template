@@ -43,6 +43,13 @@
       "when": 1767179212646,
       "tag": "0005_fat_karnak",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1768156232728,
+      "tag": "0006_busy_lifeguard",
+      "breakpoints": true
     }
   ]
 }
