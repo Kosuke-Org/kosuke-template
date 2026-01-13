@@ -14,12 +14,7 @@ export {
 } from './subscription';
 
 // Business logic and eligibility
-export {
-  calculateSubscriptionState,
-  getSubscriptionEligibility,
-  getTierInfo,
-  getAvailableTiers,
-} from './eligibility';
+export { calculateSubscriptionState, getSubscriptionEligibility } from './eligibility';
 
 // Operations
 export {
@@ -28,10 +23,16 @@ export {
   reactivateUserSubscription,
   createCustomerPortalSession,
   cancelPendingDowngrade,
+  getPricingFromStripe,
 } from './operations';
 
 // Configuration and constants
-export { PRICE_IDS, PRICING, BILLING_URLS } from './config';
+export { BILLING_URLS } from './config';
+export type { PricingData } from './config';
+
+// Products configuration (single source of truth)
+export { SubscriptionTier, getTierNameFromLookupKey, getAllLookupKeys } from './products';
+export type { SubscriptionTierType } from './products';
 
 // Client and types
 export { stripe } from './client';
@@ -41,7 +42,7 @@ export type {
   CheckoutSessionParams,
   OperationResult,
 } from '@/lib/types';
-export { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
+export { SubscriptionStatus } from '@/lib/db/schema';
 export { SubscriptionState } from '@/lib/types';
 
 // All functions are exported above with their original names for backward compatibility

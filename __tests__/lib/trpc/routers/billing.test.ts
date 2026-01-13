@@ -36,7 +36,7 @@ describe('Billing Router', () => {
     it('should return subscription status', async () => {
       const { getUserSubscription } = await import('@/lib/billing');
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: new Date(),
         activeSubscription: null,
@@ -47,7 +47,7 @@ describe('Billing Router', () => {
 
       const result = await caller.billing.getStatus();
 
-      expect(result.tier).toBe(SubscriptionTier.PRO);
+      expect(result.tier).toBe(SubscriptionTier.PRO_MONTHLY);
       expect(result.status).toBe(SubscriptionStatus.ACTIVE);
       expect(result.currentPeriodEnd).toBeInstanceOf(Date);
       expect(result.activeSubscription).toBeNull();
@@ -65,7 +65,7 @@ describe('Billing Router', () => {
       const { getUserSubscription, getSubscriptionEligibility } = await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.FREE,
+        tier: SubscriptionTier.FREE_MONTHLY,
         status: null,
         currentPeriodEnd: null,
         activeSubscription: null,
@@ -91,14 +91,14 @@ describe('Billing Router', () => {
       expect(result.canUpgrade).toBe(true);
       expect(result.canReactivate).toBe(false);
       expect(result.canCancel).toBe(false);
-      expect(result.currentSubscription.tier).toBe(SubscriptionTier.FREE);
+      expect(result.currentSubscription.tier).toBe(SubscriptionTier.FREE_MONTHLY);
     });
 
     it('should return eligibility for active pro user', async () => {
       const { getUserSubscription, getSubscriptionEligibility } = await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         activeSubscription: null,
@@ -130,7 +130,7 @@ describe('Billing Router', () => {
 
       const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.CANCELED,
         currentPeriodEnd: futureDate,
         activeSubscription: null,
@@ -162,7 +162,7 @@ describe('Billing Router', () => {
         await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.FREE,
+        tier: SubscriptionTier.FREE_MONTHLY,
         status: null,
         currentPeriodEnd: null,
         activeSubscription: null,
@@ -189,12 +189,12 @@ describe('Billing Router', () => {
 
       const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
-      const result = await caller.billing.createCheckout({ tier: 'pro' });
+      const result = await caller.billing.createCheckout({ tier: SubscriptionTier.PRO_MONTHLY });
 
       expect(result.checkoutUrl).toContain('stripe.com');
       expect(result.sessionId).toBe('cs_test_123');
       expect(createCheckoutSession).toHaveBeenCalledWith({
-        tier: 'pro',
+        tier: SubscriptionTier.PRO_MONTHLY,
         userId: 'user_123',
         customerEmail: 'test@example.com',
         cancelUrl: 'http://localhost:3000/settings/billing',
@@ -206,7 +206,7 @@ describe('Billing Router', () => {
       const { getUserSubscription, getSubscriptionEligibility } = await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.PAST_DUE,
         currentPeriodEnd: new Date(),
         activeSubscription: null,
@@ -226,9 +226,9 @@ describe('Billing Router', () => {
 
       const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
-      await expect(caller.billing.createCheckout({ tier: 'pro' })).rejects.toThrow(
-        'Payment past due'
-      );
+      await expect(
+        caller.billing.createCheckout({ tier: SubscriptionTier.PRO_MONTHLY })
+      ).rejects.toThrow('Payment past due');
     });
 
     it('should throw error when checkout session creation fails', async () => {
@@ -236,7 +236,7 @@ describe('Billing Router', () => {
         await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.FREE,
+        tier: SubscriptionTier.FREE_MONTHLY,
         status: null,
         currentPeriodEnd: null,
         activeSubscription: null,
@@ -259,9 +259,9 @@ describe('Billing Router', () => {
 
       const caller = await createCaller(createMockTRPCContext({ userId: 'user_123' }));
 
-      await expect(caller.billing.createCheckout({ tier: 'pro' })).rejects.toThrow(
-        'Stripe API error'
-      );
+      await expect(
+        caller.billing.createCheckout({ tier: SubscriptionTier.PRO_MONTHLY })
+      ).rejects.toThrow('Stripe API error');
     });
   });
 
@@ -271,7 +271,7 @@ describe('Billing Router', () => {
         await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         activeSubscription: {
@@ -322,7 +322,7 @@ describe('Billing Router', () => {
       const { getUserSubscription, getSubscriptionEligibility } = await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.FREE,
+        tier: SubscriptionTier.FREE_MONTHLY,
         status: null,
         currentPeriodEnd: null,
         activeSubscription: null,
@@ -348,7 +348,7 @@ describe('Billing Router', () => {
       const { getUserSubscription, getSubscriptionEligibility } = await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.PAST_DUE,
         currentPeriodEnd: new Date(),
         activeSubscription: {
@@ -393,7 +393,7 @@ describe('Billing Router', () => {
         await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: new Date(),
         activeSubscription: {
@@ -444,7 +444,7 @@ describe('Billing Router', () => {
 
       const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.CANCELED,
         currentPeriodEnd: futureDate,
         activeSubscription: {
@@ -499,7 +499,7 @@ describe('Billing Router', () => {
       const { getUserSubscription, getSubscriptionEligibility } = await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.FREE,
+        tier: SubscriptionTier.FREE_MONTHLY,
         status: null,
         currentPeriodEnd: null,
         activeSubscription: null,
@@ -527,7 +527,7 @@ describe('Billing Router', () => {
       const { getUserSubscription, getSubscriptionEligibility } = await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.CANCELED,
         currentPeriodEnd: new Date(),
         activeSubscription: null,
@@ -554,7 +554,7 @@ describe('Billing Router', () => {
         await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.CANCELED,
         currentPeriodEnd: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         activeSubscription: {
@@ -715,7 +715,7 @@ describe('Billing Router', () => {
       const { getUserSubscription } = await import('@/lib/billing');
 
       const mockSubscriptionInfo: UserSubscriptionInfo = {
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: new Date(),
         activeSubscription: {
@@ -747,7 +747,7 @@ describe('Billing Router', () => {
       expect(result.success).toBe(true);
       expect(result.message).toContain('Sync status retrieved');
       expect(result.user.id).toBe('user_123');
-      expect(result.user.currentTier).toBe(SubscriptionTier.PRO);
+      expect(result.user.currentTier).toBe(SubscriptionTier.PRO_MONTHLY);
       expect(result.availableActions).toHaveLength(3);
       expect(result.availableActions[0].action).toBe('user');
     });

@@ -73,6 +73,9 @@ bun run db:generate       # Generate migrations (schema changes)
 bun run db:push           # Push schema (prototyping)
 bun run db:reset          # Reset database
 
+# Stripe Operations
+bun run stripe:seed       # Create/sync products & prices in Stripe using lookup keys
+
 # Testing & Quality
 bun run test              # Run tests
 bun run test:watch        # Run tests in watch mode
@@ -748,21 +751,241 @@ const userId = user?.id;
 
 ### Stripe Billing Integration
 
-- **Prices**: Configure PRO and BUSINESS tier price IDs in environment
+The template uses a **dynamic Stripe integration** where products and pricing are managed via JSON configuration and synced to Stripe using lookup keys.
+
+#### How It Works
+
+1. **Products Configuration**: All tiers (free, pro, business) are defined in `lib/billing/products.json`
+2. **Stripe Sync**: Run `bun run stripe:seed` to create/update products in Stripe
+3. **Lookup Keys**: Products are fetched dynamically using lookup keys (e.g., `free_monthly`, `pro_monthly`)
+4. **Dynamic Pricing**: The billing page fetches pricing directly from Stripe via tRPC
+5. **No Manual Price IDs**: Unlike traditional Stripe setups, you don't need to manually copy price IDs to environment variables
+
+#### Key Architecture Decisions
+
+- **Single Source of Truth**: Products defined once in `lib/billing/products.json`
+- **Easy Updates**: Change pricing by editing JSON and re-running sync script
+- **Migration-Friendly**: All users (including free tier) have Stripe subscriptions
+- **No Hardcoded Values**: Pricing fetched dynamically from Stripe using lookup keys
+- **Idempotent Sync**: Safe to run `bun run stripe:seed` multiple times without duplicates
+- **Explicit Types**: Use clear, explicit type definitions rather than dynamic enum generation for better LLM understanding and code clarity
+- **Tier Hierarchy via Explicit Levels**: Each product has a `tierLevel` field (0, 1, 2, etc.) that explicitly defines its access level. The `hasFeatureAccess()` function compares these levels to determine access. Falls back to array index if `tierLevel` is missing.
+
+#### Subscription Management
+
 - **Subscriptions**: Synced via webhooks to `userSubscriptions` table
 - **Checkout**: Use Stripe Checkout for subscription management
-- **Tiers**: 'free', 'pro', 'business' - stored in database
+- **Tiers**: Lookup keys (e.g., 'free_monthly', 'pro_monthly', 'business_monthly') stored in database
 - **Webhooks**: Handle subscription changes via `/api/billing/webhook`
 - **Cron Sync**: Automated subscription sync every 6 hours
 - **Customer Portal**: Stripe manages payment methods and billing history
 
 ```typescript
 // Subscription check pattern
-import { getUserSubscription } from '@/lib/billing';
+import { getUserSubscription, hasFeatureAccess } from '@/lib/billing';
+import { SubscriptionTier } from '@/lib/billing/products';
 
 const subscription = await getUserSubscription(userId);
-const isPro = subscription?.tier === 'pro' || subscription?.tier === 'business';
+
+// Check feature access using tier hierarchy
+const hasProAccess = hasFeatureAccess(subscription.tier, SubscriptionTier.PRO_MONTHLY);
 ```
+
+#### Tier Hierarchy and Feature Access
+
+**IMPORTANT**: Each product in `lib/billing/products.json` has an explicit `tierLevel` field that defines its access level.
+
+```json
+// lib/billing/products.json
+{
+  "products": [
+    {
+      "lookupKey": "free_monthly",
+      "tierLevel": 0,  // ← Explicit level: Lowest tier
+      ...
+    },
+    {
+      "lookupKey": "pro_monthly",
+      "tierLevel": 1,  // ← Explicit level: Medium tier
+      ...
+    },
+    {
+      "lookupKey": "business_monthly",
+      "tierLevel": 2,  // ← Explicit level: Highest tier
+      ...
+    }
+  ]
+}
+```
+
+**How `hasFeatureAccess()` works:**
+
+```typescript
+import { hasFeatureAccess } from '@/lib/billing';
+import { SubscriptionTier } from '@/lib/billing/products';
+
+// Returns true if user's tierLevel >= required tierLevel
+hasFeatureAccess(userTier, requiredTier);
+
+// Examples:
+hasFeatureAccess('business_monthly', 'pro_monthly'); // ✅ true (level 2 >= 1)
+hasFeatureAccess('pro_monthly', 'free_monthly'); // ✅ true (level 1 >= 0)
+hasFeatureAccess('free_monthly', 'pro_monthly'); // ❌ false (level 0 < 1)
+```
+
+**Benefits of explicit tierLevel:**
+
+1. ✅ **Self-documenting** - Tier hierarchy is explicit and obvious
+2. ✅ **Flexible** - Can reorder products in JSON without breaking access
+3. ✅ **Multi-interval support** - Easy to add yearly variants at the same tier level (e.g., `pro_monthly` and `pro_yearly` both use `tierLevel: 1`)
+4. ✅ **Safe** - No implicit dependencies on array order
+5. ✅ **Backward compatible** - Falls back to array index if tierLevel is missing
+
+**Rules when modifying tiers:**
+
+1. Always set explicit `tierLevel` values (0 = lowest, higher numbers = more access)
+2. Multiple products can share the same tierLevel (e.g., monthly and yearly)
+3. Higher tier users automatically get access to all lower tier features
+4. Products can be reordered in the array for display purposes without affecting access logic
+
+#### Adding New Pricing Tiers
+
+When you need to add a new tier or modify pricing:
+
+1. **Determine the correct tier level**:
+
+   Assign an explicit `tierLevel` that reflects where the tier fits in the access hierarchy:
+
+   ```json
+   // lib/billing/products.json - Adding "premium" between pro and business
+   {
+     "products": [
+       { "lookupKey": "free_monthly", "tierLevel": 0, ... },
+       { "lookupKey": "pro_monthly", "tierLevel": 1, ... },
+       { "lookupKey": "premium_monthly", "tierLevel": 2, ... },   // ← NEW tier
+       { "lookupKey": "business_monthly", "tierLevel": 3, ... }   // ← Update existing
+     ]
+   }
+   ```
+
+   Note: You can insert the product anywhere in the array - `tierLevel` determines access, not position.
+
+2. **Edit Products JSON** with proper structure:
+
+   ```json
+   // Example: Adding "enterprise" as the highest tier
+   {
+     "lookupKey": "enterprise_monthly",
+     "tierLevel": 3, // ← Higher than business (2)
+     "product": {
+       "name": "Enterprise",
+       "description": "Custom enterprise solution"
+     },
+     "price": {
+       "unit_amount": 99900,
+       "currency": "usd",
+       "recurring": {
+         "interval": "month",
+         "interval_count": 1
+       },
+       "tax_behavior": "unspecified"
+     },
+     "features": ["Unlimited users", "Custom integrations", "Dedicated support"]
+   }
+   ```
+
+3. **Sync to Stripe**:
+
+   ```bash
+   bun run stripe:seed
+   ```
+
+4. **Update Tier Constants** (for type safety):
+
+   ```typescript
+   // lib/billing/products.ts
+   export const SubscriptionTier = {
+     FREE_MONTHLY: 'free_monthly',
+     PRO_MONTHLY: 'pro_monthly',
+     PREMIUM_MONTHLY: 'premium_monthly', // ← Add new tier
+     BUSINESS_MONTHLY: 'business_monthly',
+   } as const;
+   ```
+
+5. **Update tRPC Schema** (automatically synced via SubscriptionTier):
+
+   The schema in `lib/trpc/schemas/billing.ts` automatically stays in sync because it imports and uses the `SubscriptionTier` constants:
+
+   ```typescript
+   // lib/trpc/schemas/billing.ts
+   import { SubscriptionTier } from '@/lib/billing/products';
+
+   const subscriptionTierSchema = z.enum([
+     SubscriptionTier.FREE_MONTHLY,
+     SubscriptionTier.PRO_MONTHLY,
+     SubscriptionTier.PREMIUM_MONTHLY, // ← Auto-synced when you add to products.ts
+     SubscriptionTier.BUSINESS_MONTHLY,
+   ]);
+   ```
+
+   **Important**: Add the new tier constant to the enum array in the schema to enable it for checkout operations.
+
+6. **The new tier automatically appears** in the billing UI - no hardcoded price IDs needed
+7. **Feature access automatically works** based on the tierLevel you assigned
+
+#### Development Workflow
+
+```bash
+# 1. Configure products (optional - defaults provided)
+# Edit lib/billing/products.json
+
+# 2. Sync products to Stripe
+bun run stripe:seed
+
+# 3. Test subscription flows in your app
+# Products are fetched dynamically using lookup keys
+```
+
+#### Benefits Over Traditional Stripe Setup
+
+- ✅ No manual price ID copying between Stripe dashboard and `.env`
+- ✅ JSON-first configuration makes pricing changes version-controlled
+- ✅ Lookup keys prevent duplicate products/prices
+- ✅ Easier to maintain multiple environments (dev/staging/prod)
+- ✅ Pricing updates require only JSON edit + sync script
+- ✅ Free tier users still have Stripe subscriptions (simplifies upgrade flow)
+
+#### Implementation Best Practices
+
+When implementing billing features, prefer **explicit, clear code** over clever dynamic solutions:
+
+```typescript
+// ✅ PREFERRED - Explicit and clear (better for LLM-generated code)
+export const SubscriptionTier = {
+  FREE: 'free',
+  PRO: 'pro',
+  BUSINESS: 'business',
+} as const;
+
+export type SubscriptionTier = 'free' | 'pro' | 'business';
+
+// ❌ AVOID - Dynamic generation (harder to understand and maintain)
+const buildSubscriptionTierEnum = () => {
+  const tierEnum: Record<string, string> = {};
+  for (const product of productsConfig.products) {
+    const enumKey = product.lookupKey.toUpperCase();
+    tierEnum[enumKey] = product.lookupKey;
+  }
+  return tierEnum;
+};
+```
+
+**Rationale:**
+
+- Explicit types are easier for LLMs to understand and modify
+- Clear type definitions improve IDE autocomplete and error detection
+- Manual updates to types when adding tiers are intentional and visible
+- Better code clarity for human developers reviewing AI-generated code
 
 ### Component Architecture & UI Guidelines
 

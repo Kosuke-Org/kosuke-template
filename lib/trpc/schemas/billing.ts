@@ -1,11 +1,17 @@
 import { z } from 'zod';
 
+import { SubscriptionTier } from '@/lib/billing/products';
+
 /**
  * Client-safe Zod schemas for billing operations
- * NO server dependencies - only Zod imports allowed
+ * Uses SubscriptionTier constants to stay in sync with products.json
  */
 
-const subscriptionTierSchema = z.enum(['pro', 'business']);
+const subscriptionTierSchema = z.enum([
+  SubscriptionTier.FREE_MONTHLY,
+  SubscriptionTier.PRO_MONTHLY,
+  SubscriptionTier.BUSINESS_MONTHLY,
+]);
 
 export const createCheckoutSchema = z.object({
   tier: subscriptionTierSchema,

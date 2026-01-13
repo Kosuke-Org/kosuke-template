@@ -1,4 +1,4 @@
-import type { SubscriptionStatus, SubscriptionTier, UserSubscription } from '@/lib/db/schema';
+import type { SubscriptionStatus, SubscriptionTierType, UserSubscription } from '@/lib/db/schema';
 
 // Enhanced subscription state enum for better state management
 export enum SubscriptionState {
@@ -23,14 +23,14 @@ export interface SubscriptionEligibility {
 }
 
 export interface UserSubscriptionInfo {
-  tier: SubscriptionTier;
+  tier: SubscriptionTierType;
   status: SubscriptionStatus | null;
   currentPeriodEnd: Date | null;
   activeSubscription: UserSubscription | null;
 }
 
 export interface CheckoutSessionParams {
-  tier: keyof typeof import('@/lib/billing/config').PRICE_IDS;
+  tier: SubscriptionTierType; // Lookup key (e.g., 'free_monthly', 'pro_monthly')
   userId: string;
   customerEmail: string;
   metadata?: Record<string, string>;

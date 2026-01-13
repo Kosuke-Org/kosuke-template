@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
+import type Stripe from 'stripe';
 
-import { BILLING_URLS, PRICE_IDS, PRICING } from '@/lib/billing';
+import { BILLING_URLS, type PricingData } from '@/lib/billing';
 import { db } from '@/lib/db';
 import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 import { userSubscriptions, users } from '@/lib/db/schema';
@@ -8,12 +9,69 @@ import { type CheckoutSessionParams, type OperationResult } from '@/lib/types';
 
 import { stripe } from './client';
 import { getSubscriptionEligibility } from './eligibility';
+import { SubscriptionTierType, getAllLookupKeys } from './products';
 import { getUserSubscription } from './subscription';
 
 /**
  * Billing operations: checkout, cancel, reactivate
  * Handles Stripe API interactions for subscription management
  */
+
+/**
+ * Get pricing information from Stripe
+ * Fetches all active prices using lookup keys and transforms to app format
+ */
+export async function getPricingFromStripe(): Promise<PricingData> {
+  try {
+    // Fetch all lookup keys from products.json
+    const lookupKeys = getAllLookupKeys();
+
+    // Fetch prices from Stripe using lookup keys
+    const pricesWithProducts = await stripe.prices.list({
+      active: true,
+      lookup_keys: lookupKeys,
+      expand: ['data.product'],
+    });
+
+    // Transform Stripe data to match our app's PRICING format
+    const pricing: PricingData = {};
+
+    // Sort prices by unit_amount (lowest to highest) for logical UI rendering
+    const sortedPrices = [...pricesWithProducts.data].sort((a, b) => {
+      const amountA = a.unit_amount || 0;
+      const amountB = b.unit_amount || 0;
+      return amountA - amountB;
+    });
+
+    for (const price of sortedPrices) {
+      if (!price.lookup_key) {
+        continue;
+      }
+
+      const product = price.product as Stripe.Product;
+
+      pricing[price.lookup_key] = {
+        price: (price.unit_amount || 0) / 100, // Convert cents to dollars
+        name: product.name,
+        description: product.description ?? '',
+        features:
+          product.marketing_features
+            .filter((feature) => Boolean(feature.name))
+            .map((feature) => ({
+              name: feature.name!,
+            })) || [],
+        priceId: price.id,
+        productId: product.id,
+        lookupKey: price.lookup_key,
+      };
+    }
+
+    return pricing;
+  } catch (error) {
+    console.error('Error fetching pricing from Stripe:', error);
+    throw error;
+  }
+}
 
 /**
  * Get or create Stripe customer for a user
@@ -46,6 +104,30 @@ async function getOrCreateStripeCustomer(userId: string, customerEmail: string):
 }
 
 /**
+ * Get Stripe price ID by lookup key
+ * @param lookupKey - The Stripe lookup key (e.g., 'free_monthly', 'pro_monthly')
+ */
+async function getPriceByLookupKey(lookupKey: SubscriptionTierType): Promise<string | null> {
+  try {
+    const prices = await stripe.prices.list({
+      lookup_keys: [lookupKey],
+      limit: 1,
+      active: true,
+    });
+
+    if (prices.data.length === 0) {
+      console.error(`No active price found for lookup key: ${lookupKey}`);
+      return null;
+    }
+
+    return prices.data[0].id;
+  } catch (error) {
+    console.error(`Error fetching price for lookup key ${lookupKey}:`, error);
+    return null;
+  }
+}
+
+/**
  * Create a subscription schedule for downgrade (deferred subscription change)
  */
 async function createSubscriptionSchedule(
@@ -67,11 +149,12 @@ async function createSubscriptionSchedule(
       };
     }
 
-    const priceId = PRICE_IDS[tier];
+    // Get price ID using lookup key
+    const priceId = await getPriceByLookupKey(tier);
     if (!priceId) {
       return {
         success: false,
-        message: `Invalid tier: ${tier}`,
+        message: `Invalid tier or price not found: ${tier}`,
       };
     }
 
@@ -129,9 +212,12 @@ async function createSubscriptionSchedule(
 
     console.log('✅ Created subscription schedule for downgrade:', schedule.id);
 
+    // Capitalize tier name for message
+    const tierName = tier.charAt(0).toUpperCase() + tier.slice(1);
+
     return {
       success: true,
-      message: `Your subscription will downgrade to ${PRICING[tier as keyof typeof PRICING].name} on ${currentSubscription.currentPeriodEnd.toLocaleDateString()}`,
+      message: `Your subscription will downgrade to ${tierName} on ${currentSubscription.currentPeriodEnd.toLocaleDateString()}`,
       data: {
         url: BILLING_URLS.success, // Redirect to success page
         id: schedule.id,
@@ -147,6 +233,29 @@ async function createSubscriptionSchedule(
 }
 
 /**
+ * Get price amount for a lookup key (fetches from Stripe)
+ * @param lookupKey - The Stripe lookup key (e.g., 'free_monthly', 'pro_monthly')
+ */
+async function getTierPrice(lookupKey: string): Promise<number> {
+  try {
+    const prices = await stripe.prices.list({
+      lookup_keys: [lookupKey],
+      limit: 1,
+      active: true,
+    });
+
+    if (prices.data.length === 0) {
+      return 0;
+    }
+
+    return (prices.data[0].unit_amount || 0) / 100; // Convert cents to dollars
+  } catch (error) {
+    console.error(`Error fetching price for lookup key ${lookupKey}:`, error);
+    return 0;
+  }
+}
+
+/**
  * Create a Stripe Checkout session for upgrades or new subscriptions
  */
 export async function createCheckoutSession(
@@ -157,20 +266,21 @@ export async function createCheckoutSession(
 
     // Check if this is a downgrade
     const currentSubscription = await getUserSubscription(userId);
-    const currentPrice = PRICING[currentSubscription.tier as keyof typeof PRICING]?.price || 0;
-    const newPrice = PRICING[tier as keyof typeof PRICING]?.price;
+    const currentPrice = await getTierPrice(currentSubscription.tier);
+    const newPrice = await getTierPrice(tier);
 
     // If downgrading (new price < current price), use subscription schedule
-    if (currentSubscription.tier !== SubscriptionTier.FREE && newPrice < currentPrice) {
+    if (currentSubscription.tier !== SubscriptionTier.FREE_MONTHLY && newPrice < currentPrice) {
       console.log('🔽 Detected downgrade, creating subscription schedule instead');
       return createSubscriptionSchedule(params);
     }
 
-    const priceId = PRICE_IDS[tier];
+    // Get price ID using lookup key
+    const priceId = await getPriceByLookupKey(tier);
     if (!priceId) {
       return {
         success: false,
-        message: `Invalid tier: ${tier}`,
+        message: `Invalid tier or price not found: ${tier}`,
       };
     }
 

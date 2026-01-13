@@ -6,13 +6,15 @@ import {
   cancelUserSubscription,
   createCheckoutSession,
   createCustomerPortalSession,
+  getPricingFromStripe,
   getSubscriptionEligibility,
   getUserSubscription,
   reactivateUserSubscription,
 } from '@/lib/billing';
 import { syncStaleSubscriptions, syncUserSubscriptionFromStripe } from '@/lib/billing/stripe-sync';
+import { handleApiError } from '@/lib/utils';
 
-import { protectedProcedure, router } from '../init';
+import { protectedProcedure, publicProcedure, router } from '../init';
 import { createCheckoutSchema, syncActionSchema } from '../schemas/billing';
 
 /**
@@ -21,6 +23,18 @@ import { createCheckoutSchema, syncActionSchema } from '../schemas/billing';
  */
 
 export const billingRouter = router({
+  /**
+   * Get pricing information from Stripe
+   * Fetches all active prices using lookup keys
+   */
+  getPricing: publicProcedure.query(async () => {
+    try {
+      return await getPricingFromStripe();
+    } catch (error) {
+      handleApiError(error);
+    }
+  }),
+
   /**
    * Get current user's subscription status and details
    */

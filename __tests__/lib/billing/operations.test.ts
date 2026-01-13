@@ -73,7 +73,7 @@ describe('Billing Operations', () => {
   describe('createCheckoutSession', () => {
     it('should handle invalid tier', async () => {
       vi.mocked(getUserSubscription).mockResolvedValueOnce({
-        tier: SubscriptionTier.FREE,
+        tier: SubscriptionTier.FREE_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: null,
         activeSubscription: null,
@@ -96,14 +96,14 @@ describe('Billing Operations', () => {
       const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
       vi.mocked(getUserSubscription).mockResolvedValueOnce({
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: futureDate,
         activeSubscription: {
           id: '1',
           stripeSubscriptionId: 'sub_123',
           userId: 'user_123',
-          tier: SubscriptionTier.PRO,
+          tier: SubscriptionTier.PRO_MONTHLY,
           status: SubscriptionStatus.ACTIVE,
           createdAt: now,
           updatedAt: now,
@@ -132,14 +132,14 @@ describe('Billing Operations', () => {
       const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
       vi.mocked(getUserSubscription).mockResolvedValueOnce({
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: futureDate,
         activeSubscription: {
           id: '1',
           stripeSubscriptionId: 'sub_123',
           userId: 'user_123',
-          tier: SubscriptionTier.PRO,
+          tier: SubscriptionTier.PRO_MONTHLY,
           status: SubscriptionStatus.ACTIVE,
           createdAt: now,
           updatedAt: now,
@@ -196,14 +196,14 @@ describe('Billing Operations', () => {
       const now = new Date();
 
       vi.mocked(getUserSubscription).mockResolvedValueOnce({
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: now,
         activeSubscription: {
           id: '1',
           stripeSubscriptionId: 'sub_123',
           userId: 'user_123',
-          tier: SubscriptionTier.PRO,
+          tier: SubscriptionTier.PRO_MONTHLY,
           status: SubscriptionStatus.ACTIVE,
           createdAt: now,
           updatedAt: now,

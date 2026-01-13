@@ -12,7 +12,9 @@
  * Usage: bun run db:seed
  */
 import { faker } from '@faker-js/faker';
+import { eq } from 'drizzle-orm';
 
+import { stripe } from '@/lib/billing/client';
 import { db } from '@/lib/db/drizzle';
 import type { NewOrder, OrderStatus } from '@/lib/types';
 import { ORG_ROLES } from '@/lib/types/organization';
@@ -150,41 +152,246 @@ async function seed() {
     console.log(`  ✅ John is member of ${org1Name}`);
     console.log(`  ✅ John is owner of ${org2Name}\n`);
 
-    // Step 6: Create subscriptions
+    // Step 6: Create subscriptions with Stripe customers and subscriptions
     console.log('💳 Creating subscriptions...');
 
-    const janeSubscription: NewUserSubscription = {
-      userId: janeUser.id,
-      organizationId: insertedOrg1.id,
-      subscriptionType: 'organization',
-      status: SubscriptionStatus.ACTIVE,
-      tier: SubscriptionTier.FREE,
-      stripeCustomerId: null,
-      stripeSubscriptionId: null,
-      stripePriceId: null,
-      currentPeriodStart: new Date(),
-      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-      cancelAtPeriodEnd: 'false',
-    };
+    // Fetch Stripe free tier price using lookup key
+    let freePriceId: string | null = null;
 
-    const johnSubscription: NewUserSubscription = {
-      userId: johnUser.id,
-      organizationId: insertedOrg2.id,
-      subscriptionType: 'organization',
-      status: SubscriptionStatus.ACTIVE,
-      tier: SubscriptionTier.FREE,
-      stripeCustomerId: null,
-      stripeSubscriptionId: null,
-      stripePriceId: null,
-      currentPeriodStart: new Date(),
-      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-      cancelAtPeriodEnd: 'false',
-    };
+    try {
+      console.log('  🔍 Fetching free tier price from Stripe...');
 
-    await db.insert(userSubscriptions).values([janeSubscription, johnSubscription]);
+      const freePrices = await stripe.prices.list({
+        lookup_keys: [SubscriptionTier.FREE_MONTHLY],
+        limit: 1,
+        active: true,
+      });
+      freePriceId = freePrices.data[0]?.id || null;
 
-    console.log(`  ✅ ${org1Name}: Business tier`);
-    console.log(`  ✅ ${org2Name}: Pro tier\n`);
+      console.log(`  ✅ Found Stripe price ID: ${freePriceId || 'not found'}`);
+    } catch (error) {
+      console.warn(
+        '  ⚠️  Could not fetch Stripe prices. Subscriptions will be created without Stripe data.'
+      );
+      console.warn(
+        '     Make sure to run `bun run stripe:seed` first to create products in Stripe.'
+      );
+      console.warn('     Error:', error instanceof Error ? error.message : error);
+    }
+
+    // Create subscription for Jane (Free tier - with Stripe customer and subscription)
+    let janeSubscription: NewUserSubscription;
+
+    if (freePriceId) {
+      try {
+        console.log('  🔄 Creating Stripe customer and subscription for Jane...');
+
+        // Create Stripe customer
+        const janeStripeCustomer = await stripe.customers.create({
+          email: janeSmithEmail,
+          name: 'Jane Smith',
+          metadata: {
+            userId: janeUser.id,
+            organizationId: insertedOrg1.id,
+          },
+        });
+
+        // Update user with Stripe customer ID
+        await db
+          .update(users)
+          .set({ stripeCustomerId: janeStripeCustomer.id, updatedAt: new Date() })
+          .where(eq(users.id, janeUser.id));
+
+        console.log(`  ✅ Created Stripe customer: ${janeStripeCustomer.id}`);
+
+        // Create Stripe subscription
+        const janeStripeSubscription = await stripe.subscriptions.create({
+          customer: janeStripeCustomer.id,
+          items: [{ price: freePriceId }],
+          metadata: {
+            userId: janeUser.id,
+            organizationId: insertedOrg1.id,
+            tier: SubscriptionTier.FREE_MONTHLY,
+          },
+        });
+
+        console.log(`  ✅ Created Stripe subscription: ${janeStripeSubscription.id}`);
+
+        // Get period dates from the subscription item (not the subscription itself)
+        const janeSubscriptionItem = janeStripeSubscription.items.data[0];
+        const janeCurrentPeriodStart = janeSubscriptionItem?.current_period_start;
+        const janeCurrentPeriodEnd = janeSubscriptionItem?.current_period_end;
+
+        // Create database record with Stripe data
+        janeSubscription = {
+          userId: janeUser.id,
+          organizationId: insertedOrg1.id,
+          subscriptionType: 'organization',
+          status: janeStripeSubscription.status as SubscriptionStatus,
+          tier: SubscriptionTier.FREE_MONTHLY,
+          stripeCustomerId: janeStripeCustomer.id,
+          stripeSubscriptionId: janeStripeSubscription.id,
+          stripePriceId: freePriceId,
+          currentPeriodStart: janeCurrentPeriodStart
+            ? new Date(janeCurrentPeriodStart * 1000)
+            : new Date(),
+          currentPeriodEnd: janeCurrentPeriodEnd
+            ? new Date(janeCurrentPeriodEnd * 1000)
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          cancelAtPeriodEnd: janeStripeSubscription.cancel_at_period_end ? 'true' : 'false',
+        };
+
+        await db.insert(userSubscriptions).values([janeSubscription]);
+        console.log(`  ✅ ${org1Name}: Free tier (synced from Stripe)`);
+      } catch (error) {
+        console.warn('  ⚠️  Failed to create Stripe customer/subscription for Jane');
+        console.warn('     Falling back to local-only subscription');
+        console.warn('     Error:', error instanceof Error ? error.message : error);
+
+        // Fallback to local-only subscription
+        janeSubscription = {
+          userId: janeUser.id,
+          organizationId: insertedOrg1.id,
+          subscriptionType: 'organization',
+          status: SubscriptionStatus.ACTIVE,
+          tier: SubscriptionTier.FREE_MONTHLY,
+          stripeCustomerId: null,
+          stripeSubscriptionId: null,
+          stripePriceId: freePriceId,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          cancelAtPeriodEnd: 'false',
+        };
+
+        await db.insert(userSubscriptions).values([janeSubscription]);
+        console.log(`  ✅ ${org1Name}: Free tier (fallback - no Stripe data)`);
+      }
+    } else {
+      // No Stripe prices available, create local-only subscription
+      janeSubscription = {
+        userId: janeUser.id,
+        organizationId: insertedOrg1.id,
+        subscriptionType: 'organization',
+        status: SubscriptionStatus.ACTIVE,
+        tier: SubscriptionTier.FREE_MONTHLY,
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        stripePriceId: freePriceId,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        cancelAtPeriodEnd: 'false',
+      };
+
+      await db.insert(userSubscriptions).values([janeSubscription]);
+      console.log(`  ✅ ${org1Name}: Free tier (no Stripe prices found)`);
+    }
+
+    // Create subscription for John (Free tier - with Stripe customer and subscription)
+    let johnSubscription: NewUserSubscription;
+
+    if (freePriceId) {
+      try {
+        console.log('  🔄 Creating Stripe customer and subscription for John...');
+
+        // Create Stripe customer
+        const johnStripeCustomer = await stripe.customers.create({
+          email: johnDoeEmail,
+          name: 'John Doe',
+          metadata: {
+            userId: johnUser.id,
+            organizationId: insertedOrg2.id,
+          },
+        });
+
+        // Update user with Stripe customer ID
+        await db
+          .update(users)
+          .set({ stripeCustomerId: johnStripeCustomer.id, updatedAt: new Date() })
+          .where(eq(users.id, johnUser.id));
+
+        console.log(`  ✅ Created Stripe customer: ${johnStripeCustomer.id}`);
+
+        // Create Stripe subscription
+        const johnStripeSubscription = await stripe.subscriptions.create({
+          customer: johnStripeCustomer.id,
+          items: [{ price: freePriceId }],
+          metadata: {
+            userId: johnUser.id,
+            organizationId: insertedOrg2.id,
+            tier: SubscriptionTier.FREE_MONTHLY,
+          },
+        });
+
+        console.log(`  ✅ Created Stripe subscription: ${johnStripeSubscription.id}`);
+
+        // Get period dates from the subscription item (not the subscription itself)
+        const johnSubscriptionItem = johnStripeSubscription.items.data[0];
+        const johnCurrentPeriodStart = johnSubscriptionItem?.current_period_start;
+        const johnCurrentPeriodEnd = johnSubscriptionItem?.current_period_end;
+
+        // Create database record with Stripe data
+        johnSubscription = {
+          userId: johnUser.id,
+          organizationId: insertedOrg2.id,
+          subscriptionType: 'organization',
+          status: johnStripeSubscription.status as SubscriptionStatus,
+          tier: SubscriptionTier.FREE_MONTHLY,
+          stripeCustomerId: johnStripeCustomer.id,
+          stripeSubscriptionId: johnStripeSubscription.id,
+          stripePriceId: freePriceId,
+          currentPeriodStart: johnCurrentPeriodStart
+            ? new Date(johnCurrentPeriodStart * 1000)
+            : new Date(),
+          currentPeriodEnd: johnCurrentPeriodEnd
+            ? new Date(johnCurrentPeriodEnd * 1000)
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          cancelAtPeriodEnd: johnStripeSubscription.cancel_at_period_end ? 'true' : 'false',
+        };
+
+        await db.insert(userSubscriptions).values([johnSubscription]);
+        console.log(`  ✅ ${org2Name}: Free tier (synced from Stripe)`);
+      } catch (error) {
+        console.warn('  ⚠️  Failed to create Stripe customer/subscription for John');
+        console.warn('     Falling back to local-only subscription');
+        console.warn('     Error:', error instanceof Error ? error.message : error);
+
+        // Fallback to local-only subscription
+        johnSubscription = {
+          userId: johnUser.id,
+          organizationId: insertedOrg2.id,
+          subscriptionType: 'organization',
+          status: SubscriptionStatus.ACTIVE,
+          tier: SubscriptionTier.FREE_MONTHLY,
+          stripeCustomerId: null,
+          stripeSubscriptionId: null,
+          stripePriceId: freePriceId,
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          cancelAtPeriodEnd: 'false',
+        };
+
+        await db.insert(userSubscriptions).values([johnSubscription]);
+        console.log(`  ✅ ${org2Name}: Free tier (fallback - no Stripe data)`);
+      }
+    } else {
+      // No Stripe prices available, create local-only subscription
+      johnSubscription = {
+        userId: johnUser.id,
+        organizationId: insertedOrg2.id,
+        subscriptionType: 'organization',
+        status: SubscriptionStatus.ACTIVE,
+        tier: SubscriptionTier.FREE_MONTHLY,
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        stripePriceId: freePriceId,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        cancelAtPeriodEnd: 'false',
+      };
+
+      await db.insert(userSubscriptions).values([johnSubscription]);
+      console.log(`  ✅ ${org2Name}: Free tier (no Stripe prices found)`);
+    }
 
     // Step 7: Create tasks
     console.log('📝 Creating tasks...');

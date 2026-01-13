@@ -173,11 +173,11 @@ export const userSubscriptions = pgTable('user_subscriptions', {
   stripeCustomerId: text('stripe_customer_id'), // Stripe customer ID (nullable for free tier)
   stripePriceId: text('stripe_price_id'), // Stripe price ID (nullable for free tier)
   status: text('status').notNull(), // 'active', 'canceled', 'past_due', 'unpaid', 'incomplete'
-  tier: text('tier').notNull(), // 'free', 'pro', 'business'
+  tier: text('tier').notNull(), // Stores Stripe lookup_key (e.g., 'free_monthly', 'pro_monthly', 'business_monthly')
   currentPeriodStart: timestamp('current_period_start'),
   currentPeriodEnd: timestamp('current_period_end'),
   cancelAtPeriodEnd: text('cancel_at_period_end').notNull().default('false'), // 'true' or 'false' - Stripe cancellation pattern
-  scheduledDowngradeTier: text('scheduled_downgrade_tier'), // Target tier for scheduled downgrade (nullable)
+  scheduledDowngradeTier: text('scheduled_downgrade_tier'), // Target lookup_key for scheduled downgrade (nullable)
   canceledAt: timestamp('canceled_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
@@ -440,11 +440,9 @@ export const chatMessageRelations = relations(chatMessages, ({ one }) => ({
 }));
 
 // Enums for type safety
-export enum SubscriptionTier {
-  FREE = 'free',
-  PRO = 'pro',
-  BUSINESS = 'business',
-}
+// SubscriptionTier is now derived from products.json - import from @/lib/billing/products
+export { SubscriptionTier } from '@/lib/billing/products';
+export type { SubscriptionTierType } from '@/lib/billing/products';
 
 export enum SubscriptionStatus {
   ACTIVE = 'active',

@@ -44,8 +44,6 @@
       "RESEND_REPLY_TO": "",
       "STRIPE_SECRET_KEY": "",
       "STRIPE_PUBLISHABLE_KEY": "",
-      "STRIPE_PRO_PRICE_ID": "",
-      "STRIPE_BUSINESS_PRICE_ID": "",
       "STRIPE_WEBHOOK_SECRET": "",
       "STRIPE_SUCCESS_URL": "http://localhost:3000/settings/billing",
       "STRIPE_CANCEL_URL": "http://localhost:3000/settings/billing"
@@ -128,8 +126,6 @@
       "RESEND_REPLY_TO": "",
       "STRIPE_SECRET_KEY": "",
       "STRIPE_PUBLISHABLE_KEY": "",
-      "STRIPE_PRO_PRICE_ID": "",
-      "STRIPE_BUSINESS_PRICE_ID": "",
       "STRIPE_WEBHOOK_SECRET": "",
       "STRIPE_SUCCESS_URL": "",
       "STRIPE_CANCEL_URL": ""

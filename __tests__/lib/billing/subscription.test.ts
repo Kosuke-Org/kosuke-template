@@ -31,7 +31,7 @@ describe('Subscription Module', () => {
 
       const result = await getUserSubscription('user_123');
 
-      expect(result.tier).toBe(SubscriptionTier.FREE);
+      expect(result.tier).toBe(SubscriptionTier.FREE_MONTHLY);
       expect(result.status).toBe(SubscriptionStatus.ACTIVE);
       expect(result.activeSubscription).toBeNull();
       expect(result.currentPeriodEnd).toBeNull();
@@ -44,7 +44,7 @@ describe('Subscription Module', () => {
       vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
         userId: 'user_123',
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         stripeSubscriptionId: 'sub_123',
         currentPeriodEnd: futureDate,
@@ -62,7 +62,7 @@ describe('Subscription Module', () => {
 
       const result = await getUserSubscription('user_123');
 
-      expect(result.tier).toBe(SubscriptionTier.PRO);
+      expect(result.tier).toBe(SubscriptionTier.PRO_MONTHLY);
       expect(result.status).toBe(SubscriptionStatus.ACTIVE);
       expect(result.activeSubscription).toBeDefined();
     });
@@ -74,7 +74,7 @@ describe('Subscription Module', () => {
       vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
         userId: 'user_123',
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.CANCELED,
         stripeSubscriptionId: 'sub_123',
         currentPeriodEnd: pastDate,
@@ -92,7 +92,7 @@ describe('Subscription Module', () => {
 
       const result = await getUserSubscription('user_123');
 
-      expect(result.tier).toBe(SubscriptionTier.FREE);
+      expect(result.tier).toBe(SubscriptionTier.FREE_MONTHLY);
     });
 
     it('should allow access during grace period after cancellation', async () => {
@@ -102,7 +102,7 @@ describe('Subscription Module', () => {
       vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
         userId: 'user_123',
-        tier: SubscriptionTier.PRO,
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         stripeSubscriptionId: 'sub_123',
         currentPeriodEnd: futureDate,
@@ -120,45 +120,58 @@ describe('Subscription Module', () => {
 
       const result = await getUserSubscription('user_123');
 
-      expect(result.tier).toBe(SubscriptionTier.PRO);
+      expect(result.tier).toBe(SubscriptionTier.PRO_MONTHLY);
     });
   });
 
   describe('hasFeatureAccess', () => {
     it('should grant free tier access only to free features', () => {
-      expect(hasFeatureAccess(SubscriptionTier.FREE, SubscriptionTier.FREE)).toBe(true);
-      expect(hasFeatureAccess(SubscriptionTier.FREE, SubscriptionTier.PRO)).toBe(false);
-      expect(hasFeatureAccess(SubscriptionTier.FREE, SubscriptionTier.BUSINESS)).toBe(false);
+      expect(hasFeatureAccess(SubscriptionTier.FREE_MONTHLY, SubscriptionTier.FREE_MONTHLY)).toBe(
+        true
+      );
+      expect(hasFeatureAccess(SubscriptionTier.FREE_MONTHLY, SubscriptionTier.PRO_MONTHLY)).toBe(
+        false
+      );
+      expect(
+        hasFeatureAccess(SubscriptionTier.FREE_MONTHLY, SubscriptionTier.BUSINESS_MONTHLY)
+      ).toBe(false);
     });
 
     it('should grant pro tier access to free and pro features', () => {
-      expect(hasFeatureAccess(SubscriptionTier.PRO, SubscriptionTier.FREE)).toBe(true);
-      expect(hasFeatureAccess(SubscriptionTier.PRO, SubscriptionTier.PRO)).toBe(true);
-      expect(hasFeatureAccess(SubscriptionTier.PRO, SubscriptionTier.BUSINESS)).toBe(false);
+      expect(hasFeatureAccess(SubscriptionTier.PRO_MONTHLY, SubscriptionTier.FREE_MONTHLY)).toBe(
+        true
+      );
+      expect(hasFeatureAccess(SubscriptionTier.PRO_MONTHLY, SubscriptionTier.PRO_MONTHLY)).toBe(
+        true
+      );
+      expect(
+        hasFeatureAccess(SubscriptionTier.PRO_MONTHLY, SubscriptionTier.BUSINESS_MONTHLY)
+      ).toBe(false);
     });
 
     it('should grant business tier access to all features', () => {
-      expect(hasFeatureAccess(SubscriptionTier.BUSINESS, SubscriptionTier.FREE)).toBe(true);
-      expect(hasFeatureAccess(SubscriptionTier.BUSINESS, SubscriptionTier.PRO)).toBe(true);
-      expect(hasFeatureAccess(SubscriptionTier.BUSINESS, SubscriptionTier.BUSINESS)).toBe(true);
+      expect(
+        hasFeatureAccess(SubscriptionTier.BUSINESS_MONTHLY, SubscriptionTier.FREE_MONTHLY)
+      ).toBe(true);
+      expect(
+        hasFeatureAccess(SubscriptionTier.BUSINESS_MONTHLY, SubscriptionTier.PRO_MONTHLY)
+      ).toBe(true);
+      expect(
+        hasFeatureAccess(SubscriptionTier.BUSINESS_MONTHLY, SubscriptionTier.BUSINESS_MONTHLY)
+      ).toBe(true);
     });
   });
 
   describe('safeSubscriptionTierCast', () => {
     it('should return valid tier unchanged', () => {
-      expect(safeSubscriptionTierCast(SubscriptionTier.FREE)).toBe(SubscriptionTier.FREE);
-      expect(safeSubscriptionTierCast(SubscriptionTier.PRO)).toBe(SubscriptionTier.PRO);
-      expect(safeSubscriptionTierCast(SubscriptionTier.BUSINESS)).toBe(SubscriptionTier.BUSINESS);
-    });
-
-    it('should return fallback for invalid tier', () => {
-      expect(safeSubscriptionTierCast('invalid')).toBe(SubscriptionTier.FREE);
-      expect(safeSubscriptionTierCast('invalid', SubscriptionTier.PRO)).toBe(SubscriptionTier.PRO);
-    });
-
-    it('should use custom fallback if provided', () => {
-      expect(safeSubscriptionTierCast('invalid', SubscriptionTier.BUSINESS)).toBe(
-        SubscriptionTier.BUSINESS
+      expect(safeSubscriptionTierCast(SubscriptionTier.FREE_MONTHLY)).toBe(
+        SubscriptionTier.FREE_MONTHLY
+      );
+      expect(safeSubscriptionTierCast(SubscriptionTier.PRO_MONTHLY)).toBe(
+        SubscriptionTier.PRO_MONTHLY
+      );
+      expect(safeSubscriptionTierCast(SubscriptionTier.BUSINESS_MONTHLY)).toBe(
+        SubscriptionTier.BUSINESS_MONTHLY
       );
     });
   });

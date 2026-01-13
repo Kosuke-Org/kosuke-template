@@ -2,6 +2,7 @@
 
 import { Calendar, CheckCircle, CreditCard, Loader2, RotateCcw, XCircle } from 'lucide-react';
 
+import { SubscriptionTier } from '@/lib/db/schema';
 import { trpc } from '@/lib/trpc/client';
 
 import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
@@ -9,6 +10,7 @@ import { useCanSubscribe, useSubscriptionStatus } from '@/hooks/use-subscription
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 
+import { ErrorMessage } from '@/components/error-message';
 import { BadgeSkeleton, ButtonSkeleton } from '@/components/skeletons';
 import {
   AlertDialog,
@@ -130,33 +132,13 @@ function BillingSkeleton() {
   );
 }
 
-const PRICING = {
-  free: {
-    price: 0,
-    name: 'Free',
-    description: 'Perfect for getting started',
-    features: ['Basic features', 'Community support', 'Limited usage'],
-  },
-  pro: {
-    price: 20,
-    name: 'Pro',
-    description: 'For growing teams',
-    features: ['All free features', 'Priority support', 'Advanced features', 'Higher usage limits'],
-  },
-  business: {
-    price: 200,
-    name: 'Business',
-    description: 'For large organizations',
-    features: ['All pro features', 'Enterprise support', 'Custom integrations', 'Unlimited usage'],
-  },
-} as const;
-
 export default function BillingPage() {
   const { user } = useUser();
   const { toast } = useToast();
   const { data: subscriptionInfo, isLoading: isLoadingStatus } = useSubscriptionStatus();
   const { data: eligibility, isLoading: isLoadingEligibility } = useCanSubscribe();
-  const isLoading = isLoadingStatus || isLoadingEligibility;
+  const { data: pricingData, isLoading: isLoadingPricing } = trpc.billing.getPricing.useQuery();
+  const isLoading = isLoadingStatus || isLoadingEligibility || isLoadingPricing;
   const {
     handleUpgrade,
     handleCancel,
@@ -223,9 +205,21 @@ export default function BillingPage() {
     return <BillingSkeleton />;
   }
 
-  const currentTier = subscriptionInfo?.tier || 'free';
-  const currentPlan = PRICING[currentTier as keyof typeof PRICING] || PRICING.free;
-  const isPaidPlan = currentTier !== 'free' && subscriptionInfo?.activeSubscription;
+  if (!pricingData) {
+    return (
+      <div className="py-10">
+        <ErrorMessage
+          title="Failed to load pricing data"
+          description="Make sure you have set up the pricing in Stripe. If you have done so, please contact support."
+        />
+      </div>
+    );
+  }
+
+  const currentTier = subscriptionInfo?.tier || SubscriptionTier.FREE_MONTHLY;
+  const currentPlan = pricingData[currentTier];
+  const isPaidPlan =
+    currentTier !== SubscriptionTier.FREE_MONTHLY && subscriptionInfo?.activeSubscription;
   const canCancelSubscription = eligibility?.canCancel;
   const canReactivateSubscription = eligibility?.canReactivate;
 
@@ -301,18 +295,18 @@ export default function BillingPage() {
             <div className="rounded-lg border border-yellow-500 bg-yellow-50 p-4 dark:bg-yellow-950">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <div className="h-5 w-5 text-yellow-600 dark:text-yellow-400">⏱️</div>
                   <div>
-                    <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
-                      Scheduled Downgrade
+                    <h4 className="flex items-center gap-2 font-medium">
+                      <Calendar className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                      <span className="text-yellow-800 dark:text-yellow-200">
+                        Scheduled Downgrade
+                      </span>
                     </h4>
                     <p className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
                       Your subscription will downgrade to{' '}
                       <strong>
-                        {PRICING[
-                          subscriptionInfo.activeSubscription
-                            .scheduledDowngradeTier as keyof typeof PRICING
-                        ]?.name || subscriptionInfo.activeSubscription.scheduledDowngradeTier}
+                        {pricingData[subscriptionInfo.activeSubscription.scheduledDowngradeTier]
+                          ?.name || subscriptionInfo.activeSubscription.scheduledDowngradeTier}
                       </strong>{' '}
                       on {formatDate(subscriptionInfo.currentPeriodEnd)}. You&apos;ll keep{' '}
                       {currentPlan.name} features until then.
@@ -350,7 +344,7 @@ export default function BillingPage() {
               {currentPlan.features.map((feature, index) => (
                 <li key={index} className="flex items-center gap-2 text-sm">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  {feature}
+                  {feature.name}
                 </li>
               ))}
             </ul>
@@ -437,84 +431,81 @@ export default function BillingPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
-            {Object.entries(PRICING).map(([tier, plan]) => {
-              if (tier === 'free') return null;
-
-              const isCurrentPlan = tier === currentTier;
-              const scheduledTier = subscriptionInfo?.activeSubscription?.scheduledDowngradeTier;
-              const isScheduledDowngrade = scheduledTier === tier;
-
-              // If in grace period or there's a scheduled downgrade, cannot change plans
-              const canUpgradeToThisPlan =
-                !isInGracePeriod &&
-                !scheduledTier &&
-                (eligibility?.canUpgrade || eligibility?.canCreateNew);
-              const isUpgrade = plan.price > currentPlan.price;
-
-              return (
-                <Card
-                  key={tier}
-                  className={`relative flex flex-col ${isCurrentPlan ? 'border-primary bg-primary/5' : ''}`}
-                >
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      {plan.name}
-                      {tier === 'pro' && !isCurrentPlan && !isScheduledDowngrade && (
-                        <Badge variant="secondary">Most Popular</Badge>
-                      )}
-                      {isCurrentPlan && <Badge>Current Plan</Badge>}
-                      {isScheduledDowngrade && (
-                        <Badge
-                          variant="outline"
-                          className="border-yellow-500 text-yellow-700 dark:text-yellow-400"
-                        >
-                          Scheduled
-                        </Badge>
-                      )}
-                    </CardTitle>
-                    <CardDescription>{plan.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-1 flex-col space-y-4">
-                    <div className="text-3xl font-bold">${plan.price}</div>
-                    <div className="text-muted-foreground text-sm">per month</div>
-
-                    <ul className="flex-1 space-y-2">
-                      {plan.features.map((feature, index) => (
-                        <li key={index} className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-
-                    {!isCurrentPlan && (
-                      <Button
-                        onClick={() => onUpgrade(tier)}
-                        disabled={
-                          !canUpgradeToThisPlan || upgradeLoading === tier || isScheduledDowngrade
-                        }
-                        className="mt-auto w-full"
-                      >
-                        {isScheduledDowngrade ? (
-                          <>Scheduled for {formatDate(subscriptionInfo?.currentPeriodEnd)}</>
-                        ) : upgradeLoading === tier ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Processing...
-                          </>
-                        ) : currentTier === 'free' ? (
-                          `Subscribe to ${plan.name}`
-                        ) : isUpgrade ? (
-                          `Upgrade to ${plan.name}`
-                        ) : (
-                          `Downgrade to ${plan.name}`
+            {Object.entries(pricingData)
+              .filter(([tier]) => tier !== currentTier)
+              .map(([tier, plan]) => {
+                const isCurrentPlan = tier === currentTier;
+                const scheduledTier = subscriptionInfo?.activeSubscription?.scheduledDowngradeTier;
+                const isScheduledDowngrade = scheduledTier === tier;
+                const canUpgradeToThisPlan =
+                  !isInGracePeriod &&
+                  !scheduledTier &&
+                  (eligibility?.canUpgrade || eligibility?.canCreateNew);
+                const isUpgrade = plan.price > currentPlan.price;
+                return (
+                  <Card
+                    key={tier}
+                    className={`relative flex flex-col ${isCurrentPlan ? 'border-primary bg-primary/5' : ''}`}
+                  >
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        {plan.name}
+                        {tier === 'pro' && !isCurrentPlan && !isScheduledDowngrade && (
+                          <Badge variant="secondary">Most Popular</Badge>
                         )}
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+                        {isCurrentPlan && <Badge>Current Plan</Badge>}
+                        {isScheduledDowngrade && (
+                          <Badge
+                            variant="outline"
+                            className="border-yellow-500 text-yellow-700 dark:text-yellow-400"
+                          >
+                            Scheduled
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription>{plan.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-1 flex-col space-y-4">
+                      <div className="text-3xl font-bold">${plan.price}</div>
+                      <div className="text-muted-foreground text-sm">per month</div>
+
+                      <ul className="flex-1 space-y-2">
+                        {plan.features.map((feature, index) => (
+                          <li key={index} className="flex items-center gap-2 text-sm">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            {feature.name}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {!isCurrentPlan && (
+                        <Button
+                          onClick={() => onUpgrade(tier)}
+                          disabled={
+                            !canUpgradeToThisPlan || upgradeLoading === tier || isScheduledDowngrade
+                          }
+                          className="mt-auto w-full"
+                        >
+                          {isScheduledDowngrade ? (
+                            <>Scheduled for {formatDate(subscriptionInfo?.currentPeriodEnd)}</>
+                          ) : upgradeLoading === tier ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : currentTier === SubscriptionTier.FREE_MONTHLY ? (
+                            `Subscribe to ${plan.name}`
+                          ) : isUpgrade ? (
+                            `Upgrade to ${plan.name}`
+                          ) : (
+                            `Downgrade to ${plan.name}`
+                          )}
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
           </div>
         </CardContent>
       </Card>
