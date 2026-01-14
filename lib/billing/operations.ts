@@ -107,7 +107,7 @@ async function getOrCreateStripeCustomer(userId: string, customerEmail: string):
  * Get Stripe price ID by lookup key
  * @param lookupKey - The Stripe lookup key (e.g., 'free_monthly', 'pro_monthly')
  */
-async function getPriceByLookupKey(lookupKey: SubscriptionTierType): Promise<string | null> {
+async function getPriceByLookupKey(lookupKey: SubscriptionTierType) {
   try {
     const prices = await stripe.prices.list({
       lookup_keys: [lookupKey],
@@ -288,7 +288,6 @@ export async function createCheckoutSession(
     const customerId = await getOrCreateStripeCustomer(userId, customerEmail);
 
     // Create checkout session for upgrade or new subscription
-
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',

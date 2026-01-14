@@ -9,6 +9,7 @@ import { db } from '@/lib/db/drizzle';
 import { users } from '@/lib/db/schema';
 import { ERRORS, ERROR_MESSAGES } from '@/lib/services';
 import type { NotificationSettings } from '@/lib/types';
+import { USER_ROLES } from '@/lib/types/organization';
 
 /**
  * Get user by ID
@@ -162,7 +163,11 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
 }
 
 /**
- * Create a new user
+ * Create new user
+ *
+ * Note: Better Auth's admin.createUser doesn't support passwordless authentication yet.
+ * See: https://github.com/better-auth/better-auth/issues/4226
+ * For now, we create users directly in the database
  */
 export async function createUser(data: {
   email: string;
@@ -176,6 +181,7 @@ export async function createUser(data: {
       email: data.email,
       emailVerified: data.emailVerified ?? false,
       displayName: data.displayName ?? '',
+      role: USER_ROLES.USER,
       notificationSettings: data.notificationSettings
         ? JSON.stringify(data.notificationSettings)
         : JSON.stringify({
@@ -191,6 +197,7 @@ export async function createUser(data: {
 
 /**
  * Get user by email
+ * Returns null if user not found, we want to check if user exists, do not throw error
  */
 export async function getUserByEmail(email: string) {
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
