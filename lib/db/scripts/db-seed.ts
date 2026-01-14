@@ -192,7 +192,6 @@ async function seed() {
           name: 'Jane Smith',
           metadata: {
             userId: janeUser.id,
-            organizationId: insertedOrg1.id,
           },
         });
 
@@ -210,17 +209,11 @@ async function seed() {
           items: [{ price: freePriceId }],
           metadata: {
             userId: janeUser.id,
-            organizationId: insertedOrg1.id,
             tier: SubscriptionTier.FREE_MONTHLY,
           },
         });
 
         console.log(`  ✅ Created Stripe subscription: ${janeStripeSubscription.id}`);
-
-        // Get period dates from the subscription item (not the subscription itself)
-        const janeSubscriptionItem = janeStripeSubscription.items.data[0];
-        const janeCurrentPeriodStart = janeSubscriptionItem?.current_period_start;
-        const janeCurrentPeriodEnd = janeSubscriptionItem?.current_period_end;
 
         // Create database record with Stripe data
         janeSubscription = {
@@ -232,13 +225,9 @@ async function seed() {
           stripeCustomerId: janeStripeCustomer.id,
           stripeSubscriptionId: janeStripeSubscription.id,
           stripePriceId: freePriceId,
-          currentPeriodStart: janeCurrentPeriodStart
-            ? new Date(janeCurrentPeriodStart * 1000)
-            : new Date(),
-          currentPeriodEnd: janeCurrentPeriodEnd
-            ? new Date(janeCurrentPeriodEnd * 1000)
-            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          cancelAtPeriodEnd: janeStripeSubscription.cancel_at_period_end ? 'true' : 'false',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          cancelAtPeriodEnd: 'false',
         };
 
         await db.insert(userSubscriptions).values([janeSubscription]);
@@ -299,7 +288,6 @@ async function seed() {
           name: 'John Doe',
           metadata: {
             userId: johnUser.id,
-            organizationId: insertedOrg2.id,
           },
         });
 
@@ -317,19 +305,12 @@ async function seed() {
           items: [{ price: freePriceId }],
           metadata: {
             userId: johnUser.id,
-            organizationId: insertedOrg2.id,
             tier: SubscriptionTier.FREE_MONTHLY,
           },
         });
 
         console.log(`  ✅ Created Stripe subscription: ${johnStripeSubscription.id}`);
 
-        // Get period dates from the subscription item (not the subscription itself)
-        const johnSubscriptionItem = johnStripeSubscription.items.data[0];
-        const johnCurrentPeriodStart = johnSubscriptionItem?.current_period_start;
-        const johnCurrentPeriodEnd = johnSubscriptionItem?.current_period_end;
-
-        // Create database record with Stripe data
         johnSubscription = {
           userId: johnUser.id,
           organizationId: insertedOrg2.id,
@@ -339,13 +320,9 @@ async function seed() {
           stripeCustomerId: johnStripeCustomer.id,
           stripeSubscriptionId: johnStripeSubscription.id,
           stripePriceId: freePriceId,
-          currentPeriodStart: johnCurrentPeriodStart
-            ? new Date(johnCurrentPeriodStart * 1000)
-            : new Date(),
-          currentPeriodEnd: johnCurrentPeriodEnd
-            ? new Date(johnCurrentPeriodEnd * 1000)
-            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          cancelAtPeriodEnd: johnStripeSubscription.cancel_at_period_end ? 'true' : 'false',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+          cancelAtPeriodEnd: 'false',
         };
 
         await db.insert(userSubscriptions).values([johnSubscription]);

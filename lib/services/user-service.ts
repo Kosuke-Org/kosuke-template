@@ -136,31 +136,6 @@ export async function updateDisplayName(userId: string, displayName: string) {
 }
 
 /**
- * Update user's profile image URL
- * Returns the updated user record
- */
-export async function updateProfileImageUrl(userId: string, profileImageUrl: string | null) {
-  const [updated] = await db
-    .update(users)
-    .set({
-      profileImageUrl,
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, userId))
-    .returning({
-      id: users.id,
-      profileImageUrl: users.profileImageUrl,
-      updatedAt: users.updatedAt,
-    });
-
-  if (!updated) {
-    throw new Error(ERROR_MESSAGES.USER_NOT_FOUND, { cause: ERRORS.NOT_FOUND });
-  }
-
-  return updated;
-}
-
-/**
  * Get user's profile image URL
  */
 export async function getProfileImageUrl(userId: string): Promise<string | null> {

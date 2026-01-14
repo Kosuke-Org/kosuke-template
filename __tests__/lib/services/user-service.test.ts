@@ -16,7 +16,6 @@ import {
   isUserAdmin,
   updateDisplayName,
   updateNotificationSettings,
-  updateProfileImageUrl,
 } from '@/lib/services/user-service';
 import type { NotificationSettings } from '@/lib/types';
 
@@ -331,71 +330,6 @@ describe('User Service', () => {
       vi.mocked(db.update).mockReturnValue(mockUpdate());
 
       await expect(updateDisplayName(mockUserId, 'New Name')).rejects.toThrow('User not found');
-    });
-  });
-
-  describe('updateProfileImageUrl', () => {
-    it('should update profile image URL and return updated user', async () => {
-      const newImageUrl = 'https://example.com/new-avatar.jpg';
-      const updatedUser = {
-        id: mockUserId,
-        profileImageUrl: newImageUrl,
-        updatedAt: new Date(),
-      };
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([updatedUser]),
-          }),
-        }),
-      });
-
-      vi.mocked(db.update).mockReturnValue(mockUpdate());
-
-      const result = await updateProfileImageUrl(mockUserId, newImageUrl);
-
-      expect(result).toEqual(updatedUser);
-      expect(db.update).toHaveBeenCalled();
-    });
-
-    it('should allow setting profile image URL to null', async () => {
-      const updatedUser = {
-        id: mockUserId,
-        profileImageUrl: null,
-        updatedAt: new Date(),
-      };
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([updatedUser]),
-          }),
-        }),
-      });
-
-      vi.mocked(db.update).mockReturnValue(mockUpdate());
-
-      const result = await updateProfileImageUrl(mockUserId, null);
-
-      expect(result).toEqual(updatedUser);
-      expect(result.profileImageUrl).toBeNull();
-    });
-
-    it('should throw error with correct message when user not found', async () => {
-      const mockUpdate = vi.fn().mockReturnValue({
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([]),
-          }),
-        }),
-      });
-
-      vi.mocked(db.update).mockReturnValue(mockUpdate());
-
-      await expect(updateProfileImageUrl(mockUserId, 'new-url')).rejects.toThrow(
-        ERROR_MESSAGES.USER_NOT_FOUND
-      );
     });
   });
 
