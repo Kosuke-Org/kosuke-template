@@ -45,7 +45,7 @@ export function KanbanTaskCard({ task, onEdit, onDelete, onToggleComplete }: Kan
   };
 
   const isCompleted = task.completed;
-  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isCompleted;
+  const isOverdue = task.isOverdue;
 
   return (
     <Card

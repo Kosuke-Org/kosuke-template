@@ -153,8 +153,6 @@ function isTRPCErrorCode(code: unknown): code is TRPC_ERROR_CODE_KEY {
  */
 
 export function handleApiError(error: ApiError | Error | unknown): never {
-  console.log('error', error instanceof ApiError);
-
   if (error instanceof ApiError) {
     throw mapApiErrorToTRPC(error);
   }
