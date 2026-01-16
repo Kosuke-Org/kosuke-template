@@ -216,12 +216,13 @@ export default function BillingPage() {
     return <BillingSkeleton />;
   }
 
-  if (!pricingData) {
+  // Handle case when Stripe is not configured
+  if (!pricingData || Object.keys(pricingData).length === 0) {
     return (
-      <div className="py-10">
+      <div className="py-6">
         <ErrorMessage
-          title="Failed to load pricing data"
-          description="Make sure you have set up the pricing in Stripe. If you have done so, please contact support."
+          title="Stripe billing is not configured"
+          description="Please contact support to configure your billing."
         />
       </div>
     );

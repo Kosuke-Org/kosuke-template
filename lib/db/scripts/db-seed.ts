@@ -243,43 +243,12 @@ async function seed() {
         console.log(`  ✅ ${org1Name}: Free tier (synced from Stripe)`);
       } catch (error) {
         console.warn('  ⚠️  Failed to create Stripe customer/subscription for organization');
-        console.warn('     Falling back to local-only subscription');
+        console.warn('     Organization will use free tier by default (no subscription record)');
         console.warn('     Error:', error instanceof Error ? error.message : error);
-
-        // Fallback to local-only subscription
-        const periodStart = new Date();
-        janeOrgSubscription = {
-          organizationId: insertedOrg1.id,
-          status: SubscriptionStatus.ACTIVE,
-          tier: SubscriptionTier.FREE_MONTHLY,
-          stripeCustomerId: null,
-          stripeSubscriptionId: null,
-          stripePriceId: freePriceId,
-          currentPeriodStart: periodStart,
-          currentPeriodEnd: calculatePeriodEnd(periodStart),
-          cancelAtPeriodEnd: 'false',
-        };
-
-        await db.insert(orgSubscriptions).values([janeOrgSubscription]);
-        console.log(`  ✅ ${org1Name}: Free tier (fallback - no Stripe data)`);
       }
     } else {
-      // No Stripe prices available, create local-only subscription
-      const periodStart = new Date();
-      janeOrgSubscription = {
-        organizationId: insertedOrg1.id,
-        status: SubscriptionStatus.ACTIVE,
-        tier: SubscriptionTier.FREE_MONTHLY,
-        stripeCustomerId: null,
-        stripeSubscriptionId: null,
-        stripePriceId: freePriceId,
-        currentPeriodStart: periodStart,
-        currentPeriodEnd: calculatePeriodEnd(periodStart),
-        cancelAtPeriodEnd: 'false',
-      };
-
-      await db.insert(orgSubscriptions).values([janeOrgSubscription]);
-      console.log(`  ✅ ${org1Name}: Free tier (no Stripe prices found)`);
+      // No Stripe prices available - organization will use free tier by default
+      console.log(`  ℹ️  ${org1Name}: No Stripe prices found - will use free tier by default`);
     }
 
     // Create subscription for John's organization (Free tier - with Stripe customer and subscription)
@@ -339,43 +308,12 @@ async function seed() {
         console.log(`  ✅ ${org2Name}: Free tier (synced from Stripe)`);
       } catch (error) {
         console.warn('  ⚠️  Failed to create Stripe customer/subscription for organization');
-        console.warn('     Falling back to local-only subscription');
+        console.warn('     Organization will use free tier by default (no subscription record)');
         console.warn('     Error:', error instanceof Error ? error.message : error);
-
-        // Fallback to local-only subscription
-        const periodStart = new Date();
-        johnOrgSubscription = {
-          organizationId: insertedOrg2.id,
-          status: SubscriptionStatus.ACTIVE,
-          tier: SubscriptionTier.FREE_MONTHLY,
-          stripeCustomerId: null,
-          stripeSubscriptionId: null,
-          stripePriceId: freePriceId,
-          currentPeriodStart: periodStart,
-          currentPeriodEnd: calculatePeriodEnd(periodStart),
-          cancelAtPeriodEnd: 'false',
-        };
-
-        await db.insert(orgSubscriptions).values([johnOrgSubscription]);
-        console.log(`  ✅ ${org2Name}: Free tier (fallback - no Stripe data)`);
       }
     } else {
-      // No Stripe prices available, create local-only subscription
-      const periodStart = new Date();
-      johnOrgSubscription = {
-        organizationId: insertedOrg2.id,
-        status: SubscriptionStatus.ACTIVE,
-        tier: SubscriptionTier.FREE_MONTHLY,
-        stripeCustomerId: null,
-        stripeSubscriptionId: null,
-        stripePriceId: freePriceId,
-        currentPeriodStart: periodStart,
-        currentPeriodEnd: calculatePeriodEnd(periodStart),
-        cancelAtPeriodEnd: 'false',
-      };
-
-      await db.insert(orgSubscriptions).values([johnOrgSubscription]);
-      console.log(`  ✅ ${org2Name}: Free tier (no Stripe prices found)`);
+      // No Stripe prices available - organization will use free tier by default
+      console.log(`  ℹ️  ${org2Name}: No Stripe prices found - will use free tier by default`);
     }
 
     // Step 7: Create tasks

@@ -110,6 +110,9 @@ async function getOrCreateStripeCustomer(
 /**
  * Create free-tier subscription for a new organization
  * Creates Stripe customer and subscription - webhook will handle database record creation
+ *
+ * If Stripe is not configured or fails, returns success without creating a DB record.
+ * Organizations will use free tier by default (handled by getOrgSubscription()).
  */
 export async function createFreeTierSubscription(params: {
   organizationId: string;
@@ -136,10 +139,12 @@ export async function createFreeTierSubscription(params: {
     // Get the free tier price ID
     const freePriceId = await getPriceByLookupKey(SubscriptionTier.FREE_MONTHLY);
     if (!freePriceId) {
-      console.error('❌ No free tier price found in Stripe - check Stripe configuration');
+      console.warn(
+        '⚠️  No free tier price found in Stripe - organization will use free tier by default'
+      );
       return {
-        success: false,
-        message: 'Stripe configuration error: free tier price not found',
+        success: true,
+        message: 'Organization created with free tier access (Stripe not configured)',
       };
     }
 
@@ -170,10 +175,13 @@ export async function createFreeTierSubscription(params: {
       message: 'Free-tier subscription created successfully',
     };
   } catch (error) {
-    console.error('💥 Error creating free-tier subscription:', error);
+    console.warn(
+      '⚠️  Error creating free-tier subscription - organization will use free tier by default'
+    );
+    console.warn('   Error:', error instanceof Error ? error.message : error);
     return {
-      success: false,
-      message: error instanceof Error ? error.message : 'Failed to create free-tier subscription',
+      success: true,
+      message: 'Organization created with free tier access (Stripe error)',
     };
   }
 }
