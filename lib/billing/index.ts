@@ -7,7 +7,7 @@
 
 // Core functionality
 export {
-  getUserSubscription,
+  getOrgSubscription,
   hasFeatureAccess,
   safeSubscriptionTierCast,
   safeSubscriptionStatusCast,
@@ -19,11 +19,13 @@ export { calculateSubscriptionState, getSubscriptionEligibility } from './eligib
 // Operations
 export {
   createCheckoutSession,
-  cancelUserSubscription,
-  reactivateUserSubscription,
+  cancelOrgSubscription,
+  reactivateOrgSubscription,
   createCustomerPortalSession,
   cancelPendingDowngrade,
   getPricingFromStripe,
+  createFreeTierSubscription,
+  deleteStripeCustomer,
 } from './operations';
 
 // Configuration and constants
@@ -31,14 +33,14 @@ export { BILLING_URLS } from './config';
 export type { PricingData } from './config';
 
 // Products configuration (single source of truth)
-export { SubscriptionTier, getTierNameFromLookupKey, getAllLookupKeys } from './products';
+export { SubscriptionTier, getAllLookupKeys } from './products';
 export type { SubscriptionTierType } from './products';
 
 // Client and types
 export { stripe } from './client';
 export type {
   SubscriptionEligibility,
-  UserSubscriptionInfo,
+  OrgSubscriptionInfo,
   CheckoutSessionParams,
   OperationResult,
 } from '@/lib/types';

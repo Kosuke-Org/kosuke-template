@@ -4,9 +4,15 @@ import { Calendar, CheckCircle, CreditCard, Loader2, RotateCcw, XCircle } from '
 
 import { SubscriptionTier } from '@/lib/db/schema';
 import { trpc } from '@/lib/trpc/client';
+import { ORG_ROLES } from '@/lib/types/organization';
 
+import { useOrganization } from '@/hooks/use-organization';
 import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
-import { useCanSubscribe, useSubscriptionStatus } from '@/hooks/use-subscription-data';
+import {
+  useCanSubscribe,
+  usePricingData,
+  useSubscriptionStatus,
+} from '@/hooks/use-subscription-data';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 
@@ -28,6 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Page-specific skeleton for billing page
 function BillingSkeleton() {
@@ -135,10 +142,14 @@ function BillingSkeleton() {
 export default function BillingPage() {
   const { user } = useUser();
   const { toast } = useToast();
+  const { currentUserRole } = useOrganization();
   const { data: subscriptionInfo, isLoading: isLoadingStatus } = useSubscriptionStatus();
   const { data: eligibility, isLoading: isLoadingEligibility } = useCanSubscribe();
-  const { data: pricingData, isLoading: isLoadingPricing } = trpc.billing.getPricing.useQuery();
+  const { data: pricingData, isLoading: isLoadingPricing } = usePricingData();
   const isLoading = isLoadingStatus || isLoadingEligibility || isLoadingPricing;
+
+  // Check if user is owner (can manage billing)
+  const isOwner = currentUserRole === ORG_ROLES.OWNER;
   const {
     handleUpgrade,
     handleCancel,
@@ -225,6 +236,8 @@ export default function BillingPage() {
 
   // Check if subscription is marked for cancellation and still in grace period
   const isCanceled = subscriptionInfo?.activeSubscription?.cancelAtPeriodEnd === 'true';
+  const hasExpired =
+    subscriptionInfo?.currentPeriodEnd && new Date() >= new Date(subscriptionInfo.currentPeriodEnd);
   const isInGracePeriod =
     isCanceled &&
     subscriptionInfo?.currentPeriodEnd &&
@@ -281,9 +294,11 @@ export default function BillingPage() {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   <span className="text-sm">
-                    {isCanceled
-                      ? `Expires on ${formatDate(subscriptionInfo.currentPeriodEnd)}`
-                      : `Renews on ${formatDate(subscriptionInfo.currentPeriodEnd)}`}
+                    {hasExpired
+                      ? `Expired on ${formatDate(subscriptionInfo.currentPeriodEnd)}`
+                      : isCanceled
+                        ? `Expires on ${formatDate(subscriptionInfo.currentPeriodEnd)}`
+                        : `Renews on ${formatDate(subscriptionInfo.currentPeriodEnd)}`}
                   </span>
                 </div>
               )}
@@ -313,25 +328,38 @@ export default function BillingPage() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  onClick={handleCancelDowngrade}
-                  disabled={isCancelingDowngrade}
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0 border-yellow-600 text-yellow-800 hover:bg-yellow-100 dark:border-yellow-500 dark:text-yellow-200 dark:hover:bg-yellow-900"
-                >
-                  {isCancelingDowngrade ? (
-                    <>
-                      <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                      Canceling...
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="mr-2 h-3 w-3" />
-                      Cancel Downgrade
-                    </>
-                  )}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>
+                        <Button
+                          onClick={handleCancelDowngrade}
+                          disabled={isCancelingDowngrade || !isOwner}
+                          variant="outline"
+                          size="sm"
+                          className="shrink-0 border-yellow-600 text-yellow-800 hover:bg-yellow-100 dark:border-yellow-500 dark:text-yellow-200 dark:hover:bg-yellow-900"
+                        >
+                          {isCancelingDowngrade ? (
+                            <>
+                              <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                              Canceling...
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="mr-2 h-3 w-3" />
+                              Cancel Downgrade
+                            </>
+                          )}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    {!isOwner && (
+                      <TooltipContent>
+                        <p>Only organization owners can manage billing</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           )}
@@ -357,65 +385,95 @@ export default function BillingPage() {
               <div className="flex flex-wrap gap-2">
                 {/* Reactivate Button - Show for canceled subscriptions in grace period (but NOT if there's a scheduled downgrade) */}
                 {showReactivateButton && (
-                  <Button
-                    onClick={handleReactivate}
-                    disabled={isReactivating}
-                    variant="default"
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {isReactivating ? (
-                      <>
-                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                        Reactivating...
-                      </>
-                    ) : (
-                      <>
-                        <RotateCcw className="mr-2 h-3 w-3" />
-                        Reactivate
-                      </>
-                    )}
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button
+                            onClick={handleReactivate}
+                            disabled={isReactivating || !isOwner}
+                            variant="default"
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            {isReactivating ? (
+                              <>
+                                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                Reactivating...
+                              </>
+                            ) : (
+                              <>
+                                <RotateCcw className="mr-2 h-3 w-3" />
+                                Reactivate
+                              </>
+                            )}
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {!isOwner && (
+                        <TooltipContent>
+                          <p>Only organization owners can manage billing</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
 
                 {/* Cancel Button - Show for active paid plans (but NOT if there's a scheduled downgrade) */}
                 {showCancelButton && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm" disabled={isCanceling}>
-                        {isCanceling ? (
-                          <>
-                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                            Cancelling...
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="mr-2 h-3 w-3" />
-                            Cancel Subscription
-                          </>
-                        )}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Cancel subscription?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          You&apos;ll continue to have access until{' '}
-                          {formatDate(subscriptionInfo?.currentPeriodEnd)}, then be downgraded to
-                          the free plan.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleCancel}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Cancel Subscription
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={isCanceling || !isOwner}
+                              >
+                                {isCanceling ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                    Cancelling...
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="mr-2 h-3 w-3" />
+                                    Cancel Subscription
+                                  </>
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Cancel subscription?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  You&apos;ll continue to have access until{' '}
+                                  {formatDate(subscriptionInfo?.currentPeriodEnd)}, then be
+                                  downgraded to the free plan.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={handleCancel}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Cancel Subscription
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </span>
+                      </TooltipTrigger>
+                      {!isOwner && (
+                        <TooltipContent>
+                          <p>Only organization owners can manage billing</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
             </>
@@ -424,92 +482,122 @@ export default function BillingPage() {
       </Card>
 
       {/* Choose Your Plan */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Choose Your Plan</CardTitle>
-          <CardDescription>Select a plan to unlock more features and capabilities</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            {Object.entries(pricingData)
-              .filter(([tier]) => tier !== currentTier)
-              .map(([tier, plan]) => {
-                const isCurrentPlan = tier === currentTier;
-                const scheduledTier = subscriptionInfo?.activeSubscription?.scheduledDowngradeTier;
-                const isScheduledDowngrade = scheduledTier === tier;
-                const canUpgradeToThisPlan =
-                  !isInGracePeriod &&
-                  !scheduledTier &&
-                  (eligibility?.canUpgrade || eligibility?.canCreateNew);
-                const isUpgrade = plan.price > currentPlan.price;
-                return (
-                  <Card
-                    key={tier}
-                    className={`relative flex flex-col ${isCurrentPlan ? 'border-primary bg-primary/5' : ''}`}
-                  >
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        {plan.name}
-                        {tier === 'pro' && !isCurrentPlan && !isScheduledDowngrade && (
-                          <Badge variant="secondary">Most Popular</Badge>
-                        )}
-                        {isCurrentPlan && <Badge>Current Plan</Badge>}
-                        {isScheduledDowngrade && (
-                          <Badge
-                            variant="outline"
-                            className="border-yellow-500 text-yellow-700 dark:text-yellow-400"
-                          >
-                            Scheduled
-                          </Badge>
-                        )}
-                      </CardTitle>
-                      <CardDescription>{plan.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-1 flex-col space-y-4">
-                      <div className="text-3xl font-bold">${plan.price}</div>
-                      <div className="text-muted-foreground text-sm">per month</div>
-
-                      <ul className="flex-1 space-y-2">
-                        {plan.features.map((feature, index) => (
-                          <li key={index} className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                            {feature.name}
-                          </li>
-                        ))}
-                      </ul>
-
-                      {!isCurrentPlan && (
-                        <Button
-                          onClick={() => onUpgrade(tier)}
-                          disabled={
-                            !canUpgradeToThisPlan || upgradeLoading === tier || isScheduledDowngrade
-                          }
-                          className="mt-auto w-full"
-                        >
-                          {isScheduledDowngrade ? (
-                            <>Scheduled for {formatDate(subscriptionInfo?.currentPeriodEnd)}</>
-                          ) : upgradeLoading === tier ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Processing...
-                            </>
-                          ) : currentTier === SubscriptionTier.FREE_MONTHLY ? (
-                            `Subscribe to ${plan.name}`
-                          ) : isUpgrade ? (
-                            `Upgrade to ${plan.name}`
-                          ) : (
-                            `Downgrade to ${plan.name}`
+      {Object.entries(pricingData).filter(([tier]) => tier !== currentTier).length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Choose Your Plan</CardTitle>
+            <CardDescription>
+              Select a plan to unlock more features and capabilities
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              {Object.entries(pricingData)
+                .filter(([tier]) => tier !== currentTier)
+                .map(([tier, plan]) => {
+                  const isCurrentPlan = tier === currentTier;
+                  const scheduledTier =
+                    subscriptionInfo?.activeSubscription?.scheduledDowngradeTier;
+                  const isScheduledDowngrade = scheduledTier === tier;
+                  const canUpgradeToThisPlan =
+                    !isInGracePeriod &&
+                    !scheduledTier &&
+                    (eligibility?.canUpgrade || eligibility?.canCreateNew);
+                  const isUpgrade = plan.price > currentPlan.price;
+                  return (
+                    <Card
+                      key={tier}
+                      className={`relative flex flex-col ${isCurrentPlan ? 'border-primary bg-primary/5' : ''}`}
+                    >
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          {plan.name}
+                          {tier === 'pro' && !isCurrentPlan && !isScheduledDowngrade && (
+                            <Badge variant="secondary">Most Popular</Badge>
                           )}
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-          </div>
-        </CardContent>
-      </Card>
+                          {isCurrentPlan && <Badge>Current Plan</Badge>}
+                          {isScheduledDowngrade && (
+                            <Badge
+                              variant="outline"
+                              className="border-yellow-500 text-yellow-700 dark:text-yellow-400"
+                            >
+                              Scheduled
+                            </Badge>
+                          )}
+                        </CardTitle>
+                        <CardDescription>{plan.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex flex-1 flex-col space-y-4">
+                        <div className="text-3xl font-bold">${plan.price}</div>
+                        <div className="text-muted-foreground text-sm">per month</div>
 
+                        <ul className="flex-1 space-y-2">
+                          {plan.features.map((feature, index) => (
+                            <li key={index} className="flex items-center gap-2 text-sm">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              {feature.name}
+                            </li>
+                          ))}
+                        </ul>
+
+                        {!isCurrentPlan && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="w-full">
+                                  <Button
+                                    onClick={() => onUpgrade(tier)}
+                                    disabled={
+                                      !canUpgradeToThisPlan ||
+                                      upgradeLoading === tier ||
+                                      isScheduledDowngrade ||
+                                      !isOwner
+                                    }
+                                    className="mt-auto w-full"
+                                  >
+                                    {isScheduledDowngrade ? (
+                                      <>
+                                        Scheduled for{' '}
+                                        {formatDate(subscriptionInfo?.currentPeriodEnd)}
+                                      </>
+                                    ) : upgradeLoading === tier ? (
+                                      <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Processing...
+                                      </>
+                                    ) : currentTier === SubscriptionTier.FREE_MONTHLY ? (
+                                      `Subscribe to ${plan.name}`
+                                    ) : isUpgrade ? (
+                                      `Upgrade to ${plan.name}`
+                                    ) : (
+                                      `Downgrade to ${plan.name}`
+                                    )}
+                                  </Button>
+                                </span>
+                              </TooltipTrigger>
+                              {!isOwner && (
+                                <TooltipContent>
+                                  <p>Only organization owners can manage billing</p>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>No more billing plans</CardTitle>
+            <CardDescription> Manage Billing in your Stripe account.</CardDescription>
+          </CardHeader>
+        </Card>
+      )}
       {/* Billing Information */}
       <Card>
         <CardHeader>
@@ -519,24 +607,37 @@ export default function BillingPage() {
         <CardContent className="space-y-4">
           {isPaidPlan ? (
             <>
-              <Button
-                onClick={() => createPortalSession.mutate()}
-                disabled={createPortalSession.isPending}
-                variant="outline"
-                className="w-full sm:w-auto"
-              >
-                {createPortalSession.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Manage Billing in Stripe
-                  </>
-                )}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        onClick={() => createPortalSession.mutate()}
+                        disabled={createPortalSession.isPending || !isOwner}
+                        variant="outline"
+                        className="w-full sm:w-auto"
+                      >
+                        {createPortalSession.isPending ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Manage Billing in Stripe
+                          </>
+                        )}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!isOwner && (
+                    <TooltipContent>
+                      <p>Only organization owners can manage billing</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </>
           ) : (
             <p className="text-muted-foreground text-sm">

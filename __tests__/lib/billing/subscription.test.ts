@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  getUserSubscription,
+  getOrgSubscription,
   hasFeatureAccess,
   safeSubscriptionStatusCast,
   safeSubscriptionTierCast,
@@ -13,7 +13,7 @@ import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 vi.mock('@/lib/db', () => ({
   db: {
     query: {
-      userSubscriptions: {
+      orgSubscriptions: {
         findFirst: vi.fn(),
       },
     },
@@ -25,11 +25,11 @@ describe('Subscription Module', () => {
     vi.clearAllMocks();
   });
 
-  describe('getUserSubscription', () => {
+  describe('getOrgSubscription', () => {
     it('should return free tier when no subscription exists', async () => {
-      vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce(undefined);
+      vi.mocked(db.query.orgSubscriptions.findFirst).mockResolvedValueOnce(undefined);
 
-      const result = await getUserSubscription('user_123');
+      const result = await getOrgSubscription('user_123');
 
       expect(result.tier).toBe(SubscriptionTier.FREE_MONTHLY);
       expect(result.status).toBe(SubscriptionStatus.ACTIVE);
@@ -41,9 +41,8 @@ describe('Subscription Module', () => {
       const now = new Date();
       const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-      vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
+      vi.mocked(db.query.orgSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
-        userId: 'user_123',
         tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         stripeSubscriptionId: 'sub_123',
@@ -55,12 +54,11 @@ describe('Subscription Module', () => {
         stripePriceId: 'price_123',
         currentPeriodStart: now,
         canceledAt: null,
-        organizationId: null,
-        subscriptionType: 'personal',
+        organizationId: 'org_123',
         scheduledDowngradeTier: null,
       });
 
-      const result = await getUserSubscription('user_123');
+      const result = await getOrgSubscription('org_123');
 
       expect(result.tier).toBe(SubscriptionTier.PRO_MONTHLY);
       expect(result.status).toBe(SubscriptionStatus.ACTIVE);
@@ -71,9 +69,8 @@ describe('Subscription Module', () => {
       const now = new Date();
       const pastDate = new Date(now.getTime() - 1000);
 
-      vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
+      vi.mocked(db.query.orgSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
-        userId: 'user_123',
         tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.CANCELED,
         stripeSubscriptionId: 'sub_123',
@@ -85,12 +82,11 @@ describe('Subscription Module', () => {
         stripePriceId: 'price_123',
         currentPeriodStart: now,
         canceledAt: now,
-        organizationId: null,
-        subscriptionType: 'personal',
+        organizationId: 'org_123',
         scheduledDowngradeTier: null,
       });
 
-      const result = await getUserSubscription('user_123');
+      const result = await getOrgSubscription('org_123');
 
       expect(result.tier).toBe(SubscriptionTier.FREE_MONTHLY);
     });
@@ -99,9 +95,8 @@ describe('Subscription Module', () => {
       const now = new Date();
       const futureDate = new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000); // 1 day in future
 
-      vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
+      vi.mocked(db.query.orgSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
-        userId: 'user_123',
         tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         stripeSubscriptionId: 'sub_123',
@@ -113,12 +108,11 @@ describe('Subscription Module', () => {
         stripePriceId: 'price_123',
         currentPeriodStart: now,
         canceledAt: null,
-        organizationId: null,
-        subscriptionType: 'personal',
+        organizationId: 'org_123',
         scheduledDowngradeTier: null,
       });
 
-      const result = await getUserSubscription('user_123');
+      const result = await getOrgSubscription('org_123');
 
       expect(result.tier).toBe(SubscriptionTier.PRO_MONTHLY);
     });

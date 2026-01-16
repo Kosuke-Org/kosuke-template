@@ -6,7 +6,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { nextCookies } from 'better-auth/next-js';
 import { admin, emailOTP, organization } from 'better-auth/plugins';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 
 import { TEST_OTP } from '@/lib/auth/constants';
 import { isTestEmail } from '@/lib/auth/utils';
@@ -113,6 +113,7 @@ export const auth = betterAuth({
             .select({
               organizationId: orgMemberships.organizationId,
               organizationSlug: organizations.slug,
+              role: orgMemberships.role,
             })
             .from(orgMemberships)
             .innerJoin(organizations, eq(orgMemberships.organizationId, organizations.id))
@@ -125,25 +126,32 @@ export const auth = betterAuth({
               ...session,
               activeOrganizationId: membership?.organizationId ?? null,
               activeOrganizationSlug: membership?.organizationSlug ?? null,
+              activeOrganizationRole: membership?.role ?? null,
             },
           };
         },
       },
       update: {
-        before: async (session) => {
+        before: async (session, ctx) => {
           if (session.activeOrganizationId !== undefined) {
             const orgId = session.activeOrganizationId as string | null | undefined;
-            if (orgId) {
+
+            // Get userId from the context (full session from Redis) or from the update payload
+            const userId = ctx?.context?.session?.user?.id ?? session.userId;
+
+            if (orgId && userId) {
               const [org] = await db
-                .select({ slug: organizations.slug })
+                .select({ slug: organizations.slug, role: orgMemberships.role })
                 .from(organizations)
-                .where(eq(organizations.id, orgId))
+                .innerJoin(orgMemberships, eq(orgMemberships.organizationId, organizations.id))
+                .where(and(eq(organizations.id, orgId), eq(orgMemberships.userId, userId)))
                 .limit(1);
 
               return {
                 data: {
                   ...session,
                   activeOrganizationSlug: org?.slug ?? null,
+                  activeOrganizationRole: org?.role ?? null,
                 },
               };
             } else {
@@ -151,6 +159,7 @@ export const auth = betterAuth({
                 data: {
                   ...session,
                   activeOrganizationSlug: null,
+                  activeOrganizationRole: null,
                 },
               };
             }
@@ -176,6 +185,10 @@ export const auth = betterAuth({
         nullable: true,
       },
       activeOrganizationSlug: {
+        type: 'string',
+        nullable: true,
+      },
+      activeOrganizationRole: {
         type: 'string',
         nullable: true,
       },

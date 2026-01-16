@@ -1,8 +1,8 @@
 import { SubscriptionStatus, SubscriptionTier, type SubscriptionTierType } from '@/lib/db/schema';
 import {
+  type OrgSubscriptionInfo,
   type SubscriptionEligibility,
   SubscriptionState,
-  type UserSubscriptionInfo,
 } from '@/lib/types';
 
 /**
@@ -72,7 +72,7 @@ export function calculateSubscriptionState(
  * Get comprehensive subscription eligibility for all possible actions
  */
 export function getSubscriptionEligibility(
-  subscription: UserSubscriptionInfo
+  subscription: OrgSubscriptionInfo
 ): SubscriptionEligibility {
   const { status, tier, currentPeriodEnd, activeSubscription } = subscription;
   const cancelAtPeriodEnd = activeSubscription?.cancelAtPeriodEnd;

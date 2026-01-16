@@ -31,7 +31,6 @@ export const users = pgTable('users', {
   emailVerified: boolean('email_verified').default(false).notNull(),
   displayName: text('display_name').notNull(),
   profileImageUrl: text('profile_image_url'),
-  stripeCustomerId: text('stripe_customer_id').unique(), // Stripe customer ID
   notificationSettings: text('notification_settings'), // JSON string for notification preferences
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
@@ -64,6 +63,7 @@ export const sessions = pgTable('sessions', {
   activeOrganizationSlug: text('active_organization_slug').references(() => organizations.slug, {
     onDelete: 'set null',
   }),
+  activeOrganizationRole: orgRoleEnum('active_organization_role'),
 });
 
 export const accounts = pgTable(
@@ -110,6 +110,7 @@ export const organizations = pgTable('organizations', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
   slug: text('slug').notNull().unique(),
+  stripeCustomerId: text('stripe_customer_id').unique(), // Stripe customer ID for org-level billing
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -131,7 +132,7 @@ export const orgMemberships = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     role: orgRoleEnum('role').notNull(),
-    createdAt: timestamp('created_at').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
     index('org_memberships_organizationId_idx').on(table.organizationId),
@@ -161,16 +162,16 @@ export const invitations = pgTable(
   ]
 );
 
-// User Subscriptions
-export const userSubscriptions = pgTable('user_subscriptions', {
+// Organization Subscriptions
+export const orgSubscriptions = pgTable('org_subscriptions', {
   id: uuid('id').defaultRandom().primaryKey(),
-  userId: uuid('user_id').notNull(),
-  organizationId: uuid('organization_id').references(() => organizations.id, {
-    onDelete: 'cascade',
-  }), // Nullable for personal subscriptions
-  subscriptionType: text('subscription_type').notNull().default('personal'), // 'personal' | 'organization'
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
   stripeSubscriptionId: text('stripe_subscription_id').unique(), // Stripe subscription ID (nullable for free tier)
-  stripeCustomerId: text('stripe_customer_id'), // Stripe customer ID (nullable for free tier)
+  stripeCustomerId: text('stripe_customer_id'), // Stripe customer ID (references org's customer)
   stripePriceId: text('stripe_price_id'), // Stripe price ID (nullable for free tier)
   status: text('status').notNull(), // 'active', 'canceled', 'past_due', 'unpaid', 'incomplete'
   tier: text('tier').notNull(), // Stores Stripe lookup_key (e.g., 'free_monthly', 'pro_monthly', 'business_monthly')
@@ -439,6 +440,13 @@ export const chatMessageRelations = relations(chatMessages, ({ one }) => ({
   }),
 }));
 
+export const orgSubscriptionRelations = relations(orgSubscriptions, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [orgSubscriptions.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 // Enums for type safety
 // SubscriptionTier is now derived from products.json - import from @/lib/billing/products
 export { SubscriptionTier } from '@/lib/billing/products';
@@ -480,8 +488,8 @@ export type Session = InferSelectModel<typeof sessions>;
 export type NewSession = InferInsertModel<typeof sessions>;
 export type Verification = InferSelectModel<typeof verifications>;
 export type NewVerification = InferInsertModel<typeof verifications>;
-export type UserSubscription = InferSelectModel<typeof userSubscriptions>;
-export type NewUserSubscription = InferInsertModel<typeof userSubscriptions>;
+export type OrgSubscription = InferSelectModel<typeof orgSubscriptions>;
+export type NewOrgSubscription = InferInsertModel<typeof orgSubscriptions>;
 export type ActivityLog = InferSelectModel<typeof activityLogs>;
 export type NewActivityLog = InferInsertModel<typeof activityLogs>;
 export type Task = InferSelectModel<typeof tasks>;

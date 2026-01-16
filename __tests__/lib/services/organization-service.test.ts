@@ -31,6 +31,7 @@ vi.mock('@/lib/auth/providers', () => ({
       deleteOrganization: vi.fn(),
       setActiveOrganization: vi.fn(),
       getActiveMemberRole: vi.fn(),
+      getSession: vi.fn(),
     },
   },
 }));
@@ -62,6 +63,7 @@ describe('Organization Service', () => {
     updatedAt: new Date(),
     members: [],
     invitations: [],
+    stripeCustomerId: 'org_123',
   };
 
   beforeEach(() => {

@@ -1,9 +1,9 @@
 import { desc, eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { userSubscriptions } from '@/lib/db/schema';
+import { orgSubscriptions } from '@/lib/db/schema';
 import { SubscriptionStatus, SubscriptionTier, type SubscriptionTierType } from '@/lib/db/schema';
-import { type UserSubscriptionInfo } from '@/lib/types';
+import type { OrgSubscriptionInfo } from '@/lib/types';
 
 import { getAllLookupKeys } from './products';
 import productsConfig from './products.json';
@@ -58,18 +58,18 @@ export function safeSubscriptionStatusCast(
 }
 
 /**
- * Get user's current subscription information using User ID
+ * Get organization's current subscription information using Organization ID
  * Returns free tier if no paid subscription exists (no record created)
  */
-export async function getUserSubscription(userId: string): Promise<UserSubscriptionInfo> {
-  const activeSubscription = await db.query.userSubscriptions.findFirst({
-    where: eq(userSubscriptions.userId, userId),
-    orderBy: [desc(userSubscriptions.createdAt)],
+export async function getOrgSubscription(organizationId: string): Promise<OrgSubscriptionInfo> {
+  const activeSubscription = await db.query.orgSubscriptions.findFirst({
+    where: eq(orgSubscriptions.organizationId, organizationId),
+    orderBy: [desc(orgSubscriptions.createdAt)],
   });
 
   // If no subscription exists, return free tier (no record created)
   if (!activeSubscription) {
-    console.log('📋 No subscription found, returning free tier for user:', userId);
+    console.log('📋 No subscription found, returning free tier for org:', organizationId);
     return {
       tier: SubscriptionTier.FREE_MONTHLY,
       status: SubscriptionStatus.ACTIVE,

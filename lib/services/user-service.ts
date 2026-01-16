@@ -23,7 +23,6 @@ export async function getUserById(userId: string) {
       emailVerified: users.emailVerified,
       displayName: users.displayName,
       profileImageUrl: users.profileImageUrl,
-      stripeCustomerId: users.stripeCustomerId,
       notificationSettings: users.notificationSettings,
       role: users.role,
       createdAt: users.createdAt,

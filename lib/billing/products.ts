@@ -37,14 +37,6 @@ export const SubscriptionTier = {
 // Type for subscription tiers (lookup keys)
 export type SubscriptionTierType = (typeof SubscriptionTier)[keyof typeof SubscriptionTier];
 
-export function getTierNameFromLookupKey(lookupKey: string | undefined | null): string {
-  if (!lookupKey) {
-    return 'free';
-  }
-  const parts = lookupKey.split('_');
-  return parts.slice(0, -1).join('_');
-}
-
 // Helper to get all available lookup keys
 export function getAllLookupKeys(): string[] {
   return productsConfig.products.map((p) => p.lookupKey);

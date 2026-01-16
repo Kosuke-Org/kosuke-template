@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { stripe } from '@/lib/billing/client';
-import { syncStaleSubscriptions, syncUserSubscriptionFromStripe } from '@/lib/billing/stripe-sync';
+import { syncOrgSubscriptionFromStripe, syncStaleSubscriptions } from '@/lib/billing/stripe-sync';
 import { db } from '@/lib/db';
 import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 
@@ -10,7 +10,7 @@ import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 vi.mock('@/lib/db', () => ({
   db: {
     query: {
-      userSubscriptions: {
+      orgSubscriptions: {
         findFirst: vi.fn(),
         findMany: vi.fn(),
       },
@@ -37,11 +37,11 @@ describe('Stripe Sync Module', () => {
     vi.clearAllMocks();
   });
 
-  describe('syncUserSubscriptionFromStripe', () => {
+  describe('syncOrgSubscriptionFromStripe', () => {
     it('should return success when no active subscription', async () => {
-      vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce(undefined);
+      vi.mocked(db.query.orgSubscriptions.findFirst).mockResolvedValueOnce(undefined);
 
-      const result = await syncUserSubscriptionFromStripe('user_123');
+      const result = await syncOrgSubscriptionFromStripe('org_123');
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('No active subscription');
@@ -51,9 +51,8 @@ describe('Stripe Sync Module', () => {
       const now = new Date();
       const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-      vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
+      vi.mocked(db.query.orgSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
-        userId: 'user_123',
         stripeSubscriptionId: 'sub_123',
         tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
@@ -65,8 +64,7 @@ describe('Stripe Sync Module', () => {
         currentPeriodEnd: futureDate,
         cancelAtPeriodEnd: 'false',
         canceledAt: null,
-        organizationId: null,
-        subscriptionType: 'personal',
+        organizationId: 'org_123',
         scheduledDowngradeTier: null,
       });
 
@@ -79,7 +77,7 @@ describe('Stripe Sync Module', () => {
         current_period_end: Math.floor(futureDate.getTime() / 1000),
       } as any);
 
-      const result = await syncUserSubscriptionFromStripe('user_123');
+      const result = await syncOrgSubscriptionFromStripe('org_123');
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('synced');
@@ -88,9 +86,8 @@ describe('Stripe Sync Module', () => {
     it('should handle deleted Stripe subscription', async () => {
       const now = new Date();
 
-      vi.mocked(db.query.userSubscriptions.findFirst).mockResolvedValueOnce({
+      vi.mocked(db.query.orgSubscriptions.findFirst).mockResolvedValueOnce({
         id: '1',
-        userId: 'user_123',
         stripeSubscriptionId: 'sub_123',
         tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
@@ -102,8 +99,7 @@ describe('Stripe Sync Module', () => {
         currentPeriodEnd: new Date(),
         cancelAtPeriodEnd: 'false',
         canceledAt: null,
-        organizationId: null,
-        subscriptionType: 'personal',
+        organizationId: 'org_123',
         scheduledDowngradeTier: null,
       });
 
@@ -111,7 +107,7 @@ describe('Stripe Sync Module', () => {
       (error as any).code = 'resource_missing';
       vi.mocked(stripe.subscriptions.retrieve).mockRejectedValueOnce(error);
 
-      const result = await syncUserSubscriptionFromStripe('user_123');
+      const result = await syncOrgSubscriptionFromStripe('org_123');
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('longer exists');
@@ -126,7 +122,6 @@ describe('Stripe Sync Module', () => {
       const staleSubscriptions = [
         {
           id: '1',
-          userId: 'user_1',
           stripeSubscriptionId: 'sub_1',
           tier: SubscriptionTier.PRO_MONTHLY,
           status: SubscriptionStatus.ACTIVE,
@@ -138,13 +133,12 @@ describe('Stripe Sync Module', () => {
           currentPeriodEnd: new Date(),
           cancelAtPeriodEnd: 'false',
           canceledAt: null,
-          organizationId: null,
-          subscriptionType: 'personal',
+          organizationId: 'org_123',
           scheduledDowngradeTier: null,
         },
       ];
 
-      vi.mocked(db.query.userSubscriptions.findMany).mockResolvedValueOnce(
+      vi.mocked(db.query.orgSubscriptions.findMany).mockResolvedValueOnce(
         staleSubscriptions as any
       );
 
@@ -165,7 +159,7 @@ describe('Stripe Sync Module', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      vi.mocked(db.query.userSubscriptions.findMany).mockRejectedValueOnce(
+      vi.mocked(db.query.orgSubscriptions.findMany).mockRejectedValueOnce(
         new Error('Database error')
       );
 

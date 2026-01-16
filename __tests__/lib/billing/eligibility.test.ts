@@ -1,6 +1,10 @@
-import { calculateSubscriptionState, getSubscriptionEligibility } from '@/lib/billing';
+import {
+  OrgSubscriptionInfo,
+  calculateSubscriptionState,
+  getSubscriptionEligibility,
+} from '@/lib/billing';
 import { SubscriptionStatus, SubscriptionTier, type SubscriptionTierType } from '@/lib/db/schema';
-import { SubscriptionState, type UserSubscriptionInfo } from '@/lib/types';
+import { SubscriptionState } from '@/lib/types';
 
 describe('Subscription Eligibility Business Logic', () => {
   describe('calculateSubscriptionState', () => {
@@ -93,7 +97,7 @@ describe('Subscription Eligibility Business Logic', () => {
       tier: SubscriptionTierType,
       status: SubscriptionStatus | null,
       currentPeriodEnd: Date | null = null
-    ): UserSubscriptionInfo => ({
+    ): OrgSubscriptionInfo => ({
       tier,
       status,
       currentPeriodEnd,

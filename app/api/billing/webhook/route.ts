@@ -5,7 +5,7 @@ import Stripe from 'stripe';
 
 import { stripe } from '@/lib/billing/client';
 import { db } from '@/lib/db';
-import { userSubscriptions } from '@/lib/db/schema';
+import { SubscriptionStatus, orgSubscriptions } from '@/lib/db/schema';
 
 /**
  * Stripe Webhook Handler
@@ -83,10 +83,10 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Helper: Get userId from subscription metadata
+ * Helper: Get organizationId from subscription metadata
  */
-function getuserId(subscription: Stripe.Subscription): string | null {
-  return (subscription.metadata?.userId as string) || null;
+function getOrganizationId(subscription: Stripe.Subscription): string | null {
+  return (subscription.metadata?.organizationId as string) || null;
 }
 
 /**
@@ -101,10 +101,10 @@ function getTier(subscription: Stripe.Subscription): string | null {
  */
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
   try {
-    const userId = getuserId(subscription);
+    const organizationId = getOrganizationId(subscription);
     const tier = getTier(subscription);
 
-    if (!userId || !tier) {
+    if (!organizationId || !tier) {
       console.error('❌ Missing metadata in subscription.created:', subscription.id);
       return;
     }
@@ -126,24 +126,33 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       return;
     }
 
-    // Before creating new subscription, mark any existing active subscriptions as replaced
-    // This prevents duplicate active subscriptions when upgrading
-    const existingSubscriptions = await db.query.userSubscriptions.findMany({
-      where: eq(userSubscriptions.userId, userId),
-    });
+    // Check if this subscription already exists in the database
+    // This prevents race conditions with seed scripts or manual DB operations
+    const existingSubscriptions = await db
+      .select()
+      .from(orgSubscriptions)
+      .where(eq(orgSubscriptions.organizationId, organizationId));
 
-    // Cancel existing active subscriptions (except free tier)
+    const subscriptionExists = existingSubscriptions.some(
+      (sub) => sub.stripeSubscriptionId === subscription.id
+    );
+
+    if (subscriptionExists) {
+      console.log(
+        `ℹ️  Subscription ${subscription.id} already exists in database, skipping creation`
+      );
+      return;
+    }
+
+    // Cancel existing active subscriptions to prevent duplicates
+    // This handles all upgrade scenarios including Free → Paid upgrades
     for (const existing of existingSubscriptions) {
-      if (
-        existing.tier !== 'free' &&
-        existing.status === 'active' &&
-        existing.stripeSubscriptionId
-      ) {
+      if (existing.status === SubscriptionStatus.ACTIVE && existing.stripeSubscriptionId) {
         // Cancel in Stripe first
         try {
           await stripe.subscriptions.cancel(existing.stripeSubscriptionId);
           console.log(
-            `✅ Canceled Stripe subscription ${existing.stripeSubscriptionId} for user upgrade`
+            `✅ Canceled Stripe subscription ${existing.stripeSubscriptionId} for org upgrade`
           );
         } catch (error) {
           console.error(
@@ -155,20 +164,20 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
 
         // Update local database
         await db
-          .update(userSubscriptions)
+          .update(orgSubscriptions)
           .set({
             status: 'canceled',
             canceledAt: new Date(),
             updatedAt: new Date(),
           })
-          .where(eq(userSubscriptions.id, existing.id));
+          .where(eq(orgSubscriptions.id, existing.id));
 
-        console.log(`✅ Canceled local subscription record ${existing.id} for user upgrade`);
+        console.log(`✅ Canceled local subscription record ${existing.id} for org upgrade`);
       }
     }
 
-    await db.insert(userSubscriptions).values({
-      userId,
+    await db.insert(orgSubscriptions).values({
+      organizationId,
       stripeSubscriptionId: subscription.id,
       stripeCustomerId: subscription.customer as string,
       stripePriceId: priceId,
@@ -210,7 +219,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     }
 
     await db
-      .update(userSubscriptions)
+      .update(orgSubscriptions)
       .set({
         status: subscription.status,
         stripePriceId: priceId,
@@ -219,7 +228,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
         cancelAtPeriodEnd: subscription.cancel_at_period_end ? 'true' : 'false',
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.stripeSubscriptionId, subscription.id));
+      .where(eq(orgSubscriptions.stripeSubscriptionId, subscription.id));
 
     console.log('✅ Subscription updated in database:', subscription.id);
   } catch (error) {
@@ -230,17 +239,25 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
 /**
  * Handle subscription.deleted event
+ * This event fires when a subscription is permanently deleted (e.g., customer deleted)
+ * Unlike cancel_at_period_end, this is an immediate termination
  */
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   try {
+    // When a subscription is deleted, it's immediately terminated
+    // Set cancelAtPeriodEnd to 'true' and currentPeriodEnd to now to reflect immediate cancellation
+    const now = new Date();
+
     await db
-      .update(userSubscriptions)
+      .update(orgSubscriptions)
       .set({
         status: 'canceled',
-        canceledAt: new Date(),
-        updatedAt: new Date(),
+        cancelAtPeriodEnd: 'true',
+        canceledAt: now,
+        currentPeriodEnd: now, // Set to now to indicate immediate termination
+        updatedAt: now,
       })
-      .where(eq(userSubscriptions.stripeSubscriptionId, subscription.id));
+      .where(eq(orgSubscriptions.stripeSubscriptionId, subscription.id));
 
     console.log('✅ Subscription marked as deleted in database:', subscription.id);
   } catch (error) {
@@ -262,14 +279,14 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
 
     // Update subscription with period info from invoice + ensure active status
     await db
-      .update(userSubscriptions)
+      .update(orgSubscriptions)
       .set({
         status: 'active',
         currentPeriodStart: new Date(invoice.period_start * 1000),
         currentPeriodEnd: new Date(invoice.period_end * 1000),
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.stripeSubscriptionId, subscriptionId));
+      .where(eq(orgSubscriptions.stripeSubscriptionId, subscriptionId));
 
     console.log('✅ Invoice paid, subscription confirmed active:', subscriptionId);
   } catch (error) {
@@ -292,12 +309,12 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
 
     // Mark subscription as past_due
     await db
-      .update(userSubscriptions)
+      .update(orgSubscriptions)
       .set({
         status: 'past_due',
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.stripeSubscriptionId, subscriptionId));
+      .where(eq(orgSubscriptions.stripeSubscriptionId, subscriptionId));
 
     console.log('⚠️ Payment failed for subscription:', subscriptionId);
   } catch (error) {
@@ -312,34 +329,37 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
  */
 async function handleSubscriptionScheduleCompleted(schedule: Stripe.SubscriptionSchedule) {
   try {
-    const userId = schedule.metadata?.userId;
+    const organizationId = schedule.metadata?.organizationId;
     const targetTier = schedule.metadata?.targetTier;
 
-    if (!userId || !targetTier) {
+    if (!organizationId || !targetTier) {
       console.error('❌ Missing metadata in subscription_schedule.completed:', schedule.id);
       return;
     }
 
     console.log(
-      `✅ Subscription schedule completed for user ${userId}, downgrading to ${targetTier}`
+      `✅ Subscription schedule completed for organization ${organizationId}, downgrading to ${targetTier}`
     );
 
     // The schedule automatically creates a new subscription when it completes
     // The subscription.created event will handle creating the new subscription record
     // We just need to clear the scheduledDowngradeTier field from the old subscription
 
-    const currentSub = await db.query.userSubscriptions.findFirst({
-      where: eq(userSubscriptions.userId, userId),
-    });
+    const results = await db
+      .select()
+      .from(orgSubscriptions)
+      .where(eq(orgSubscriptions.organizationId, organizationId))
+      .limit(1);
+    const currentSub = results[0];
 
     if (currentSub) {
       await db
-        .update(userSubscriptions)
+        .update(orgSubscriptions)
         .set({
           scheduledDowngradeTier: null,
           updatedAt: new Date(),
         })
-        .where(eq(userSubscriptions.id, currentSub.id));
+        .where(eq(orgSubscriptions.id, currentSub.id));
     }
 
     console.log('✅ Scheduled downgrade completed successfully');
@@ -355,19 +375,19 @@ async function handleSubscriptionScheduleCompleted(schedule: Stripe.Subscription
  */
 async function handleSubscriptionScheduleCanceled(schedule: Stripe.SubscriptionSchedule) {
   try {
-    const userId = schedule.metadata?.userId;
+    const organizationId = schedule.metadata?.organizationId;
     const currentSubscriptionId = schedule.metadata?.currentSubscriptionId;
 
-    if (!userId || !currentSubscriptionId) {
+    if (!organizationId || !currentSubscriptionId) {
       console.error('❌ Missing metadata in subscription_schedule.canceled:', schedule.id);
       return;
     }
 
-    console.log(`✅ Subscription schedule canceled for user ${userId}`);
+    console.log(`✅ Subscription schedule canceled for organization ${organizationId}`);
 
     // Remove the scheduled downgrade and reactivate the current subscription
     await db
-      .update(userSubscriptions)
+      .update(orgSubscriptions)
       .set({
         scheduledDowngradeTier: null,
         cancelAtPeriodEnd: 'false',
@@ -375,7 +395,7 @@ async function handleSubscriptionScheduleCanceled(schedule: Stripe.SubscriptionS
         status: 'active',
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.stripeSubscriptionId, currentSubscriptionId));
+      .where(eq(orgSubscriptions.stripeSubscriptionId, currentSubscriptionId));
 
     console.log('✅ Pending downgrade removed, current subscription reactivated');
   } catch (error) {

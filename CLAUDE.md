@@ -773,7 +773,7 @@ The template uses a **dynamic Stripe integration** where products and pricing ar
 
 #### Subscription Management
 
-- **Subscriptions**: Synced via webhooks to `userSubscriptions` table
+- **Subscriptions**: Synced via webhooks to `orgSubscriptions` table
 - **Checkout**: Use Stripe Checkout for subscription management
 - **Tiers**: Lookup keys (e.g., 'free_monthly', 'pro_monthly', 'business_monthly') stored in database
 - **Webhooks**: Handle subscription changes via `/api/billing/webhook`
@@ -782,10 +782,10 @@ The template uses a **dynamic Stripe integration** where products and pricing ar
 
 ```typescript
 // Subscription check pattern
-import { getUserSubscription, hasFeatureAccess } from '@/lib/billing';
+import { getOrgSubscription, hasFeatureAccess } from '@/lib/billing';
 import { SubscriptionTier } from '@/lib/billing/products';
 
-const subscription = await getUserSubscription(userId);
+const subscription = await getOrgSubscription(userId);
 
 // Check feature access using tier hierarchy
 const hasProAccess = hasFeatureAccess(subscription.tier, SubscriptionTier.PRO_MONTHLY);

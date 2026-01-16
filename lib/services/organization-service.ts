@@ -3,6 +3,7 @@
  * Handles organization CRUD operations, logo management, and utilities
  */
 import { auth } from '@/lib/auth/providers';
+import { createFreeTierSubscription, deleteStripeCustomer } from '@/lib/billing/operations';
 import type { NewOrganization, Organization, User } from '@/lib/db/schema';
 import { generateUniqueOrgSlug, switchToNextOrganization } from '@/lib/organizations';
 import { ERRORS } from '@/lib/services/constants';
@@ -92,6 +93,22 @@ export async function createOrganization(params: {
         },
         headers: params.headers,
       });
+
+      // Get user session to get email for Stripe customer
+      const session = await auth.api.getSession({ headers: params.headers });
+      const userEmail = session?.user?.email || '';
+
+      // Create free-tier subscription for the new organization
+      const subscriptionResult = await createFreeTierSubscription({
+        organizationId: result.id,
+        customerEmail: userEmail,
+      });
+
+      if (!subscriptionResult.success) {
+        console.error('Failed to create free-tier subscription:', subscriptionResult.message);
+        // Don't fail organization creation if subscription creation fails
+        // The subscription can be created manually later if needed
+      }
     }
 
     return result;
@@ -168,6 +185,9 @@ export async function deleteOrganization(params: {
   if (organization.logo) {
     await deleteProfileImage(organization.logo);
   }
+
+  // Delete Stripe customer (this will cancel all subscriptions automatically)
+  await deleteStripeCustomer(params.organizationId);
 
   // Delete the organization
   await auth.api.deleteOrganization({

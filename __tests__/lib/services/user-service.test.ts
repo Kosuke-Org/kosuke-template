@@ -37,7 +37,6 @@ describe('User Service', () => {
     emailVerified: true,
     displayName: 'Test User',
     profileImageUrl: 'https://example.com/avatar.jpg',
-    stripeCustomerId: 'cus_123',
     notificationSettings: JSON.stringify({
       emailNotifications: true,
       marketingEmails: false,
@@ -77,7 +76,6 @@ describe('User Service', () => {
         emailVerified: expect.anything(),
         displayName: expect.anything(),
         profileImageUrl: expect.anything(),
-        stripeCustomerId: expect.anything(),
         notificationSettings: expect.anything(),
         role: expect.anything(),
         createdAt: expect.anything(),

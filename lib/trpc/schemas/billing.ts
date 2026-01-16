@@ -21,3 +21,15 @@ export const createCheckoutSchema = z.object({
 export const syncActionSchema = z.object({
   action: z.enum(['user', 'stale', 'emergency']).default('user'),
 });
+
+export const getStatusSchema = z.object({
+  organizationId: z.string(),
+});
+
+export const canSubscribeSchema = z.object({
+  organizationId: z.string(),
+});
+
+export const getPricingSchema = z.object({
+  organizationId: z.string(),
+});
