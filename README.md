@@ -93,8 +93,6 @@ REDIS_URL=redis://redis:6379
 # Stripe Billing
 STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_SECRET_KEY=sk_test_...
-STRIPE_PRO_PRICE_ID=price_...      # $20/month
-STRIPE_BUSINESS_PRICE_ID=price_... # $200/month
 STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_SUCCESS_URL=http://localhost:3000/billing/success
 STRIPE_CANCEL_URL=http://localhost:3000/settings/billing
@@ -163,6 +161,9 @@ bun run db:generate       # Generate migrations (schema changes)
 bun run db:push           # Push schema (prototyping)
 bun run db:reset          # Reset database
 
+# Stripe Operations
+bun run stripe:seed       # Create/sync products & prices in Stripe using lookup keys
+
 # Testing & Quality
 bun run test              # Run tests
 bun run test:watch        # Run tests in watch mode
@@ -179,6 +180,73 @@ bun run email:dev         # Preview email templates (port 3001)
 # Shadcn UI Management
 bun run shadcn:update     # Update all shadcn components
 bun run shadcn:check      # Check for available component updates
+```
+
+## 💳 Stripe Integration
+
+The template uses a dynamic Stripe integration where products and pricing are managed via JSON configuration and synced to Stripe using lookup keys.
+
+### How It Works
+
+1. **Products Configuration**: All tiers (free, pro, business) are defined in `lib/billing/products.json`
+2. **Tier Hierarchy**: Each product has an explicit `tierLevel` field (0, 1, 2, etc.) that defines feature access permissions
+3. **Stripe Sync**: Run `bun run stripe:seed` to create/update products in Stripe
+4. **Lookup Keys**: Products are fetched dynamically using lookup keys (e.g., `free_monthly`, `pro_monthly`)
+5. **Dynamic Pricing**: The billing page fetches pricing directly from Stripe via tRPC
+
+### Setup Steps
+
+1. **Configure Products** (optional - defaults are provided):
+   - Edit `lib/billing/products.json` to customize pricing, features, and descriptions
+   - Set billing intervals, currency, and other Stripe-specific options
+   - Assign `tierLevel` values to define the feature access hierarchy (0 = lowest tier)
+
+2. **Sync to Stripe**:
+
+   ```bash
+   bun run stripe:seed
+   ```
+
+   This script is idempotent - safe to run multiple times. It will:
+   - Create products and prices in Stripe
+   - Use lookup keys to prevent duplicates
+   - Output product and price IDs
+
+3. **No Manual Price IDs**: Unlike traditional Stripe setups, you don't need to manually copy price IDs to environment variables. Prices are fetched dynamically using lookup keys.
+
+### Benefits
+
+- **Single Source of Truth**: Products defined once in JSON
+- **Explicit Tier Hierarchy**: `tierLevel` field makes access levels clear and self-documenting
+- **Flexible Billing Intervals**: Multiple products can share the same tier level (e.g., `pro_monthly` and `pro_yearly` both at level 1)
+- **Easy Updates**: Change pricing by editing JSON and re-running sync script
+- **Migration-Friendly**: All users (including free tier) have Stripe subscriptions
+- **No Hardcoded Values**: Pricing fetched dynamically from Stripe
+
+### Adding New Tiers
+
+1. Add a new tier to `lib/billing/products.json` with an appropriate `tierLevel`
+2. Update the `SubscriptionTier` constants in `lib/billing/products.ts`
+3. Run `bun run stripe:seed` to create it in Stripe
+4. The new tier automatically appears in the billing UI with correct feature access
+
+Example:
+
+```json
+{
+  "lookupKey": "enterprise_monthly",
+  "tierLevel": 3,
+  "product": {
+    "name": "Enterprise",
+    "description": "For large organizations"
+  },
+  "price": {
+    "unit_amount": 99900,
+    "currency": "usd",
+    "recurring": { "interval": "month", "interval_count": 1 }
+  },
+  "features": ["All features", "Priority support", "Custom integrations"]
+}
 ```
 
 ## ⚡ Background Jobs with BullMQ

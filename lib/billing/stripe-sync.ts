@@ -2,7 +2,7 @@ import { desc, eq, lt } from 'drizzle-orm';
 import Stripe from 'stripe';
 
 import { db } from '@/lib/db';
-import { userSubscriptions } from '@/lib/db/schema';
+import { orgSubscriptions } from '@/lib/db/schema';
 
 import { stripe } from './client';
 
@@ -12,19 +12,19 @@ import { stripe } from './client';
  */
 
 /**
- * Sync a single user's subscription from Stripe
+ * Sync a single organization's subscription from Stripe
  */
-export async function syncUserSubscriptionFromStripe(userId: string): Promise<{
+export async function syncOrgSubscriptionFromStripe(organizationId: string): Promise<{
   success: boolean;
   message: string;
   subscription?: Stripe.Subscription;
 }> {
   try {
-    console.log('🔄 Syncing subscription from Stripe for user:', userId);
+    console.log('🔄 Syncing subscription from Stripe for organization:', organizationId);
 
-    const localSubscription = await db.query.userSubscriptions.findFirst({
-      where: eq(userSubscriptions.userId, userId),
-      orderBy: [desc(userSubscriptions.createdAt)],
+    const localSubscription = await db.query.orgSubscriptions.findFirst({
+      where: eq(orgSubscriptions.organizationId, organizationId),
+      orderBy: [desc(orgSubscriptions.createdAt)],
     });
 
     if (!localSubscription?.stripeSubscriptionId) {
@@ -50,14 +50,14 @@ export async function syncUserSubscriptionFromStripe(userId: string): Promise<{
       ) {
         // Subscription deleted in Stripe
         await db
-          .update(userSubscriptions)
+          .update(orgSubscriptions)
           .set({
             status: 'canceled',
             canceledAt: new Date(),
             updatedAt: new Date(),
           })
           .where(
-            eq(userSubscriptions.stripeSubscriptionId, localSubscription.stripeSubscriptionId!)
+            eq(orgSubscriptions.stripeSubscriptionId, localSubscription.stripeSubscriptionId!)
           );
 
         return {
@@ -78,7 +78,7 @@ export async function syncUserSubscriptionFromStripe(userId: string): Promise<{
     const currentPeriodEnd = stripeSubscription.current_period_end;
 
     await db
-      .update(userSubscriptions)
+      .update(orgSubscriptions)
       .set({
         status: stripeSubscription.status,
         stripePriceId: priceId,
@@ -87,7 +87,7 @@ export async function syncUserSubscriptionFromStripe(userId: string): Promise<{
         cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end ? 'true' : 'false',
         updatedAt: new Date(),
       })
-      .where(eq(userSubscriptions.stripeSubscriptionId, localSubscription.stripeSubscriptionId!));
+      .where(eq(orgSubscriptions.stripeSubscriptionId, localSubscription.stripeSubscriptionId!));
 
     console.log('✅ Successfully synced subscription from Stripe');
 
@@ -117,8 +117,8 @@ export async function syncStaleSubscriptions(staleHours: number = 24): Promise<{
 
     const staleThreshold = new Date(Date.now() - staleHours * 60 * 60 * 1000);
 
-    const staleSubscriptions = await db.query.userSubscriptions.findMany({
-      where: lt(userSubscriptions.updatedAt, staleThreshold),
+    const staleSubscriptions = await db.query.orgSubscriptions.findMany({
+      where: lt(orgSubscriptions.updatedAt, staleThreshold),
       limit: 50,
     });
 
@@ -127,18 +127,18 @@ export async function syncStaleSubscriptions(staleHours: number = 24): Promise<{
 
     for (const subscription of staleSubscriptions) {
       try {
-        const result = await syncUserSubscriptionFromStripe(subscription.userId);
+        const result = await syncOrgSubscriptionFromStripe(subscription.organizationId);
         if (result.success) {
           syncedCount++;
         } else {
-          errors.push(`${subscription.userId}: ${result.message}`);
+          errors.push(`${subscription.organizationId}: ${result.message}`);
         }
 
         // Rate limiting
         await new Promise((resolve) => setTimeout(resolve, 100));
       } catch (error) {
         errors.push(
-          `${subscription.userId}: ${error instanceof Error ? error.message : 'Unknown'}`
+          `${subscription.organizationId}: ${error instanceof Error ? error.message : 'Unknown'}`
         );
       }
     }

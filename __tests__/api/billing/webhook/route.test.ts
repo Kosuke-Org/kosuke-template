@@ -40,7 +40,7 @@ vi.mock('@/lib/db', () => ({
       }),
     }),
     query: {
-      userSubscriptions: {
+      orgSubscriptions: {
         findFirst: vi.fn().mockResolvedValue(undefined),
         findMany: vi.fn().mockResolvedValue([]),
       },

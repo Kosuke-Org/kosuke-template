@@ -11,7 +11,7 @@ import { trpc } from '@/lib/trpc/client';
 import { useAuth } from '@/hooks/use-auth';
 
 export function useOrganization() {
-  const { isSignedIn, activeOrganizationId, user: currentUser } = useAuth();
+  const { isSignedIn, activeOrganizationId, user: currentUser, activeOrganizationRole } = useAuth();
 
   const {
     data: organization,
@@ -37,7 +37,7 @@ export function useOrganization() {
     organization: organization ?? null,
     invitations: pendingInvitations,
     members,
-    currentUserRole: currentUserMembership?.role,
+    currentUserRole: activeOrganizationRole,
     currentUserMembership,
     isLoading,
     error,

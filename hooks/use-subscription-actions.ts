@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { useIframeMessageHandlerStore } from '@/store/use-iframe-message-handler';
 
+import { SubscriptionTierType } from '@/lib/billing';
 import { trpc } from '@/lib/trpc/client';
 
 import { useToast } from '@/hooks/use-toast';
@@ -122,7 +123,7 @@ export function useSubscriptionActions() {
     console.log('redirectUrl', redirectUrl);
 
     createCheckout.mutate({
-      tier: tier as 'pro' | 'business',
+      tier: tier as SubscriptionTierType,
       redirectUrl,
     });
   };

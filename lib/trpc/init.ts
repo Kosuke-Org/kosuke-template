@@ -9,7 +9,7 @@ import superjson from 'superjson';
 
 import { auth } from '@/lib/auth/providers';
 import { db } from '@/lib/db/drizzle';
-import { USER_ROLES } from '@/lib/types/organization';
+import { ORG_ROLES, USER_ROLES } from '@/lib/types/organization';
 
 /**
  * Create context for tRPC
@@ -45,7 +45,7 @@ export const createTRPCContext = async (opts?: { req?: Request }) => {
 
   const activeOrganizationSlug = session?.activeOrganizationSlug ?? null;
   const activeOrganizationId = session?.activeOrganizationId ?? null;
-  const orgRole = null; // TODO: Implement org role;
+  const orgRole = session?.activeOrganizationRole ?? null;
 
   return {
     userId,
@@ -134,9 +134,32 @@ export const orgProcedure = protectedProcedure.use(async ({ ctx, next, getRawInp
     ctx: {
       ...ctx,
       organizationId,
+      orgRole: membership.role,
       membership,
     },
   });
+});
+
+/**
+ * Organization owner procedure - middleware that checks for owner role
+ */
+export const orgOwnerProcedure = protectedProcedure.use(async ({ ctx, next }) => {
+  const organizationId = ctx.activeOrganizationId;
+
+  if (!organizationId) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Organization not found',
+    });
+  }
+
+  if (ctx.orgRole !== ORG_ROLES.OWNER) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Only organization owners can perform this action',
+    });
+  }
+  return next({ ctx: { ...ctx, organizationId } });
 });
 
 /**

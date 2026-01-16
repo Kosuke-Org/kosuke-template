@@ -94,7 +94,8 @@ export function CreateOrganizationDialog({
         <DialogHeader>
           <DialogTitle>Create Organization</DialogTitle>
           <DialogDescription>
-            Create a new organization. You can optionally assign an owner from existing users.
+            Create a new organization with an owner. The owner&apos;s email will be used for billing
+            setup.
           </DialogDescription>
         </DialogHeader>
 
@@ -149,19 +150,12 @@ export function CreateOrganizationDialog({
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="ownerId">Owner (Optional)</FieldLabel>
-                  <Select
-                    value={field.value ?? '__none__'}
-                    onValueChange={(value) =>
-                      field.onChange(value === '__none__' ? undefined : value)
-                    }
-                    disabled={isPending}
-                  >
+                  <FieldLabel htmlFor="ownerId">Owner</FieldLabel>
+                  <Select value={field.value} onValueChange={field.onChange} disabled={isPending}>
                     <SelectTrigger id="ownerId">
                       <SelectValue placeholder="Select a user as owner" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">No owner</SelectItem>
                       {availableUsers.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.displayName} ({user.email})
@@ -170,7 +164,8 @@ export function CreateOrganizationDialog({
                     </SelectContent>
                   </Select>
                   <FieldDescription>
-                    Optionally assign an existing user as the organization owner
+                    Required for billing setup. The owner&apos;s email will be used by Stripe to
+                    create a customer.
                   </FieldDescription>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>

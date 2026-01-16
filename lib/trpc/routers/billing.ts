@@ -2,30 +2,53 @@ import { TRPCError } from '@trpc/server';
 
 import {
   BILLING_URLS,
+  cancelOrgSubscription,
   cancelPendingDowngrade,
-  cancelUserSubscription,
   createCheckoutSession,
   createCustomerPortalSession,
+  getOrgSubscription,
+  getPricingFromStripe,
   getSubscriptionEligibility,
-  getUserSubscription,
-  reactivateUserSubscription,
+  reactivateOrgSubscription,
 } from '@/lib/billing';
-import { syncStaleSubscriptions, syncUserSubscriptionFromStripe } from '@/lib/billing/stripe-sync';
+import { syncOrgSubscriptionFromStripe, syncStaleSubscriptions } from '@/lib/billing/stripe-sync';
+import {
+  canSubscribeSchema,
+  createCheckoutSchema,
+  getPricingSchema,
+  getStatusSchema,
+  syncActionSchema,
+} from '@/lib/trpc/schemas/billing';
+import { handleApiError } from '@/lib/utils';
 
-import { protectedProcedure, router } from '../init';
-import { createCheckoutSchema, syncActionSchema } from '../schemas/billing';
+import { orgOwnerProcedure, orgProcedure, protectedProcedure, router } from '../init';
 
 /**
  * Billing Router
  * Handles all subscription and billing operations via tRPC
  */
 
+/**
+ * Organization owner procedure - middleware that checks for owner role
+ */
 export const billingRouter = router({
   /**
-   * Get current user's subscription status and details
+   * Get pricing information from Stripe
+   * Fetches all active prices using lookup keys
    */
-  getStatus: protectedProcedure.query(async ({ ctx }) => {
-    const subscriptionInfo = await getUserSubscription(ctx.userId);
+  getPricing: protectedProcedure.input(getPricingSchema).query(async () => {
+    try {
+      return await getPricingFromStripe();
+    } catch (error) {
+      handleApiError(error);
+    }
+  }),
+
+  /**
+   * Get organization's subscription status and details
+   */
+  getStatus: orgProcedure.input(getStatusSchema).query(async ({ ctx }) => {
+    const subscriptionInfo = await getOrgSubscription(ctx.organizationId);
 
     return {
       tier: subscriptionInfo.tier,
@@ -36,10 +59,10 @@ export const billingRouter = router({
   }),
 
   /**
-   * Check if user can subscribe or upgrade
+   * Check if organization can subscribe or upgrade
    */
-  canSubscribe: protectedProcedure.query(async ({ ctx }) => {
-    const currentSubscription = await getUserSubscription(ctx.userId);
+  canSubscribe: orgProcedure.input(canSubscribeSchema).query(async ({ ctx }) => {
+    const currentSubscription = await getOrgSubscription(ctx.organizationId);
     const eligibility = getSubscriptionEligibility(currentSubscription);
 
     return {
@@ -62,77 +85,75 @@ export const billingRouter = router({
   }),
 
   /**
-   * Create Stripe checkout session for subscription
+   * Create Stripe checkout session for subscription (owner only)
    */
-  createCheckout: protectedProcedure
-    .input(createCheckoutSchema)
-    .mutation(async ({ input, ctx }) => {
-      const currentSubscription = await getUserSubscription(ctx.userId);
-      const eligibility = getSubscriptionEligibility(currentSubscription);
+  createCheckout: orgOwnerProcedure.input(createCheckoutSchema).mutation(async ({ input, ctx }) => {
+    const currentSubscription = await getOrgSubscription(ctx.organizationId);
+    const eligibility = getSubscriptionEligibility(currentSubscription);
 
-      if (!eligibility.canCreateNew && !eligibility.canUpgrade) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: eligibility.reason || 'Cannot create subscription',
-        });
-      }
-
-      const user = await ctx.getUser();
-      const customerEmail = user?.email;
-
-      if (!customerEmail) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'No email found for user',
-        });
-      }
-
-      // Use client's redirectUrl if provided (embedded mode with parent URL)
-      // Otherwise fallback to env variables (standalone mode)
-      let redirectUrl: string;
-      let cancelUrl: string;
-
-      if (input.redirectUrl) {
-        // This is the name of the query param that will be used to redirect the user back to the iframe
-        const IFRAME_REDIRECT_URL_PARAM = 'iframeRedirectUrl'; // DO NOT MODIFY
-        const successUrl = new URL(input.redirectUrl);
-        successUrl.searchParams.set(IFRAME_REDIRECT_URL_PARAM, BILLING_URLS.success);
-        redirectUrl = successUrl.toString();
-
-        const cancelUrlObj = new URL(input.redirectUrl);
-        cancelUrlObj.searchParams.set(IFRAME_REDIRECT_URL_PARAM, BILLING_URLS.cancel);
-        cancelUrl = cancelUrlObj.toString();
-      } else {
-        redirectUrl = BILLING_URLS.success;
-        cancelUrl = BILLING_URLS.cancel;
-      }
-
-      const result = await createCheckoutSession({
-        tier: input.tier,
-        userId: ctx.userId,
-        customerEmail,
-        redirectUrl,
-        cancelUrl,
+    if (!eligibility.canCreateNew && !eligibility.canUpgrade) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message: eligibility.reason || 'Cannot create subscription',
       });
+    }
 
-      if (!result.success) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: result.message,
-        });
-      }
+    const user = await ctx.getUser();
+    const customerEmail = user?.email;
 
-      return {
-        checkoutUrl: result.data!.url,
-        sessionId: result.data!.id,
-      };
-    }),
+    if (!customerEmail) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'No email found for user',
+      });
+    }
+
+    // Use client's redirectUrl if provided (embedded mode with parent URL)
+    // Otherwise fallback to env variables (standalone mode)
+    let redirectUrl: string;
+    let cancelUrl: string;
+
+    if (input.redirectUrl) {
+      // This is the name of the query param that will be used to redirect the user back to the iframe
+      const IFRAME_REDIRECT_URL_PARAM = 'iframeRedirectUrl'; // DO NOT MODIFY
+      const successUrl = new URL(input.redirectUrl);
+      successUrl.searchParams.set(IFRAME_REDIRECT_URL_PARAM, BILLING_URLS.success);
+      redirectUrl = successUrl.toString();
+
+      const cancelUrlObj = new URL(input.redirectUrl);
+      cancelUrlObj.searchParams.set(IFRAME_REDIRECT_URL_PARAM, BILLING_URLS.cancel);
+      cancelUrl = cancelUrlObj.toString();
+    } else {
+      redirectUrl = BILLING_URLS.success;
+      cancelUrl = BILLING_URLS.cancel;
+    }
+
+    const result = await createCheckoutSession({
+      tier: input.tier,
+      organizationId: ctx.organizationId,
+      customerEmail,
+      redirectUrl,
+      cancelUrl,
+    });
+
+    if (!result.success) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: result.message,
+      });
+    }
+
+    return {
+      checkoutUrl: result.data!.url,
+      sessionId: result.data!.id,
+    };
+  }),
 
   /**
-   * Cancel user's active subscription (marks for cancellation at period end)
+   * Cancel organization's active subscription (marks for cancellation at period end, owner only)
    */
-  cancel: protectedProcedure.mutation(async ({ ctx }) => {
-    const subscriptionInfo = await getUserSubscription(ctx.userId);
+  cancel: orgOwnerProcedure.mutation(async ({ ctx }) => {
+    const subscriptionInfo = await getOrgSubscription(ctx.organizationId);
     const eligibility = getSubscriptionEligibility(subscriptionInfo);
 
     if (!eligibility.canCancel) {
@@ -149,8 +170,8 @@ export const billingRouter = router({
       });
     }
 
-    const result = await cancelUserSubscription(
-      ctx.userId,
+    const result = await cancelOrgSubscription(
+      ctx.organizationId,
       subscriptionInfo.activeSubscription.stripeSubscriptionId
     );
 
@@ -168,10 +189,10 @@ export const billingRouter = router({
   }),
 
   /**
-   * Reactivate a canceled subscription (removes cancellation)
+   * Reactivate a canceled subscription (removes cancellation, owner only)
    */
-  reactivate: protectedProcedure.mutation(async ({ ctx }) => {
-    const subscriptionInfo = await getUserSubscription(ctx.userId);
+  reactivate: orgOwnerProcedure.mutation(async ({ ctx }) => {
+    const subscriptionInfo = await getOrgSubscription(ctx.organizationId);
     const eligibility = getSubscriptionEligibility(subscriptionInfo);
 
     if (!eligibility.canReactivate) {
@@ -188,8 +209,8 @@ export const billingRouter = router({
       });
     }
 
-    const result = await reactivateUserSubscription(
-      ctx.userId,
+    const result = await reactivateOrgSubscription(
+      ctx.organizationId,
       subscriptionInfo.activeSubscription.stripeSubscriptionId
     );
 
@@ -212,10 +233,10 @@ export const billingRouter = router({
   }),
 
   /**
-   * Create Stripe Customer Portal session for subscription management
+   * Create Stripe Customer Portal session for subscription management (owner only)
    */
-  createPortalSession: protectedProcedure.mutation(async ({ ctx }) => {
-    const result = await createCustomerPortalSession(ctx.userId);
+  createPortalSession: orgOwnerProcedure.mutation(async ({ ctx }) => {
+    const result = await createCustomerPortalSession(ctx.organizationId);
 
     if (!result.success) {
       throw new TRPCError({
@@ -230,16 +251,16 @@ export const billingRouter = router({
   }),
 
   /**
-   * Sync subscription from Stripe (admin/debug utility)
+   * Sync subscription from Stripe (owner utility)
    */
-  sync: protectedProcedure.input(syncActionSchema).mutation(async ({ input, ctx }) => {
+  sync: orgOwnerProcedure.input(syncActionSchema).mutation(async ({ input, ctx }) => {
     switch (input.action) {
       case 'user': {
-        const result = await syncUserSubscriptionFromStripe(ctx.userId);
+        const result = await syncOrgSubscriptionFromStripe(ctx.organizationId);
         return {
           success: result.success,
           message: result.message,
-          action: 'user_sync',
+          action: 'org_sync',
           subscription: result.subscription,
         };
       }
@@ -267,32 +288,10 @@ export const billingRouter = router({
   }),
 
   /**
-   * Get sync status information
+   * Cancel pending subscription downgrade (owner only)
    */
-  getSyncStatus: protectedProcedure.query(async ({ ctx }) => {
-    const subscription = await getUserSubscription(ctx.userId);
-
-    return {
-      success: true,
-      message: 'Sync status retrieved',
-      user: {
-        id: ctx.userId,
-        currentTier: subscription.tier,
-        lastUpdated: subscription.activeSubscription?.updatedAt || new Date(),
-      },
-      availableActions: [
-        { action: 'user', description: 'Sync current user subscription from Stripe' },
-        { action: 'stale', description: 'Sync all stale subscriptions (admin)' },
-        { action: 'emergency', description: 'Emergency full sync (admin)' },
-      ],
-    };
-  }),
-
-  /**
-   * Cancel pending subscription downgrade
-   */
-  cancelDowngrade: protectedProcedure.mutation(async ({ ctx }) => {
-    const result = await cancelPendingDowngrade(ctx.userId);
+  cancelDowngrade: orgOwnerProcedure.mutation(async ({ ctx }) => {
+    const result = await cancelPendingDowngrade(ctx.organizationId);
 
     if (!result.success) {
       throw new TRPCError({

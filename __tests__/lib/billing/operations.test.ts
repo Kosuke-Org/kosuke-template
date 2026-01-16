@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  cancelOrgSubscription,
   cancelPendingDowngrade,
-  cancelUserSubscription,
   createCheckoutSession,
   createCustomerPortalSession,
-  reactivateUserSubscription,
+  reactivateOrgSubscription,
 } from '@/lib/billing/operations';
-import { getUserSubscription } from '@/lib/billing/subscription';
+import { getOrgSubscription } from '@/lib/billing/subscription';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '@/lib/db';
 import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
@@ -17,6 +17,9 @@ vi.mock('@/lib/db', () => ({
   db: {
     query: {
       users: {
+        findFirst: vi.fn(),
+      },
+      organizations: {
         findFirst: vi.fn(),
       },
     },
@@ -55,7 +58,7 @@ vi.mock('@/lib/billing/client', () => ({
 }));
 
 vi.mock('@/lib/billing/subscription', () => ({
-  getUserSubscription: vi.fn(),
+  getOrgSubscription: vi.fn(),
 }));
 
 vi.mock('@/lib/billing/eligibility', () => ({
@@ -72,8 +75,8 @@ describe('Billing Operations', () => {
 
   describe('createCheckoutSession', () => {
     it('should handle invalid tier', async () => {
-      vi.mocked(getUserSubscription).mockResolvedValueOnce({
-        tier: SubscriptionTier.FREE,
+      vi.mocked(getOrgSubscription).mockResolvedValueOnce({
+        tier: SubscriptionTier.FREE_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: null,
         activeSubscription: null,
@@ -81,7 +84,7 @@ describe('Billing Operations', () => {
 
       const result = await createCheckoutSession({
         tier: 'invalid' as any,
-        userId: 'user_123',
+        organizationId: 'org_123',
         customerEmail: 'test@example.com',
       });
 
@@ -90,20 +93,19 @@ describe('Billing Operations', () => {
     });
   });
 
-  describe('cancelUserSubscription', () => {
+  describe('cancelOrgSubscription', () => {
     it('should cancel subscription', async () => {
       const now = new Date();
       const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-      vi.mocked(getUserSubscription).mockResolvedValueOnce({
-        tier: SubscriptionTier.PRO,
+      vi.mocked(getOrgSubscription).mockResolvedValueOnce({
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: futureDate,
         activeSubscription: {
           id: '1',
           stripeSubscriptionId: 'sub_123',
-          userId: 'user_123',
-          tier: SubscriptionTier.PRO,
+          tier: SubscriptionTier.PRO_MONTHLY,
           status: SubscriptionStatus.ACTIVE,
           createdAt: now,
           updatedAt: now,
@@ -113,33 +115,31 @@ describe('Billing Operations', () => {
           currentPeriodEnd: futureDate,
           cancelAtPeriodEnd: 'false',
           canceledAt: null,
-          organizationId: null,
-          subscriptionType: 'personal',
+          organizationId: 'org_123',
           scheduledDowngradeTier: null,
         },
       });
 
-      const result = await cancelUserSubscription('user_123', 'sub_123');
+      const result = await cancelOrgSubscription('org_123', 'sub_123');
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('canceled');
     });
   });
 
-  describe('reactivateUserSubscription', () => {
+  describe('reactivateOrgSubscription', () => {
     it('should reactivate subscription', async () => {
       const now = new Date();
       const futureDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-      vi.mocked(getUserSubscription).mockResolvedValueOnce({
-        tier: SubscriptionTier.PRO,
+      vi.mocked(getOrgSubscription).mockResolvedValueOnce({
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: futureDate,
         activeSubscription: {
           id: '1',
           stripeSubscriptionId: 'sub_123',
-          userId: 'user_123',
-          tier: SubscriptionTier.PRO,
+          tier: SubscriptionTier.PRO_MONTHLY,
           status: SubscriptionStatus.ACTIVE,
           createdAt: now,
           updatedAt: now,
@@ -149,13 +149,12 @@ describe('Billing Operations', () => {
           currentPeriodEnd: futureDate,
           cancelAtPeriodEnd: 'true',
           canceledAt: now,
-          organizationId: null,
-          subscriptionType: 'personal',
+          organizationId: 'org_123',
           scheduledDowngradeTier: null,
         },
       });
 
-      const result = await reactivateUserSubscription('user_123', 'sub_123');
+      const result = await reactivateOrgSubscription('org_123', 'sub_123');
 
       expect(result.success).toBe(true);
       expect(result.message).toContain('reactivated');
@@ -163,28 +162,27 @@ describe('Billing Operations', () => {
   });
 
   describe('createCustomerPortalSession', () => {
-    it('should handle missing user', async () => {
-      vi.mocked(db.query.users.findFirst).mockResolvedValueOnce(undefined);
+    it('should handle missing organization', async () => {
+      vi.mocked(db.query.organizations.findFirst).mockResolvedValueOnce(undefined);
 
-      const result = await createCustomerPortalSession('user_123');
+      const result = await createCustomerPortalSession('org_123');
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('Stripe customer');
     });
 
     it('should handle missing Stripe customer', async () => {
-      vi.mocked(db.query.users.findFirst).mockResolvedValueOnce({
-        id: '1',
-        userId: 'user_123',
-        email: 'test@example.com',
+      vi.mocked(db.query.organizations.findFirst).mockResolvedValueOnce({
+        id: 'org_123',
+        name: 'Test Org',
+        slug: 'test-org',
         stripeCustomerId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        image: null,
-        name: 'Test User',
+        logo: null,
       } as any);
 
-      const result = await createCustomerPortalSession('user_123');
+      const result = await createCustomerPortalSession('org_123');
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('Stripe customer');
@@ -195,15 +193,14 @@ describe('Billing Operations', () => {
     it('should handle no pending downgrade', async () => {
       const now = new Date();
 
-      vi.mocked(getUserSubscription).mockResolvedValueOnce({
-        tier: SubscriptionTier.PRO,
+      vi.mocked(getOrgSubscription).mockResolvedValueOnce({
+        tier: SubscriptionTier.PRO_MONTHLY,
         status: SubscriptionStatus.ACTIVE,
         currentPeriodEnd: now,
         activeSubscription: {
           id: '1',
           stripeSubscriptionId: 'sub_123',
-          userId: 'user_123',
-          tier: SubscriptionTier.PRO,
+          tier: SubscriptionTier.PRO_MONTHLY,
           status: SubscriptionStatus.ACTIVE,
           createdAt: now,
           updatedAt: now,
@@ -213,8 +210,7 @@ describe('Billing Operations', () => {
           currentPeriodEnd: now,
           cancelAtPeriodEnd: 'false',
           canceledAt: null,
-          organizationId: null,
-          subscriptionType: 'personal',
+          organizationId: 'org_123',
           scheduledDowngradeTier: null,
         },
       });

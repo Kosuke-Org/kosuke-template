@@ -14,6 +14,7 @@ import { useMutation } from '@tanstack/react-query';
 import { emailOtp, signIn, signOut, useSession } from '@/lib/auth/client';
 import { AUTH_ROUTES } from '@/lib/auth/constants';
 import { trpc } from '@/lib/trpc/client';
+import { OrgRoleValue } from '@/lib/types';
 
 import { useToast } from '@/hooks/use-toast';
 
@@ -45,6 +46,7 @@ export function useAuth() {
     isSignedIn: !!user,
     activeOrganizationSlug: session?.activeOrganizationSlug,
     activeOrganizationId: session?.activeOrganizationId,
+    activeOrganizationRole: session?.activeOrganizationRole as OrgRoleValue,
     refetch,
   };
 }
