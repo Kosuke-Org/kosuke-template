@@ -4,7 +4,10 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { mockedSession } from '@/__tests__/setup/mocks';
+
 import { auth } from '@/lib/auth/providers';
+import { createFreeTierSubscription, deleteStripeCustomer } from '@/lib/billing/operations';
 import { generateUniqueOrgSlug, switchToNextOrganization } from '@/lib/organizations';
 import { ERRORS } from '@/lib/services/constants';
 import {
@@ -46,6 +49,12 @@ vi.mock('@/lib/organizations', () => ({
 vi.mock('@/lib/storage', () => ({
   uploadProfileImage: vi.fn(),
   deleteProfileImage: vi.fn(),
+}));
+
+// Mock billing operations
+vi.mock('@/lib/billing/operations', () => ({
+  deleteStripeCustomer: vi.fn(),
+  createFreeTierSubscription: vi.fn(),
 }));
 
 describe('Organization Service', () => {
@@ -160,6 +169,11 @@ describe('Organization Service', () => {
         id: mockOrgId,
       });
       vi.mocked(auth.api.setActiveOrganization).mockResolvedValue(null);
+      vi.mocked(auth.api.getSession).mockResolvedValue(mockedSession);
+      vi.mocked(createFreeTierSubscription).mockResolvedValue({
+        success: true,
+        message: 'Free tier subscription created',
+      });
 
       const result = await createOrganization({ name: orgName, headers: mockHeaders });
 
@@ -178,6 +192,10 @@ describe('Organization Service', () => {
           organizationId: mockOrgId,
         },
         headers: mockHeaders,
+      });
+      expect(createFreeTierSubscription).toHaveBeenCalledWith({
+        organizationId: mockOrgId,
+        customerEmail: 'test@example.com',
       });
     });
 
@@ -254,6 +272,10 @@ describe('Organization Service', () => {
     it('should delete organization as owner', async () => {
       vi.mocked(auth.api.getActiveMemberRole).mockResolvedValue({ role: 'owner' });
       vi.mocked(auth.api.getFullOrganization).mockResolvedValue(mockOrg);
+      vi.mocked(deleteStripeCustomer).mockResolvedValue({
+        success: true,
+        message: 'Stripe customer deleted successfully',
+      });
 
       const result = await deleteOrganization({
         organizationId: mockOrgId,
@@ -265,6 +287,7 @@ describe('Organization Service', () => {
         success: true,
         message: 'Organization deleted successfully',
       });
+      expect(deleteStripeCustomer).toHaveBeenCalledWith(mockOrgId);
       expect(auth.api.deleteOrganization).toHaveBeenCalledWith({
         body: {
           organizationId: mockOrgId,
@@ -279,6 +302,10 @@ describe('Organization Service', () => {
 
       vi.mocked(auth.api.getActiveMemberRole).mockResolvedValue({ role: 'owner' });
       vi.mocked(auth.api.getFullOrganization).mockResolvedValue(orgWithLogo);
+      vi.mocked(deleteStripeCustomer).mockResolvedValue({
+        success: true,
+        message: 'Stripe customer deleted successfully',
+      });
 
       await deleteOrganization({
         organizationId: mockOrgId,

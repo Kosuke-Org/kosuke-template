@@ -148,14 +148,19 @@ export async function createFreeTierSubscription(params: {
 
     // Create Stripe subscription with metadata
     // The webhook will handle creating the database record
-    const stripeSubscription = await stripe.subscriptions.create({
-      customer: customerId,
-      items: [{ price: freePriceId }],
-      metadata: {
-        organizationId,
-        tier: SubscriptionTier.FREE_MONTHLY,
+    const stripeSubscription = await stripe.subscriptions.create(
+      {
+        customer: customerId,
+        items: [{ price: freePriceId }],
+        metadata: {
+          organizationId,
+          tier: SubscriptionTier.FREE_MONTHLY,
+        },
       },
-    });
+      {
+        idempotencyKey: `free-tier-${organizationId}`,
+      }
+    );
 
     console.log('✅ Created Stripe subscription:', stripeSubscription.id);
     console.log('⏳ Webhook will handle database record creation');

@@ -65,9 +65,15 @@ async function seedStripeProducts() {
 
         if (existingPrices.data.length > 0) {
           const existingPrice = existingPrices.data[0];
+          const currency = existingPrice.currency;
+          const currencySymbol = currency?.toLowerCase() === 'eur' ? '€' : '$';
+          const amount = existingPrice.unit_amount || 0;
+          const interval = existingPrice.recurring?.interval || 'month';
+
           console.log(`  ✅ Price already exists with lookup key: ${productConfig.lookupKey}`);
           console.log(`     Price ID: ${existingPrice.id}`);
           console.log(`     Product ID: ${existingPrice.product}`);
+          console.log(`     Amount: ${currencySymbol}${(amount / 100).toFixed(2)}/${interval}`);
 
           results.push({
             productId: existingPrice.product as string,
@@ -105,10 +111,16 @@ async function seedStripeProducts() {
             config.defaults.tax_behavior) as 'unspecified',
         });
 
+        const currency = productConfig.price.currency || config.defaults.currency;
+        const currencySymbol = currency.toLowerCase() === 'eur' ? '€' : '$';
+        const interval = productConfig.price.recurring.interval;
+
         console.log(`  ✅ Successfully created product and price`);
         console.log(`     Price ID: ${price.id}`);
         console.log(`     Lookup Key: ${productConfig.lookupKey}`);
-        console.log(`     Amount: $${(productConfig.price.unit_amount / 100).toFixed(2)}/month`);
+        console.log(
+          `     Amount: ${currencySymbol}${(productConfig.price.unit_amount / 100).toFixed(2)}/${interval}`
+        );
 
         results.push({
           productId: price.product as string,

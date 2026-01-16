@@ -1,5 +1,5 @@
 {
-  "id": "061c26ca-b4c6-4099-bd84-deac3796c5b4",
+  "id": "3e553073-759c-40cf-a444-635869a8c43e",
   "prevId": "65efe01c-884a-42d4-a694-a610b13ba799",
   "version": "7",
   "dialect": "postgresql",
@@ -1196,6 +1196,13 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
+        "org_subscriptions_organization_id_unique": {
+          "name": "org_subscriptions_organization_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "organization_id"
+          ]
+        },
         "org_subscriptions_stripe_subscription_id_unique": {
           "name": "org_subscriptions_stripe_subscription_id_unique",
           "nullsNotDistinct": false,

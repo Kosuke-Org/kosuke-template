@@ -167,6 +167,7 @@ export const orgSubscriptions = pgTable('org_subscriptions', {
   id: uuid('id').defaultRandom().primaryKey(),
   organizationId: uuid('organization_id')
     .notNull()
+    .unique() // Enforce one subscription per organization at database level
     .references(() => organizations.id, {
       onDelete: 'cascade',
     }),

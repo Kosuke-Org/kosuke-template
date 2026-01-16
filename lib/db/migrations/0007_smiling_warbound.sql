@@ -13,6 +13,7 @@ CREATE TABLE "org_subscriptions" (
 	"canceled_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "org_subscriptions_organization_id_unique" UNIQUE("organization_id"),
 	CONSTRAINT "org_subscriptions_stripe_subscription_id_unique" UNIQUE("stripe_subscription_id")
 );
 --> statement-breakpoint

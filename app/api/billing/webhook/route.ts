@@ -4,8 +4,10 @@ import { eq } from 'drizzle-orm';
 import Stripe from 'stripe';
 
 import { stripe } from '@/lib/billing/client';
+import { SubscriptionTier, SubscriptionTierType } from '@/lib/billing/products';
 import { db } from '@/lib/db';
 import { SubscriptionStatus, orgSubscriptions } from '@/lib/db/schema';
+import { getOrgById } from '@/lib/organizations';
 
 /**
  * Stripe Webhook Handler
@@ -83,17 +85,35 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Helper: Get organizationId from subscription metadata
+ * Helper: Get organizationId from subscription metadata with validation
  */
 function getOrganizationId(subscription: Stripe.Subscription): string | null {
-  return (subscription.metadata?.organizationId as string) || null;
+  const orgId = subscription.metadata?.organizationId as string;
+  if (!orgId || typeof orgId !== 'string' || orgId.trim() === '') {
+    console.error('❌ Invalid or missing organizationId in metadata:', subscription.metadata);
+    return null;
+  }
+  return orgId;
 }
 
 /**
- * Helper: Get tier from subscription metadata
+ * Helper: Get tier from subscription metadata with validation
  */
 function getTier(subscription: Stripe.Subscription): string | null {
-  return (subscription.metadata?.tier as string) || null;
+  const tier = subscription.metadata?.tier as SubscriptionTierType;
+  if (!tier || typeof tier !== 'string') {
+    console.error('❌ Invalid or missing tier in metadata:', subscription.metadata);
+    return null;
+  }
+
+  // Validate against known subscription tiers
+  const validTiers = Object.values(SubscriptionTier);
+  if (!validTiers.includes(tier)) {
+    console.error('❌ Invalid tier value in metadata:', tier, 'Valid tiers:', validTiers);
+    return null;
+  }
+
+  return tier;
 }
 
 /**
@@ -105,7 +125,19 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     const tier = getTier(subscription);
 
     if (!organizationId || !tier) {
-      console.error('❌ Missing metadata in subscription.created:', subscription.id);
+      console.error('❌ Missing or invalid metadata in subscription.created:', subscription.id);
+      return;
+    }
+
+    // Verify organization exists to prevent orphaned subscription records
+    const org = await getOrgById(organizationId);
+    if (!org) {
+      console.error(
+        '❌ Cannot create subscription for non-existent organization:',
+        organizationId,
+        'subscription:',
+        subscription.id
+      );
       return;
     }
 
@@ -334,6 +366,18 @@ async function handleSubscriptionScheduleCompleted(schedule: Stripe.Subscription
 
     if (!organizationId || !targetTier) {
       console.error('❌ Missing metadata in subscription_schedule.completed:', schedule.id);
+      return;
+    }
+
+    // Verify organization exists
+    const org = await getOrgById(organizationId);
+    if (!org) {
+      console.error(
+        '❌ Cannot complete schedule for non-existent organization:',
+        organizationId,
+        'schedule:',
+        schedule.id
+      );
       return;
     }
 

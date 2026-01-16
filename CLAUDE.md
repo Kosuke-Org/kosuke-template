@@ -785,10 +785,499 @@ The template uses a **dynamic Stripe integration** where products and pricing ar
 import { getOrgSubscription, hasFeatureAccess } from '@/lib/billing';
 import { SubscriptionTier } from '@/lib/billing/products';
 
-const subscription = await getOrgSubscription(userId);
+const subscription = await getOrgSubscription(organizationId);
 
 // Check feature access using tier hierarchy
 const hasProAccess = hasFeatureAccess(subscription.tier, SubscriptionTier.PRO_MONTHLY);
+```
+
+#### Subscription Operations & Lifecycle
+
+The template provides comprehensive subscription management operations through `lib/billing/operations.ts`:
+
+##### Core Operations
+
+1. **createCheckoutSession** - Create Stripe checkout for upgrades/new subscriptions
+   - Automatically detects downgrades and creates subscription schedules instead
+   - Handles both new subscriptions and tier changes
+   - Returns checkout URL for redirect
+
+2. **cancelOrgSubscription** - Cancel subscription at period end
+   - Subscription remains active until current period ends (grace period)
+   - Updates both Stripe and local database
+   - Checks eligibility before allowing cancellation
+
+3. **reactivateOrgSubscription** - Reactivate a canceled subscription
+   - Only works during grace period (before period end)
+   - Removes cancellation flag in Stripe and database
+   - Restores subscription to active state
+
+4. **createCustomerPortalSession** - Open Stripe Customer Portal
+   - Allows users to manage payment methods
+   - View billing history and invoices
+   - Returns portal URL for redirect
+
+5. **cancelPendingDowngrade** - Cancel a scheduled downgrade
+   - Finds and cancels subscription schedule in Stripe
+   - Reactivates current subscription
+   - Removes downgrade tracking from database
+
+##### Upgrade vs Downgrade Handling
+
+The system automatically differentiates between upgrades and downgrades based on price comparison:
+
+```typescript
+// In createCheckoutSession
+const currentPrice = await getTierPrice(currentSubscription.tier);
+const newPrice = await getTierPrice(tier);
+
+if (newPrice < currentPrice) {
+  // DOWNGRADE: Use subscription schedule (deferred change)
+  return createSubscriptionSchedule(params);
+} else {
+  // UPGRADE: Use immediate checkout session
+  return stripe.checkout.sessions.create({...});
+}
+```
+
+**Upgrade Flow (Immediate)**:
+
+- Creates Stripe Checkout session
+- User pays prorated amount immediately
+- Subscription updates instantly via webhook
+- Old subscription is replaced
+
+**Downgrade Flow (Deferred)**:
+
+- Creates subscription schedule starting at period end
+- Marks current subscription for cancellation (`cancel_at_period_end: true`)
+- Stores `scheduledDowngradeTier` in database
+- Current subscription continues until period ends
+- New lower-tier subscription activates automatically at period end
+
+##### Subscription States
+
+Defined in `lib/types/billing.ts`:
+
+```typescript
+export enum SubscriptionState {
+  FREE = 'free', // No paid subscription
+  ACTIVE = 'active', // Active paid subscription
+  CANCELED_GRACE_PERIOD = 'canceled_grace_period', // Canceled but still active
+  CANCELED_EXPIRED = 'canceled_expired', // Canceled and expired
+  PAST_DUE = 'past_due', // Payment failed
+  INCOMPLETE = 'incomplete', // Payment incomplete
+  UNPAID = 'unpaid', // Payment required
+}
+```
+
+##### Subscription Eligibility System
+
+The `getSubscriptionEligibility` function (`lib/billing/eligibility.ts`) determines what actions users can take:
+
+```typescript
+export interface SubscriptionEligibility {
+  canReactivate: boolean; // Can reactivate canceled subscription
+  canCreateNew: boolean; // Can create new subscription
+  canUpgrade: boolean; // Can upgrade/change tier
+  canCancel: boolean; // Can cancel subscription
+  state: SubscriptionState; // Current state
+  gracePeriodEnds?: Date; // When grace period ends (if applicable)
+  reason?: string; // Optional reason for restrictions
+}
+```
+
+**Eligibility Rules by State**:
+
+| State                          | canReactivate | canCreateNew | canUpgrade | canCancel |
+| ------------------------------ | ------------- | ------------ | ---------- | --------- |
+| FREE                           | ❌            | ✅           | ✅         | ❌        |
+| ACTIVE                         | ❌            | ❌           | ✅         | ✅        |
+| CANCELED_GRACE_PERIOD          | ✅            | ❌           | ❌         | ❌        |
+| CANCELED_EXPIRED               | ❌            | ✅           | ✅         | ❌        |
+| PAST_DUE / INCOMPLETE / UNPAID | ❌            | ✅           | ✅         | ❌        |
+
+**Key Business Rules**:
+
+- During grace period, users can ONLY reactivate - no new subscriptions or tier changes
+- Active subscriptions can be canceled or upgraded (including downgrades via schedule)
+- Free tier users can create new subscriptions or upgrade
+- Expired/failed subscriptions can be replaced with new ones
+
+##### Grace Period Handling
+
+When a subscription is canceled, it remains active until the current period ends:
+
+```typescript
+// In getOrgSubscription
+const isCancelAtPeriodEnd = activeSubscription.cancelAtPeriodEnd === 'true';
+const isInGracePeriod =
+  isCancelAtPeriodEnd &&
+  activeSubscription.currentPeriodEnd &&
+  new Date() < activeSubscription.currentPeriodEnd;
+
+// User still has access to paid tier during grace period
+if (isInGracePeriod) {
+  currentTier = subscriptionTier; // Keep paid tier access
+} else {
+  currentTier = SubscriptionTier.FREE_MONTHLY; // Downgrade to free
+}
+```
+
+##### Database Schema
+
+The `orgSubscriptions` table tracks subscription state:
+
+```typescript
+{
+  id: string;
+  organizationId: string; // Foreign key to organizations
+  stripeSubscriptionId: string; // Stripe subscription ID
+  stripeCustomerId: string; // Stripe customer ID
+  stripePriceId: string; // Stripe price ID
+  tier: SubscriptionTierType; // Lookup key (e.g., 'pro_monthly')
+  status: SubscriptionStatus; // active, canceled, past_due, etc.
+  cancelAtPeriodEnd: string; // 'true' or 'false' (boolean as string)
+  canceledAt: Date | null; // When cancellation was initiated
+  scheduledDowngradeTier: string | null; // Target tier for pending downgrade
+  currentPeriodStart: Date; // Billing period start
+  currentPeriodEnd: Date; // Billing period end (grace period deadline)
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+##### Usage Examples
+
+**Check eligibility before showing actions**:
+
+```typescript
+import { getSubscriptionEligibility } from '@/lib/billing/eligibility';
+import { getOrgSubscription } from '@/lib/billing/subscription';
+
+const subscription = await getOrgSubscription(organizationId);
+const eligibility = getSubscriptionEligibility(subscription);
+
+if (eligibility.canCancel) {
+  // Show cancel button
+}
+
+if (eligibility.canReactivate) {
+  // Show reactivate button with grace period warning
+  console.log(`Grace period ends: ${eligibility.gracePeriodEnds}`);
+}
+```
+
+**Handle subscription operations**:
+
+```typescript
+import {
+  cancelOrgSubscription,
+  reactivateOrgSubscription,
+  cancelPendingDowngrade
+} from '@/lib/billing/operations';
+
+// Cancel subscription
+const result = await cancelOrgSubscription(organizationId, stripeSubscriptionId);
+if (result.success) {
+  // Show success message: subscription continues until period end
+}
+
+// Reactivate during grace period
+const result = await reactivateOrgSubscription(organizationId, stripeSubscriptionId);
+
+// Cancel a pending downgrade
+const result = await cancelPendingDowngrade(organizationId);
+```
+
+**Create checkout for tier change**:
+
+```typescript
+import { createCheckoutSession } from '@/lib/billing/operations';
+import { SubscriptionTier } from '@/lib/billing/products';
+
+const result = await createCheckoutSession({
+  tier: SubscriptionTier.PRO_MONTHLY,
+  organizationId: org.id,
+  customerEmail: user.email,
+  redirectUrl: `${process.env.NEXT_PUBLIC_URL}/billing/success`,
+  cancelUrl: `${process.env.NEXT_PUBLIC_URL}/billing`,
+});
+
+if (result.success && result.data?.url) {
+  // System automatically detects if this is upgrade or downgrade
+  // Upgrade: redirects to Stripe Checkout
+  // Downgrade: creates schedule and redirects to success page
+  redirect(result.data.url);
+}
+```
+
+##### Webhook Integration
+
+Subscription changes are automatically synced via Stripe webhooks at `/api/billing/webhook`.
+
+**Key Webhook Events Handled**:
+
+1. **customer.subscription.created** - New subscription created
+   - Creates `orgSubscriptions` record
+   - Links to organization via metadata
+   - Sets initial tier and status
+
+2. **customer.subscription.updated** - Subscription modified
+   - Updates tier, status, billing period
+   - Handles cancellation flags
+   - Processes tier changes from upgrades
+
+3. **customer.subscription.deleted** - Subscription ended
+   - Marks subscription as canceled
+   - Handles grace period expiration
+   - Triggers downgrade to free tier
+
+4. **invoice.payment_succeeded** / **invoice.payment_failed**
+   - Updates payment status
+   - Handles billing retries
+   - Manages past_due state
+
+**Important Implementation Notes**:
+
+1. **Metadata is Critical**: Always include `organizationId` in subscription metadata
+
+   ```typescript
+   subscription_data: {
+     metadata: {
+       organizationId: organizationId,
+       tier: tier,
+     }
+   }
+   ```
+
+2. **Idempotency**: Webhook handlers should be idempotent (safe to run multiple times)
+   - Stripe may send duplicate webhook events
+   - Use `stripeSubscriptionId` to identify existing records
+   - Update operations instead of insert when record exists
+
+3. **Async Processing**: Webhooks are the source of truth for subscription state
+   - Local database operations are optimistic (update immediately)
+   - Webhooks provide eventual consistency
+   - Don't rely on immediate database state after Stripe API calls
+
+4. **Error Handling**: Webhook failures are logged but don't block Stripe operations
+   - Use cron sync job as backup (runs every 6 hours)
+   - Manual intervention may be needed for persistent failures
+
+##### Testing Subscription Flows
+
+**Local Testing with Stripe CLI**:
+
+```bash
+# Forward webhooks to local server
+stripe listen --forward-to localhost:3000/api/billing/webhook
+
+# Trigger test events
+stripe trigger customer.subscription.created
+stripe trigger customer.subscription.updated
+stripe trigger customer.subscription.deleted
+```
+
+**Test Checkout Flows**:
+
+```typescript
+// Use Stripe test mode with test cards
+// Card: 4242 4242 4242 4242 (Success)
+// Card: 4000 0000 0000 9995 (Decline)
+
+const session = await createCheckoutSession({
+  tier: SubscriptionTier.PRO_MONTHLY,
+  organizationId: testOrg.id,
+  customerEmail: 'test@example.com',
+  redirectUrl: 'http://localhost:3000/billing/success',
+  cancelUrl: 'http://localhost:3000/billing',
+});
+```
+
+**Test Grace Period**:
+
+```typescript
+// Cancel subscription
+await cancelOrgSubscription(orgId, subscriptionId);
+
+// Check eligibility during grace period
+const subscription = await getOrgSubscription(orgId);
+const eligibility = getSubscriptionEligibility(subscription);
+
+expect(eligibility.state).toBe(SubscriptionState.CANCELED_GRACE_PERIOD);
+expect(eligibility.canReactivate).toBe(true);
+expect(subscription.tier).toBe(SubscriptionTier.PRO_MONTHLY); // Still has access
+
+// Reactivate
+await reactivateOrgSubscription(orgId, subscriptionId);
+```
+
+**Test Downgrade Scheduling**:
+
+```typescript
+// Request downgrade from Business to Pro
+const result = await createCheckoutSession({
+  tier: SubscriptionTier.PRO_MONTHLY,
+  organizationId: orgId,
+  customerEmail: user.email,
+});
+
+// Check scheduled downgrade was created
+const subscription = await getOrgSubscription(orgId);
+expect(subscription.activeSubscription?.scheduledDowngradeTier).toBe(SubscriptionTier.PRO_MONTHLY);
+expect(subscription.tier).toBe(SubscriptionTier.BUSINESS_MONTHLY); // Still on Business
+
+// Cancel the downgrade
+await cancelPendingDowngrade(orgId);
+```
+
+##### Best Practices & Common Patterns
+
+**1. Always Check Eligibility Before Operations**
+
+```typescript
+// ❌ DON'T: Call operation without checking
+await cancelOrgSubscription(orgId, subId);
+
+// ✅ DO: Check eligibility first
+const subscription = await getOrgSubscription(orgId);
+const eligibility = getSubscriptionEligibility(subscription);
+
+if (eligibility.canCancel) {
+  await cancelOrgSubscription(orgId, subId);
+} else {
+  // Show appropriate message based on state
+  if (eligibility.state === SubscriptionState.CANCELED_GRACE_PERIOD) {
+    return 'Subscription is already canceled';
+  }
+}
+```
+
+**2. Handle Operation Results Properly**
+
+```typescript
+// Operations return OperationResult<T>
+const result = await createCheckoutSession({...});
+
+if (result.success && result.data?.url) {
+  // Success: redirect to checkout or show success message
+  redirect(result.data.url);
+} else {
+  // Failure: show user-friendly error message
+  toast.error(result.message);
+}
+```
+
+**3. Use Lookup Keys, Not Price IDs**
+
+```typescript
+// ❌ DON'T: Hardcode Stripe price IDs
+tier: 'price_1234567890';
+
+// ✅ DO: Use lookup keys (type-safe constants)
+tier: SubscriptionTier.PRO_MONTHLY; // 'pro_monthly'
+```
+
+**4. Respect Grace Periods**
+
+```typescript
+// During grace period, user still has paid tier access
+const subscription = await getOrgSubscription(orgId);
+
+// This will be the paid tier if still in grace period
+const currentTier = subscription.tier;
+
+// Check if in grace period
+const eligibility = getSubscriptionEligibility(subscription);
+if (eligibility.state === SubscriptionState.CANCELED_GRACE_PERIOD) {
+  // Show warning: "Your subscription ends on {gracePeriodEnds}"
+  console.log(`Access until: ${eligibility.gracePeriodEnds}`);
+}
+```
+
+**5. Handle Scheduled Downgrades in UI**
+
+```typescript
+const subscription = await getOrgSubscription(orgId);
+
+if (subscription.activeSubscription?.scheduledDowngradeTier) {
+  // Show: "You will downgrade to {tier} on {date}"
+  // Offer "Cancel Downgrade" button
+  const targetTier = subscription.activeSubscription.scheduledDowngradeTier;
+  const downgradDate = subscription.currentPeriodEnd;
+
+  // User can cancel the downgrade
+  await cancelPendingDowngrade(orgId);
+}
+```
+
+**6. Organization ID vs User ID**
+
+```typescript
+// ⚠️ IMPORTANT: Use organizationId, not userId
+// Subscriptions are organization-scoped, not user-scoped
+
+// ✅ Correct
+const subscription = await getOrgSubscription(organization.id);
+
+// ❌ Wrong
+const subscription = await getOrgSubscription(user.id); // This will fail
+```
+
+**7. Error Handling Pattern**
+
+```typescript
+try {
+  const result = await cancelOrgSubscription(orgId, subId);
+
+  if (!result.success) {
+    // Business logic error (e.g., can't cancel, wrong subscription)
+    toast.error(result.message);
+    return;
+  }
+
+  // Success
+  toast.success(result.message);
+  revalidatePath('/billing');
+} catch (error) {
+  // Unexpected error (network, Stripe API, database)
+  console.error('Subscription operation failed:', error);
+  toast.error('An unexpected error occurred. Please try again.');
+}
+```
+
+**8. Feature Gating Pattern**
+
+```typescript
+import { hasFeatureAccess } from '@/lib/billing/subscription';
+import { SubscriptionTier } from '@/lib/billing/products';
+
+// Server-side feature check
+export async function POST(req: Request) {
+  const subscription = await getOrgSubscription(organizationId);
+
+  if (!hasFeatureAccess(subscription.tier, SubscriptionTier.PRO_MONTHLY)) {
+    return Response.json(
+      { error: 'This feature requires a Pro subscription' },
+      { status: 403 }
+    );
+  }
+
+  // Feature logic...
+}
+
+// Client-side UI gating
+function FeatureButton() {
+  const { subscription } = useSubscription();
+  const hasPro = hasFeatureAccess(subscription.tier, SubscriptionTier.PRO_MONTHLY);
+
+  return (
+    <Button disabled={!hasPro}>
+      {hasPro ? 'Use Feature' : 'Upgrade to Pro'}
+    </Button>
+  );
+}
 ```
 
 #### Tier Hierarchy and Feature Access
@@ -847,6 +1336,101 @@ hasFeatureAccess('free_monthly', 'pro_monthly'); // ❌ false (level 0 < 1)
 2. Multiple products can share the same tierLevel (e.g., monthly and yearly)
 3. Higher tier users automatically get access to all lower tier features
 4. Products can be reordered in the array for display purposes without affecting access logic
+
+#### Free Tier & Organization Lifecycle
+
+**All organizations start with a free tier subscription** to simplify the upgrade flow and maintain consistency:
+
+##### Free Tier Creation
+
+When an organization is created, the system automatically creates a free-tier Stripe subscription:
+
+```typescript
+// Called during organization creation
+import { createFreeTierSubscription } from '@/lib/billing/operations';
+
+const result = await createFreeTierSubscription({
+  organizationId: org.id,
+  customerEmail: user.email,
+});
+```
+
+**How it works**:
+
+1. Creates (or retrieves) Stripe customer for the organization
+2. Creates Stripe subscription with free tier price (using lookup key)
+3. Uses idempotency key (`free-tier-${organizationId}`) to prevent duplicates
+4. Webhook handles database record creation (`orgSubscriptions` table)
+5. Metadata includes `organizationId` and `tier` for webhook processing
+
+**Race Condition Protection**:
+
+- Database has unique constraint on `organization_id` column
+- Stripe idempotency prevents duplicate subscriptions on retries
+- Webhook fails gracefully if subscription record already exists
+- Function checks for existing subscription before creating
+
+##### Organization Deletion
+
+When an organization is deleted, the system cleans up Stripe resources:
+
+```typescript
+import { deleteStripeCustomer } from '@/lib/billing/operations';
+
+const result = await deleteStripeCustomer(organizationId);
+```
+
+**How it works**:
+
+1. Retrieves organization's `stripeCustomerId` from database
+2. Deletes customer in Stripe (automatically cancels all subscriptions)
+3. Returns success even if Stripe deletion fails (logs error for manual intervention)
+4. Prevents organization deletion from failing due to billing cleanup issues
+
+**Important**: The function is graceful - it won't block organization deletion if Stripe cleanup fails, ensuring user experience isn't disrupted by payment provider issues.
+
+##### Customer Management
+
+**Get or Create Pattern**:
+The `getOrCreateStripeCustomer` function (internal) ensures every organization has a Stripe customer:
+
+```typescript
+// Used internally by operations
+async function getOrCreateStripeCustomer(
+  organizationId: string,
+  customerEmail: string
+): Promise<string> {
+  // 1. Check if org already has stripeCustomerId
+  const org = await db.query.organizations.findFirst({
+    where: eq(organizations.id, organizationId),
+  });
+
+  if (org?.stripeCustomerId) {
+    return org.stripeCustomerId; // Return existing
+  }
+
+  // 2. Create new Stripe customer
+  const customer = await stripe.customers.create({
+    email: customerEmail,
+    name: org?.name,
+    metadata: { organizationId },
+  });
+
+  // 3. Save customer ID to organization
+  await db
+    .update(organizations)
+    .set({ stripeCustomerId: customer.id })
+    .where(eq(organizations.id, organizationId));
+
+  return customer.id;
+}
+```
+
+This pattern ensures:
+
+- Organizations can upgrade seamlessly (already have Stripe customer)
+- No duplicate customers are created
+- Metadata links Stripe customer to organization for webhook processing
 
 #### Adding New Pricing Tiers
 
