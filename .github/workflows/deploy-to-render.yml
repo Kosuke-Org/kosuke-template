@@ -23,11 +23,13 @@ jobs:
           DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
           echo "Deploying tag ${{ steps.tag.outputs.tag }} to Render..."
-
+          
           if [ -z "$DEPLOY_HOOK_URL" ]; then
             echo "Error: RENDER_DEPLOY_HOOK_URL secret is not set"
             exit 1
           fi
+          
+          curl "$DEPLOY_HOOK_URL"
 
       - name: Deployment Summary
         if: always()
