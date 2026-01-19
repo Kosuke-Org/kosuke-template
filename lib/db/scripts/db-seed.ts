@@ -15,6 +15,7 @@ import { faker } from '@faker-js/faker';
 import { eq } from 'drizzle-orm';
 
 import { stripe } from '@/lib/billing/client';
+import { withPrefix } from '@/lib/billing/lookup-keys';
 import { db } from '@/lib/db/drizzle';
 import type { NewOrder, OrderStatus } from '@/lib/types';
 import { ORG_ROLES } from '@/lib/types/organization';
@@ -161,14 +162,17 @@ async function seed() {
     // Step 6: Create subscriptions with Stripe customers and subscriptions
     console.log('💳 Creating subscriptions...');
 
-    // Fetch Stripe free tier price using lookup key
+    // Fetch Stripe free tier price using lookup key (with prefix if configured)
     let freePriceId: string | null = null;
 
     try {
-      console.log('  🔍 Fetching free tier price from Stripe...');
+      const freeTierLookupKey = withPrefix(SubscriptionTier.FREE_MONTHLY);
+      console.log(
+        `  🔍 Fetching free tier price from Stripe (lookup key: ${freeTierLookupKey})...`
+      );
 
       const freePrices = await stripe.prices.list({
-        lookup_keys: [SubscriptionTier.FREE_MONTHLY],
+        lookup_keys: [freeTierLookupKey],
         limit: 1,
         active: true,
       });

@@ -5,7 +5,7 @@ import { orgSubscriptions } from '@/lib/db/schema';
 import { SubscriptionStatus, SubscriptionTier, type SubscriptionTierType } from '@/lib/db/schema';
 import type { OrgSubscriptionInfo } from '@/lib/types';
 
-import { getAllLookupKeys } from './products';
+import { getAllLookupKeys } from './lookup-keys';
 import productsConfig from './products.json';
 
 /**

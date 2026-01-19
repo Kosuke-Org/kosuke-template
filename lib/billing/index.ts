@@ -33,7 +33,7 @@ export { BILLING_URLS } from './config';
 export type { PricingData } from './config';
 
 // Products configuration (single source of truth)
-export { SubscriptionTier, getAllLookupKeys } from './products';
+export { SubscriptionTier } from './products';
 export type { SubscriptionTierType } from './products';
 
 // Lookup key helpers (for multi-tenant support)
@@ -42,7 +42,7 @@ export {
   withPrefix,
   stripPrefix,
   getAllPrefixedLookupKeys,
-  getAllBaseLookupKeys,
+  getAllLookupKeys,
 } from './lookup-keys';
 
 // Client and types

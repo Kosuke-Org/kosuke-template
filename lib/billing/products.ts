@@ -15,16 +15,10 @@
  * - Products can be reordered in the array without breaking access logic
  * - If tierLevel is missing, falls back to array index for backward compatibility
  * - Multiple products can share the same tierLevel (e.g., pro_monthly and pro_yearly)
- *
- * MULTI-TENANT SUPPORT:
- * - For sandboxes/staging: Uses KOSUKE_PROJECT_ID as prefix to avoid collisions in shared Stripe test account
- * - For production: No prefix (BYOK - each user has their own Stripe account)
  */
-import productsConfig from './products.json';
 
 /**
  * Explicit subscription tier constants for type safety and clarity.
- * These are UNPREFIXED base keys used in code and stored in database.
  *
  * IMPORTANT: When adding a new tier to products.json, update this enum manually.
  * This explicit approach is preferred over dynamic generation for:
@@ -41,11 +35,3 @@ export const SubscriptionTier = {
 
 // Type for subscription tiers (unprefixed base lookup keys)
 export type SubscriptionTierType = (typeof SubscriptionTier)[keyof typeof SubscriptionTier];
-
-/**
- * Get all available lookup keys (unprefixed base keys)
- * For Stripe API calls, use getAllPrefixedLookupKeys() from lookup-keys.ts
- */
-export function getAllLookupKeys(): string[] {
-  return productsConfig.products.map((p) => p.lookupKey);
-}

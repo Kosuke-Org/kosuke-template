@@ -49,9 +49,10 @@ export function stripPrefix(prefixedKey: string): string {
 }
 
 /**
- * Get all lookup keys from products.json (unprefixed base keys)
+ * Get all available lookup keys (unprefixed base keys)
+ * For Stripe API calls, use getAllPrefixedLookupKeys() from lookup-keys.ts
  */
-export function getAllBaseLookupKeys(): string[] {
+export function getAllLookupKeys(): string[] {
   return productsConfig.products.map((p) => p.lookupKey);
 }
 
@@ -59,7 +60,7 @@ export function getAllBaseLookupKeys(): string[] {
  * Get all lookup keys with prefix applied (for Stripe API calls)
  */
 export function getAllPrefixedLookupKeys(): string[] {
-  const baseKeys = getAllBaseLookupKeys();
+  const baseKeys = getAllLookupKeys();
   const prefix = getProductPrefix();
 
   if (!prefix) return baseKeys;

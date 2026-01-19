@@ -122,7 +122,7 @@ async function seedStripeProducts() {
 
         // First create the product with marketing_features
         const product = await stripe.products.create({
-          name: productConfig.product.name,
+          name: productConfig.product.name + (prefix ? ` (project: ${prefix})` : ''),
           description: productConfig.product.description,
           marketing_features: productConfig.features.map((feature) => ({ name: feature })),
         });
