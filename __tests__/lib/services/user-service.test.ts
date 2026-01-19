@@ -16,6 +16,7 @@ import {
   isUserAdmin,
   updateDisplayName,
   updateNotificationSettings,
+  validateUserDeletion,
 } from '@/lib/services/user-service';
 import type { NotificationSettings } from '@/lib/types';
 
@@ -643,6 +644,170 @@ describe('User Service', () => {
 
       await expect(deleteUserProfileImage(mockUserId)).rejects.toThrow(
         'No profile image to delete'
+      );
+    });
+  });
+
+  describe('validateUserDeletion', () => {
+    const mockUserId = 'user-123';
+    const mockOrgId1 = 'org-123';
+    const mockOrgId2 = 'org-456';
+
+    /**
+     * Helper to create a mock query chain for db.select()
+     * This creates a cleaner mock that matches Drizzle's query builder pattern
+     */
+    const createMockQuery = (result: unknown) =>
+      ({
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue(result),
+          }),
+          where: vi.fn().mockResolvedValue(result),
+        }),
+      }) as never;
+
+    it('should pass validation when user is not an owner of any organization', async () => {
+      vi.mocked(db.select).mockReturnValueOnce(createMockQuery([]));
+
+      await expect(validateUserDeletion(mockUserId)).resolves.toBeUndefined();
+    });
+
+    it('should pass validation when user is owner but not sole owner', async () => {
+      const ownerMemberships = [
+        {
+          organizationId: mockOrgId1,
+          organizationName: 'Test Org',
+          role: 'owner',
+        },
+      ];
+
+      vi.mocked(db.select)
+        .mockReturnValueOnce(createMockQuery(ownerMemberships))
+        .mockReturnValueOnce(createMockQuery([{ count: 2 }])); // 2 owners
+
+      await expect(validateUserDeletion(mockUserId)).resolves.toBeUndefined();
+    });
+
+    it('should throw error when user is sole owner of one organization', async () => {
+      const ownerMemberships = [
+        {
+          organizationId: mockOrgId1,
+          organizationName: 'Test Org',
+          role: 'owner',
+        },
+      ];
+
+      vi.mocked(db.select)
+        .mockReturnValueOnce(createMockQuery(ownerMemberships))
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }]));
+
+      await expect(validateUserDeletion(mockUserId)).rejects.toThrow(
+        'Cannot delete user: they are the sole owner of 1 organization(s): Test Org. Transfer ownership first.'
+      );
+    });
+
+    it('should throw error when user is sole owner of multiple organizations', async () => {
+      const ownerMemberships = [
+        {
+          organizationId: mockOrgId1,
+          organizationName: 'Test Org 1',
+          role: 'owner',
+        },
+        {
+          organizationId: mockOrgId2,
+          organizationName: 'Test Org 2',
+          role: 'owner',
+        },
+      ];
+
+      vi.mocked(db.select)
+        .mockReturnValueOnce(createMockQuery(ownerMemberships))
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }])) // sole owner of org 1
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }])); // sole owner of org 2
+
+      await expect(validateUserDeletion(mockUserId)).rejects.toThrow(
+        'Cannot delete user: they are the sole owner of 2 organization(s): Test Org 1, Test Org 2. Transfer ownership first.'
+      );
+    });
+
+    it('should consider count <= 1 as sole owner (edge case with count: 0)', async () => {
+      const ownerMemberships = [
+        {
+          organizationId: mockOrgId1,
+          organizationName: 'Test Org',
+          role: 'owner',
+        },
+      ];
+
+      vi.mocked(db.select)
+        .mockReturnValueOnce(createMockQuery(ownerMemberships))
+        .mockReturnValueOnce(createMockQuery([{ count: 0 }])); // count: 0 should also trigger error
+
+      await expect(validateUserDeletion(mockUserId)).rejects.toThrow(
+        'Cannot delete user: they are the sole owner of 1 organization(s): Test Org. Transfer ownership first.'
+      );
+    });
+
+    it('should NOT throw when count is exactly 2 (has co-owner)', async () => {
+      const ownerMemberships = [
+        {
+          organizationId: mockOrgId1,
+          organizationName: 'Test Org',
+          role: 'owner',
+        },
+      ];
+
+      vi.mocked(db.select)
+        .mockReturnValueOnce(createMockQuery(ownerMemberships))
+        .mockReturnValueOnce(createMockQuery([{ count: 2 }])); // count: 2 means has co-owner
+
+      await expect(validateUserDeletion(mockUserId)).resolves.toBeUndefined();
+    });
+
+    it('should pass validation when user owns multiple orgs but is not sole owner of any', async () => {
+      const ownerMemberships = [
+        {
+          organizationId: mockOrgId1,
+          organizationName: 'Test Org 1',
+          role: 'owner',
+        },
+        {
+          organizationId: mockOrgId2,
+          organizationName: 'Test Org 2',
+          role: 'owner',
+        },
+      ];
+
+      vi.mocked(db.select)
+        .mockReturnValueOnce(createMockQuery(ownerMemberships))
+        .mockReturnValueOnce(createMockQuery([{ count: 2 }])) // 2 owners in org 1
+        .mockReturnValueOnce(createMockQuery([{ count: 3 }])); // 3 owners in org 2
+
+      await expect(validateUserDeletion(mockUserId)).resolves.toBeUndefined();
+    });
+
+    it('should throw error when user is sole owner of some orgs but not all', async () => {
+      const ownerMemberships = [
+        {
+          organizationId: mockOrgId1,
+          organizationName: 'Test Org 1',
+          role: 'owner',
+        },
+        {
+          organizationId: mockOrgId2,
+          organizationName: 'Test Org 2',
+          role: 'owner',
+        },
+      ];
+
+      vi.mocked(db.select)
+        .mockReturnValueOnce(createMockQuery(ownerMemberships))
+        .mockReturnValueOnce(createMockQuery([{ count: 1 }])) // sole owner of org 1
+        .mockReturnValueOnce(createMockQuery([{ count: 2 }])); // co-owner of org 2
+
+      await expect(validateUserDeletion(mockUserId)).rejects.toThrow(
+        'Cannot delete user: they are the sole owner of 1 organization(s): Test Org 1. Transfer ownership first.'
       );
     });
   });

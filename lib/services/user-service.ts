@@ -3,13 +3,13 @@
  * Handles all user-related database operations and business logic
  * Separates data access from API layer (tRPC routers)
  */
-import { eq } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db/drizzle';
-import { users } from '@/lib/db/schema';
+import { orgMemberships, organizations, users } from '@/lib/db/schema';
 import { ERRORS, ERROR_MESSAGES } from '@/lib/services';
 import type { NotificationSettings } from '@/lib/types';
-import { USER_ROLES } from '@/lib/types/organization';
+import { ORG_ROLES, USER_ROLES } from '@/lib/types/organization';
 
 /**
  * Get user by ID
@@ -236,4 +236,47 @@ export async function deleteUserProfileImage(userId: string): Promise<string> {
     .where(eq(users.id, userId));
 
   return user.profileImageUrl;
+}
+
+/**
+ * Validate if a user can be deleted
+ * Checks if user is the sole owner of any organizations
+ * @throws Error if user is sole owner of any organization (to prevent orphaned subscriptions)
+ */
+export async function validateUserDeletion(userId: string): Promise<void> {
+  // Check if user is sole owner of any organizations
+  const userMemberships = await db
+    .select({
+      organizationId: orgMemberships.organizationId,
+      organizationName: organizations.name,
+      role: orgMemberships.role,
+    })
+    .from(orgMemberships)
+    .innerJoin(organizations, eq(organizations.id, orgMemberships.organizationId))
+    .where(and(eq(orgMemberships.userId, userId), eq(orgMemberships.role, ORG_ROLES.OWNER)));
+
+  // For each org where user is owner, check if they're the only owner
+  const problematicOrgs: string[] = [];
+  for (const membership of userMemberships) {
+    const [ownerCount] = await db
+      .select({ count: count() })
+      .from(orgMemberships)
+      .where(
+        and(
+          eq(orgMemberships.organizationId, membership.organizationId),
+          eq(orgMemberships.role, ORG_ROLES.OWNER)
+        )
+      );
+
+    if (ownerCount.count <= 1) {
+      problematicOrgs.push(membership.organizationName);
+    }
+  }
+
+  if (problematicOrgs.length > 0) {
+    throw new Error(
+      `Cannot delete user: they are the sole owner of ${problematicOrgs.length} organization(s): ${problematicOrgs.join(', ')}. Transfer ownership first.`,
+      { cause: ERRORS.FORBIDDEN }
+    );
+  }
 }

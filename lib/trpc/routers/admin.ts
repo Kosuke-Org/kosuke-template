@@ -22,6 +22,7 @@ import { createQueue } from '@/lib/queue/client';
 import { QUEUE_NAMES } from '@/lib/queue/config';
 import * as llmLogsService from '@/lib/services/llm-logs-service';
 import * as ragService from '@/lib/services/rag-service';
+import { validateUserDeletion } from '@/lib/services/user-service';
 import { ORG_ROLES } from '@/lib/types/organization';
 import { handleApiError } from '@/lib/utils';
 
@@ -220,23 +221,31 @@ export const adminRouter = router({
     /**
      * Hard deletes a user from the database.
      * Uses Better Auth's admin.removeUser API which properly handles session cleanup
+     * Prevents deletion if user is the sole owner of any organization (to avoid orphaned subscriptions)
      */
     delete: superAdminProcedure.input(adminDeleteUserSchema).mutation(async ({ input }) => {
       const { id: userId } = input;
 
-      await auth.api.revokeUserSessions({
-        body: {
-          userId,
-        },
-        headers: await headers(),
-      });
+      // Validate that user can be deleted (not sole owner of any org)
+      try {
+        await validateUserDeletion(userId);
 
-      await auth.api.removeUser({
-        body: {
-          userId,
-        },
-        headers: await headers(),
-      });
+        await auth.api.removeUser({
+          body: {
+            userId,
+          },
+          headers: await headers(),
+        });
+
+        await auth.api.revokeUserSessions({
+          body: {
+            userId,
+          },
+          headers: await headers(),
+        });
+      } catch (error) {
+        handleApiError(error);
+      }
     }),
   }),
 

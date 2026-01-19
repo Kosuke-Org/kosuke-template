@@ -117,6 +117,7 @@ export async function removeMember(params: {
 
 /**
  * Leave an organization and switch to next available organization
+ * auth.api.leaveOrganization already prevents leaving if user is the sole owner (to avoid orphaned organizations with subscriptions)
  */
 export async function leaveOrganization(params: {
   organizationId: Organization['id'];
