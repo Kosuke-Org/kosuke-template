@@ -36,6 +36,15 @@ export type { PricingData } from './config';
 export { SubscriptionTier, getAllLookupKeys } from './products';
 export type { SubscriptionTierType } from './products';
 
+// Lookup key helpers (for multi-tenant support)
+export {
+  getProductPrefix,
+  withPrefix,
+  stripPrefix,
+  getAllPrefixedLookupKeys,
+  getAllBaseLookupKeys,
+} from './lookup-keys';
+
 // Client and types
 export { stripe } from './client';
 export type {

@@ -9,7 +9,8 @@ import { type CheckoutSessionParams, type OperationResult } from '@/lib/types';
 
 import { stripe } from './client';
 import { getSubscriptionEligibility } from './eligibility';
-import { SubscriptionTierType, getAllLookupKeys } from './products';
+import { getAllPrefixedLookupKeys, stripPrefix, withPrefix } from './lookup-keys';
+import { SubscriptionTierType } from './products';
 import { getOrgSubscription } from './subscription';
 
 /**
@@ -20,13 +21,14 @@ import { getOrgSubscription } from './subscription';
 /**
  * Get pricing information from Stripe
  * Fetches all active prices using lookup keys and transforms to app format
+ * Uses prefixed lookup keys for Stripe API, returns unprefixed keys in response
  */
 export async function getPricingFromStripe(): Promise<PricingData> {
   try {
-    // Fetch all lookup keys from products.json
-    const lookupKeys = getAllLookupKeys();
+    // Fetch all lookup keys from products.json (with prefix applied)
+    const lookupKeys = getAllPrefixedLookupKeys();
 
-    // Fetch prices from Stripe using lookup keys
+    // Fetch prices from Stripe using prefixed lookup keys
     const pricesWithProducts = await stripe.prices.list({
       active: true,
       lookup_keys: lookupKeys,
@@ -50,7 +52,10 @@ export async function getPricingFromStripe(): Promise<PricingData> {
 
       const product = price.product as Stripe.Product;
 
-      pricing[price.lookup_key] = {
+      // Strip prefix to get base lookup key for app use
+      const baseLookupKey = stripPrefix(price.lookup_key);
+
+      pricing[baseLookupKey] = {
         price: (price.unit_amount || 0) / 100, // Convert cents to dollars
         name: product.name,
         description: product.description ?? '',
@@ -62,7 +67,7 @@ export async function getPricingFromStripe(): Promise<PricingData> {
             })) || [],
         priceId: price.id,
         productId: product.id,
-        lookupKey: price.lookup_key,
+        lookupKey: baseLookupKey,
       };
     }
 
@@ -229,18 +234,21 @@ export async function deleteStripeCustomer(organizationId: string): Promise<Oper
 
 /**
  * Get Stripe price ID by lookup key
- * @param lookupKey - The Stripe lookup key (e.g., 'free_monthly', 'pro_monthly')
+ * @param lookupKey - The base lookup key (e.g., 'free_monthly', 'pro_monthly')
+ * Applies prefix before querying Stripe
  */
 async function getPriceByLookupKey(lookupKey: SubscriptionTierType) {
   try {
+    const prefixedKey = await withPrefix(lookupKey);
+
     const prices = await stripe.prices.list({
-      lookup_keys: [lookupKey],
+      lookup_keys: [prefixedKey],
       limit: 1,
       active: true,
     });
 
     if (prices.data.length === 0) {
-      console.error(`No active price found for lookup key: ${lookupKey}`);
+      console.error(`No active price found for lookup key: ${prefixedKey} (base: ${lookupKey})`);
       return null;
     }
 
@@ -358,12 +366,16 @@ async function createSubscriptionSchedule(
 
 /**
  * Get price amount for a lookup key (fetches from Stripe)
- * @param lookupKey - The Stripe lookup key (e.g., 'free_monthly', 'pro_monthly')
+ * @param lookupKey - The base lookup key (e.g., 'free_monthly', 'pro_monthly')
+ * Applies prefix before querying Stripe
  */
 async function getTierPrice(lookupKey: string): Promise<number> {
   try {
+    // Apply prefix for Stripe API call
+    const prefixedKey = withPrefix(lookupKey);
+
     const prices = await stripe.prices.list({
-      lookup_keys: [lookupKey],
+      lookup_keys: [prefixedKey],
       limit: 1,
       active: true,
     });
