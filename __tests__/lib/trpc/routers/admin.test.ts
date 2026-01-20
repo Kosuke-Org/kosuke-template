@@ -20,9 +20,16 @@ vi.mock('next/headers', () => ({
   headers: vi.fn(() => ({})),
 }));
 
+vi.mock('@/lib/db/drizzle', () => ({
+  db: {
+    select: vi.fn(),
+  },
+}));
+
 describe('Admin Router', () => {
   let caller: Awaited<ReturnType<typeof createCaller>>;
   let auth: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  let db: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const adminUserId = 'admin_123';
   const regularUserId = 'user_123';
@@ -32,6 +39,7 @@ describe('Admin Router', () => {
     vi.clearAllMocks();
 
     ({ auth } = await import('@/lib/auth/providers'));
+    ({ db } = await import('@/lib/db/drizzle'));
   });
 
   describe('superAdminProcedure authorization', () => {
@@ -251,7 +259,17 @@ describe('Admin Router', () => {
       caller = await createCaller(ctx);
     });
 
-    it('deletes a user', async () => {
+    it('deletes a user when they are not a sole owner', async () => {
+      // Mock validateUserDeletion query - user is not a sole owner
+      const mockSelect = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([]), // User is not an owner of any org
+          }),
+        }),
+      });
+      db.select.mockReturnValue(mockSelect());
+
       auth.api.revokeUserSessions.mockResolvedValue({});
       auth.api.removeUser.mockResolvedValue({});
 
@@ -265,6 +283,40 @@ describe('Admin Router', () => {
         body: { userId: testUserId },
         headers: expect.any(Object),
       });
+    });
+
+    it('throws error when user is sole owner of an organization', async () => {
+      // Mock validateUserDeletion query - user is sole owner
+      const ownerMemberships = [
+        {
+          organizationId: 'org-123',
+          organizationName: 'Test Org',
+          role: 'owner',
+        },
+      ];
+
+      const mockSelect1 = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          innerJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue(ownerMemberships),
+          }),
+        }),
+      });
+
+      const mockSelect2 = vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([{ count: 1 }]), // sole owner
+        }),
+      });
+
+      db.select.mockReturnValueOnce(mockSelect1()).mockReturnValueOnce(mockSelect2());
+
+      await expect(caller.admin.users.delete({ id: testUserId })).rejects.toThrow(
+        'Cannot delete user: they are the sole owner of 1 organization(s): Test Org'
+      );
+
+      // Should not call removeUser if validation fails
+      expect(auth.api.removeUser).not.toHaveBeenCalled();
     });
   });
 });

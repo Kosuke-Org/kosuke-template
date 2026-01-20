@@ -26,7 +26,7 @@ export type {
 
 // Billing and subscription types
 export type {
-  UserSubscriptionInfo,
+  OrgSubscriptionInfo,
   OperationResult,
   SubscriptionEligibility,
   CheckoutSessionParams,

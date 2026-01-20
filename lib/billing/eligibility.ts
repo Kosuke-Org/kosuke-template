@@ -1,15 +1,15 @@
-import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
+import { SubscriptionStatus, SubscriptionTier, type SubscriptionTierType } from '@/lib/db/schema';
 import {
+  type OrgSubscriptionInfo,
   type SubscriptionEligibility,
   SubscriptionState,
-  type UserSubscriptionInfo,
 } from '@/lib/types';
-
-import { PRICING } from './config';
 
 /**
  * Subscription eligibility and state calculation
  * Contains business logic for determining what actions users can take
+ *
+ * Note: tier parameter is now a lookup_key (e.g., 'free_monthly', 'pro_monthly')
  */
 
 /**
@@ -17,12 +17,12 @@ import { PRICING } from './config';
  */
 export function calculateSubscriptionState(
   status: SubscriptionStatus | null,
-  tier: SubscriptionTier,
+  tier: SubscriptionTierType,
   currentPeriodEnd: Date | null,
   cancelAtPeriodEnd?: string | null
 ): SubscriptionState {
   // Free tier is always free
-  if (tier === SubscriptionTier.FREE) {
+  if (tier === SubscriptionTier.FREE_MONTHLY) {
     return SubscriptionState.FREE;
   }
 
@@ -72,7 +72,7 @@ export function calculateSubscriptionState(
  * Get comprehensive subscription eligibility for all possible actions
  */
 export function getSubscriptionEligibility(
-  subscription: UserSubscriptionInfo
+  subscription: OrgSubscriptionInfo
 ): SubscriptionEligibility {
   const { status, tier, currentPeriodEnd, activeSubscription } = subscription;
   const cancelAtPeriodEnd = activeSubscription?.cancelAtPeriodEnd;
@@ -115,25 +115,4 @@ export function getSubscriptionEligibility(
   }
 
   return eligibility;
-}
-
-/**
- * Get tier display information
- */
-export function getTierInfo(tier: SubscriptionTier) {
-  return PRICING[tier];
-}
-
-/**
- * Get all available tiers for upgrade/downgrade
- */
-export function getAvailableTiers(currentTier: SubscriptionTier) {
-  return Object.entries(PRICING).map(([key, info]) => ({
-    id: key as SubscriptionTier,
-    ...info,
-    isCurrent: key === currentTier,
-    isUpgrade:
-      PRICING[key as SubscriptionTier] &&
-      PRICING[key as SubscriptionTier].price > PRICING[currentTier].price,
-  }));
 }

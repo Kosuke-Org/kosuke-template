@@ -61,7 +61,7 @@ export const adminCreateOrgSchema = z.object({
     .min(1, 'Slug is required')
     .max(255)
     .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens'),
-  ownerId: z.uuid().optional(),
+  ownerId: z.uuid('Owner is required for billing setup'),
 });
 
 // Organization Membership Schemas

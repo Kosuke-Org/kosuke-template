@@ -64,6 +64,7 @@ export const mockedSession = {
     updatedAt: new Date(),
     activeOrganizationId: '',
     activeOrganizationSlug: '',
+    activeOrganizationRole: 'owner',
   },
   user: {
     id: 'user-1',
@@ -301,6 +302,7 @@ export function createMockTRPCContext(options?: {
   userId?: string | null;
   activeOrganizationId?: string | null;
   activeOrganizationSlug?: string | null;
+  orgRole?: string | null;
   getUser?: () => Promise<MockUserType | undefined>;
 }) {
   const userId = options?.userId ?? null;
@@ -308,7 +310,7 @@ export function createMockTRPCContext(options?: {
   return {
     userId,
     activeOrganizationId: options?.activeOrganizationId ?? null,
-    orgRole: null, // TODO: Implement org role
+    orgRole: options?.orgRole ?? 'owner',
     activeOrganizationSlug: options?.activeOrganizationSlug ?? null,
     async getUser() {
       return Promise.resolve(mockUser);

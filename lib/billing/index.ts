@@ -7,41 +7,53 @@
 
 // Core functionality
 export {
-  getUserSubscription,
+  getOrgSubscription,
   hasFeatureAccess,
   safeSubscriptionTierCast,
   safeSubscriptionStatusCast,
 } from './subscription';
 
 // Business logic and eligibility
-export {
-  calculateSubscriptionState,
-  getSubscriptionEligibility,
-  getTierInfo,
-  getAvailableTiers,
-} from './eligibility';
+export { calculateSubscriptionState, getSubscriptionEligibility } from './eligibility';
 
 // Operations
 export {
   createCheckoutSession,
-  cancelUserSubscription,
-  reactivateUserSubscription,
+  cancelOrgSubscription,
+  reactivateOrgSubscription,
   createCustomerPortalSession,
   cancelPendingDowngrade,
+  getPricingFromStripe,
+  createFreeTierSubscription,
+  deleteStripeCustomer,
 } from './operations';
 
 // Configuration and constants
-export { PRICE_IDS, PRICING, BILLING_URLS } from './config';
+export { BILLING_URLS } from './config';
+export type { PricingData } from './config';
+
+// Products configuration (single source of truth)
+export { SubscriptionTier } from './products';
+export type { SubscriptionTierType } from './products';
+
+// Lookup key helpers (for multi-tenant support)
+export {
+  getProductPrefix,
+  withPrefix,
+  stripPrefix,
+  getAllPrefixedLookupKeys,
+  getAllLookupKeys,
+} from './lookup-keys';
 
 // Client and types
 export { stripe } from './client';
 export type {
   SubscriptionEligibility,
-  UserSubscriptionInfo,
+  OrgSubscriptionInfo,
   CheckoutSessionParams,
   OperationResult,
 } from '@/lib/types';
-export { SubscriptionTier, SubscriptionStatus } from '@/lib/db/schema';
+export { SubscriptionStatus } from '@/lib/db/schema';
 export { SubscriptionState } from '@/lib/types';
 
 // All functions are exported above with their original names for backward compatibility

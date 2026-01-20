@@ -6,20 +6,19 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { nextCookies } from 'better-auth/next-js';
 import { admin, emailOTP, organization } from 'better-auth/plugins';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 
+import { TEST_OTP } from '@/lib/auth/constants';
+import { isTestEmail } from '@/lib/auth/utils';
 import { db } from '@/lib/db/drizzle';
 import * as schema from '@/lib/db/schema';
-import { orgMemberships, organizations, users } from '@/lib/db/schema';
+import { orgMemberships, organizations } from '@/lib/db/schema';
 import { removeContactFromMarketingSegment } from '@/lib/email';
 import { sendInvitationEmail } from '@/lib/email/invitation';
 import { sendOTPEmail } from '@/lib/email/otp';
 import { redis } from '@/lib/redis';
-import { getUserById } from '@/lib/services';
+import { getUserByEmail, getUserById } from '@/lib/services';
 import { handleSignUpMarketingConsent } from '@/lib/services/notification-service';
-
-import { TEST_OTP } from '../constants';
-import { isTestEmail } from '../utils';
 
 /**
  * Better Auth instance with Email OTP
@@ -102,11 +101,8 @@ export const auth = betterAuth({
         before: async (user) => {
           // Remove user from marketing segment before deletion
           // This ensures we maintain a clean marketing list and respect user data deletion
-          const fullUser = await getUserById(user.id);
-          if (fullUser?.email) {
-            console.log('[AUTH] Removing deleted user from marketing audience:', fullUser.email);
-            await removeContactFromMarketingSegment(fullUser.email);
-          }
+          console.log('[AUTH] Removing deleted user from marketing audience:', user.email);
+          await removeContactFromMarketingSegment(user.email);
         },
       },
     },
@@ -117,6 +113,7 @@ export const auth = betterAuth({
             .select({
               organizationId: orgMemberships.organizationId,
               organizationSlug: organizations.slug,
+              role: orgMemberships.role,
             })
             .from(orgMemberships)
             .innerJoin(organizations, eq(orgMemberships.organizationId, organizations.id))
@@ -129,25 +126,32 @@ export const auth = betterAuth({
               ...session,
               activeOrganizationId: membership?.organizationId ?? null,
               activeOrganizationSlug: membership?.organizationSlug ?? null,
+              activeOrganizationRole: membership?.role ?? null,
             },
           };
         },
       },
       update: {
-        before: async (session) => {
+        before: async (session, ctx) => {
           if (session.activeOrganizationId !== undefined) {
             const orgId = session.activeOrganizationId as string | null | undefined;
-            if (orgId) {
+
+            // Get userId from the context (full session from Redis) or from the update payload
+            const userId = ctx?.context?.session?.user?.id ?? session.userId;
+
+            if (orgId && userId) {
               const [org] = await db
-                .select({ slug: organizations.slug })
+                .select({ slug: organizations.slug, role: orgMemberships.role })
                 .from(organizations)
-                .where(eq(organizations.id, orgId))
+                .innerJoin(orgMemberships, eq(orgMemberships.organizationId, organizations.id))
+                .where(and(eq(organizations.id, orgId), eq(orgMemberships.userId, userId)))
                 .limit(1);
 
               return {
                 data: {
                   ...session,
                   activeOrganizationSlug: org?.slug ?? null,
+                  activeOrganizationRole: org?.role ?? null,
                 },
               };
             } else {
@@ -155,6 +159,7 @@ export const auth = betterAuth({
                 data: {
                   ...session,
                   activeOrganizationSlug: null,
+                  activeOrganizationRole: null,
                 },
               };
             }
@@ -183,6 +188,10 @@ export const auth = betterAuth({
         type: 'string',
         nullable: true,
       },
+      activeOrganizationRole: {
+        type: 'string',
+        nullable: true,
+      },
     },
     cookieCache: {
       enabled: true,
@@ -199,16 +208,13 @@ export const auth = betterAuth({
   plugins: [
     organization({
       async sendInvitationEmail(data) {
-        const [user] = await db
-          .select({ id: users.id })
-          .from(users)
-          .where(eq(users.email, data.invitation.email))
-          .limit(1);
+        const user = await getUserByEmail(data.invitation.email);
 
         const acceptInvitationUrl = `/api/accept-invitation/${data.id}`;
         const inviteLink = user
           ? `${process.env.NEXT_PUBLIC_APP_URL}${acceptInvitationUrl}`
           : `${process.env.NEXT_PUBLIC_APP_URL}/sign-up?redirect=${encodeURIComponent(acceptInvitationUrl)}`;
+
         await sendInvitationEmail({ ...data, inviteLink });
       },
     }),

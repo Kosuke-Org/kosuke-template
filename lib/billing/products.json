@@ -1,0 +1,74 @@
+{
+  "products": [
+    {
+      "lookupKey": "free_monthly",
+      "tierLevel": 0,
+      "product": {
+        "name": "Free",
+        "description": "Perfect for getting started"
+      },
+      "price": {
+        "unit_amount": 0,
+        "currency": "eur",
+        "recurring": {
+          "interval": "month",
+          "interval_count": 1
+        },
+        "tax_behavior": "unspecified"
+      },
+      "features": ["Basic features", "Community support", "Limited usage"]
+    },
+    {
+      "lookupKey": "pro_monthly",
+      "tierLevel": 1,
+      "product": {
+        "name": "Pro",
+        "description": "For growing teams"
+      },
+      "price": {
+        "unit_amount": 2000,
+        "currency": "eur",
+        "recurring": {
+          "interval": "month",
+          "interval_count": 1
+        },
+        "tax_behavior": "unspecified"
+      },
+      "features": [
+        "All free features",
+        "Priority support",
+        "Advanced features",
+        "Higher usage limits"
+      ]
+    },
+    {
+      "lookupKey": "business_monthly",
+      "tierLevel": 2,
+      "product": {
+        "name": "Business",
+        "description": "For large organizations"
+      },
+      "price": {
+        "unit_amount": 20000,
+        "currency": "eur",
+        "recurring": {
+          "interval": "month",
+          "interval_count": 1
+        },
+        "tax_behavior": "unspecified"
+      },
+      "features": [
+        "All pro features",
+        "Enterprise support",
+        "Custom integrations",
+        "Unlimited usage"
+      ]
+    }
+  ],
+  "defaults": {
+    "currency": "eur",
+    "interval": "month",
+    "interval_count": 1,
+    "tax_behavior": "unspecified"
+  }
+}

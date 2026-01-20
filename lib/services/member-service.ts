@@ -2,8 +2,14 @@
  * Member Service
  * Handles organization member operations
  */
+import { eq } from 'drizzle-orm';
+
 import { auth } from '@/lib/auth/providers';
+import { stripe } from '@/lib/billing/client';
+import { getOrgSubscription } from '@/lib/billing/subscription';
+import { db } from '@/lib/db';
 import type { OrgMembership, OrgRole, Organization, User } from '@/lib/db/schema';
+import { orgSubscriptions } from '@/lib/db/schema';
 import { switchToNextOrganization } from '@/lib/organizations';
 
 /**
@@ -25,6 +31,7 @@ export async function getOrganizationMembers(params: {
 
 /**
  * Update a member's role in an organization
+ * When transferring ownership (changing role to 'owner'), automatically cancels any paid subscription
  */
 export async function updateMemberRole(params: {
   organizationId: Organization['id'];
@@ -32,6 +39,45 @@ export async function updateMemberRole(params: {
   role: OrgRole;
   headers: Headers;
 }): Promise<{ success: boolean; message: string }> {
+  // Check if this is an ownership transfer (new role is 'owner')
+  const isOwnershipTransfer = params.role === 'owner';
+
+  // If ownership is being transferred, cancel any active paid subscription
+  if (isOwnershipTransfer) {
+    try {
+      const subscription = await getOrgSubscription(params.organizationId);
+
+      // If there's an active paid subscription, cancel it at period end
+      if (subscription.activeSubscription?.stripeSubscriptionId) {
+        console.log(
+          `🔄 Ownership transfer detected - canceling subscription for organization: ${params.organizationId}`
+        );
+
+        // Cancel subscription in Stripe
+        await stripe.subscriptions.update(subscription.activeSubscription.stripeSubscriptionId, {
+          cancel_at_period_end: true,
+        });
+
+        // Update local database
+        await db
+          .update(orgSubscriptions)
+          .set({
+            cancelAtPeriodEnd: 'true',
+            canceledAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(orgSubscriptions.organizationId, params.organizationId));
+
+        console.log('✅ Subscription canceled due to ownership transfer');
+      }
+    } catch (error) {
+      // Log the error but don't block the ownership transfer
+      console.error('⚠️ Error canceling subscription during ownership transfer:', error);
+      // Continue with role update even if subscription cancellation fails
+    }
+  }
+
+  // Update the member role
   await auth.api.updateMemberRole({
     body: {
       role: params.role,
@@ -71,6 +117,7 @@ export async function removeMember(params: {
 
 /**
  * Leave an organization and switch to next available organization
+ * auth.api.leaveOrganization already prevents leaving if user is the sole owner (to avoid orphaned organizations with subscriptions)
  */
 export async function leaveOrganization(params: {
   organizationId: Organization['id'];

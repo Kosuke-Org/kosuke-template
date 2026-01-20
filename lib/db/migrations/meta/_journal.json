@@ -50,6 +50,13 @@
       "when": 1768156232728,
       "tag": "0006_busy_lifeguard",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1768558532105,
+      "tag": "0007_smiling_warbound",
+      "breakpoints": true
     }
   ]
 }

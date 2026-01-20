@@ -1,20 +1,26 @@
 import { desc, eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { userSubscriptions } from '@/lib/db/schema';
-import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
-import { type UserSubscriptionInfo } from '@/lib/types';
+import { orgSubscriptions } from '@/lib/db/schema';
+import { SubscriptionStatus, SubscriptionTier, type SubscriptionTierType } from '@/lib/db/schema';
+import type { OrgSubscriptionInfo } from '@/lib/types';
+
+import { getAllLookupKeys } from './lookup-keys';
+import productsConfig from './products.json';
 
 /**
  * Core subscription CRUD operations
  * Handles database interactions for user subscriptions
+ *
+ * Note: tier values are now lookup keys (e.g., 'free_monthly', 'pro_monthly')
  */
 
 /**
- * Type guard to validate SubscriptionTier enum values
+ * Type guard to validate SubscriptionTier values (lookup keys)
  */
-function isValidSubscriptionTier(value: string): value is SubscriptionTier {
-  return Object.values(SubscriptionTier).includes(value as SubscriptionTier);
+function isValidSubscriptionTier(value: string): value is SubscriptionTierType {
+  const validLookupKeys = getAllLookupKeys();
+  return validLookupKeys.includes(value);
 }
 
 /**
@@ -25,17 +31,16 @@ function isValidSubscriptionStatus(value: string): value is SubscriptionStatus {
 }
 
 /**
- * Safely cast a string to SubscriptionTier with fallback
+ * Safely cast a string to SubscriptionTier (lookup key) with fallback
  */
-export function safeSubscriptionTierCast(
-  value: string,
-  fallback: SubscriptionTier = SubscriptionTier.FREE
-): SubscriptionTier {
+export function safeSubscriptionTierCast(value: string) {
   if (isValidSubscriptionTier(value)) {
     return value;
   }
-  console.warn(`Invalid subscription tier value: ${value}. Falling back to ${fallback}`);
-  return fallback;
+  console.warn(
+    `Invalid subscription tier value: ${value}. Falling back to ${SubscriptionTier.FREE_MONTHLY}`
+  );
+  return SubscriptionTier.FREE_MONTHLY;
 }
 
 /**
@@ -53,20 +58,20 @@ export function safeSubscriptionStatusCast(
 }
 
 /**
- * Get user's current subscription information using User ID
+ * Get organization's current subscription information using Organization ID
  * Returns free tier if no paid subscription exists (no record created)
  */
-export async function getUserSubscription(userId: string): Promise<UserSubscriptionInfo> {
-  const activeSubscription = await db.query.userSubscriptions.findFirst({
-    where: eq(userSubscriptions.userId, userId),
-    orderBy: [desc(userSubscriptions.createdAt)],
+export async function getOrgSubscription(organizationId: string): Promise<OrgSubscriptionInfo> {
+  const activeSubscription = await db.query.orgSubscriptions.findFirst({
+    where: eq(orgSubscriptions.organizationId, organizationId),
+    orderBy: [desc(orgSubscriptions.createdAt)],
   });
 
   // If no subscription exists, return free tier (no record created)
   if (!activeSubscription) {
-    console.log('📋 No subscription found, returning free tier for user:', userId);
+    console.log('📋 No subscription found, returning free tier for org:', organizationId);
     return {
-      tier: SubscriptionTier.FREE,
+      tier: SubscriptionTier.FREE_MONTHLY,
       status: SubscriptionStatus.ACTIVE,
       currentPeriodEnd: null,
       activeSubscription: null,
@@ -76,9 +81,6 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
   // Safely cast the subscription tier with validation
   const subscriptionTier = safeSubscriptionTierCast(activeSubscription.tier);
   const subscriptionStatus = safeSubscriptionStatusCast(activeSubscription.status);
-
-  // Determine current tier based on subscription state
-  let currentTier = SubscriptionTier.FREE;
 
   // Check if subscription is marked for cancellation at period end
   const isCancelAtPeriodEnd = activeSubscription.cancelAtPeriodEnd === 'true';
@@ -91,11 +93,15 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
     activeSubscription.currentPeriodEnd &&
     new Date() < activeSubscription.currentPeriodEnd;
 
+  let currentTier = null;
+
   if (
     (subscriptionStatus === SubscriptionStatus.ACTIVE && !isCancelAtPeriodEnd) ||
     isInGracePeriod
   ) {
     currentTier = subscriptionTier;
+  } else {
+    currentTier = SubscriptionTier.FREE_MONTHLY;
   }
 
   return {
@@ -108,16 +114,37 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
 
 /**
  * Check if user has access to a specific feature based on their tier
+ *
+ * Uses explicit tierLevel from products.json with array order as fallback:
+ * 1. First tries to use the explicit 'tierLevel' field from products.json
+ * 2. Falls back to array index if tierLevel is missing
+ *
+ * This approach provides:
+ * - Explicit, self-documenting hierarchy (tierLevel field)
+ * - Flexibility to reorder products without breaking access
+ * - Backward compatibility (falls back to array order)
+ * - Easy to add yearly variants at same tier level
  */
-export function hasFeatureAccess(
-  userTier: SubscriptionTier,
-  requiredTier: SubscriptionTier
-): boolean {
-  const tierHierarchy = {
-    [SubscriptionTier.FREE]: 0,
-    [SubscriptionTier.PRO]: 1,
-    [SubscriptionTier.BUSINESS]: 2,
+export function hasFeatureAccess(userLookupKey: string, requiredLookupKey: string): boolean {
+  const userProduct = productsConfig.products.find((p) => p.lookupKey === userLookupKey);
+  const requiredProduct = productsConfig.products.find((p) => p.lookupKey === requiredLookupKey);
+
+  // Get tier level, using explicit tierLevel if available, otherwise fall back to array index
+  const getUserLevel = (product: typeof userProduct, lookupKey: string): number => {
+    if (!product) return 0; // Not found = lowest tier
+
+    // Prefer explicit tierLevel if defined
+    if (typeof product.tierLevel === 'number') {
+      return product.tierLevel;
+    }
+
+    // Fallback to array index
+    const index = productsConfig.products.findIndex((p) => p.lookupKey === lookupKey);
+    return index >= 0 ? index : 0;
   };
 
-  return tierHierarchy[userTier] >= tierHierarchy[requiredTier];
+  const userLevel = getUserLevel(userProduct, userLookupKey);
+  const requiredLevel = getUserLevel(requiredProduct, requiredLookupKey);
+
+  return userLevel >= requiredLevel;
 }

@@ -15,12 +15,14 @@ import { and, count, eq, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth/providers';
+import { createFreeTierSubscription, deleteStripeCustomer } from '@/lib/billing/operations';
 import { db } from '@/lib/db/drizzle';
 import { orgMemberships, organizations, users } from '@/lib/db/schema';
 import { createQueue } from '@/lib/queue/client';
 import { QUEUE_NAMES } from '@/lib/queue/config';
 import * as llmLogsService from '@/lib/services/llm-logs-service';
 import * as ragService from '@/lib/services/rag-service';
+import { validateUserDeletion } from '@/lib/services/user-service';
 import { ORG_ROLES } from '@/lib/types/organization';
 import { handleApiError } from '@/lib/utils';
 
@@ -219,23 +221,31 @@ export const adminRouter = router({
     /**
      * Hard deletes a user from the database.
      * Uses Better Auth's admin.removeUser API which properly handles session cleanup
+     * Prevents deletion if user is the sole owner of any organization (to avoid orphaned subscriptions)
      */
     delete: superAdminProcedure.input(adminDeleteUserSchema).mutation(async ({ input }) => {
       const { id: userId } = input;
 
-      await auth.api.revokeUserSessions({
-        body: {
-          userId,
-        },
-        headers: await headers(),
-      });
+      // Validate that user can be deleted (not sole owner of any org)
+      try {
+        await validateUserDeletion(userId);
 
-      await auth.api.removeUser({
-        body: {
-          userId,
-        },
-        headers: await headers(),
-      });
+        await auth.api.removeUser({
+          body: {
+            userId,
+          },
+          headers: await headers(),
+        });
+
+        await auth.api.revokeUserSessions({
+          body: {
+            userId,
+          },
+          headers: await headers(),
+        });
+      } catch (error) {
+        handleApiError(error);
+      }
     }),
   }),
 
@@ -334,7 +344,7 @@ export const adminRouter = router({
     }),
 
     /**
-     * Create new organization (with optional owner)
+     * Create new organization (requires owner for billing)
      */
     create: superAdminProcedure.input(adminCreateOrgSchema).mutation(async ({ input }) => {
       const { name, slug, ownerId } = input;
@@ -353,6 +363,13 @@ export const adminRouter = router({
         });
       }
 
+      // Verify owner exists and get email (required for Stripe customer)
+      const [owner] = await db.select().from(users).where(eq(users.id, ownerId)).limit(1);
+
+      if (!owner) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Owner user not found' });
+      }
+
       // Create the organization
       const [newOrg] = await db
         .insert(organizations)
@@ -364,22 +381,23 @@ export const adminRouter = router({
         })
         .returning();
 
-      // If owner specified, create owner membership
-      if (ownerId) {
-        // Verify user exists
-        const [owner] = await db.select().from(users).where(eq(users.id, ownerId)).limit(1);
+      // Create owner membership
+      await db.insert(orgMemberships).values({
+        organizationId: newOrg.id,
+        userId: ownerId,
+        role: ORG_ROLES.OWNER,
+        createdAt: new Date(),
+      });
 
-        if (!owner) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Owner user not found' });
-        }
+      // Create free-tier subscription for the new organization
+      const subscriptionResult = await createFreeTierSubscription({
+        organizationId: newOrg.id,
+        customerEmail: owner.email,
+      });
 
-        // Create owner membership
-        await db.insert(orgMemberships).values({
-          organizationId: newOrg.id,
-          userId: ownerId,
-          role: ORG_ROLES.OWNER,
-          createdAt: new Date(),
-        });
+      if (!subscriptionResult.success) {
+        console.error('Failed to create free-tier subscription:', subscriptionResult.message);
+        // Don't fail organization creation if subscription creation fails
       }
 
       return newOrg;
@@ -413,6 +431,10 @@ export const adminRouter = router({
      */
     delete: superAdminProcedure.input(adminDeleteOrgSchema).mutation(async ({ input }) => {
       try {
+        // Delete Stripe customer (this will cancel all subscriptions automatically)
+        await deleteStripeCustomer(input.id);
+
+        // Delete the organization (cascades to related records)
         await db.delete(organizations).where(eq(organizations.id, input.id));
       } catch (error) {
         throw new TRPCError({

@@ -3,12 +3,13 @@
  * Handles all user-related database operations and business logic
  * Separates data access from API layer (tRPC routers)
  */
-import { eq } from 'drizzle-orm';
+import { and, count, eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db/drizzle';
-import { users } from '@/lib/db/schema';
+import { orgMemberships, organizations, users } from '@/lib/db/schema';
 import { ERRORS, ERROR_MESSAGES } from '@/lib/services';
 import type { NotificationSettings } from '@/lib/types';
+import { ORG_ROLES, USER_ROLES } from '@/lib/types/organization';
 
 /**
  * Get user by ID
@@ -22,7 +23,6 @@ export async function getUserById(userId: string) {
       emailVerified: users.emailVerified,
       displayName: users.displayName,
       profileImageUrl: users.profileImageUrl,
-      stripeCustomerId: users.stripeCustomerId,
       notificationSettings: users.notificationSettings,
       role: users.role,
       createdAt: users.createdAt,
@@ -136,31 +136,6 @@ export async function updateDisplayName(userId: string, displayName: string) {
 }
 
 /**
- * Update user's profile image URL
- * Returns the updated user record
- */
-export async function updateProfileImageUrl(userId: string, profileImageUrl: string | null) {
-  const [updated] = await db
-    .update(users)
-    .set({
-      profileImageUrl,
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, userId))
-    .returning({
-      id: users.id,
-      profileImageUrl: users.profileImageUrl,
-      updatedAt: users.updatedAt,
-    });
-
-  if (!updated) {
-    throw new Error(ERROR_MESSAGES.USER_NOT_FOUND, { cause: ERRORS.NOT_FOUND });
-  }
-
-  return updated;
-}
-
-/**
  * Get user's profile image URL
  */
 export async function getProfileImageUrl(userId: string): Promise<string | null> {
@@ -187,7 +162,11 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
 }
 
 /**
- * Create a new user
+ * Create new user
+ *
+ * Note: Better Auth's admin.createUser doesn't support passwordless authentication yet.
+ * See: https://github.com/better-auth/better-auth/issues/4226
+ * For now, we create users directly in the database
  */
 export async function createUser(data: {
   email: string;
@@ -201,6 +180,7 @@ export async function createUser(data: {
       email: data.email,
       emailVerified: data.emailVerified ?? false,
       displayName: data.displayName ?? '',
+      role: USER_ROLES.USER,
       notificationSettings: data.notificationSettings
         ? JSON.stringify(data.notificationSettings)
         : JSON.stringify({
@@ -216,6 +196,7 @@ export async function createUser(data: {
 
 /**
  * Get user by email
+ * Returns null if user not found, we want to check if user exists, do not throw error
  */
 export async function getUserByEmail(email: string) {
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -255,4 +236,47 @@ export async function deleteUserProfileImage(userId: string): Promise<string> {
     .where(eq(users.id, userId));
 
   return user.profileImageUrl;
+}
+
+/**
+ * Validate if a user can be deleted
+ * Checks if user is the sole owner of any organizations
+ * @throws Error if user is sole owner of any organization (to prevent orphaned subscriptions)
+ */
+export async function validateUserDeletion(userId: string): Promise<void> {
+  // Check if user is sole owner of any organizations
+  const userMemberships = await db
+    .select({
+      organizationId: orgMemberships.organizationId,
+      organizationName: organizations.name,
+      role: orgMemberships.role,
+    })
+    .from(orgMemberships)
+    .innerJoin(organizations, eq(organizations.id, orgMemberships.organizationId))
+    .where(and(eq(orgMemberships.userId, userId), eq(orgMemberships.role, ORG_ROLES.OWNER)));
+
+  // For each org where user is owner, check if they're the only owner
+  const problematicOrgs: string[] = [];
+  for (const membership of userMemberships) {
+    const [ownerCount] = await db
+      .select({ count: count() })
+      .from(orgMemberships)
+      .where(
+        and(
+          eq(orgMemberships.organizationId, membership.organizationId),
+          eq(orgMemberships.role, ORG_ROLES.OWNER)
+        )
+      );
+
+    if (ownerCount.count <= 1) {
+      problematicOrgs.push(membership.organizationName);
+    }
+  }
+
+  if (problematicOrgs.length > 0) {
+    throw new Error(
+      `Cannot delete user: they are the sole owner of ${problematicOrgs.length} organization(s): ${problematicOrgs.join(', ')}. Transfer ownership first.`,
+      { cause: ERRORS.FORBIDDEN }
+    );
+  }
 }
