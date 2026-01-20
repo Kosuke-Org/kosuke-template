@@ -6,8 +6,6 @@ services:
       - .env
     volumes:
       - kosuke_template_postgres_data:/var/lib/postgresql/data
-    networks:
-      - kosuke_network
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 2s
@@ -24,14 +22,13 @@ services:
       - /app/.next
     env_file:
       - .env
-    networks:
-      - kosuke_network
     restart: unless-stopped
     container_name: kosuke_template_nextjs
     ports:
       - '3000:3000'
     depends_on:
       - postgres
+      - redis
     healthcheck:
       test:
         [
@@ -58,16 +55,8 @@ services:
     volumes:
       - kosuke_template_redis_data:/data
     command: redis-server --appendonly yes
-    networks:
-      - kosuke_network
     restart: unless-stopped
 
 volumes:
   kosuke_template_postgres_data:
   kosuke_template_redis_data:
-
-networks:
-  kosuke_network:
-    name: kosuke_network
-    driver: bridge
-    attachable: true
