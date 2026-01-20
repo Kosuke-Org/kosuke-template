@@ -1,0 +1,43 @@
+name: Deploy to Render on Tag
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Triggers on semantic version tags like v1.0.0, v2.1.3, etc.
+
+jobs:
+  deploy:
+    name: Trigger Render Deployment
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Extract tag name
+        id: tag
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Render
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          echo "Deploying tag ${{ steps.tag.outputs.tag }} to Render..."
+
+          if [ -z "$DEPLOY_HOOK_URL" ]; then
+            echo "Error: RENDER_DEPLOY_HOOK_URL secret is not set"
+            exit 1
+          fi
+
+          curl "$DEPLOY_HOOK_URL"
+
+      - name: Deployment Summary
+        if: always()
+        run: |
+          echo "### Deployment Triggered" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** \`${{ steps.tag.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** Deployment initiated on Render" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check your Render dashboard for deployment progress." >> $GITHUB_STEP_SUMMARY
