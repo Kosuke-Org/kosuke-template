@@ -106,6 +106,22 @@ export const verifications = pgTable(
   (table) => [index('verifications_identifier_idx').on(table.identifier)]
 );
 
+export const systemConfig = pgTable(
+  'system_config',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    key: text('key').notNull().unique(), // e.g., 'STRIPE_WEBHOOK_SECRET'
+    value: text('value').notNull(), // Encrypted value (base64 encoded: iv:encrypted_data:auth_tag)
+    description: text('description'), // Human-readable description
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [index('system_config_key_idx').on(table.key)]
+);
+
 export const organizations = pgTable('organizations', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
@@ -516,6 +532,8 @@ export type NewRagSettings = Pick<
   InferInsertModel<typeof ragSettings>,
   'organizationId' | 'systemPrompt' | 'maxOutputTokens' | 'temperature' | 'topP' | 'topK'
 >;
+export type SystemConfig = InferSelectModel<typeof systemConfig>;
+export type NewSystemConfig = InferInsertModel<typeof systemConfig>;
 
 // Infer enum types from schema
 export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];
