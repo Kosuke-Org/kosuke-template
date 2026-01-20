@@ -93,7 +93,6 @@ REDIS_URL=redis://redis:6379
 # Stripe Billing
 STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
 STRIPE_SUCCESS_URL=http://localhost:3000/billing/success
 STRIPE_CANCEL_URL=http://localhost:3000/settings/billing
 
@@ -108,6 +107,9 @@ NEXT_PUBLIC_SENTRY_DSN=https://...@....ingest.sentry.io/...
 # Application
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
+# Config Encryption (generate with: openssl rand -base64 32)
+ENCRYPTION_KEY=your_32+_character_random_string_here
+
 # Digital Ocean
 S3_REGION=nyc3
 S3_ENDPOINT=https://nyc3.digitaloceanspaces.com
@@ -118,6 +120,7 @@ S3_SECRET_ACCESS_KEY=your_secret_key
 
 **Get Your Credentials**:
 
+- **Config Encryption Key**: Generate with `openssl rand -base64 32` (required for encrypted config storage)
 - **Stripe**: Create account at [stripe.com](https://stripe.com) → Get API keys → Create products and prices
 - **Resend**: Sign up → Create API key → Use `onboarding@resend.dev` for testing
 - **Sentry**: Create project → Copy DSN (optional for local development)
@@ -209,6 +212,8 @@ The template uses a dynamic Stripe integration where products and pricing are ma
 
    This script is idempotent - safe to run multiple times. It will:
    - Create products and prices in Stripe
+   - Create/update webhook endpoint for billing events
+   - Store webhook secret in database (encrypted)
    - Use lookup keys to prevent duplicates
    - Output product and price IDs
 

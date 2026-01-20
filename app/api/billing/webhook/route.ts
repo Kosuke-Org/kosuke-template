@@ -8,6 +8,7 @@ import { SubscriptionTier, SubscriptionTierType } from '@/lib/billing/products';
 import { db } from '@/lib/db';
 import { SubscriptionStatus, orgSubscriptions } from '@/lib/db/schema';
 import { getOrgById } from '@/lib/organizations';
+import { CONFIG_KEYS, getConfigOrEnv } from '@/lib/services/config-service';
 
 /**
  * Stripe Webhook Handler
@@ -34,7 +35,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
     }
 
-    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    // Get webhook secret from database (with fallback to env var for backward compatibility)
+    const webhookSecret = await getConfigOrEnv(CONFIG_KEYS.STRIPE_WEBHOOK_SECRET);
+
+    if (!webhookSecret) {
       console.error('❌ STRIPE_WEBHOOK_SECRET not configured');
       return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
     }
@@ -42,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Verify webhook signature
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET);
+      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (err) {
       console.error('❌ Webhook signature verification failed:', err);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });

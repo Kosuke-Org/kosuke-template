@@ -3,14 +3,18 @@
  * Stripe Products & Prices Seed Script
  *
  * This script reads products.json and creates/updates products and prices in Stripe.
+ * It also creates/updates the webhook endpoint for billing events.
  * It uses lookup keys for idempotency, so running it multiple times is safe.
  * Usage: bun run stripe:seed
  */
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
+import Stripe from 'stripe';
+
 import { stripe } from '@/lib/billing/client';
 import { getProductPrefix, withPrefix } from '@/lib/billing/lookup-keys';
+import { CONFIG_KEYS, setConfig } from '@/lib/services/config-service';
 
 interface ProductConfig {
   lookupKey: string;
@@ -38,6 +42,102 @@ interface ProductsConfig {
     interval_count: number;
     tax_behavior: string;
   };
+}
+
+const APP_NAME = 'kosuke-template';
+
+/**
+ * Create or update webhook endpoint in Stripe
+ */
+async function seedStripeWebhook() {
+  console.log('\n🔗 Setting up Stripe webhook endpoint...\n');
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!appUrl) {
+    throw new Error('NEXT_PUBLIC_APP_URL environment variable is required for webhook setup.');
+  }
+
+  const webhookUrl = `${appUrl}/api/billing/webhook`;
+
+  // Events that the webhook should listen to (from route.ts lines 18-24)
+  const enabledEvents: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
+    'customer.subscription.created',
+    'customer.subscription.updated',
+    'customer.subscription.deleted',
+    'invoice.paid',
+    'invoice.payment_failed',
+    'subscription_schedule.completed',
+    'subscription_schedule.canceled',
+  ];
+
+  try {
+    // List existing webhooks to find ours
+    const existingWebhooks = await stripe.webhookEndpoints.list({ limit: 100 });
+
+    // Find webhook managed by kosuke-template
+    const managedWebhook = existingWebhooks.data.find(
+      (webhook) => webhook.metadata?.managed_by === APP_NAME
+    );
+
+    let webhook;
+    let isNewWebhook = false;
+
+    if (managedWebhook) {
+      console.log(`  ℹ️  Found existing webhook: ${managedWebhook.id}`);
+
+      // Update if URL or events changed
+      if (managedWebhook.url !== webhookUrl) {
+        console.log(`  🔄 Updating webhook URL from ${managedWebhook.url} to ${webhookUrl}`);
+        webhook = await stripe.webhookEndpoints.update(managedWebhook.id, {
+          url: webhookUrl,
+          enabled_events: enabledEvents,
+        });
+      } else {
+        console.log('  ✅ Webhook already configured correctly');
+        webhook = managedWebhook;
+      }
+    } else {
+      console.log('  📝 Creating new webhook endpoint...');
+      isNewWebhook = true;
+
+      webhook = await stripe.webhookEndpoints.create({
+        url: webhookUrl,
+        enabled_events: enabledEvents,
+        metadata: {
+          managed_by: APP_NAME,
+          created_at: new Date().toISOString(),
+        },
+        description: `${APP_NAME} - Subscription & Billing Events`,
+      });
+
+      console.log(`  ✅ Created webhook: ${webhook.id}`);
+    }
+
+    // Store webhook secret in database (only for new webhooks or if we have the secret)
+    if (webhook.secret) {
+      console.log('  🔐 Storing webhook secret in database...');
+      await setConfig(
+        CONFIG_KEYS.STRIPE_WEBHOOK_SECRET,
+        webhook.secret,
+        'Stripe webhook signing secret for verifying webhook events'
+      );
+      console.log('  ✅ Webhook secret stored successfully');
+    } else if (isNewWebhook) {
+      console.warn('  ⚠️  Warning: Webhook secret not returned by Stripe');
+    }
+
+    console.log('\n  📊 Webhook Configuration:');
+    console.log(`     Webhook ID: ${webhook.id}`);
+    console.log(`     URL: ${webhook.url}`);
+    console.log(`     Status: ${webhook.status}`);
+    console.log(`     Events: ${webhook.enabled_events.length} enabled`);
+
+    return webhook;
+  } catch (error) {
+    console.error('  ❌ Error setting up webhook:', error);
+    throw error;
+  }
 }
 
 async function seedStripeProducts() {
@@ -192,6 +292,8 @@ async function seedStripe() {
 
   try {
     await seedStripeProducts();
+
+    await seedStripeWebhook();
 
     console.log('\n' + '='.repeat(70));
     console.log('🎉 Stripe seed completed successfully!\n');

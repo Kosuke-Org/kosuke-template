@@ -13,8 +13,17 @@ import {
 import { POST } from '@/app/api/billing/webhook/route';
 
 import { stripe } from '@/lib/billing/client';
+import { getConfigOrEnv } from '@/lib/services/config-service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+// Mock config service
+vi.mock('@/lib/services/config-service', () => ({
+  CONFIG_KEYS: {
+    STRIPE_WEBHOOK_SECRET: 'STRIPE_WEBHOOK_SECRET',
+  },
+  getConfigOrEnv: vi.fn(),
+}));
 
 // Mock Stripe
 vi.mock('@/lib/billing/client', () => ({
@@ -48,9 +57,12 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
+const mockGetConfigOrEnv = vi.mocked(getConfigOrEnv);
+
 describe('Stripe Webhook Route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetConfigOrEnv.mockResolvedValue('whsec_test_secret');
   });
 
   describe('POST /api/billing/webhook', () => {
@@ -66,9 +78,8 @@ describe('Stripe Webhook Route', () => {
       expect(data.error).toBe('Missing signature');
     });
 
-    it('should return 500 if STRIPE_WEBHOOK_SECRET is not configured', async () => {
-      const originalEnv = process.env.STRIPE_WEBHOOK_SECRET;
-      delete process.env.STRIPE_WEBHOOK_SECRET;
+    it('should return 500 if webhook secret is not configured in database', async () => {
+      mockGetConfigOrEnv.mockResolvedValueOnce(null);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -79,7 +90,10 @@ describe('Stripe Webhook Route', () => {
       const response = await POST(request);
       expect(response.status).toBe(500);
 
-      process.env.STRIPE_WEBHOOK_SECRET = originalEnv;
+      const data = await response.json();
+      expect(data.error).toBe('Webhook secret not configured');
+
+      expect(mockGetConfigOrEnv).toHaveBeenCalledWith('STRIPE_WEBHOOK_SECRET');
     });
 
     it('should return 400 if signature verification fails', async () => {
