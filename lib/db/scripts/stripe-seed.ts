@@ -12,9 +12,10 @@ import { join } from 'path';
 
 import Stripe from 'stripe';
 
-import { stripe } from '@/lib/billing/client';
+import { getStripe } from '@/lib/billing/client';
 import { getProductPrefix, withPrefix } from '@/lib/billing/lookup-keys';
-import { CONFIG_KEYS, setConfig } from '@/lib/services/config-service';
+import { setConfig } from '@/lib/services/config-service';
+import { CONFIG_KEYS } from '@/lib/services/constants';
 
 interface ProductConfig {
   lookupKey: string;
@@ -72,6 +73,7 @@ async function seedStripeWebhook() {
   ];
 
   try {
+    const stripe = await getStripe();
     // List existing webhooks to find ours
     const existingWebhooks = await stripe.webhookEndpoints.list({ limit: 100 });
 
@@ -117,11 +119,11 @@ async function seedStripeWebhook() {
     // Store webhook secret in database (only for new webhooks or if we have the secret)
     if (webhook.secret) {
       console.log('  🔐 Storing webhook secret in database...');
-      await setConfig(
-        CONFIG_KEYS.STRIPE_WEBHOOK_SECRET,
-        webhook.secret,
-        'Stripe webhook signing secret for verifying webhook events'
-      );
+      await setConfig({
+        key: CONFIG_KEYS.STRIPE_WEBHOOK_SECRET,
+        value: webhook.secret,
+        description: 'Stripe webhook signing secret for verifying webhook events',
+      });
       console.log('  ✅ Webhook secret stored successfully');
     } else if (isNewWebhook) {
       console.warn('  ⚠️  Warning: Webhook secret not returned by Stripe');
@@ -141,6 +143,8 @@ async function seedStripeWebhook() {
 }
 
 async function seedStripeProducts() {
+  const stripe = await getStripe();
+
   console.log('🚀 Starting Stripe products and prices seed...\n');
 
   try {

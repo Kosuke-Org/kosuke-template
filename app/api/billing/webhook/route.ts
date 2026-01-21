@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import Stripe from 'stripe';
 
-import { stripe } from '@/lib/billing/client';
+import { getStripe } from '@/lib/billing/client';
 import { SubscriptionTier, SubscriptionTierType } from '@/lib/billing/products';
 import { db } from '@/lib/db';
 import { SubscriptionStatus, orgSubscriptions } from '@/lib/db/schema';
 import { getOrgById } from '@/lib/organizations';
-import { CONFIG_KEYS, getConfigOrEnv } from '@/lib/services/config-service';
+import { getConfigOrEnv } from '@/lib/services/config-service';
+import { CONFIG_KEYS } from '@/lib/services/constants';
 
 /**
  * Stripe Webhook Handler
@@ -43,10 +44,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
     }
 
-    // Verify webhook signature
+    // Initialize Stripe client and verify webhook signature
+    const stripe = await getStripe();
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+      event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
     } catch (err) {
       console.error('❌ Webhook signature verification failed:', err);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
@@ -132,6 +134,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       console.error('❌ Missing or invalid metadata in subscription.created:', subscription.id);
       return;
     }
+
+    const stripe = await getStripe();
 
     // Verify organization exists to prevent orphaned subscription records
     const org = await getOrgById(organizationId);

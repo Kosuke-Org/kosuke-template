@@ -14,7 +14,7 @@
 import { faker } from '@faker-js/faker';
 import { eq } from 'drizzle-orm';
 
-import { stripe } from '@/lib/billing/client';
+import { getStripe } from '@/lib/billing/client';
 import { withPrefix } from '@/lib/billing/lookup-keys';
 import { db } from '@/lib/db/drizzle';
 import type { NewOrder, OrderStatus } from '@/lib/types';
@@ -59,7 +59,7 @@ function calculatePeriodEnd(startDate: Date): Date {
 async function seed() {
   console.log('🌱 Starting database seed...\n');
   console.log('📌 Note: If you encounter duplicate key errors, run `bun run db:reset`');
-
+  const stripe = await getStripe();
   try {
     const janeSmithEmail = 'jane+kosuke_test@example.com';
     const johnDoeEmail = 'john+kosuke_test@example.com';

@@ -4,6 +4,7 @@
  */
 import { headers } from 'next/headers';
 
+import * as configService from '@/lib/services/config-service';
 import * as invitationService from '@/lib/services/invitation-service';
 import * as memberService from '@/lib/services/member-service';
 import * as organizationService from '@/lib/services/organization-service';
@@ -249,9 +250,11 @@ export const organizationsRouter = router({
    * Check if Google AI API key is configured
    * Used to gate AI features (Documents, Assistant) when key is missing
    */
-  checkGoogleApiKey: protectedProcedure.query(() => {
+  checkGoogleApiKey: protectedProcedure.query(async () => {
+    const isConfigured = await configService.isGoogleApiKeyConfigured();
+
     return {
-      configured: organizationService.isGoogleApiKeyConfigured(),
+      configured: isConfigured,
     };
   }),
 });

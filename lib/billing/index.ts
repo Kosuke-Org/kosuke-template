@@ -46,7 +46,7 @@ export {
 } from './lookup-keys';
 
 // Client and types
-export { stripe } from './client';
+export { getStripe } from './client';
 export type {
   SubscriptionEligibility,
   OrgSubscriptionInfo,

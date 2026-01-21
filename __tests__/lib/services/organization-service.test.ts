@@ -17,7 +17,6 @@ import {
   getOrganizationById,
   getOrganizationBySlug,
   getUserOrganizations,
-  isGoogleApiKeyConfigured,
   updateOrganization,
   uploadOrganizationLogo,
 } from '@/lib/services/organization-service';
@@ -484,24 +483,6 @@ describe('Organization Service', () => {
       );
 
       expect(deleteProfileImage).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('isGoogleApiKeyConfigured', () => {
-    it('should return true when API key is configured', () => {
-      vi.stubEnv('GOOGLE_AI_API_KEY', 'test-key');
-
-      const result = isGoogleApiKeyConfigured();
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false when API key is not configured', () => {
-      vi.stubEnv('GOOGLE_AI_API_KEY', '');
-
-      const result = isGoogleApiKeyConfigured();
-
-      expect(result).toBe(false);
     });
   });
 });

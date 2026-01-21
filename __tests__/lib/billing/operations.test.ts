@@ -31,8 +31,8 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
-vi.mock('@/lib/billing/client', () => ({
-  stripe: {
+vi.mock('@/lib/billing/client', () => {
+  const stripe = {
     customers: {
       create: vi.fn(),
     },
@@ -54,8 +54,12 @@ vi.mock('@/lib/billing/client', () => ({
       list: vi.fn(),
       cancel: vi.fn(),
     },
-  },
-}));
+  };
+  return {
+    getStripe: vi.fn().mockResolvedValue(stripe),
+    stripe: stripe,
+  };
+});
 
 vi.mock('@/lib/billing/subscription', () => ({
   getOrgSubscription: vi.fn(),

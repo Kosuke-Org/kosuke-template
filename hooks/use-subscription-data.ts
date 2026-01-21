@@ -5,6 +5,15 @@ import { trpc } from '@/lib/trpc/client';
 import { useAuth } from './use-auth';
 
 /**
+ * Check if Stripe API key is configured
+ */
+export function useStripeConfigured() {
+  return trpc.billing.isConfigured.useQuery(undefined, {
+    refetchOnMount: 'always',
+  });
+}
+
+/**
  * Get user's subscription status
  */
 export function useSubscriptionStatus() {

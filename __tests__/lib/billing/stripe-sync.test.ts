@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { stripe } from '@/lib/billing/client';
+import { getStripe } from '@/lib/billing/client';
 import { syncOrgSubscriptionFromStripe, syncStaleSubscriptions } from '@/lib/billing/stripe-sync';
 import { db } from '@/lib/db';
 import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
@@ -24,17 +24,24 @@ vi.mock('@/lib/db', () => ({
 }));
 
 // Mock Stripe client
-vi.mock('@/lib/billing/client', () => ({
-  stripe: {
+vi.mock('@/lib/billing/client', () => {
+  const stripe = {
     subscriptions: {
       retrieve: vi.fn(),
     },
-  },
-}));
+  };
+  return {
+    getStripe: vi.fn().mockResolvedValue(stripe),
+    stripe: stripe,
+  };
+});
 
 describe('Stripe Sync Module', () => {
-  beforeEach(() => {
+  let stripe: any;
+
+  beforeEach(async () => {
     vi.clearAllMocks();
+    stripe = await getStripe();
   });
 
   describe('syncOrgSubscriptionFromStripe', () => {

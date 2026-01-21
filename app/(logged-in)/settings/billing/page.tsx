@@ -11,6 +11,7 @@ import { useSubscriptionActions } from '@/hooks/use-subscription-actions';
 import {
   useCanSubscribe,
   usePricingData,
+  useStripeConfigured,
   useSubscriptionStatus,
 } from '@/hooks/use-subscription-data';
 import { useToast } from '@/hooks/use-toast';
@@ -143,10 +144,11 @@ export default function BillingPage() {
   const { user } = useUser();
   const { toast } = useToast();
   const { currentUserRole } = useOrganization();
+  const { data: stripeConfig, isLoading: isLoadingConfig } = useStripeConfigured();
   const { data: subscriptionInfo, isLoading: isLoadingStatus } = useSubscriptionStatus();
   const { data: eligibility, isLoading: isLoadingEligibility } = useCanSubscribe();
   const { data: pricingData, isLoading: isLoadingPricing } = usePricingData();
-  const isLoading = isLoadingStatus || isLoadingEligibility || isLoadingPricing;
+  const isLoading = isLoadingConfig || isLoadingStatus || isLoadingEligibility || isLoadingPricing;
 
   // Check if user is owner (can manage billing)
   const isOwner = currentUserRole === ORG_ROLES.OWNER;
@@ -217,6 +219,18 @@ export default function BillingPage() {
   }
 
   // Handle case when Stripe is not configured
+  if (!stripeConfig?.isConfigured) {
+    return (
+      <div className="py-6">
+        <ErrorMessage
+          title="Stripe API Key Not Configured"
+          description="Billing features are not available. Please configure your STRIPE_SECRET_KEY environment variable to enable subscription management."
+        />
+      </div>
+    );
+  }
+
+  // Handle case when pricing data couldn't be loaded
   if (!pricingData || Object.keys(pricingData).length === 0) {
     return (
       <div className="py-6">

@@ -12,7 +12,7 @@ import {
 // Now we can import the route
 import { POST } from '@/app/api/billing/webhook/route';
 
-import { stripe } from '@/lib/billing/client';
+import { getStripe } from '@/lib/billing/client';
 import { getConfigOrEnv } from '@/lib/services/config-service';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -25,17 +25,20 @@ vi.mock('@/lib/services/config-service', () => ({
   getConfigOrEnv: vi.fn(),
 }));
 
-// Mock Stripe
-vi.mock('@/lib/billing/client', () => ({
-  stripe: {
+// Mock Stripe client BEFORE route import to avoid hoisting issues
+vi.mock('@/lib/billing/client', () => {
+  const stripe = {
     webhooks: {
-      constructEvent: vi.fn(),
+      constructEventAsync: vi.fn(),
     },
     subscriptions: {
       cancel: vi.fn(),
     },
-  },
-}));
+  };
+  return {
+    getStripe: vi.fn().mockResolvedValue(stripe),
+  };
+});
 
 // Mock database - just mock the db operations
 vi.mock('@/lib/db', () => ({
@@ -59,10 +62,15 @@ vi.mock('@/lib/db', () => ({
 
 const mockGetConfigOrEnv = vi.mocked(getConfigOrEnv);
 
+// Get reference to mocked Stripe client
+let stripe: any;
+
 describe('Stripe Webhook Route', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     mockGetConfigOrEnv.mockResolvedValue('whsec_test_secret');
+    // Get the mocked stripe client for each test
+    stripe = await getStripe();
   });
 
   describe('POST /api/billing/webhook', () => {
@@ -97,7 +105,7 @@ describe('Stripe Webhook Route', () => {
     });
 
     it('should return 400 if signature verification fails', async () => {
-      vi.mocked(stripe.webhooks.constructEvent).mockImplementationOnce(() => {
+      vi.mocked(stripe.webhooks.constructEventAsync).mockImplementationOnce(() => {
         throw new Error('Signature verification failed');
       });
 
@@ -120,7 +128,7 @@ describe('Stripe Webhook Route', () => {
         data: { object: {} },
       } as Stripe.Event;
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -156,7 +164,7 @@ describe('Stripe Webhook Route', () => {
         cancel_at_period_end: false,
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -187,7 +195,7 @@ describe('Stripe Webhook Route', () => {
         metadata: {},
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -207,7 +215,7 @@ describe('Stripe Webhook Route', () => {
         metadata: { userId: 'user_123', tier: 'pro' },
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -240,7 +248,7 @@ describe('Stripe Webhook Route', () => {
         cancel_at_period_end: true,
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -258,7 +266,7 @@ describe('Stripe Webhook Route', () => {
         items: { data: [] } as any,
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -279,7 +287,7 @@ describe('Stripe Webhook Route', () => {
         status: 'canceled',
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -300,7 +308,7 @@ describe('Stripe Webhook Route', () => {
         period_end: Math.floor((Date.now() + 30 * 24 * 60 * 60 * 1000) / 1000),
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -317,7 +325,7 @@ describe('Stripe Webhook Route', () => {
         subscription: null,
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -336,7 +344,7 @@ describe('Stripe Webhook Route', () => {
         subscription: 'sub_123',
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -358,7 +366,7 @@ describe('Stripe Webhook Route', () => {
         },
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -375,7 +383,7 @@ describe('Stripe Webhook Route', () => {
         metadata: {},
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -397,7 +405,7 @@ describe('Stripe Webhook Route', () => {
         },
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
@@ -414,7 +422,7 @@ describe('Stripe Webhook Route', () => {
         metadata: {},
       });
 
-      vi.mocked(stripe.webhooks.constructEvent).mockReturnValueOnce(event);
+      vi.mocked(stripe.webhooks.constructEventAsync).mockResolvedValueOnce(event);
 
       const request = new NextRequest('http://localhost/api/billing/webhook', {
         method: 'POST',
