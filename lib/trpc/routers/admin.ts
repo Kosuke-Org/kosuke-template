@@ -14,6 +14,8 @@ import type { Job } from 'bullmq';
 import { and, count, eq, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { invalidateWebhookSecretCache } from '@/app/api/billing/webhook/route';
+
 import { auth } from '@/lib/auth/providers';
 import { createFreeTierSubscription, deleteStripeCustomer } from '@/lib/billing/operations';
 import { db } from '@/lib/db/drizzle';
@@ -21,7 +23,7 @@ import { orgMemberships, organizations, users } from '@/lib/db/schema';
 import { createQueue } from '@/lib/queue/client';
 import { QUEUE_NAMES } from '@/lib/queue/config';
 import * as configService from '@/lib/services/config-service';
-import type { ConfigKey } from '@/lib/services/constants';
+import { CONFIG_KEYS, type ConfigKey } from '@/lib/services/constants';
 import * as llmLogsService from '@/lib/services/llm-logs-service';
 import * as ragService from '@/lib/services/rag-service';
 import { validateUserDeletion } from '@/lib/services/user-service';
@@ -1036,6 +1038,12 @@ export const adminRouter = router({
     set: superAdminProcedure.input(setConfigSchema).mutation(async ({ input }) => {
       try {
         await configService.setConfig(input);
+
+        // Invalidate webhook secret cache when updated
+        if (input.key === CONFIG_KEYS.STRIPE_WEBHOOK_SECRET) {
+          invalidateWebhookSecretCache();
+        }
+
         return { success: true };
       } catch (error) {
         handleApiError(error);
@@ -1048,6 +1056,12 @@ export const adminRouter = router({
     delete: superAdminProcedure.input(deleteConfigSchema).mutation(async ({ input }) => {
       try {
         const deleted = await configService.deleteConfig(input.key as ConfigKey);
+
+        // Invalidate webhook secret cache when deleted
+        if (input.key === CONFIG_KEYS.STRIPE_WEBHOOK_SECRET) {
+          invalidateWebhookSecretCache();
+        }
+
         return { success: deleted };
       } catch (error) {
         handleApiError(error);
