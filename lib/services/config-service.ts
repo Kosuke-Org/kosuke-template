@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { type NewSystemConfig, systemConfig } from '@/lib/db/schema';
-import { CONFIG_KEYS, type ConfigKey } from '@/lib/services/constants';
+import { CONFIG_KEYS, type ConfigKey, ERRORS } from '@/lib/services/constants';
 
 /**
  * Config Service (Security-Hardened Version)
@@ -136,7 +136,9 @@ export function decrypt(ciphertext: string): string {
     return decrypted;
   } catch (error) {
     // Auth tag verification failed or decryption error
-    throw new Error(`Failed to decrypt config value for key: ${key}: ${error}`);
+    throw new Error(`Failed to decrypt config value: ${error}`, {
+      cause: ERRORS.INTERNAL_SERVER_ERROR,
+    });
   }
 }
 
@@ -148,7 +150,7 @@ export function decrypt(ciphertext: string): string {
  */
 export async function getConfig(key: ConfigKey): Promise<string | null> {
   if (!key || key.trim() === '') {
-    throw new Error('Config key cannot be empty');
+    throw new Error('Config key cannot be empty', { cause: ERRORS.BAD_REQUEST });
   }
 
   const result = await db.select().from(systemConfig).where(eq(systemConfig.key, key)).limit(1);
@@ -163,7 +165,9 @@ export async function getConfig(key: ConfigKey): Promise<string | null> {
     return decrypt(encryptedValue);
   } catch (error) {
     console.error(`Failed to decrypt config value for key: ${key}`, error);
-    throw new Error(`Failed to decrypt config value for key: ${key}`);
+    throw new Error(`Failed to decrypt config value for key: ${key}`, {
+      cause: ERRORS.INTERNAL_SERVER_ERROR,
+    });
   }
 }
 
@@ -199,11 +203,11 @@ export async function setConfig({
   description?: string;
 }): Promise<void> {
   if (!key || key.trim() === '') {
-    throw new Error('Config key cannot be empty');
+    throw new Error('Config key cannot be empty', { cause: ERRORS.BAD_REQUEST });
   }
 
   if (!value || value.trim() === '') {
-    throw new Error('Config value cannot be empty');
+    throw new Error('Config value cannot be empty', { cause: ERRORS.BAD_REQUEST });
   }
 
   const encryptedValue = encrypt(value);
@@ -238,7 +242,7 @@ export async function setConfig({
  */
 export async function deleteConfig(key: ConfigKey): Promise<boolean> {
   if (!key || key.trim() === '') {
-    throw new Error('Config key cannot be empty');
+    throw new Error('Config key cannot be empty', { cause: ERRORS.BAD_REQUEST });
   }
 
   const result = await db.delete(systemConfig).where(eq(systemConfig.key, key)).returning();
@@ -328,7 +332,7 @@ async function rotateConfigKey(key: ConfigKey): Promise<void> {
   const currentValue = await getConfig(key);
 
   if (!currentValue) {
-    throw new Error(`Config key not found: ${key}`);
+    throw new Error(`Config key not found: ${key}`, { cause: ERRORS.NOT_FOUND });
   }
 
   const existing = await db.select().from(systemConfig).where(eq(systemConfig.key, key)).limit(1);
