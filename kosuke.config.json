@@ -48,19 +48,7 @@
       "STRIPE_SUCCESS_URL": "http://localhost:3000/settings/billing",
       "STRIPE_CANCEL_URL": "http://localhost:3000/settings/billing",
       "ENCRYPTION_KEY": ""
-    },
-    "test_users": [
-      {
-        "email": "jane+kosuke_test@example.com",
-        "displayName": "Jane Smith",
-        "role": "admin"
-      },
-      {
-        "email": "john+kosuke_test@example.com",
-        "displayName": "John Doe",
-        "role": "admin"
-      }
-    ]
+    }
   },
   "production": {
     "services": {
@@ -71,25 +59,33 @@
         "build_command": "bun install && bun run build",
         "start_command": "bun run start",
         "is_entrypoint": true,
-        "external_connection_variable": "NEXT_PUBLIC_APP_URL"
+        "external_connection_variable": "NEXT_PUBLIC_APP_URL",
+        "plan": "starter",
+        "_comment": "Available plans: starter (512MB/0.5CPU/$7), standard (2GB/1CPU/$25), pro (4GB/2CPU/$85), pro_plus (8GB/4CPU/$175), pro_max (16GB/4CPU/$225), pro_ultra (32GB/8CPU/$450)"
       },
       "worker": {
         "type": "worker",
         "runtime": "node",
         "directory": ".",
         "build_command": "bun install",
-        "start_command": "bun run workers:start"
+        "start_command": "bun run workers:start",
+        "plan": "starter",
+        "_comment": "Available plans: starter (512MB/0.5CPU/$7), standard (2GB/1CPU/$25), pro (4GB/2CPU/$85), pro_plus (8GB/4CPU/$175), pro_max (16GB/4CPU/$225), pro_ultra (32GB/8CPU/$450)"
       }
     },
     "storages": {
       "postgres": {
         "type": "postgres",
-        "connection_variable": "POSTGRES_URL"
+        "connection_variable": "POSTGRES_URL",
+        "plan": "basic_256mb",
+        "_comment": "Available plans: basic-256mb ($6), basic-1gb ($19), basic-4gb ($75), pro-4gb ($55), pro-8gb ($110), pro-16gb ($220), pro-32gb ($440), pro-64gb ($880)"
       },
       "redis": {
         "type": "keyvalue",
         "connection_variable": "REDIS_URL",
-        "maxmemory_policy": "noeviction"
+        "maxmemory_policy": "noeviction",
+        "plan": "starter",
+        "_comment": "Available plans: starter (256MB/$10), standard (1GB/$32), pro (5GB/$135), pro_plus (10GB/$250), pro_max (20GB/$550), pro_ultra (40GB/$1100)"
       },
       "s3": {
         "type": "s3",
@@ -98,24 +94,6 @@
         "bucket_variable": "S3_BUCKET",
         "region_variable": "S3_REGION",
         "endpoint_variable": "S3_ENDPOINT"
-      }
-    },
-    "resources": {
-      "nextjs": {
-        "plan": "starter",
-        "_comment": "Available plans: starter (512MB/0.5CPU/$7), standard (2GB/1CPU/$25), pro (4GB/2CPU/$85), pro_plus (8GB/4CPU/$175), pro_max (16GB/4CPU/$225), pro_ultra (32GB/8CPU/$450)"
-      },
-      "worker": {
-        "plan": "starter",
-        "_comment": "Available plans: starter (512MB/0.5CPU/$7), standard (2GB/1CPU/$25), pro (4GB/2CPU/$85), pro_plus (8GB/4CPU/$175), pro_max (16GB/4CPU/$225), pro_ultra (32GB/8CPU/$450)"
-      },
-      "postgres": {
-        "plan": "basic_256mb",
-        "_comment": "Available plans: basic-256mb ($6), basic-1gb ($19), basic-4gb ($75), pro-4gb ($55), pro-8gb ($110), pro-16gb ($220), pro-32gb ($440), pro-64gb ($880)"
-      },
-      "redis": {
-        "plan": "starter",
-        "_comment": "Available plans: starter (256MB/$10), standard (1GB/$32), pro (5GB/$135), pro_plus (10GB/$250), pro_max (20GB/$550), pro_ultra (40GB/$1100)"
       }
     },
     "environment": {
