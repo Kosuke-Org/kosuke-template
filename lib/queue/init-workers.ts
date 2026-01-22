@@ -9,6 +9,7 @@
 import { gracefulShutdown } from './client';
 import { scheduleSubscriptionSync } from './queues/subscriptions';
 import { documentsWorker } from './workers/documents';
+import { emailWorker } from './workers/email';
 import { subscriptionWorker } from './workers/subscriptions';
 
 console.log('🚀 Starting BullMQ workers...');
@@ -23,7 +24,7 @@ scheduleSubscriptionSync()
   });
 
 // List of all workers
-const workers = [subscriptionWorker, documentsWorker];
+const workers = [subscriptionWorker, documentsWorker, emailWorker];
 
 console.log(`✅ ${workers.length} worker(s) initialized and running`);
 
