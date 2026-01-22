@@ -28,6 +28,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface EditingState {
   key: ConfigKey;
@@ -103,7 +104,8 @@ export function ApiKeysConfigForm() {
   };
 
   const handleSave = async () => {
-    if (!editingConfig || !editingConfig.value.trim()) {
+    const trimmedValue = editingConfig?.value.trim();
+    if (!editingConfig || !trimmedValue) {
       toast({
         title: 'Error',
         description: 'Value cannot be empty',
@@ -114,7 +116,7 @@ export function ApiKeysConfigForm() {
 
     await setConfigMutation.mutateAsync({
       key: editingConfig.key,
-      value: editingConfig.value,
+      value: trimmedValue,
     });
   };
 
@@ -138,9 +140,19 @@ export function ApiKeysConfigForm() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center">
-        <Loader2 className="text-muted-foreground h-8 w-8 animate-spin" />
-      </div>
+      <Card className="max-w-3xl">
+        <CardContent className="space-y-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-10 flex-1" />
+                <Skeleton className="h-10 w-10" />
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     );
   }
 
