@@ -1,19 +1,23 @@
 #!/bin/bash
 # =============================================================================
-# Vamos - AI-Driven Development Workflow
+# Panos - AI-Driven Development Workflow
 # =============================================================================
 #
 # Orchestrates Claude Code to implement features from requirements:
-#   1. MAP      → Generate project structure map
-#   2. TICKETS  → Generate implementation tickets
-#   3. BUILD    → Implement each ticket (ship → migrate → review → commit)
-#   4-5. TESTS  → Skipped (use --with-tests in TypeScript version)
-#   6. COMMIT   → Final commit
+#   1. REQUIREMENTS → Gather product requirements (interactive)
+#   2. MAP          → Generate project structure map
+#   3. TICKETS      → Generate implementation tickets
+#   4. BUILD        → Implement each ticket (ship → migrate → review → commit)
+#   5. COMMIT       → Final commit
+#
+# For web testing, use the separate test.sh script which uses Claude Code's
+# Chrome integration for browser-based testing.
 #
 # Usage:
-#   ./vamos.sh                           # Run in current directory
-#   ./vamos.sh --directory=/path/to/project
-#   ./vamos.sh --interactive             # Enable confirmations
+#   ./panos.sh                           # Run in current directory
+#   ./panos.sh --directory=/path/to/project
+#   ./panos.sh --interactive             # Enable confirmations
+#   ./panos.sh --no-commit               # Skip all commit operations
 #
 # Environment:
 #   SLACK_WEBHOOK_URL   - Optional, for failure notifications
@@ -33,6 +37,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR=""
 INTERACTIVE=false
+NO_COMMIT=false
 SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/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}"
 
 # PostgreSQL container (created at runtime)
@@ -41,7 +46,7 @@ POSTGRES_PORT=""
 POSTGRES_URL=""
 
 # Isolated Claude config directory (prevents ~/.claude/CLAUDE.md loading)
-VAMOS_CONFIG_DIR=""
+PANOS_CONFIG_DIR=""
 
 # State files (set after PROJECT_DIR is resolved)
 KOSUKE_DIR=""
@@ -69,6 +74,10 @@ parse_args() {
         INTERACTIVE=true
         shift
         ;;
+      --no-commit)
+        NO_COMMIT=true
+        shift
+        ;;
       --help|-h)
         show_help
         exit 0
@@ -89,7 +98,7 @@ parse_args() {
 
   # Set state file paths
   KOSUKE_DIR="$PROJECT_DIR/.kosuke"
-  STATE_FILE="$KOSUKE_DIR/.vamos-state.json"
+  STATE_FILE="$KOSUKE_DIR/.panos-state.json"
   TICKETS_FILE="$KOSUKE_DIR/tickets.json"
   MAP_FILE="$KOSUKE_DIR/map.json"
   DOCS_FILE="$KOSUKE_DIR/docs.md"
@@ -97,14 +106,15 @@ parse_args() {
 
 show_help() {
   cat << 'EOF'
-Vamos - AI-Driven Development Workflow
+Panos - AI-Driven Development Workflow
 
 Usage:
-  ./vamos.sh [options] [directory]
+  ./panos.sh [options] [directory]
 
 Options:
   --directory=PATH    Project directory (default: current directory)
   --interactive       Enable confirmation prompts
+  --no-commit         Skip all commit operations
   --help, -h          Show this help message
 
 Environment Variables:
@@ -115,14 +125,15 @@ Prerequisites:
   - Docker must be running (script creates its own PostgreSQL container)
 
 Examples:
-  ./vamos.sh                                    # Run in current directory
-  ./vamos.sh /path/to/project                   # Run in specific directory
-  ./vamos.sh --directory=/path/to/project       # Same as above
-  SLACK_WEBHOOK_URL="..." ./vamos.sh            # With Slack notifications
+  ./panos.sh                                    # Run in current directory
+  ./panos.sh /path/to/project                   # Run in specific directory
+  ./panos.sh --directory=/path/to/project       # Same as above
+  ./panos.sh --no-commit                        # Run without committing
+  SLACK_WEBHOOK_URL="..." ./panos.sh            # With Slack notifications
 
 Running in tmux (recommended):
-  tmux new-session -d -s vamos './vamos.sh /path/to/project'
-  tmux attach -t vamos
+  tmux new-session -d -s panos './panos.sh /path/to/project'
+  tmux attach -t panos
 EOF
 }
 
@@ -158,7 +169,7 @@ start_postgres_container() {
   log_info "Starting PostgreSQL container..."
 
   # Generate unique container name
-  POSTGRES_CONTAINER_NAME="vamos-postgres-$$"
+  POSTGRES_CONTAINER_NAME="panos-postgres-$$"
 
   # Find a random available port
   POSTGRES_PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
@@ -219,7 +230,7 @@ notify_slack() {
 
   curl -s -X POST "$SLACK_WEBHOOK_URL" \
     -H 'Content-Type: application/json' \
-    -d "{\"text\":\"$emoji *Vamos* ($project_name): $message\"}" \
+    -d "{\"text\":\"$emoji *Panos* ($project_name): $message\"}" \
     >/dev/null 2>&1 || true
 }
 
@@ -381,7 +392,7 @@ run_claude() {
 
   # Run Claude Code with streaming JSON output
   # CLAUDE_CONFIG_DIR isolates from global ~/.claude/CLAUDE.md while still loading project CLAUDE.md
-  if ! CLAUDE_CONFIG_DIR="$VAMOS_CONFIG_DIR" claude --dangerously-skip-permissions \
+  if ! CLAUDE_CONFIG_DIR="$PANOS_CONFIG_DIR" claude --dangerously-skip-permissions \
     --output-format stream-json \
     -p "$prompt" \
     2>&1 | tee "$output_file"; then
@@ -401,6 +412,172 @@ run_claude() {
 
   rm -f "$output_file"
   return 0
+}
+
+# =============================================================================
+# COMMAND: REQUIREMENTS
+# =============================================================================
+
+requirements_command() {
+  local kosuke_dir="$PROJECT_DIR/.kosuke"
+  local docs_file="$kosuke_dir/docs.md"
+
+  # Check if docs.md already exists
+  if [[ -f "$docs_file" ]]; then
+    log_info "Requirements document already exists: $docs_file"
+    log_info "Skipping requirements gathering step"
+    return 0
+  fi
+
+  log_info "Starting interactive requirements gathering..."
+
+  # Ensure .kosuke directory exists
+  mkdir -p "$kosuke_dir"
+
+  local prompt
+  prompt='You are an expert product requirements analyst specializing in modern web applications.
+
+**IMPORTANT - NON-WEB APPLICATION CHECK:**
+Before proceeding with any analysis, first determine if the user is describing a web application or something else (mobile app, desktop app, CLI tool, IoT device, game, etc.).
+
+If the user is trying to build something that is NOT a web application (such as a mobile app, desktop app, native app, CLI tool, embedded system, game, VR/AR app, smart TV app, watch app, or any other non-web platform), you MUST immediately respond with ONLY this message and nothing else:
+
+"The app you want to build is not supported by our system yet. Join the waitlist at https://kosuke.ai. We will notify you when we will release support for products that are not web applications."
+
+Do NOT ask clarifying questions, do NOT offer alternatives, do NOT suggest building a web version instead. Just return that exact message and stop.
+
+**RECOMMENDED TECH STACK:**
+When building web applications, use these proven technologies:
+- **Frontend**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Shadcn UI
+- **Authentication**: BetterAuth (user management, auth, sessions)
+- **Database**: PostgreSQL with Drizzle ORM
+- **Payment Processing**: Stripe APIs (when payments are needed)
+- **Email Service**: Resend APIs (when transactional emails are needed)
+- **AI/LLM**: Google AI APIs (when AI features are needed)
+
+**INTEGRATION GUIDELINES:**
+- Use Stripe for payment processing when the product needs to handle payments
+- Use Resend for transactional emails when the product needs to send emails/notifications
+- Use Google AI APIs when the product needs AI/LLM capabilities
+- ONLY include integrations that the product ACTUALLY NEEDS - do not assume all products need all integrations
+- For integrations not covered by the standard recommendations (e.g., maps, SMS, video calls), research options and present 2-3 choices
+- NEVER list database as an integration - database (PostgreSQL/Drizzle) is internal infrastructure, not an external third-party integration
+
+**YOUR PRIMARY OBJECTIVE:** Create a comprehensive `docs.md` file that the user will review before implementation begins. This document must contain ALL requirements needed for developers to build the product.
+
+**Your Workflow:**
+
+1. **Initial Analysis (First User Request)**: When a user describes a product idea, analyze it carefully and present your understanding in this format:
+
+---
+## Product Description
+[Brief description of what will be built - the core concept and purpose]
+
+## Core Functionalities
+- [Functionality 1]
+- [Functionality 2]
+- [Functionality 3]
+...
+
+## Integrations
+Only list EXTERNAL third-party integrations that are ACTUALLY NEEDED for the product to function.
+DO NOT include database - it is internal infrastructure, not an integration.
+- **Payment Processing**: Stripe APIs (only if product needs payments)
+- **Email Service**: Resend APIs (only if product needs email notifications/alerts)
+- **AI Features**: Google AI APIs (only if product needs AI/LLM capabilities)
+- **[Additional Service Type]**: [Options to research] (for services not covered above, e.g., maps, SMS, video)
+
+## Interface & Design
+List all pages/screens with their components and interactions:
+
+### [Page Name]
+- **Route:** [URL path, e.g., "/dashboard", "/settings"]
+- **Components:** [List of UI components on this page]
+- **User Interactions:** [Key actions users can perform]
+- **Data Displayed:** [What data is shown on this page]
+
+## Clarification Questions & MVP Recommendations
+
+### Feature Questions
+For each feature clarification needed, provide BOTH a question AND a recommended approach for MVP:
+
+1. **[Question topic]**
+   - Question: [Specific question]
+   - MVP Recommendation: [Simple, practical approach that reduces scope]
+
+2. **[Question topic]**
+   - Question: [Specific question]
+   - MVP Recommendation: [Simple, practical approach that reduces scope]
+
+...
+
+### Integration Questions (for additional services)
+ONLY ask about integrations that are not covered by the recommended stack (Stripe, Resend, Google AI). For example:
+- Maps service (if location/mapping features needed)
+- SMS service (if text message notifications needed)
+- Video service (if video calls/streaming needed)
+- Social media APIs (if social login/sharing needed)
+- Domain-specific third-party APIs (industry-specific data services)
+
+**Quick Response Option:** The user can reply "go for recommendations" or "use recommendations" to accept all MVP recommendations at once.
+---
+
+2. **Iterative Refinement**: As the user answers questions:
+   - If user says "go for recommendations" or "use recommendations", immediately accept ALL MVP recommendations and proceed to creating docs.md
+   - If user provides specific answers, acknowledge them and update your understanding
+   - Ask follow-up questions ONLY for remaining ambiguities
+   - Always prioritize simplicity and MVP scope
+   - Continue the conversation until EVERYTHING is crystal clear
+
+3. **Final Deliverable - docs.md**: Once ALL questions are answered and requirements are 100% clear, create the docs.md file at '"$docs_file"'.
+
+**docs.md MUST contain these sections in this exact order:**
+   - **Product Description** - High-level description of what will be built, the core concept and purpose
+   - **Core Functionalities** - Detailed feature descriptions (what the product should do)
+   - **Interface & Design** - List of ALL pages/screens with their components, user interactions, and data displayed
+   - **Integrations** - ONLY list EXTERNAL third-party integrations that are actually needed for this specific product. Use Stripe (if payments needed), Resend (if emails needed), Google AI (if AI features needed). Add external integrations only if required (maps, SMS, video, social media, domain-specific APIs, etc.). NEVER include database in integrations - database is internal infrastructure, not an external integration.
+
+**Critical Rules:**
+- NEVER start implementation - you only gather requirements
+- NEVER create docs.md until ALL clarification questions are answered (or user accepts recommendations)
+- ALWAYS provide both questions AND MVP recommendations for each clarification point
+- MVP recommendations should simplify scope, reduce complexity, and focus on core features
+- If user says "go for recommendations" or similar, immediately accept ALL recommendations and create docs.md
+- ALWAYS list all pages with their components and interactions
+- Focus on WHAT the product should do, not HOW to code it
+- Be conversational and help the user think through edge cases
+- Bias towards simplicity - this is an MVP, not a full-featured product
+- The docs.md file is your SUCCESS CRITERIA - make it comprehensive and clear
+- NEVER include technical implementation details (database schemas, API endpoints, code architecture, tech stack specifics) in docs.md
+- Keep docs.md focused on user-facing features, functionality, and interface design only
+- Use the recommended integrations (Stripe, Resend, Google AI) when the product needs those capabilities - no need to ask about alternatives
+- ONLY ask about additional integrations when the product needs services not covered by the recommended stack (maps, SMS, video, etc.)
+- NEVER ask about native mobile apps or "mobile responsiveness vs native apps" - we ONLY build responsive web applications. Mobile responsiveness is assumed and not a question to ask
+
+**Success = User reviews docs.md and says "Yes, this is exactly what I want to build"**
+
+Now, ask the user to describe their product idea.'
+
+  cd "$PROJECT_DIR"
+
+  # Run Claude Code interactively (no -p flag) for requirements gathering
+  # CLAUDE_CONFIG_DIR isolates from global ~/.claude/CLAUDE.md while still loading project CLAUDE.md
+  log_info "Starting interactive Claude session for requirements gathering..."
+  log_info "Describe your product idea to Claude. Type 'exit' or press Ctrl+C when done."
+  echo ""
+
+  CLAUDE_CONFIG_DIR="$PANOS_CONFIG_DIR" claude \
+    --dangerously-skip-permissions \
+    -p "$prompt"
+
+  # Check if docs.md was created
+  if [[ -f "$docs_file" ]]; then
+    log_success "Requirements document created: $docs_file"
+  else
+    log_error "Requirements document was not created at $docs_file"
+    log_error "Please run the requirements step again"
+    return 1
+  fi
 }
 
 # =============================================================================
@@ -1282,13 +1459,11 @@ $context
   fi
 
   local prompt
-  prompt=$(cat << PROMPT
-You are a code quality expert specialized in committing changes while maintaining project integrity.
+  prompt="You are a code quality expert specialized in committing changes while maintaining project integrity.
 
-$context_section
-**YOUR TASK:**
+$context_section**YOUR TASK:**
 
-Stage all changes and commit them with the message: "$message"
+Stage all changes and commit them with the message: \"$message\"
 
 If pre-commit hooks fail, fix all the issues and retry the commit until successful.
 
@@ -1297,25 +1472,25 @@ If pre-commit hooks fail, fix all the issues and retry the commit until successf
 **STEP 1: STAGE AND COMMIT**
 
 1. Stage all changes: \`git add -A\`
-2. Attempt to commit: \`git commit -m "$message"\`
+2. Attempt to commit: \`git commit -m \"$message\"\`
 3. **Possible outcomes:**
-   - ✅ Commit succeeds → DONE!
-   - ✅ "nothing to commit, working tree clean" → DONE! (this is success, not an error)
-   - ❌ Pre-commit hooks fail with errors → Continue to STEP 2 to fix
+   - Commit succeeds - DONE!
+   - \"nothing to commit, working tree clean\" - DONE! (this is success, not an error)
+   - Pre-commit hooks fail with errors - Continue to STEP 2 to fix
 
 **STEP 2: FIX PRE-COMMIT HOOK FAILURES**
 
 **Analyze the error output from git commit:**
-- **Format errors** → Code style, indentation, spacing, trailing commas
-- **Lint errors** → Linting violations, unused variables, missing types
-- **Type errors** → TypeScript type issues, missing imports/types
-- **Test failures** → Failing tests, outdated snapshots
-- **Knip errors** → Unused exports, files, and dependencies
+- **Format errors** - Code style, indentation, spacing, trailing commas
+- **Lint errors** - Linting violations, unused variables, missing types
+- **Type errors** - TypeScript type issues, missing imports/types
+- **Test failures** - Failing tests, outdated snapshots
+- **Knip errors** - Unused exports, files, and dependencies
 
 **For knip errors specifically:**
-- **Unused dependencies** → Add them to \`ignoreDependencies\` in knip.config.ts
-- **Unused exports** → Remove or export them properly (DO NOT ignore in knip.config.ts)
-- **Unused files** → Remove or import them properly (DO NOT ignore in knip.config.ts)
+- **Unused dependencies** - Add them to \`ignoreDependencies\` in knip.config.ts
+- **Unused exports** - Remove or export them properly (DO NOT ignore in knip.config.ts)
+- **Unused files** - Remove or import them properly (DO NOT ignore in knip.config.ts)
 
 **For breaking changes (removed tables, deleted features, major refactors):**
 
@@ -1332,14 +1507,14 @@ When schema tables or features are removed, many files may reference the deleted
    - Remove exports for deleted items from barrel files (index.ts)
 
 3. **Clean up systematically** - Work through the dependency chain:
-   - Schema → Types → Hooks → Components → Routes → API handlers
+   - Schema - Types - Hooks - Components - Routes - API handlers
    - Delete or update each layer as needed
    - A clean codebase has NO disabled/backup files
 
 4. **For cascading errors** - When one deletion causes many errors:
    - Identify all files that depend on the deleted entity
    - Decide for each: delete entirely OR update to remove the reference
-   - Work methodically - this may take many iterations and that's OK
+   - Work methodically - this may take many iterations and that is OK
 
 **For each error:**
 1. Read the file(s) with errors
@@ -1350,35 +1525,33 @@ When schema tables or features are removed, many files may reference the deleted
 
 **After fixes:**
 - Stage the fixes: \`git add -A\`
-- Retry commit: \`git commit -m "$message"\`
+- Retry commit: \`git commit -m \"$message\"\`
 - If still failing, continue fixing and retrying until successful
 
 **CRITICAL RULES:**
 
-⛔ **NEVER** skip pre-commit hooks (don't use --no-verify)
-⛔ **NEVER** comment out failing code to hide errors
-⛔ **NEVER** disable linting rules to hide errors
-⛔ **NEVER** remove tests to make them pass
-⛔ **NEVER** run database operations (db:generate, db:migrate, db:push, db:seed)
-⛔ **NEVER** run docker commands
-⛔ **NEVER** modify configuration files (tsconfig.json, eslint.config.js, prettier.config.js, next.config.js, etc.)
-⛔ **NEVER** add exclude patterns to tsconfig.json to hide type errors
-⛔ **NEVER** rename files to .disabled, .bak, .old, or similar - DELETE them instead
-⛔ **NEVER** use workarounds that leave dead code in the repository
+NEVER skip pre-commit hooks (do not use --no-verify)
+NEVER comment out failing code to hide errors
+NEVER disable linting rules to hide errors
+NEVER remove tests to make them pass
+NEVER run database operations like db:generate, db:migrate, db:push, db:seed
+NEVER run docker commands
+NEVER modify configuration files like tsconfig.json, eslint.config.js, prettier.config.js, next.config.js
+NEVER add exclude patterns to tsconfig.json to hide type errors
+NEVER rename files to .disabled, .bak, .old, or similar - DELETE them instead
+NEVER use workarounds that leave dead code in the repository
 
-✅ **DO** read error messages from git commit carefully
-✅ **DO** fix one category of errors at a time (format → lint → types → tests)
-✅ **DO** make minimal, surgical changes to fix specific errors
-✅ **DO** follow the project's coding standards
-✅ **DO** stage changes after each fix (\`git add -A\`)
-✅ **DO** retry commit after fixing issues
-✅ **DO** keep retrying until commit succeeds
-✅ **DO** DELETE unused files completely (clean codebase)
-✅ **DO** be patient with large refactors - 50+ errors is normal for breaking changes
+DO read error messages from git commit carefully
+DO fix one category of errors at a time (format then lint then types then tests)
+DO make minimal, surgical changes to fix specific errors
+DO follow the project coding standards
+DO stage changes after each fix with git add -A
+DO retry commit after fixing issues
+DO keep retrying until commit succeeds
+DO DELETE unused files completely (clean codebase)
+DO be patient with large refactors - 50+ errors is normal for breaking changes
 
-Begin by staging all changes and attempting to commit. If pre-commit hooks fail, fix the issues and retry until successful.
-PROMPT
-)
+Begin by staging all changes and attempting to commit. If pre-commit hooks fail, fix the issues and retry until successful."
 
   run_claude "$prompt"
 
@@ -1433,7 +1606,9 @@ build_tickets() {
     if [[ "$ticket_type" == "frontend" ]] && [[ "$backend_checkpoint_done" == "false" ]]; then
       log_info "Running backend migration checkpoint..."
       migrate_command "BACKEND-CHECKPOINT"
-      commit_command "chore: apply migrations before frontend (vamos backend checkpoint)"
+      if [[ "$NO_COMMIT" == "false" ]]; then
+        commit_command "chore: apply migrations before frontend (panos backend checkpoint)"
+      fi
       backend_checkpoint_done=true
     fi
 
@@ -1471,18 +1646,23 @@ build_tickets() {
     # Update status to Done
     update_ticket_status "$ticket_id" "Done"
 
-    # 4. Commit
-    local map_context=""
-    if [[ -f "$MAP_FILE" ]]; then
-      map_context=$(cat "$MAP_FILE")
-    fi
+    # 4. Commit (if not in no-commit mode)
+    if [[ "$NO_COMMIT" == "false" ]]; then
+      local map_context=""
+      if [[ -f "$MAP_FILE" ]]; then
+        map_context=$(cat "$MAP_FILE")
+      fi
 
-    if ! commit_command "feat($ticket_id): $ticket_title" "$map_context"; then
-      update_ticket_status "$ticket_id" "Error" "Commit failed"
-      log_error "Failed to commit $ticket_id"
-      return 1
+      if ! commit_command "feat($ticket_id): $ticket_title" "$map_context"; then
+        update_ticket_status "$ticket_id" "Error" "Commit failed"
+        log_error "Failed to commit $ticket_id"
+        return 1
+      fi
+      update_ticket_execution_status "$ticket_id" "commitStatus" "success"
+    else
+      log_info "Skipping commit for $ticket_id (--no-commit mode)"
+      update_ticket_execution_status "$ticket_id" "commitStatus" "skipped"
     fi
-    update_ticket_execution_status "$ticket_id" "commitStatus" "success"
 
     log_success "Completed: $ticket_id"
   done
@@ -1503,7 +1683,7 @@ on_failure() {
 
   mark_step_failed "$current_step" "Exit code: $exit_code"
 
-  log_error "Vamos workflow failed at step $current_step with exit code $exit_code"
+  log_error "Panos workflow failed at step $current_step with exit code $exit_code"
   notify_slack "Workflow FAILED at step $current_step. Check tmux session for details." "failure"
 
   # Cleanup PostgreSQL container
@@ -1517,8 +1697,8 @@ cleanup() {
   stop_postgres_container
 
   # Remove isolated Claude config directory
-  if [[ -n "$VAMOS_CONFIG_DIR" ]] && [[ -d "$VAMOS_CONFIG_DIR" ]]; then
-    rm -rf "$VAMOS_CONFIG_DIR"
+  if [[ -n "$PANOS_CONFIG_DIR" ]] && [[ -d "$PANOS_CONFIG_DIR" ]]; then
+    rm -rf "$PANOS_CONFIG_DIR"
   fi
 }
 
@@ -1539,8 +1719,8 @@ main() {
   mkdir -p "$KOSUKE_DIR"
 
   # Create isolated Claude config directory (prevents ~/.claude/CLAUDE.md loading)
-  VAMOS_CONFIG_DIR=$(mktemp -d)
-  log_info "Using isolated Claude config: $VAMOS_CONFIG_DIR"
+  PANOS_CONFIG_DIR=$(mktemp -d)
+  log_info "Using isolated Claude config: $PANOS_CONFIG_DIR"
 
   # Install pre-commit hooks
   log_info "Installing pre-commit hooks..."
@@ -1556,71 +1736,93 @@ main() {
   local resume_step
   resume_step=$(get_resume_step)
 
-  log_info "Starting Vamos workflow..."
+  log_info "Starting Panos workflow..."
   log_info "Project: $PROJECT_DIR"
   log_info "Resume from step: $resume_step"
   log_info "Interactive: $INTERACTIVE"
+  log_info "No commit mode: $NO_COMMIT"
   log_info "PostgreSQL URL: $POSTGRES_URL"
   echo ""
 
   # Set up error trap
   trap 'on_failure' ERR
 
-  # Step 1: Generate project map
+  # Step 1: Gather requirements
   if [[ $resume_step -le 1 ]]; then
-    log_step "STEP 1/6: Generating Project Map"
-    map_command
-    git_commit_simple "chore: generate project map (vamos step 1/6)" || true
+    log_step "STEP 1/5: Gathering Requirements"
+    requirements_command
+    if [[ "$NO_COMMIT" == "false" ]]; then
+      git_commit_simple "chore: generate requirements (panos step 1/5)" || true
+    fi
     mark_step_completed 1
   else
     log_info "Skipping Step 1 (already completed)"
   fi
 
-  # Step 2: Generate implementation tickets
+  # Step 2: Generate project map
   if [[ $resume_step -le 2 ]]; then
-    log_step "STEP 2/6: Generating Implementation Tickets"
-    tickets_command
-    git_commit_simple "chore: generate implementation tickets (vamos step 2/6)" || true
+    log_step "STEP 2/5: Generating Project Map"
+    map_command
+    if [[ "$NO_COMMIT" == "false" ]]; then
+      git_commit_simple "chore: generate project map (panos step 2/5)" || true
+    fi
     mark_step_completed 2
   else
     log_info "Skipping Step 2 (already completed)"
   fi
 
-  # Step 3: Build implementation tickets
+  # Step 3: Generate implementation tickets
   if [[ $resume_step -le 3 ]]; then
-    log_step "STEP 3/6: Building Implementation Tickets"
-    build_tickets
+    log_step "STEP 3/5: Generating Implementation Tickets"
+    tickets_command
+    if [[ "$NO_COMMIT" == "false" ]]; then
+      git_commit_simple "chore: generate implementation tickets (panos step 3/5)" || true
+    fi
     mark_step_completed 3
   else
     log_info "Skipping Step 3 (already completed)"
   fi
 
-  # Steps 4-5: Tests (skipped)
-  log_info "Skipping Step 4 (test generation) - tests disabled"
-  log_info "Skipping Step 5 (test execution) - tests disabled"
-
-  # Step 6: Final commit
-  if [[ $resume_step -le 6 ]]; then
-    log_step "STEP 6/6: Final Commit"
-    commit_command "chore: vamos workflow complete" || true
-    mark_step_completed 6
+  # Step 4: Build implementation tickets
+  if [[ $resume_step -le 4 ]]; then
+    log_step "STEP 4/5: Building Implementation Tickets"
+    build_tickets
+    mark_step_completed 4
   else
-    log_info "Skipping Step 6 (already completed)"
+    log_info "Skipping Step 4 (already completed)"
+  fi
+
+  # Step 5: Final commit
+  if [[ $resume_step -le 5 ]]; then
+    log_step "STEP 5/5: Final Commit"
+    if [[ "$NO_COMMIT" == "false" ]]; then
+      commit_command "chore: panos workflow complete" || true
+    else
+      log_info "Skipping final commit (--no-commit mode)"
+    fi
+    mark_step_completed 5
+  else
+    log_info "Skipping Step 5 (already completed)"
   fi
 
   # Success!
   echo ""
   echo "================================================================================"
-  log_success "Vamos Workflow Completed Successfully!"
+  log_success "Panos Workflow Completed Successfully!"
   echo "================================================================================"
   echo ""
   echo "Summary:"
-  echo "  1. ✅ Project map generated (.kosuke/map.json)"
-  echo "  2. ✅ Implementation tickets generated (.kosuke/tickets.json)"
-  echo "  3. ✅ All implementation tickets built and committed"
-  echo "  4. ⏭️  Test generation skipped"
-  echo "  5. ⏭️  Test execution skipped"
-  echo "  6. ✅ Final commit completed"
+  echo "  1. ✅ Requirements gathered (.kosuke/docs.md)"
+  echo "  2. ✅ Project map generated (.kosuke/map.json)"
+  echo "  3. ✅ Implementation tickets generated (.kosuke/tickets.json)"
+  echo "  4. ✅ All implementation tickets built"
+  if [[ "$NO_COMMIT" == "false" ]]; then
+    echo "  5. ✅ Final commit completed"
+  else
+    echo "  5. ⏭️  Commits skipped (--no-commit mode)"
+  fi
+  echo ""
+  echo "Next step: Run ./scripts/test.sh to perform web testing with Claude Code"
   echo ""
 
   notify_slack "Workflow completed successfully!" "success"
