@@ -143,7 +143,6 @@ describe('Storage', () => {
       vi.mocked(writeFile).mockResolvedValue(undefined);
 
       const key = await storage.uploadDocument(mockFile, 'org-789');
-      console.log(key);
       expect(key).toMatch('documents/org-789');
       expect(key).toMatch(/my_document__v2___final_\.pdf$/);
       expect(key).not.toMatch(/[()#!\s]/); // No special characters

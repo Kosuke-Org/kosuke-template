@@ -4,6 +4,56 @@ import { vi } from 'vitest';
 
 import { setupMocks } from './__tests__/setup/mocks';
 
+// Mock the entire queue module to prevent worker initialization
+vi.mock('@/lib/queue', async () => {
+  return {
+    // Mock only the parts that trigger worker initialization
+    subscriptionWorker: { on: vi.fn(), close: vi.fn() },
+    documentsWorker: { on: vi.fn(), close: vi.fn() },
+    emailWorker: { on: vi.fn(), close: vi.fn() },
+    // Mock queue functions
+    addToMarketingSegmentJob: vi.fn(() => Promise.resolve()),
+    removeFromMarketingSegmentJob: vi.fn(() => Promise.resolve()),
+    addIndexDocumentJob: vi.fn(() => Promise.resolve()),
+    addSubscriptionSyncJob: vi.fn(() => Promise.resolve()),
+    scheduleSubscriptionSync: vi.fn(() => Promise.resolve()),
+    scheduleAllJobs: vi.fn(() => Promise.resolve()),
+  };
+});
+
+// Mock Redis client FIRST before any imports
+vi.mock('@/lib/redis', () => ({
+  redis: {
+    get: vi.fn(() => Promise.resolve(null)),
+    set: vi.fn(() => Promise.resolve('OK')),
+    del: vi.fn(() => Promise.resolve(1)),
+    quit: vi.fn(() => Promise.resolve('OK')),
+    on: vi.fn(),
+  },
+  closeRedis: vi.fn(() => Promise.resolve()),
+}));
+
+// Mock BullMQ to prevent worker initialization during tests
+vi.mock('bullmq', () => ({
+  Queue: vi.fn().mockImplementation(() => ({
+    add: vi.fn(() => Promise.resolve({ id: 'mock-job-id' })),
+    addBulk: vi.fn(() => Promise.resolve([])),
+    getJob: vi.fn(() => Promise.resolve(null)),
+    getJobs: vi.fn(() => Promise.resolve([])),
+    close: vi.fn(() => Promise.resolve()),
+    on: vi.fn(),
+  })),
+  Worker: vi.fn().mockImplementation(() => ({
+    on: vi.fn(),
+    close: vi.fn(() => Promise.resolve()),
+    run: vi.fn(),
+  })),
+  QueueEvents: vi.fn().mockImplementation(() => ({
+    on: vi.fn(),
+    close: vi.fn(() => Promise.resolve()),
+  })),
+}));
+
 // Setup mocks before all tests
 setupMocks();
 
