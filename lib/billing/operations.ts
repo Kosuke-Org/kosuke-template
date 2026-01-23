@@ -5,9 +5,10 @@ import { BILLING_URLS, type PricingData } from '@/lib/billing';
 import { db } from '@/lib/db';
 import { SubscriptionStatus, SubscriptionTier } from '@/lib/db/schema';
 import { orgSubscriptions, organizations } from '@/lib/db/schema';
+import { isStripeApiKeyConfigured } from '@/lib/services/config-service';
 import { type CheckoutSessionParams, type OperationResult } from '@/lib/types';
 
-import { stripe } from './client';
+import { getStripe } from './client';
 import { getSubscriptionEligibility } from './eligibility';
 import { getAllPrefixedLookupKeys, stripPrefix, withPrefix } from './lookup-keys';
 import { SubscriptionTierType } from './products';
@@ -24,11 +25,18 @@ import { getOrgSubscription } from './subscription';
  * Uses prefixed lookup keys for Stripe API, returns unprefixed keys in response
  */
 export async function getPricingFromStripe(): Promise<PricingData> {
+  // Check if Stripe is configured
+  if (!isStripeApiKeyConfigured()) {
+    console.warn('⚠️  Stripe API key not configured - returning empty pricing data');
+    return {};
+  }
+
   try {
     // Fetch all lookup keys from products.json (with prefix applied)
     const lookupKeys = getAllPrefixedLookupKeys();
 
     // Fetch prices from Stripe using prefixed lookup keys
+    const stripe = await getStripe();
     const pricesWithProducts = await stripe.prices.list({
       active: true,
       lookup_keys: lookupKeys,
@@ -95,6 +103,7 @@ async function getOrCreateStripeCustomer(
   }
 
   // Create new Stripe customer
+  const stripe = await getStripe();
   const customer = await stripe.customers.create({
     email: customerEmail,
     name: org?.name,
@@ -158,6 +167,7 @@ export async function createFreeTierSubscription(params: {
 
     // Create Stripe subscription with metadata
     // The webhook will handle creating the database record
+    const stripe = await getStripe();
     const stripeSubscription = await stripe.subscriptions.create(
       {
         customer: customerId,
@@ -213,6 +223,7 @@ export async function deleteStripeCustomer(organizationId: string): Promise<Oper
     }
 
     // Delete customer in Stripe (this will automatically cancel all subscriptions)
+    const stripe = await getStripe();
     await stripe.customers.del(org.stripeCustomerId);
 
     console.log('✅ Successfully deleted Stripe customer:', org.stripeCustomerId);
@@ -241,6 +252,7 @@ async function getPriceByLookupKey(lookupKey: SubscriptionTierType) {
   try {
     const prefixedKey = await withPrefix(lookupKey);
 
+    const stripe = await getStripe();
     const prices = await stripe.prices.list({
       lookup_keys: [prefixedKey],
       limit: 1,
@@ -294,6 +306,7 @@ async function createSubscriptionSchedule(
     const customerId = await getOrCreateStripeCustomer(organizationId, customerEmail);
 
     // Create subscription schedule to start after current period ends
+    const stripe = await getStripe();
     const schedule = await stripe.subscriptionSchedules.create({
       customer: customerId,
       start_date: Math.floor(currentSubscription.currentPeriodEnd.getTime() / 1000),
@@ -373,7 +386,7 @@ async function getTierPrice(lookupKey: string): Promise<number> {
   try {
     // Apply prefix for Stripe API call
     const prefixedKey = withPrefix(lookupKey);
-
+    const stripe = await getStripe();
     const prices = await stripe.prices.list({
       lookup_keys: [prefixedKey],
       limit: 1,
@@ -424,6 +437,7 @@ export async function createCheckoutSession(
     const customerId = await getOrCreateStripeCustomer(organizationId, customerEmail);
 
     // Create checkout session for upgrade or new subscription
+    const stripe = await getStripe();
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
@@ -496,6 +510,7 @@ export async function cancelOrgSubscription(
     }
 
     // Cancel subscription at period end via Stripe API
+    const stripe = await getStripe();
     await stripe.subscriptions.update(stripeSubscriptionId, {
       cancel_at_period_end: true,
     });
@@ -562,6 +577,7 @@ export async function reactivateOrgSubscription(
     }
 
     // Reactivate subscription via Stripe API
+    const stripe = await getStripe();
     await stripe.subscriptions.update(stripeSubscriptionId, {
       cancel_at_period_end: false,
     });
@@ -615,6 +631,7 @@ export async function createCustomerPortalSession(
       };
     }
 
+    const stripe = await getStripe();
     const session = await stripe.billingPortal.sessions.create({
       customer: org.stripeCustomerId,
       return_url: BILLING_URLS.cancel,
@@ -661,6 +678,7 @@ export async function cancelPendingDowngrade(organizationId: string): Promise<Op
     }
 
     // Find the subscription schedule for this customer
+    const stripe = await getStripe();
     const schedules = await stripe.subscriptionSchedules.list({
       customer: currentSubscription.activeSubscription.stripeCustomerId,
       limit: 10,

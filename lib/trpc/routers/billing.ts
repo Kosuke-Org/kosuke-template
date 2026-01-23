@@ -12,6 +12,7 @@ import {
   reactivateOrgSubscription,
 } from '@/lib/billing';
 import { syncOrgSubscriptionFromStripe, syncStaleSubscriptions } from '@/lib/billing/stripe-sync';
+import { isStripeApiKeyConfigured } from '@/lib/services/config-service';
 import {
   canSubscribeSchema,
   createCheckoutSchema,
@@ -32,6 +33,18 @@ import { orgOwnerProcedure, orgProcedure, protectedProcedure, router } from '../
  * Organization owner procedure - middleware that checks for owner role
  */
 export const billingRouter = router({
+  /**
+   * Check if Stripe API key is configured
+   * Returns boolean indicating if billing features are available
+   */
+  isConfigured: protectedProcedure.query(async () => {
+    const isConfigured = await isStripeApiKeyConfigured();
+
+    return {
+      isConfigured,
+    };
+  }),
+
   /**
    * Get pricing information from Stripe
    * Fetches all active prices using lookup keys

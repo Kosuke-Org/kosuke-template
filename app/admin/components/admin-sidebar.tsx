@@ -10,6 +10,7 @@ import {
   Building2,
   Database,
   FileText,
+  KeySquare,
   LayoutDashboard,
   Settings,
   Shield,
@@ -69,6 +70,18 @@ export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>)
       title: 'LLM Logs',
       url: '/admin/llm-logs',
       icon: FileText,
+    },
+    {
+      title: 'Configuration',
+      url: '/admin/system/apikeys',
+      icon: Settings,
+      items: [
+        {
+          title: 'API Keys',
+          url: '/admin/system/apikeys',
+          icon: KeySquare,
+        },
+      ],
     },
   ];
 

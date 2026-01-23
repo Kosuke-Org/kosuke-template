@@ -14,12 +14,16 @@ import type { Job } from 'bullmq';
 import { and, count, eq, ilike, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { invalidateWebhookSecretCache } from '@/app/api/billing/webhook/route';
+
 import { auth } from '@/lib/auth/providers';
 import { createFreeTierSubscription, deleteStripeCustomer } from '@/lib/billing/operations';
 import { db } from '@/lib/db/drizzle';
 import { orgMemberships, organizations, users } from '@/lib/db/schema';
 import { createQueue } from '@/lib/queue/client';
 import { QUEUE_NAMES } from '@/lib/queue/config';
+import * as configService from '@/lib/services/config-service';
+import { CONFIG_KEYS, type ConfigKey } from '@/lib/services/constants';
 import * as llmLogsService from '@/lib/services/llm-logs-service';
 import * as ragService from '@/lib/services/rag-service';
 import { validateUserDeletion } from '@/lib/services/user-service';
@@ -49,6 +53,12 @@ import {
   adminUpdateUserSchema,
   adminUserListFiltersSchema,
 } from '../schemas/admin';
+import {
+  deleteConfigSchema,
+  getConfigSchema,
+  listConfigsSchema,
+  setConfigSchema,
+} from '../schemas/config';
 import { getRagSettingsSchema, updateRagSettingsSchema } from '../schemas/rag';
 
 export const adminRouter = router({
@@ -983,6 +993,76 @@ export const adminRouter = router({
     get: superAdminProcedure.input(adminGetLlmLogSchema).query(async ({ input }) => {
       try {
         return await llmLogsService.getLlmLogById(input.id);
+      } catch (error) {
+        handleApiError(error);
+      }
+    }),
+  }),
+
+  /**
+   * System configuration management
+   * Nested router for system-wide config (Stripe keys)
+   */
+  config: router({
+    /**
+     * List configuration status for all CONFIG_KEYS
+     * Returns masked values and existence status for each key
+     */
+    list: superAdminProcedure.input(listConfigsSchema).query(async () => {
+      try {
+        return await configService.listConfigStatus();
+      } catch (error) {
+        handleApiError(error);
+      }
+    }),
+
+    /**
+     * Get a single config (masked value only)
+     */
+    get: superAdminProcedure.input(getConfigSchema).query(async ({ input }) => {
+      try {
+        const value = await configService.getConfig(input.key);
+        return {
+          key: input.key,
+          value: value ? configService.maskConfigValue(value) : null,
+          exists: !!value,
+        };
+      } catch (error) {
+        handleApiError(error);
+      }
+    }),
+
+    /**
+     * Set/update a config value
+     */
+    set: superAdminProcedure.input(setConfigSchema).mutation(async ({ input }) => {
+      try {
+        await configService.setConfig(input);
+
+        // Invalidate webhook secret cache when updated
+        if (input.key === CONFIG_KEYS.STRIPE_WEBHOOK_SECRET) {
+          invalidateWebhookSecretCache();
+        }
+
+        return { success: true };
+      } catch (error) {
+        handleApiError(error);
+      }
+    }),
+
+    /**
+     * Delete a config value
+     */
+    delete: superAdminProcedure.input(deleteConfigSchema).mutation(async ({ input }) => {
+      try {
+        const deleted = await configService.deleteConfig(input.key as ConfigKey);
+
+        // Invalidate webhook secret cache when deleted
+        if (input.key === CONFIG_KEYS.STRIPE_WEBHOOK_SECRET) {
+          invalidateWebhookSecretCache();
+        }
+
+        return { success: deleted };
       } catch (error) {
         handleApiError(error);
       }

@@ -3,12 +3,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import Stripe from 'stripe';
 
-import { stripe } from '@/lib/billing/client';
+import { getStripe } from '@/lib/billing/client';
 import { SubscriptionTier, SubscriptionTierType } from '@/lib/billing/products';
 import { db } from '@/lib/db';
 import { SubscriptionStatus, orgSubscriptions } from '@/lib/db/schema';
 import { getOrgById } from '@/lib/organizations';
-import { CONFIG_KEYS, getConfigOrEnv } from '@/lib/services/config-service';
+import { getConfigOrEnv } from '@/lib/services/config-service';
+import { CONFIG_KEYS } from '@/lib/services/constants';
 
 /**
  * Stripe Webhook Handler
@@ -25,6 +26,39 @@ import { CONFIG_KEYS, getConfigOrEnv } from '@/lib/services/config-service';
  * - subscription_schedule.canceled (when user cancels pending downgrade)
  */
 
+// Cache webhook secret to avoid database query on every webhook call
+let cachedWebhookSecret: string | null = null;
+let webhookSecretCacheExpiry: number = 0;
+const WEBHOOK_SECRET_CACHE_TTL = 1000 * 60 * 60; // 1 hour
+
+/**
+ * Get webhook secret with caching
+ * Caches the secret for 1 hour to avoid repeated database queries
+ */
+async function getWebhookSecret(): Promise<string | null> {
+  const now = Date.now();
+  if (cachedWebhookSecret && now < webhookSecretCacheExpiry) {
+    return cachedWebhookSecret;
+  }
+
+  const secret = await getConfigOrEnv(CONFIG_KEYS.STRIPE_WEBHOOK_SECRET);
+  if (secret) {
+    cachedWebhookSecret = secret;
+    webhookSecretCacheExpiry = now + WEBHOOK_SECRET_CACHE_TTL;
+  }
+
+  return secret;
+}
+
+/**
+ * Invalidate webhook secret cache
+ * Call this when the webhook secret is updated via admin panel
+ */
+export function invalidateWebhookSecretCache(): void {
+  cachedWebhookSecret = null;
+  webhookSecretCacheExpiry = 0;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
@@ -35,18 +69,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
     }
 
-    // Get webhook secret from database (with fallback to env var for backward compatibility)
-    const webhookSecret = await getConfigOrEnv(CONFIG_KEYS.STRIPE_WEBHOOK_SECRET);
+    // Get webhook secret with caching (avoids database query on every webhook call)
+    const webhookSecret = await getWebhookSecret();
 
     if (!webhookSecret) {
       console.error('❌ STRIPE_WEBHOOK_SECRET not configured');
       return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
     }
 
-    // Verify webhook signature
+    // Initialize Stripe client and verify webhook signature
+    const stripe = await getStripe();
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+      event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
     } catch (err) {
       console.error('❌ Webhook signature verification failed:', err);
       return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
@@ -132,6 +167,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       console.error('❌ Missing or invalid metadata in subscription.created:', subscription.id);
       return;
     }
+
+    const stripe = await getStripe();
 
     // Verify organization exists to prevent orphaned subscription records
     const org = await getOrgById(organizationId);

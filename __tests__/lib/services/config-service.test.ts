@@ -7,14 +7,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { db } from '@/lib/db';
 import {
-  CONFIG_KEYS,
   decrypt,
   deleteConfig,
   encrypt,
   getConfig,
   getConfigOrEnv,
+  listConfigStatus,
+  maskConfigValue,
   setConfig,
 } from '@/lib/services/config-service';
+import { CONFIG_KEYS } from '@/lib/services/constants';
 
 // Mock the database
 vi.mock('@/lib/db', () => ({
@@ -29,8 +31,6 @@ vi.mock('@/lib/db', () => ({
 describe('Config Service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Set a test encryption key
-    vi.stubEnv('ENCRYPTION_KEY', 'test-encryption-key-minimum-32-chars-long');
   });
 
   describe('encrypt and decrypt', () => {
@@ -149,12 +149,11 @@ describe('Config Service', () => {
         }),
       } as any);
 
-      vi.unstubAllEnvs();
-      vi.stubEnv('ENCRYPTION_KEY', 'test-encryption-key-minimum-32-chars-long');
+      vi.stubEnv('STRIPE_WEBHOOK_SECRET', '');
 
       const result = await getConfigOrEnv(CONFIG_KEYS.STRIPE_WEBHOOK_SECRET);
 
-      expect(result).toBeNull();
+      expect(result).toEqual('');
     });
 
     it('should prefer database value over environment variable', async () => {
@@ -196,7 +195,11 @@ describe('Config Service', () => {
       });
       vi.mocked(db.insert).mockImplementation(mockInsert as any);
 
-      await setConfig(CONFIG_KEYS.STRIPE_WEBHOOK_SECRET, 'whsec_new_value', 'Test description');
+      await setConfig({
+        key: CONFIG_KEYS.STRIPE_WEBHOOK_SECRET,
+        value: 'whsec_new_value',
+        description: 'Test description',
+      });
 
       expect(db.insert).toHaveBeenCalled();
       expect(mockValues).toHaveBeenCalled();
@@ -228,7 +231,11 @@ describe('Config Service', () => {
       });
       vi.mocked(db.update).mockImplementation(mockUpdate as any);
 
-      await setConfig(CONFIG_KEYS.STRIPE_WEBHOOK_SECRET, 'whsec_updated_value', 'New description');
+      await setConfig({
+        key: CONFIG_KEYS.STRIPE_WEBHOOK_SECRET,
+        value: 'whsec_updated_value',
+        description: 'New description',
+      });
 
       expect(db.update).toHaveBeenCalled();
       expect(mockSet).toHaveBeenCalled();
@@ -236,13 +243,15 @@ describe('Config Service', () => {
     });
 
     it('should throw error for empty key', async () => {
-      await expect(setConfig('' as any, 'value')).rejects.toThrow('Config key cannot be empty');
+      await expect(setConfig({ key: '' as any, value: 'value' })).rejects.toThrow(
+        'Config key cannot be empty'
+      );
     });
 
     it('should throw error for empty value', async () => {
-      await expect(setConfig(CONFIG_KEYS.STRIPE_WEBHOOK_SECRET, '')).rejects.toThrow(
-        'Config value cannot be empty'
-      );
+      await expect(
+        setConfig({ key: CONFIG_KEYS.STRIPE_WEBHOOK_SECRET, value: '' })
+      ).rejects.toThrow('Config value cannot be empty');
     });
   });
 
@@ -274,6 +283,90 @@ describe('Config Service', () => {
 
     it('should throw error for empty key', async () => {
       await expect(deleteConfig('' as any)).rejects.toThrow('Config key cannot be empty');
+    });
+  });
+
+  describe('maskConfigValue', () => {
+    it('should mask values longer than 8 characters', () => {
+      expect(maskConfigValue('whsec_1234567890abcdef')).toBe('whse****cdef');
+      expect(maskConfigValue('sk_test_1234567890')).toBe('sk_t****7890');
+    });
+
+    it('should return **** for short values', () => {
+      expect(maskConfigValue('short')).toBe('****');
+      expect(maskConfigValue('12345678')).toBe('****');
+      expect(maskConfigValue('')).toBe('****');
+    });
+  });
+
+  describe('listConfigStatus', () => {
+    it('should return status for all CONFIG_KEYS', async () => {
+      const webhookEncrypted = encrypt('whsec_test_secret');
+      const secretKeyEncrypted = encrypt('sk_test_secret');
+
+      // Mock DB to return only 2 configs (missing STRIPE_PUBLISHABLE_KEY)
+      vi.mocked(db.select).mockReturnValue({
+        from: vi.fn().mockResolvedValue([
+          { key: CONFIG_KEYS.STRIPE_WEBHOOK_SECRET, value: webhookEncrypted },
+          { key: CONFIG_KEYS.STRIPE_SECRET_KEY, value: secretKeyEncrypted },
+        ]),
+      } as any);
+
+      const result = await listConfigStatus();
+
+      // Should have entries for all CONFIG_KEYS
+      expect(Object.keys(result)).toHaveLength(Object.keys(CONFIG_KEYS).length);
+
+      // Existing configs should have masked values
+      expect(result[CONFIG_KEYS.STRIPE_WEBHOOK_SECRET]).toEqual({
+        exists: true,
+        maskedValue: 'whse****cret',
+      });
+      expect(result[CONFIG_KEYS.STRIPE_SECRET_KEY]).toEqual({
+        exists: true,
+        maskedValue: 'sk_t****cret',
+      });
+
+      // Missing config should not exist
+      expect(result[CONFIG_KEYS.STRIPE_PUBLISHABLE_KEY]).toEqual({
+        exists: false,
+        maskedValue: null,
+      });
+    });
+
+    it('should handle decryption errors gracefully', async () => {
+      // Mock DB to return invalid encrypted value
+      vi.mocked(db.select).mockReturnValue({
+        from: vi
+          .fn()
+          .mockResolvedValue([
+            { key: CONFIG_KEYS.STRIPE_WEBHOOK_SECRET, value: 'invalid:encrypted:value:format' },
+          ]),
+      } as any);
+
+      const result = await listConfigStatus();
+
+      // Should return **** for failed decryption
+      expect(result[CONFIG_KEYS.STRIPE_WEBHOOK_SECRET]).toEqual({
+        exists: true,
+        maskedValue: '****',
+      });
+    });
+
+    it('should return all keys as non-existent when database is empty', async () => {
+      vi.mocked(db.select).mockReturnValue({
+        from: vi.fn().mockResolvedValue([]),
+      } as any);
+
+      const result = await listConfigStatus();
+
+      // All keys should be non-existent
+      Object.values(CONFIG_KEYS).forEach((key) => {
+        expect(result[key]).toEqual({
+          exists: false,
+          maskedValue: null,
+        });
+      });
     });
   });
 });

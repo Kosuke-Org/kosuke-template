@@ -318,12 +318,3 @@ export async function deleteOrganizationLogo(params: {
     message: 'Organization logo deleted successfully',
   };
 }
-
-/**
- * Check if Google AI API key is configured
- * Used to gate AI features (Documents, Assistant) when key is missing
- * @returns True if configured, false otherwise
- */
-export function isGoogleApiKeyConfigured(): boolean {
-  return !!process.env.GOOGLE_AI_API_KEY;
-}

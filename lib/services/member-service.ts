@@ -5,7 +5,7 @@
 import { eq } from 'drizzle-orm';
 
 import { auth } from '@/lib/auth/providers';
-import { stripe } from '@/lib/billing/client';
+import { getStripe } from '@/lib/billing/client';
 import { getOrgSubscription } from '@/lib/billing/subscription';
 import { db } from '@/lib/db';
 import type { OrgMembership, OrgRole, Organization, User } from '@/lib/db/schema';
@@ -54,6 +54,7 @@ export async function updateMemberRole(params: {
         );
 
         // Cancel subscription in Stripe
+        const stripe = await getStripe();
         await stripe.subscriptions.update(subscription.activeSubscription.stripeSubscriptionId, {
           cancel_at_period_end: true,
         });

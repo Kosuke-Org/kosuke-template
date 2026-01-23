@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { type NewSystemConfig, systemConfig } from '@/lib/db/schema';
+import { CONFIG_KEYS, type ConfigKey, ERRORS } from '@/lib/services/constants';
 
 /**
  * Config Service (Security-Hardened Version)
@@ -28,16 +29,6 @@ const IV_LENGTH = 16;
 const AUTH_TAG_LENGTH = 16;
 const CURRENT_KEY_VERSION = 'v1';
 const KEY_DERIVATION_INFO = 'kosuke-config-encryption'; // Application-specific context
-
-/**
- * Configuration keys for type-safe access to system config
- * Values match environment variable names for simplicity
- */
-export const CONFIG_KEYS = {
-  STRIPE_WEBHOOK_SECRET: 'STRIPE_WEBHOOK_SECRET',
-} as const;
-
-type ConfigKey = (typeof CONFIG_KEYS)[keyof typeof CONFIG_KEYS];
 
 /**
  * Derive encryption key using HKDF (HMAC-based Key Derivation Function)
@@ -145,7 +136,9 @@ export function decrypt(ciphertext: string): string {
     return decrypted;
   } catch (error) {
     // Auth tag verification failed or decryption error
-    throw new Error(`Failed to decrypt config value for key: ${key}: ${error}`);
+    throw new Error(`Failed to decrypt config value: ${error}`, {
+      cause: ERRORS.INTERNAL_SERVER_ERROR,
+    });
   }
 }
 
@@ -157,7 +150,7 @@ export function decrypt(ciphertext: string): string {
  */
 export async function getConfig(key: ConfigKey): Promise<string | null> {
   if (!key || key.trim() === '') {
-    throw new Error('Config key cannot be empty');
+    throw new Error('Config key cannot be empty', { cause: ERRORS.BAD_REQUEST });
   }
 
   const result = await db.select().from(systemConfig).where(eq(systemConfig.key, key)).limit(1);
@@ -172,7 +165,9 @@ export async function getConfig(key: ConfigKey): Promise<string | null> {
     return decrypt(encryptedValue);
   } catch (error) {
     console.error(`Failed to decrypt config value for key: ${key}`, error);
-    throw new Error(`Failed to decrypt config value for key: ${key}`);
+    throw new Error(`Failed to decrypt config value for key: ${key}`, {
+      cause: ERRORS.INTERNAL_SERVER_ERROR,
+    });
   }
 }
 
@@ -198,17 +193,21 @@ export async function getConfigOrEnv(key: ConfigKey): Promise<string | null> {
  * @param description - Optional human-readable description
  * @returns The created/updated configuration record
  */
-export async function setConfig(
-  key: ConfigKey,
-  value: string,
-  description?: string
-): Promise<void> {
+export async function setConfig({
+  key,
+  value,
+  description,
+}: {
+  key: ConfigKey;
+  value: string;
+  description?: string;
+}): Promise<void> {
   if (!key || key.trim() === '') {
-    throw new Error('Config key cannot be empty');
+    throw new Error('Config key cannot be empty', { cause: ERRORS.BAD_REQUEST });
   }
 
   if (!value || value.trim() === '') {
-    throw new Error('Config value cannot be empty');
+    throw new Error('Config value cannot be empty', { cause: ERRORS.BAD_REQUEST });
   }
 
   const encryptedValue = encrypt(value);
@@ -243,12 +242,84 @@ export async function setConfig(
  */
 export async function deleteConfig(key: ConfigKey): Promise<boolean> {
   if (!key || key.trim() === '') {
-    throw new Error('Config key cannot be empty');
+    throw new Error('Config key cannot be empty', { cause: ERRORS.BAD_REQUEST });
   }
 
   const result = await db.delete(systemConfig).where(eq(systemConfig.key, key)).returning();
 
   return result.length > 0;
+}
+
+/**
+ * Status information for a configuration key
+ */
+interface ConfigStatus {
+  exists: boolean;
+  maskedValue: string | null;
+}
+
+/**
+ * List configuration status for all CONFIG_KEYS
+ * Provides masked values and existence status for each key
+ *
+ * @returns Record mapping ConfigKey to its status
+ */
+export async function listConfigStatus(): Promise<Record<ConfigKey, ConfigStatus>> {
+  // Fetch all system configs in one query
+  const allConfigs = await db
+    .select({
+      key: systemConfig.key,
+      value: systemConfig.value,
+    })
+    .from(systemConfig);
+
+  // Build status map server-side
+  const configKeys = Object.values(CONFIG_KEYS);
+  const statusMap: Record<ConfigKey, ConfigStatus> = {} as Record<ConfigKey, ConfigStatus>;
+
+  for (const key of configKeys) {
+    const config = allConfigs.find((c) => c.key === key);
+
+    if (config) {
+      try {
+        const decryptedValue = decrypt(config.value);
+        statusMap[key] = {
+          exists: true,
+          maskedValue: maskConfigValue(decryptedValue),
+        };
+      } catch (error) {
+        console.error(`Failed to decrypt config value for key: ${key}`, error);
+        statusMap[key] = {
+          exists: true,
+          maskedValue: '****',
+        };
+      }
+    } else {
+      statusMap[key] = {
+        exists: false,
+        maskedValue: null,
+      };
+    }
+  }
+
+  return statusMap;
+}
+
+/**
+ * Mask a configuration value for display purposes
+ * Shows first 4 and last 4 characters, masks the middle
+ *
+ * @param value - The value to mask
+ * @returns Masked string (e.g., "sk_t****abcd")
+ */
+export function maskConfigValue(value: string): string {
+  if (!value || value.length <= 8) {
+    return '****';
+  }
+
+  const firstChars = value.slice(0, 4);
+  const lastChars = value.slice(-4);
+  return `${firstChars}****${lastChars}`;
 }
 
 /**
@@ -261,12 +332,16 @@ async function rotateConfigKey(key: ConfigKey): Promise<void> {
   const currentValue = await getConfig(key);
 
   if (!currentValue) {
-    throw new Error(`Config key not found: ${key}`);
+    throw new Error(`Config key not found: ${key}`, { cause: ERRORS.NOT_FOUND });
   }
 
   const existing = await db.select().from(systemConfig).where(eq(systemConfig.key, key)).limit(1);
 
-  await setConfig(key, currentValue, existing[0]?.description ?? undefined);
+  await setConfig({
+    key,
+    value: currentValue,
+    description: existing[0]?.description ?? undefined,
+  });
 
   console.log(`✅ Rotated encryption key for: ${key}`);
 }
@@ -290,4 +365,26 @@ async function _rotateAllConfigKeys(): Promise<void> {
   }
 
   console.log('✅ All config keys rotated successfully');
+}
+
+/**
+ * Check if Google AI API key is configured
+ * Used to gate AI features (Documents, Assistant) when key is missing
+ * @returns True if configured, false otherwise
+ */
+export async function isGoogleApiKeyConfigured(): Promise<boolean> {
+  const key = await getConfigOrEnv(CONFIG_KEYS.GOOGLE_AI_API_KEY);
+  return !!key;
+}
+
+/**
+ * Check if Stripe API key is configured
+ * Used to gate billing features when key is missing
+ * @returns True if configured, false otherwise
+ */
+export async function isStripeApiKeyConfigured(): Promise<boolean> {
+  const key = await getConfigOrEnv(CONFIG_KEYS.STRIPE_SECRET_KEY);
+  const webhookSecretKey = await getConfigOrEnv(CONFIG_KEYS.STRIPE_WEBHOOK_SECRET);
+
+  return !!key && !!webhookSecretKey;
 }

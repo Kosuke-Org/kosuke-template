@@ -4,7 +4,7 @@ import Stripe from 'stripe';
 import { db } from '@/lib/db';
 import { orgSubscriptions } from '@/lib/db/schema';
 
-import { stripe } from './client';
+import { getStripe } from './client';
 
 /**
  * Stripe sync utilities
@@ -36,6 +36,7 @@ export async function syncOrgSubscriptionFromStripe(organizationId: string): Pro
 
     // Fetch from Stripe
     let stripeSubscription: Stripe.Subscription;
+    const stripe = await getStripe();
     try {
       stripeSubscription = await stripe.subscriptions.retrieve(
         localSubscription.stripeSubscriptionId
