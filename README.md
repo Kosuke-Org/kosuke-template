@@ -356,11 +356,11 @@ Meet **Panos** — named after the Greek god Pan, protector of shepherds and flo
 
 ### Available Scripts
 
-| Script | Purpose | What It Does |
-|--------|---------|--------------|
-| `panos.sh` | Full AI workflow | Requirements → Map → Tickets → Build → Commit |
-| `requirements.sh` | Requirements only | Interactive product requirements gathering |
-| `test.sh` | Browser testing | AI-powered web testing via Chrome integration |
+| Script            | Purpose           | What It Does                                  |
+| ----------------- | ----------------- | --------------------------------------------- |
+| `panos.sh`        | Full AI workflow  | Requirements → Map → Tickets → Build → Commit |
+| `requirements.sh` | Requirements only | Interactive product requirements gathering    |
+| `test.sh`         | Browser testing   | AI-powered web testing via Chrome integration |
 
 ### Quick Usage
 
