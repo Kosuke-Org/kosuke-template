@@ -19,9 +19,6 @@
 #   ./panos.sh --interactive             # Enable confirmations
 #   ./panos.sh --no-commit               # Skip all commit operations
 #
-# Environment:
-#   SLACK_WEBHOOK_URL   - Optional, for failure notifications
-#
 # Prerequisites:
 #   - Claude Code CLI must be authenticated (run `claude` first)
 #   - Docker must be running (script creates its own PostgreSQL container)
@@ -38,15 +35,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR=""
 INTERACTIVE=false
 NO_COMMIT=false
-SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-https://hooks.slack.com/services/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}"
 
 # PostgreSQL container (created at runtime)
 POSTGRES_CONTAINER_NAME=""
 POSTGRES_PORT=""
 POSTGRES_URL=""
-
-# Isolated Claude config directory (prevents ~/.claude/CLAUDE.md loading)
-PANOS_CONFIG_DIR=""
 
 # State files (set after PROJECT_DIR is resolved)
 KOSUKE_DIR=""
@@ -117,9 +110,6 @@ Options:
   --no-commit         Skip all commit operations
   --help, -h          Show this help message
 
-Environment Variables:
-  SLACK_WEBHOOK_URL   Slack webhook for failure notifications (optional)
-
 Prerequisites:
   - Claude Code CLI must be authenticated (run `claude` first to authenticate)
   - Docker must be running (script creates its own PostgreSQL container)
@@ -129,7 +119,6 @@ Examples:
   ./panos.sh /path/to/project                   # Run in specific directory
   ./panos.sh --directory=/path/to/project       # Same as above
   ./panos.sh --no-commit                        # Run without committing
-  SLACK_WEBHOOK_URL="..." ./panos.sh            # With Slack notifications
 
 Running in tmux (recommended):
   tmux new-session -d -s panos './panos.sh /path/to/project'
@@ -212,29 +201,6 @@ stop_postgres_container() {
 }
 
 # =============================================================================
-# SLACK NOTIFICATIONS
-# =============================================================================
-
-notify_slack() {
-  local message="$1"
-  local status="${2:-info}"
-
-  [[ -z "$SLACK_WEBHOOK_URL" ]] && return 0
-
-  local emoji="ℹ️"
-  [[ "$status" == "success" ]] && emoji="✅"
-  [[ "$status" == "failure" ]] && emoji="❌"
-
-  local project_name
-  project_name=$(basename "$PROJECT_DIR")
-
-  curl -s -X POST "$SLACK_WEBHOOK_URL" \
-    -H 'Content-Type: application/json' \
-    -d "{\"text\":\"$emoji *Panos* ($project_name): $message\"}" \
-    >/dev/null 2>&1 || true
-}
-
-# =============================================================================
 # STATE MANAGEMENT
 # =============================================================================
 
@@ -273,7 +239,9 @@ mark_step_completed() {
   local step="$1"
   local state
   state=$(load_state)
-  state=$(echo "$state" | jq --argjson s "$step" '.completedSteps = ((.completedSteps // []) + [$s] | unique) | .currentStep = ($s + 1) | .lastUpdatedAt = now | todate')
+  local timestamp
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  state=$(echo "$state" | jq --argjson s "$step" --arg ts "$timestamp" '.completedSteps = ((.completedSteps // []) + [$s] | unique) | .currentStep = ($s + 1) | .lastUpdatedAt = $ts')
   save_state "$state"
   log_success "Step $step completed"
 }
@@ -283,7 +251,9 @@ mark_step_failed() {
   local error="${2:-Unknown error}"
   local state
   state=$(load_state)
-  state=$(echo "$state" | jq --argjson s "$step" --arg e "$error" '.failedAt = $s | .failedError = $e | .lastUpdatedAt = now | todate')
+  local timestamp
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  state=$(echo "$state" | jq --argjson s "$step" --arg e "$error" --arg ts "$timestamp" '.failedAt = $s | .failedError = $e | .lastUpdatedAt = $ts')
   save_state "$state"
 }
 
@@ -383,34 +353,20 @@ git_get_diff() {
 
 run_claude() {
   local prompt="$1"
-  local output_file
-  output_file=$(mktemp)
 
   log_info "Running Claude Code agent..."
 
   cd "$PROJECT_DIR"
 
-  # Run Claude Code with streaming JSON output
+  # Run Claude Code with text output for clean logs
   # CLAUDE_CONFIG_DIR isolates from global ~/.claude/CLAUDE.md while still loading project CLAUDE.md
-  if ! CLAUDE_CONFIG_DIR="$PANOS_CONFIG_DIR" claude --dangerously-skip-permissions \
-    --output-format stream-json \
-    -p "$prompt" \
-    2>&1 | tee "$output_file"; then
+  if ! claude --dangerously-skip-permissions \
+    --output-format text \
+    -p "$prompt"; then
     log_error "Claude Code execution failed"
-    rm -f "$output_file"
     return 1
   fi
 
-  # Check for errors in output
-  if grep -q '"type":"error"' "$output_file" 2>/dev/null; then
-    local error_msg
-    error_msg=$(grep '"type":"error"' "$output_file" | head -1 | jq -r '.error.message // .message // "Unknown error"' 2>/dev/null || echo "Unknown error")
-    log_error "Claude agent error: $error_msg"
-    rm -f "$output_file"
-    return 1
-  fi
-
-  rm -f "$output_file"
   return 0
 }
 
@@ -558,19 +514,106 @@ ONLY ask about integrations that are not covered by the recommended stack (Strip
 
 Now, ask the user to describe their product idea.'
 
+
   cd "$PROJECT_DIR"
 
-  # Run Claude Code interactively (no -p flag) for requirements gathering
-  # CLAUDE_CONFIG_DIR isolates from global ~/.claude/CLAUDE.md while still loading project CLAUDE.md
-  log_info "Starting interactive Claude session for requirements gathering..."
-  log_info "Describe your product idea to Claude. Type 'exit' or press Ctrl+C when done."
+  echo ""
+  log_info "Describe your product idea below."
+  log_info "Type 'exit' or press Ctrl+D to end the session."
+  log_info "Initializing requirements analyst..."
   echo ""
 
-  CLAUDE_CONFIG_DIR="$PANOS_CONFIG_DIR" claude \
-    --dangerously-skip-permissions \
-    -p "$prompt"
+  local conversation_history=""
 
-  # Check if docs.md was created
+  local initial_response
+  # Temporarily disable exit on error to capture Claude failures
+  set +e
+  initial_response=$(claude \
+    --dangerously-skip-permissions \
+    --output-format text \
+    -p "$prompt" 2>&1)
+  local claude_exit_code=$?
+  set -e
+
+  if [[ $claude_exit_code -ne 0 ]]; then
+    log_error "Claude CLI failed with exit code $claude_exit_code"
+    log_error "Output: $initial_response"
+    log_error "Make sure Claude CLI is authenticated (run 'claude' first)"
+    return 1
+  fi
+
+  echo "$initial_response"
+  echo ""
+  conversation_history="Assistant: $initial_response"
+
+  # Check if terminal is available for interactive input
+  if [[ ! -t 0 ]] && [[ ! -e /dev/tty ]]; then
+    log_error "No terminal available for interactive input"
+    log_error "Please run this script in an interactive terminal"
+    return 1
+  fi
+
+  while true; do
+    if [[ -f "$docs_file" ]]; then
+      log_success "Requirements document created: $docs_file"
+      return 0
+    fi
+
+    echo -n "You: "
+    local user_input
+    # Read from /dev/tty to ensure we get input from the actual terminal
+    if ! read -r user_input </dev/tty; then
+      echo ""
+      log_warn "Session ended by user"
+      break
+    fi
+
+    if [[ "$user_input" == "/exit" ]] || [[ "$user_input" == "exit" ]] || [[ "$user_input" == "quit" ]]; then
+      log_info "Session ended by user"
+      break
+    fi
+
+    if [[ -z "$user_input" ]]; then
+      continue
+    fi
+
+    local conversation_prompt="$prompt
+
+Previous conversation:
+$conversation_history
+
+User: $user_input
+
+Continue the requirements gathering conversation. If all requirements are clear and complete, create the docs.md file at $docs_file."
+
+    echo ""
+    log_info "Processing..."
+    echo ""
+
+    local response
+    set +e
+    response=$(claude \
+      --dangerously-skip-permissions \
+      --output-format text \
+      -p "$conversation_prompt" 2>&1)
+    local response_exit_code=$?
+    set -e
+
+    if [[ $response_exit_code -ne 0 ]]; then
+      log_error "Claude CLI failed with exit code $response_exit_code"
+      log_error "Output: $response"
+      continue
+    fi
+
+    echo "$response"
+    echo ""
+
+    conversation_history="${conversation_history}
+
+User: ${user_input}
+Assistant: ${response}"
+  done
+
   if [[ -f "$docs_file" ]]; then
     log_success "Requirements document created: $docs_file"
   else
@@ -1179,11 +1222,16 @@ review_command() {
 
   log_info "Reviewing changes for $ticket_id ($ticket_type)..."
 
-  # Stage changes to get diff
-  git_stage_all
-
   local git_diff
-  git_diff=$(git_get_diff)
+  if [[ "$NO_COMMIT" == "true" ]]; then
+    # In no-commit mode, get unstaged diff without staging
+    cd "$PROJECT_DIR"
+    git_diff=$(git diff)
+  else
+    # Stage changes to get diff
+    git_stage_all
+    git_diff=$(git_get_diff)
+  fi
 
   if [[ -z "$git_diff" ]]; then
     log_info "No changes to review"
@@ -1593,15 +1641,6 @@ build_tickets() {
     log_info "Title: $ticket_title"
     log_info "Type: $ticket_type"
 
-    # Interactive confirmation
-    if [[ "$INTERACTIVE" == "true" ]]; then
-      read -rp "Process this ticket? [Y/n] " confirm
-      if [[ "$confirm" =~ ^[Nn] ]]; then
-        log_warn "Skipped $ticket_id"
-        continue
-      fi
-    fi
-
     # Backend checkpoint (before first frontend ticket)
     if [[ "$ticket_type" == "frontend" ]] && [[ "$backend_checkpoint_done" == "false" ]]; then
       log_info "Running backend migration checkpoint..."
@@ -1684,7 +1723,6 @@ on_failure() {
   mark_step_failed "$current_step" "Exit code: $exit_code"
 
   log_error "Panos workflow failed at step $current_step with exit code $exit_code"
-  notify_slack "Workflow FAILED at step $current_step. Check tmux session for details." "failure"
 
   # Cleanup PostgreSQL container
   stop_postgres_container
@@ -1695,11 +1733,6 @@ on_failure() {
 cleanup() {
   # Called on script exit (normal or error)
   stop_postgres_container
-
-  # Remove isolated Claude config directory
-  if [[ -n "$PANOS_CONFIG_DIR" ]] && [[ -d "$PANOS_CONFIG_DIR" ]]; then
-    rm -rf "$PANOS_CONFIG_DIR"
-  fi
 }
 
 # =============================================================================
@@ -1717,10 +1750,6 @@ main() {
 
   # Ensure .kosuke directory exists
   mkdir -p "$KOSUKE_DIR"
-
-  # Create isolated Claude config directory (prevents ~/.claude/CLAUDE.md loading)
-  PANOS_CONFIG_DIR=$(mktemp -d)
-  log_info "Using isolated Claude config: $PANOS_CONFIG_DIR"
 
   # Install pre-commit hooks
   log_info "Installing pre-commit hooks..."
@@ -1759,6 +1788,13 @@ main() {
     log_info "Skipping Step 1 (already completed)"
   fi
 
+  # Interactive confirmation before Step 2
+  if [[ "$INTERACTIVE" == "true" ]] && [[ $resume_step -le 2 ]]; then
+    echo ""
+    echo -n "Press Enter to proceed to Step 2 (Generating Project Map)..."
+    read -r </dev/tty
+  fi
+
   # Step 2: Generate project map
   if [[ $resume_step -le 2 ]]; then
     log_step "STEP 2/5: Generating Project Map"
@@ -1769,6 +1805,13 @@ main() {
     mark_step_completed 2
   else
     log_info "Skipping Step 2 (already completed)"
+  fi
+
+  # Interactive confirmation before Step 3
+  if [[ "$INTERACTIVE" == "true" ]] && [[ $resume_step -le 3 ]]; then
+    echo ""
+    echo -n "Press Enter to proceed to Step 3 (Generating Implementation Tickets)..."
+    read -r </dev/tty
   fi
 
   # Step 3: Generate implementation tickets
@@ -1783,6 +1826,13 @@ main() {
     log_info "Skipping Step 3 (already completed)"
   fi
 
+  # Interactive confirmation before Step 4
+  if [[ "$INTERACTIVE" == "true" ]] && [[ $resume_step -le 4 ]]; then
+    echo ""
+    echo -n "Press Enter to proceed to Step 4 (Building Implementation Tickets)..."
+    read -r </dev/tty
+  fi
+
   # Step 4: Build implementation tickets
   if [[ $resume_step -le 4 ]]; then
     log_step "STEP 4/5: Building Implementation Tickets"
@@ -1790,6 +1840,13 @@ main() {
     mark_step_completed 4
   else
     log_info "Skipping Step 4 (already completed)"
+  fi
+
+  # Interactive confirmation before Step 5
+  if [[ "$INTERACTIVE" == "true" ]] && [[ $resume_step -le 5 ]]; then
+    echo ""
+    echo -n "Press Enter to proceed to Step 5 (Final Commit)..."
+    read -r </dev/tty
   fi
 
   # Step 5: Final commit
@@ -1824,8 +1881,6 @@ main() {
   echo ""
   echo "Next step: Run ./scripts/test.sh to perform web testing with Claude Code"
   echo ""
-
-  notify_slack "Workflow completed successfully!" "success"
 
   # Cleanup state
   clear_state

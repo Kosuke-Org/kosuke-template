@@ -339,6 +339,61 @@ bun run test:coverage
 - **GitHub Issues**: [github.com/Kosuke-Org/kosuke-template/issues](https://github.com/Kosuke-Org/kosuke-template/issues)
 - **Discussions**: Use GitHub Discussions for questions
 
+## 🏛️ AI-Driven Development Scripts (Panos)
+
+<p align="center">
+  <img src="https://picsum.photos/seed/panos-greek-god/300/200" alt="Panos - Our AI Overlord (artist's impression)" />
+  <br/>
+  <em>Panos contemplating your codebase (artist's depiction, may not be accurate)</em>
+</p>
+
+Meet **Panos** — named after the Greek god Pan, protector of shepherds and flocks. Except instead of sheep, he herds your code from idea to production. He's basically Pan, but for developers who are too lazy to write their own tickets.
+
+### Prerequisites
+
+- **Claude Code CLI** must be authenticated (`claude` command available)
+- **Docker** must be running (Panos spins up his own PostgreSQL container)
+
+### Available Scripts
+
+| Script | Purpose | What It Does |
+|--------|---------|--------------|
+| `panos.sh` | Full AI workflow | Requirements → Map → Tickets → Build → Commit |
+| `requirements.sh` | Requirements only | Interactive product requirements gathering |
+| `test.sh` | Browser testing | AI-powered web testing via Chrome integration |
+
+### Quick Usage
+
+```bash
+# Full Panos workflow (the whole enchilada)
+./scripts/panos.sh
+
+# Just gather requirements (when you only need the docs.md)
+./scripts/requirements.sh
+
+# Run AI browser tests (requires Chrome + Claude extension)
+./scripts/test.sh --url=http://localhost:3000
+```
+
+### Panos Workflow Steps
+
+1. **REQUIREMENTS** — Describe your product idea, Panos asks clarifying questions, generates `.kosuke/docs.md`
+2. **MAP** — Analyzes codebase and requirements, generates `.kosuke/map.json` with routes/endpoints
+3. **TICKETS** — Creates implementation tickets in `.kosuke/tickets.json`
+4. **BUILD** — Implements each ticket: ship → migrate (if schema) → review → commit
+5. **COMMIT** — Final commit with all changes
+
+### Options
+
+```bash
+./scripts/panos.sh --directory=/path/to/project  # Run in specific directory
+./scripts/panos.sh --interactive                  # Enable confirmation prompts
+./scripts/panos.sh --no-commit                    # Skip all commits
+./scripts/test.sh --record                        # Record test session as GIF
+```
+
+---
+
 ## 📝 License
 
 MIT License - see [LICENSE](./LICENSE) file for details.

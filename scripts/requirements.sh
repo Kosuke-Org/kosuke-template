@@ -27,7 +27,6 @@ set -euo pipefail
 # =============================================================================
 
 PROJECT_DIR=""
-REQUIREMENTS_CONFIG_DIR=""
 
 # =============================================================================
 # ARGUMENT PARSING
@@ -97,10 +96,8 @@ log_error() { echo "[$(date '+%H:%M:%S')] ERROR $*" >&2; }
 # =============================================================================
 
 cleanup() {
-  # Remove isolated Claude config directory
-  if [[ -n "$REQUIREMENTS_CONFIG_DIR" ]] && [[ -d "$REQUIREMENTS_CONFIG_DIR" ]]; then
-    rm -rf "$REQUIREMENTS_CONFIG_DIR"
-  fi
+  # Placeholder for future cleanup tasks
+  :
 }
 
 # =============================================================================
@@ -112,8 +109,8 @@ run_claude() {
 
   cd "$PROJECT_DIR"
 
-  # Run Claude Code with isolated config (prevents ~/.claude/CLAUDE.md loading)
-  CLAUDE_CONFIG_DIR="$REQUIREMENTS_CONFIG_DIR" claude \
+  # Run Claude Code (uses isolated config set up in setup_isolated_claude_config)
+  claude \
     --dangerously-skip-permissions \
     --output-format stream-json \
     -p "$prompt" \
@@ -292,9 +289,6 @@ main() {
     exit 1
   fi
 
-  # Create isolated Claude config directory (prevents ~/.claude/CLAUDE.md loading)
-  REQUIREMENTS_CONFIG_DIR=$(mktemp -d)
-
   # Set up cleanup trap
   trap 'cleanup' EXIT
 
@@ -304,7 +298,6 @@ main() {
   echo "================================================================================"
   echo ""
   log_info "Project: $PROJECT_DIR"
-  log_info "Using isolated Claude config: $REQUIREMENTS_CONFIG_DIR"
   echo ""
 
   requirements_command

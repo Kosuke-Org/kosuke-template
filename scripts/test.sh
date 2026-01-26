@@ -33,7 +33,6 @@ set -euo pipefail
 PROJECT_DIR=""
 APP_URL="http://localhost:3000"
 RECORD_GIF=false
-TEST_CONFIG_DIR=""
 
 # State files (set after PROJECT_DIR is resolved)
 KOSUKE_DIR=""
@@ -192,10 +191,8 @@ check_prerequisites() {
 # =============================================================================
 
 cleanup() {
-  # Remove isolated Claude config directory
-  if [[ -n "$TEST_CONFIG_DIR" ]] && [[ -d "$TEST_CONFIG_DIR" ]]; then
-    rm -rf "$TEST_CONFIG_DIR"
-  fi
+  # Placeholder for future cleanup tasks
+  :
 }
 
 # =============================================================================
@@ -368,15 +365,12 @@ Begin testing now. Start by navigating to $APP_URL and systematically testing th
 
   cd "$PROJECT_DIR"
 
-  # Create isolated Claude config directory
-  TEST_CONFIG_DIR=$(mktemp -d)
-
   log_info "Starting Claude Code with Chrome integration..."
   log_info "This will open Chrome and perform automated testing"
   echo ""
 
   # Run Claude Code with Chrome enabled
-  CLAUDE_CONFIG_DIR="$TEST_CONFIG_DIR" claude \
+  claude \
     --chrome \
     --dangerously-skip-permissions \
     -p "$prompt"
