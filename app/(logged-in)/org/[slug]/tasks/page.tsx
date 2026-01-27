@@ -186,6 +186,7 @@ export default function OrgTasksPage() {
               <SelectItem value="low">Low</SelectItem>
               <SelectItem value="medium">Medium</SelectItem>
               <SelectItem value="high">High</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={() => setCreateDialogOpen(true)} className="whitespace-nowrap">

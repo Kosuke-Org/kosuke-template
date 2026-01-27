@@ -62,12 +62,21 @@ export async function listTasks(filters: TaskListFilters) {
     .orderBy(desc(tasks.createdAt));
 
   // Transform to proper types with computed properties
-  return userTasks.map((task) => ({
+  const transformedTasks = userTasks.map((task) => ({
     ...task,
     completed: task.completed === 'true',
     isOverdue:
       task.dueDate && task.completed === 'false' ? new Date(task.dueDate) < new Date() : false,
   }));
+
+  // Sort urgent tasks first, then by creation date
+  return transformedTasks.sort((a, b) => {
+    // Urgent tasks always come first
+    if (a.priority === 'urgent' && b.priority !== 'urgent') return -1;
+    if (a.priority !== 'urgent' && b.priority === 'urgent') return 1;
+    // For non-urgent tasks, maintain creation date order (newest first)
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 }
 
 /**
