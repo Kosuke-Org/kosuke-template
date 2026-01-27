@@ -34,6 +34,7 @@ vi.mock('@/lib/redis', () => ({
 }));
 
 // Mock BullMQ to prevent worker initialization during tests
+// Note: We don't mock the Worker class to avoid interfering with Vitest's process communication
 vi.mock('bullmq', () => ({
   Queue: vi.fn().mockImplementation(() => ({
     add: vi.fn(() => Promise.resolve({ id: 'mock-job-id' })),
@@ -43,11 +44,14 @@ vi.mock('bullmq', () => ({
     close: vi.fn(() => Promise.resolve()),
     on: vi.fn(),
   })),
-  Worker: vi.fn().mockImplementation(() => ({
-    on: vi.fn(),
-    close: vi.fn(() => Promise.resolve()),
-    run: vi.fn(),
-  })),
+  Worker: class MockWorker {
+    constructor() {
+      // Empty constructor - don't access process or interfere with Vitest
+    }
+    on = vi.fn();
+    close = vi.fn(() => Promise.resolve());
+    run = vi.fn();
+  },
   QueueEvents: vi.fn().mockImplementation(() => ({
     on: vi.fn(),
     close: vi.fn(() => Promise.resolve()),

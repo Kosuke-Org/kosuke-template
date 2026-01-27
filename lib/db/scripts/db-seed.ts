@@ -323,7 +323,7 @@ async function seed() {
     // Step 7: Create tasks
     console.log('📝 Creating tasks...');
 
-    const taskPriorities: TaskPriority[] = ['low', 'medium', 'high'];
+    const taskPriorities: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
 
     // Personal tasks for Jane
     const janePersonalTasks: NewTask[] = Array.from({ length: 5 }, (_, i) => ({
@@ -331,7 +331,7 @@ async function seed() {
       title: faker.lorem.sentence({ min: 3, max: 6 }),
       description: faker.lorem.paragraph(),
       completed: i % 3 === 0 ? 'true' : 'false',
-      priority: taskPriorities[i % 3],
+      priority: taskPriorities[i % 4],
       dueDate: faker.date.future(),
     }));
 
@@ -342,7 +342,7 @@ async function seed() {
       title: faker.lorem.sentence({ min: 3, max: 6 }),
       description: faker.lorem.paragraph(),
       completed: i % 4 === 0 ? 'true' : 'false',
-      priority: taskPriorities[i % 3],
+      priority: taskPriorities[i % 4],
       dueDate: faker.date.future(),
     }));
 
@@ -352,7 +352,7 @@ async function seed() {
       title: faker.lorem.sentence({ min: 3, max: 6 }),
       description: faker.lorem.paragraph(),
       completed: i % 2 === 0 ? 'true' : 'false',
-      priority: taskPriorities[i % 3],
+      priority: taskPriorities[i % 4],
       dueDate: faker.date.future(),
     }));
 
@@ -363,7 +363,7 @@ async function seed() {
       title: faker.lorem.sentence({ min: 3, max: 6 }),
       description: faker.lorem.paragraph(),
       completed: i % 3 === 0 ? 'true' : 'false',
-      priority: taskPriorities[i % 3],
+      priority: taskPriorities[i % 4],
       dueDate: faker.date.future(),
     }));
 

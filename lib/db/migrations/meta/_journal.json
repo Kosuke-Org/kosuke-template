@@ -64,6 +64,13 @@
       "when": 1768919806095,
       "tag": "0008_strange_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1769539974151,
+      "tag": "0009_overconfident_jack_murdock",
+      "breakpoints": true
     }
   ]
 }
