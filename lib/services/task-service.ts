@@ -81,7 +81,7 @@ export async function createTask(data: NewTask) {
       organizationId: data.organizationId ?? null,
       title: data.title,
       description: data.description ?? null,
-      priority: data.priority ?? 'medium',
+      priority: data.priority ?? 'high',
       dueDate: data.dueDate ?? null,
       completed: 'false',
     })

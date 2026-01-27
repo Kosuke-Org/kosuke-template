@@ -13,6 +13,12 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/.next/**', '__tests__/setup/**'],
     unstubEnvs: true,
     unstubGlobals: true,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     coverage: {
       provider: 'v8', // Faster than istanbul
       include: [

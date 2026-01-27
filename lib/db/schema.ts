@@ -13,7 +13,7 @@ import {
 } from 'drizzle-orm/pg-core';
 
 // Enums
-export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high']);
+export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high', 'urgent']);
 export const orgRoleEnum = pgEnum('org_role', ['owner', 'admin', 'member']);
 export const orderStatusEnum = pgEnum('order_status', [
   'pending',
@@ -224,7 +224,7 @@ export const tasks = pgTable('tasks', {
   title: text('title').notNull(),
   description: text('description'),
   completed: text('completed').notNull().default('false'), // 'true' or 'false' as text
-  priority: taskPriorityEnum('priority').notNull().default('medium'),
+  priority: taskPriorityEnum('priority').notNull().default('high'),
   dueDate: timestamp('due_date'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')

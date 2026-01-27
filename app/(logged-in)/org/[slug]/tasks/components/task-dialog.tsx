@@ -65,7 +65,7 @@ export function TaskDialog({
     defaultValues: {
       title: initialValues?.title ?? '',
       description: initialValues?.description ?? '',
-      priority: initialValues?.priority ?? 'medium',
+      priority: initialValues?.priority ?? 'high',
       dueDate: initialValues?.dueDate ?? undefined,
     },
   });
@@ -76,7 +76,7 @@ export function TaskDialog({
       form.reset({
         title: initialValues?.title ?? '',
         description: initialValues?.description ?? '',
-        priority: initialValues?.priority ?? 'medium',
+        priority: initialValues?.priority ?? 'high',
         dueDate: initialValues?.dueDate ?? undefined,
       });
     }
@@ -147,6 +147,7 @@ export function TaskDialog({
                         <SelectItem value="low">Low</SelectItem>
                         <SelectItem value="medium">Medium</SelectItem>
                         <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="urgent">Urgent</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
