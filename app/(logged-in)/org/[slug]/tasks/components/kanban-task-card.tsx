@@ -46,6 +46,7 @@ export function KanbanTaskCard({ task, onEdit, onDelete, onToggleComplete }: Kan
 
   const isCompleted = task.completed;
   const isOverdue = task.isOverdue;
+  const isUrgent = task.priority === 'urgent';
 
   return (
     <Card
@@ -55,6 +56,7 @@ export function KanbanTaskCard({ task, onEdit, onDelete, onToggleComplete }: Kan
         'relative cursor-grab py-4 transition-all duration-200 active:cursor-grabbing',
         isDragging && 'opacity-50 shadow-lg',
         isCompleted && 'opacity-60',
+        isUrgent && 'border-red-600/40 bg-red-600/20',
         'hover:shadow-md'
       )}
       {...attributes}
@@ -86,7 +88,14 @@ export function KanbanTaskCard({ task, onEdit, onDelete, onToggleComplete }: Kan
             checked={task.completed}
             onCheckedChange={() => onToggleComplete({ id: task.id, completed: !task.completed })}
           />
-          <h4 className={cn('text-sm leading-tight font-medium')}>{task.title}</h4>
+          <h4
+            className={cn(
+              'text-sm leading-tight font-medium',
+              isUrgent && 'font-bold text-red-900 dark:text-red-300'
+            )}
+          >
+            {task.title}
+          </h4>
         </div>
         {task.description && (
           <p className={cn('text-muted-foreground line-clamp-2 pt-2 text-xs')}>
