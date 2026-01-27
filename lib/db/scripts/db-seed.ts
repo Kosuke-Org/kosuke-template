@@ -323,7 +323,18 @@ async function seed() {
     // Step 7: Create tasks
     console.log('📝 Creating tasks...');
 
-    const taskPriorities: TaskPriority[] = ['low', 'medium', 'high'];
+    const taskPriorities: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
+
+    // Helper function to assign realistic priority distribution
+    // Most tasks are low/medium/high, with urgent being less common (~10-15%)
+    const getTaskPriority = (index: number): TaskPriority => {
+      // Every 8th task is urgent (~12.5% of tasks)
+      if (index % 8 === 0 && index > 0) {
+        return 'urgent';
+      }
+      // Remaining tasks distributed across low, medium, high
+      return taskPriorities[index % 3];
+    };
 
     // Personal tasks for Jane
     const janePersonalTasks: NewTask[] = Array.from({ length: 5 }, (_, i) => ({
@@ -331,7 +342,7 @@ async function seed() {
       title: faker.lorem.sentence({ min: 3, max: 6 }),
       description: faker.lorem.paragraph(),
       completed: i % 3 === 0 ? 'true' : 'false',
-      priority: taskPriorities[i % 3],
+      priority: getTaskPriority(i),
       dueDate: faker.date.future(),
     }));
 
@@ -342,7 +353,7 @@ async function seed() {
       title: faker.lorem.sentence({ min: 3, max: 6 }),
       description: faker.lorem.paragraph(),
       completed: i % 4 === 0 ? 'true' : 'false',
-      priority: taskPriorities[i % 3],
+      priority: getTaskPriority(i + 5), // Offset to vary distribution
       dueDate: faker.date.future(),
     }));
 
@@ -352,7 +363,7 @@ async function seed() {
       title: faker.lorem.sentence({ min: 3, max: 6 }),
       description: faker.lorem.paragraph(),
       completed: i % 2 === 0 ? 'true' : 'false',
-      priority: taskPriorities[i % 3],
+      priority: getTaskPriority(i + 10), // Offset to vary distribution
       dueDate: faker.date.future(),
     }));
 
@@ -363,7 +374,7 @@ async function seed() {
       title: faker.lorem.sentence({ min: 3, max: 6 }),
       description: faker.lorem.paragraph(),
       completed: i % 3 === 0 ? 'true' : 'false',
-      priority: taskPriorities[i % 3],
+      priority: getTaskPriority(i + 15), // Offset to vary distribution
       dueDate: faker.date.future(),
     }));
 
