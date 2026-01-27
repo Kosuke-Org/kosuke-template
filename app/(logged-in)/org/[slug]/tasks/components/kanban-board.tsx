@@ -47,6 +47,7 @@ const PRIORITY_COLUMNS: { id: TaskPriority; title: string }[] = [
   { id: 'low', title: 'Low Priority' },
   { id: 'medium', title: 'Medium Priority' },
   { id: 'high', title: 'High Priority' },
+  { id: 'urgent', title: 'Urgent' },
 ];
 
 function DroppableColumn({
@@ -208,7 +209,7 @@ export function KanbanBoard({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
         {PRIORITY_COLUMNS.map((column) => {
           const columnTasks = tasksByPriority[column.id] || [];
           const draggedTask = activeId ? tasks.find((t) => t.id === activeId) : null;

@@ -13,6 +13,7 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/.next/**', '__tests__/setup/**'],
     unstubEnvs: true,
     unstubGlobals: true,
+    pool: 'threads', // Use threads pool to avoid process.send() conflicts
     coverage: {
       provider: 'v8', // Faster than istanbul
       include: [
