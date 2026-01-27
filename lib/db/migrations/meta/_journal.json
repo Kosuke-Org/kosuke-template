@@ -64,6 +64,13 @@
       "when": 1768919806095,
       "tag": "0008_strange_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1769536774593,
+      "tag": "0009_lively_master_mold",
+      "breakpoints": true
     }
   ]
 }
