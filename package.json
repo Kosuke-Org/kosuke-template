@@ -162,7 +162,7 @@
     "*.{js,jsx,ts,tsx}": [
       "prettier --write",
       "eslint --fix --max-warnings 0 --no-warn-ignored",
-      "vitest related --run"
+      "vitest related --run --no-file-parallelism"
     ],
     "*.{yml,yaml,md,json}": [
       "prettier --write"
