@@ -3,7 +3,7 @@
 import Link from 'next/link';
 
 import { motion } from 'framer-motion';
-import { ArrowRight, Code2, Database, Lock, Rocket, Sparkles, Star, Zap } from 'lucide-react';
+import { ArrowRight, Code2, Database, Lock, Rocket, Star, Zap } from 'lucide-react';
 
 import { TechLogo } from '@/app/(logged-out)/home/components/tech-card';
 import { technologies } from '@/app/(logged-out)/home/data/technologies';
@@ -60,36 +60,8 @@ export function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              <Badge
-                variant="outline"
-                className="relative mb-4 cursor-default overflow-hidden px-2 py-1 text-xs sm:mb-6 sm:px-3"
-              >
-                {/* Shine effect */}
-                <motion.div
-                  className="absolute inset-0 -top-1 -bottom-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                  initial={{ x: '-100%' }}
-                  animate={{ x: '200%' }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatDelay: 3,
-                    ease: 'easeInOut',
-                  }}
-                />
-                <Sparkles className="mr-1 h-3 w-3" />
-                Production Ready
-              </Badge>
-            </motion.div>
-
             <h1 className="mb-4 px-2 text-3xl leading-tight font-bold tracking-tight sm:mb-6 sm:text-5xl lg:text-7xl">
-              Skip the boilerplate
-              <br />
-              Ship features
+              Lovable + Cursor + Miro = Kosuke
             </h1>
 
             <p className="text-muted-foreground mx-auto mb-6 max-w-2xl px-2 font-sans text-base sm:mb-8 sm:text-lg lg:text-xl">
