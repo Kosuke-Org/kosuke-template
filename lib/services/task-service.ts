@@ -61,13 +61,45 @@ export async function listTasks(filters: TaskListFilters) {
     .where(and(...conditions))
     .orderBy(desc(tasks.createdAt));
 
+  // Auto-upgrade overdue high-priority tasks to urgent
+  const now = new Date();
+  const tasksToUpgrade: string[] = [];
+
   // Transform to proper types with computed properties
-  return userTasks.map((task) => ({
-    ...task,
-    completed: task.completed === 'true',
-    isOverdue:
-      task.dueDate && task.completed === 'false' ? new Date(task.dueDate) < new Date() : false,
-  }));
+  const transformedTasks = userTasks.map((task) => {
+    const isOverdue =
+      task.dueDate && task.completed === 'false' ? new Date(task.dueDate) < now : false;
+
+    // Check if task needs to be upgraded to urgent
+    if (task.priority === 'high' && isOverdue && task.completed === 'false') {
+      tasksToUpgrade.push(task.id);
+      return {
+        ...task,
+        priority: 'urgent' as const,
+        completed: false,
+        isOverdue,
+      };
+    }
+
+    return {
+      ...task,
+      completed: task.completed === 'true',
+      isOverdue,
+    };
+  });
+
+  // Update upgraded tasks in database (fire and forget, non-blocking)
+  if (tasksToUpgrade.length > 0) {
+    Promise.all(
+      tasksToUpgrade.map((taskId) =>
+        db.update(tasks).set({ priority: 'urgent' }).where(eq(tasks.id, taskId))
+      )
+    ).catch((error) => {
+      console.error('Failed to auto-upgrade tasks to urgent:', error);
+    });
+  }
+
+  return transformedTasks;
 }
 
 /**

@@ -88,7 +88,7 @@ function TasksPageSkeleton() {
 export default function OrgTasksPage() {
   const { organization: activeOrganization, isLoading: isLoadingOrg } = useOrganization();
   const [filter, setFilter] = useState<TaskFilter>('all');
-  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'urgent' | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const { viewMode, setViewMode } = useViewModeStore();
 
@@ -176,16 +176,17 @@ export default function OrgTasksPage() {
           </div>
           <Select
             value={priorityFilter}
-            onValueChange={(value) => setPriorityFilter(value as TaskPriority | 'all')}
+            onValueChange={(value) => setPriorityFilter(value as TaskPriority | 'urgent' | 'all')}
           >
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Priority" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="urgent">Urgent</SelectItem>
               <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={() => setCreateDialogOpen(true)} className="whitespace-nowrap">
