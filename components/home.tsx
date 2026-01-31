@@ -3,7 +3,7 @@
 import Link from 'next/link';
 
 import { motion } from 'framer-motion';
-import { ArrowRight, Code2, Database, Lock, Rocket, Sparkles, Star, Zap } from 'lucide-react';
+import { ArrowRight, Code2, Database, Lock, Rocket, Sparkles, Star, Terminal, Zap } from 'lucide-react';
 
 import { TechLogo } from '@/app/(logged-out)/home/components/tech-card';
 import { technologies } from '@/app/(logged-out)/home/data/technologies';
@@ -116,8 +116,8 @@ export function Home() {
               // Logged-out user CTAs
               <Button size="lg" className="w-full sm:w-auto" asChild>
                 <Link href="https://github.com/Kosuke-Org/kosuke-template" target="_blank">
-                  <Rocket className="mr-2 h-4 w-4" />
-                  git clone kosuke
+                  <Terminal className="mr-2 h-4 w-4" />
+                  Clone with git guido
                 </Link>
               </Button>
             )}
@@ -398,8 +398,8 @@ export function Home() {
                 <>
                   <Button size="lg" className="w-full sm:w-auto" asChild>
                     <Link href="https://github.com/Kosuke-Org/kosuke-template" target="_blank">
-                      <Star className="mr-2 h-4 w-4" />
-                      Star on GitHub
+                      <Terminal className="mr-2 h-4 w-4" />
+                      Clone with git guido
                     </Link>
                   </Button>
 
