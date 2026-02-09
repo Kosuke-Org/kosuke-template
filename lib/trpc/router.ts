@@ -12,17 +12,19 @@ import { ordersRouter } from './routers/orders';
 import { organizationsRouter } from './routers/organizations';
 import { tasksRouter } from './routers/tasks';
 import { userRouter } from './routers/user';
+import { waitlistRouter } from './routers/waitlist';
 
 export const appRouter = router({
+  admin: adminRouter,
   auth: authRouter,
+  billing: billingRouter,
+  chat: chatRouter,
+  documents: documentsRouter,
+  orders: ordersRouter,
+  organizations: organizationsRouter,
   tasks: tasksRouter,
   user: userRouter,
-  organizations: organizationsRouter,
-  billing: billingRouter,
-  orders: ordersRouter,
-  admin: adminRouter,
-  documents: documentsRouter,
-  chat: chatRouter,
+  waitlist: waitlistRouter,
 });
 
 export type AppRouter = typeof appRouter;

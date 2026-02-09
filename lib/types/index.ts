@@ -41,6 +41,9 @@ export type { DocumentWithUser } from './documents';
 // RAG types
 export type { FileSearchStore } from './rag';
 
+// Waitlist types
+export type { NewWaitlist, Waitlist, WaitlistSubscription } from './waitlist';
+
 // Note: API types are now handled by lib/api module
 // Import from '@/lib/api' for API-related types and utilities
 

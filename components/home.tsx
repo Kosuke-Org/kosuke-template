@@ -14,6 +14,7 @@ import { useUser } from '@/hooks/use-user';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { WaitlistForm } from '@/components/waitlist-form';
 
 const coreFeatures = [
   {
@@ -106,28 +107,32 @@ export function Home() {
           >
             {user ? (
               // Logged-in user CTAs
-              <Button size="lg" className="w-full sm:w-auto" asChild>
-                <Link href={dashboardUrl}>
-                  <Rocket className="mr-2 h-4 w-4" />
-                  Go to Dashboard
-                </Link>
-              </Button>
+              <>
+                <Button size="lg" className="w-full sm:w-auto" asChild>
+                  <Link href={dashboardUrl}>
+                    <Rocket className="mr-2 h-4 w-4" />
+                    Go to Dashboard
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
+                  <Link href="https://github.com/Kosuke-Org/kosuke-template#readme" target="_blank">
+                    <Code2 className="mr-2 h-4 w-4" />
+                    Documentation
+                  </Link>
+                </Button>
+              </>
             ) : (
-              // Logged-out user CTAs
-              <Button size="lg" className="w-full sm:w-auto" asChild>
-                <Link href="https://github.com/Kosuke-Org/kosuke-template" target="_blank">
-                  <Rocket className="mr-2 h-4 w-4" />
-                  git clone kosuke
-                </Link>
-              </Button>
+              // Logged-out user CTAs with waitlist form
+              <>
+                <WaitlistForm />
+                <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
+                  <Link href="https://github.com/Kosuke-Org/kosuke-template#readme" target="_blank">
+                    <Code2 className="mr-2 h-4 w-4" />
+                    Documentation
+                  </Link>
+                </Button>
+              </>
             )}
-
-            <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-              <Link href="https://github.com/Kosuke-Org/kosuke-template#readme" target="_blank">
-                <Code2 className="mr-2 h-4 w-4" />
-                Documentation
-              </Link>
-            </Button>
           </motion.div>
         </div>
       </section>

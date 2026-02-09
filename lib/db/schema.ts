@@ -122,6 +122,21 @@ export const systemConfig = pgTable(
   (table) => [index('system_config_key_idx').on(table.key)]
 );
 
+export const waitlist = pgTable(
+  'waitlist',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    email: text('email').notNull().unique(),
+    subscribedAt: timestamp('subscribed_at').defaultNow().notNull(),
+    ipAddress: text('ip_address'),
+    userAgent: text('user_agent'),
+    referrer: text('referrer'),
+    confirmed: boolean('confirmed').default(false).notNull(),
+    confirmedAt: timestamp('confirmed_at'),
+  },
+  (table) => [index('waitlist_email_idx').on(table.email)]
+);
+
 export const organizations = pgTable('organizations', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
@@ -534,6 +549,8 @@ export type NewRagSettings = Pick<
 >;
 export type SystemConfig = InferSelectModel<typeof systemConfig>;
 export type NewSystemConfig = InferInsertModel<typeof systemConfig>;
+export type Waitlist = InferSelectModel<typeof waitlist>;
+export type NewWaitlist = InferInsertModel<typeof waitlist>;
 
 // Infer enum types from schema
 export type TaskPriority = (typeof taskPriorityEnum.enumValues)[number];
