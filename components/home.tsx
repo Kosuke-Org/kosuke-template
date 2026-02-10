@@ -87,9 +87,9 @@ export function Home() {
             </motion.div>
 
             <h1 className="mb-4 px-2 text-3xl leading-tight font-bold tracking-tight sm:mb-6 sm:text-5xl lg:text-7xl">
-              Skip the boilerplate
+              Grande
               <br />
-              Ship features
+              Fede
             </h1>
 
             <p className="text-muted-foreground mx-auto mb-6 max-w-2xl px-2 font-sans text-base sm:mb-8 sm:text-lg lg:text-xl">

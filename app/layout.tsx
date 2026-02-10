@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     default: 'Kosuke Template',
   },
   description:
-    'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
+    'Production-ready Next.js template with auth, billing, database, and deployment. Build and launch your web application faster.',
   keywords: [
     'Next.js',
     'React',
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Kosuke Template - Production-Ready Next.js Starter',
     description:
-      'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
+      'Production-ready Next.js template with auth, billing, database, and deployment. Build and launch your web application faster.',
     type: 'website',
     images: [
       {
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Kosuke Template - Production-Ready Next.js Starter',
     description:
-      'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
+      'Production-ready Next.js template with auth, billing, database, and deployment. Build and launch your web application faster.',
     images: [
       {
         url: ogImage,

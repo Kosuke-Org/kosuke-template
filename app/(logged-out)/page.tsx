@@ -19,7 +19,7 @@ const HomepageStructuredData = () => {
     '@type': 'WebSite',
     name: 'Kosuke Template',
     description:
-      'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
+      'Production-ready Next.js template with auth, billing, database, and deployment. Build and launch your web application faster.',
     url: baseUrl,
     sameAs: ['https://github.com/Kosuke-Org/kosuke-template'],
   };
