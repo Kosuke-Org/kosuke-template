@@ -151,6 +151,41 @@ log_separator() {
 }
 
 # =============================================================================
+# TIMING HELPERS
+# =============================================================================
+
+WORKFLOW_START_TIME=""
+
+timer_start() {
+  date +%s
+}
+
+timer_elapsed() {
+  local start_time="$1"
+  local end_time
+  end_time=$(date +%s)
+  local elapsed=$((end_time - start_time))
+  local minutes=$((elapsed / 60))
+  local seconds=$((elapsed % 60))
+  if [[ $minutes -gt 0 ]]; then
+    echo "${minutes}m ${seconds}s"
+  else
+    echo "${seconds}s"
+  fi
+}
+
+log_git_diff_stats() {
+  cd "$PROJECT_DIR"
+  local stats
+  stats=$(git diff --stat HEAD 2>/dev/null || git diff --stat 2>/dev/null || echo "")
+  if [[ -n "$stats" ]]; then
+    local summary
+    summary=$(echo "$stats" | tail -1)
+    log_info "Changes: $summary"
+  fi
+}
+
+# =============================================================================
 # POSTGRESQL CONTAINER MANAGEMENT
 # =============================================================================
 
@@ -354,7 +389,13 @@ git_get_diff() {
 run_claude() {
   local prompt="$1"
 
-  log_info "Running Claude Code agent..."
+  local prompt_chars=${#prompt}
+  local prompt_words
+  prompt_words=$(echo "$prompt" | wc -w | tr -d ' ')
+  log_info "Running Claude Code agent... (prompt: ${prompt_chars} chars, ~${prompt_words} words)"
+
+  local claude_start
+  claude_start=$(timer_start)
 
   cd "$PROJECT_DIR"
 
@@ -363,10 +404,11 @@ run_claude() {
   if ! claude --dangerously-skip-permissions \
     --output-format text \
     -p "$prompt"; then
-    log_error "Claude Code execution failed"
+    log_error "Claude Code execution failed after $(timer_elapsed "$claude_start")"
     return 1
   fi
 
+  log_info "Claude Code finished in $(timer_elapsed "$claude_start")"
   return 0
 }
 
@@ -1075,7 +1117,19 @@ ship_command() {
   local ticket_type
   ticket_type=$(echo "$ticket_data" | jq -r '.type')
 
+  local ticket_category
+  ticket_category=$(echo "$ticket_data" | jq -r '.category // "unknown"')
+  local ticket_effort
+  ticket_effort=$(echo "$ticket_data" | jq -r '.estimatedEffort // "?"')
+  local ticket_desc_preview
+  ticket_desc_preview=$(echo "$ticket_description" | head -c 120 | tr '\n' ' ')
+
   log_info "Implementing: $ticket_id - $ticket_title"
+  log_info "  Category: $ticket_category | Effort: $ticket_effort/10"
+  log_info "  Description: ${ticket_desc_preview}..."
+
+  local ship_start
+  ship_start=$(timer_start)
 
   local schema_instructions=""
   if [[ "$ticket_id" == *"SCHEMA"* ]]; then
@@ -1209,7 +1263,8 @@ Begin by exploring the current codebase, then implement the ticket systematicall
 
   run_claude "$prompt"
 
-  log_success "Implementation completed for $ticket_id"
+  log_success "Implementation completed for $ticket_id in $(timer_elapsed "$ship_start")"
+  log_git_diff_stats
 }
 
 # =============================================================================
@@ -1221,6 +1276,9 @@ review_command() {
   local ticket_type="$2"
 
   log_info "Reviewing changes for $ticket_id ($ticket_type)..."
+
+  local review_start
+  review_start=$(timer_start)
 
   local git_diff
   if [[ "$NO_COMMIT" == "true" ]]; then
@@ -1421,7 +1479,8 @@ Review the changes shown in the diff and fix any issues you find.'
 
   run_claude "$prompt"
 
-  log_success "Review completed for $ticket_id"
+  log_success "Review completed for $ticket_id in $(timer_elapsed "$review_start")"
+  log_git_diff_stats
 }
 
 # =============================================================================
@@ -1636,8 +1695,11 @@ build_tickets() {
     local ticket_title
     ticket_title=$(echo "$ticket_data" | jq -r '.title')
 
+    local ticket_start
+    ticket_start=$(timer_start)
+
     log_separator
-    log_info "Processing ticket $ticket_num/$ticket_count: $ticket_id"
+    log_step "Ticket $ticket_num/$ticket_count: $ticket_id"
     log_info "Title: $ticket_title"
     log_info "Type: $ticket_type"
 
@@ -1654,7 +1716,16 @@ build_tickets() {
     # Update status to InProgress
     update_ticket_status "$ticket_id" "InProgress"
 
+    # Determine total sub-steps for this ticket type
+    local total_substeps=2  # ship + commit/skip
+    if [[ "$ticket_type" == "schema" ]]; then
+      total_substeps=2  # ship + migrate
+    elif [[ "$ticket_type" == "backend" ]] || [[ "$ticket_type" == "frontend" ]]; then
+      total_substeps=3  # ship + review + commit/skip
+    fi
+
     # 1. Ship (implement)
+    log_info "[1/$total_substeps] Shipping $ticket_id..."
     if ! ship_command "$ticket_id"; then
       update_ticket_status "$ticket_id" "Error" "Implementation failed"
       log_error "Failed to implement $ticket_id"
@@ -1664,6 +1735,7 @@ build_tickets() {
 
     # 2. Migrate (schema tickets only)
     if [[ "$ticket_type" == "schema" ]]; then
+      log_info "[2/$total_substeps] Migrating database for $ticket_id..."
       if ! migrate_command "$ticket_id"; then
         update_ticket_status "$ticket_id" "Error" "Migration failed"
         log_error "Failed to migrate $ticket_id"
@@ -1674,6 +1746,7 @@ build_tickets() {
 
     # 3. Review (backend/frontend only)
     if [[ "$ticket_type" == "backend" ]] || [[ "$ticket_type" == "frontend" ]]; then
+      log_info "[2/$total_substeps] Reviewing $ticket_id ($ticket_type)..."
       if ! review_command "$ticket_id" "$ticket_type"; then
         update_ticket_status "$ticket_id" "Error" "Review failed"
         log_error "Failed to review $ticket_id"
@@ -1686,6 +1759,7 @@ build_tickets() {
     update_ticket_status "$ticket_id" "Done"
 
     # 4. Commit (if not in no-commit mode)
+    log_info "[$total_substeps/$total_substeps] Committing $ticket_id..."
     if [[ "$NO_COMMIT" == "false" ]]; then
       local map_context=""
       if [[ -f "$MAP_FILE" ]]; then
@@ -1703,10 +1777,10 @@ build_tickets() {
       update_ticket_execution_status "$ticket_id" "commitStatus" "skipped"
     fi
 
-    log_success "Completed: $ticket_id"
+    log_success "Completed: $ticket_id in $(timer_elapsed "$ticket_start")"
   done
 
-  log_success "All tickets processed!"
+  log_success "All $ticket_count tickets processed!"
 }
 
 # =============================================================================
@@ -1776,14 +1850,19 @@ main() {
   # Set up error trap
   trap 'on_failure' ERR
 
+  WORKFLOW_START_TIME=$(timer_start)
+
   # Step 1: Gather requirements
   if [[ $resume_step -le 1 ]]; then
+    local step1_start
+    step1_start=$(timer_start)
     log_step "STEP 1/5: Gathering Requirements"
     requirements_command
     if [[ "$NO_COMMIT" == "false" ]]; then
       git_commit_simple "chore: generate requirements (panos step 1/5)" || true
     fi
     mark_step_completed 1
+    log_info "Step 1 completed in $(timer_elapsed "$step1_start")"
   else
     log_info "Skipping Step 1 (already completed)"
   fi
@@ -1797,12 +1876,15 @@ main() {
 
   # Step 2: Generate project map
   if [[ $resume_step -le 2 ]]; then
+    local step2_start
+    step2_start=$(timer_start)
     log_step "STEP 2/5: Generating Project Map"
     map_command
     if [[ "$NO_COMMIT" == "false" ]]; then
       git_commit_simple "chore: generate project map (panos step 2/5)" || true
     fi
     mark_step_completed 2
+    log_info "Step 2 completed in $(timer_elapsed "$step2_start")"
   else
     log_info "Skipping Step 2 (already completed)"
   fi
@@ -1816,12 +1898,15 @@ main() {
 
   # Step 3: Generate implementation tickets
   if [[ $resume_step -le 3 ]]; then
+    local step3_start
+    step3_start=$(timer_start)
     log_step "STEP 3/5: Generating Implementation Tickets"
     tickets_command
     if [[ "$NO_COMMIT" == "false" ]]; then
       git_commit_simple "chore: generate implementation tickets (panos step 3/5)" || true
     fi
     mark_step_completed 3
+    log_info "Step 3 completed in $(timer_elapsed "$step3_start")"
   else
     log_info "Skipping Step 3 (already completed)"
   fi
@@ -1835,9 +1920,12 @@ main() {
 
   # Step 4: Build implementation tickets
   if [[ $resume_step -le 4 ]]; then
+    local step4_start
+    step4_start=$(timer_start)
     log_step "STEP 4/5: Building Implementation Tickets"
     build_tickets
     mark_step_completed 4
+    log_info "Step 4 completed in $(timer_elapsed "$step4_start")"
   else
     log_info "Skipping Step 4 (already completed)"
   fi
@@ -1851,6 +1939,8 @@ main() {
 
   # Step 5: Final commit
   if [[ $resume_step -le 5 ]]; then
+    local step5_start
+    step5_start=$(timer_start)
     log_step "STEP 5/5: Final Commit"
     if [[ "$NO_COMMIT" == "false" ]]; then
       commit_command "chore: panos workflow complete" || true
@@ -1858,14 +1948,18 @@ main() {
       log_info "Skipping final commit (--no-commit mode)"
     fi
     mark_step_completed 5
+    log_info "Step 5 completed in $(timer_elapsed "$step5_start")"
   else
     log_info "Skipping Step 5 (already completed)"
   fi
 
   # Success!
+  local total_elapsed
+  total_elapsed=$(timer_elapsed "$WORKFLOW_START_TIME")
+
   echo ""
   echo "================================================================================"
-  log_success "Panos Workflow Completed Successfully!"
+  log_success "Panos Workflow Completed Successfully! (Total: $total_elapsed)"
   echo "================================================================================"
   echo ""
   echo "Summary:"
@@ -1878,6 +1972,8 @@ main() {
   else
     echo "  5. ⏭️  Commits skipped (--no-commit mode)"
   fi
+  echo ""
+  echo "Total time: $total_elapsed"
   echo ""
   echo "Next step: Run ./scripts/test.sh to perform web testing with Claude Code"
   echo ""
