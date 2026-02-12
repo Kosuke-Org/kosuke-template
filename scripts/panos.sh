@@ -386,32 +386,107 @@ git_get_diff() {
 # CLAUDE CODE WRAPPER
 # =============================================================================
 
-HEARTBEAT_PID=""
-CLAUDE_PID=""
+# Parse stream-json output from Claude Code and display tool activity in real-time
+# Reads JSON lines from stdin, extracts tool_use events, and prints formatted logs
+parse_claude_stream() {
+  local label="$1"
+  local start_time="$2"
+  local last_activity
+  last_activity=$(date +%s)
+  local tool_count=0
 
-start_heartbeat() {
-  local start_time="$1"
-  local label="${2:-Claude Code}"
-  (
-    while true; do
-      sleep 120
-      local now
-      now=$(date +%s)
-      local elapsed=$((now - start_time))
-      local minutes=$((elapsed / 60))
-      local seconds=$((elapsed % 60))
-      echo "[$(date '+%H:%M:%S')] 💓 $label still running... (${minutes}m ${seconds}s elapsed)"
-    done
-  ) &
-  HEARTBEAT_PID=$!
-}
+  while IFS= read -r line; do
+    # Skip empty lines
+    [[ -z "$line" ]] && continue
 
-stop_heartbeat() {
-  if [[ -n "$HEARTBEAT_PID" ]]; then
-    kill "$HEARTBEAT_PID" 2>/dev/null || true
-    wait "$HEARTBEAT_PID" 2>/dev/null || true
-    HEARTBEAT_PID=""
-  fi
+    # Extract the type field
+    local msg_type
+    msg_type=$(echo "$line" | jq -r '.type // empty' 2>/dev/null) || continue
+
+    local now
+    now=$(date +%s)
+    local elapsed=$((now - start_time))
+    local minutes=$((elapsed / 60))
+    local seconds=$((elapsed % 60))
+    local ts
+    ts="[$(date '+%H:%M:%S')]"
+
+    case "$msg_type" in
+      assistant)
+        # Agent is thinking/responding - extract tool_use from content blocks
+        local tool_uses
+        tool_uses=$(echo "$line" | jq -c '.message.content[]? | select(.type == "tool_use")' 2>/dev/null) || true
+        if [[ -n "$tool_uses" ]]; then
+          while IFS= read -r tool_json; do
+            tool_count=$((tool_count + 1))
+            local tool_name tool_detail
+            tool_name=$(echo "$tool_json" | jq -r '.name // "unknown"' 2>/dev/null)
+
+            case "$tool_name" in
+              Read)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.file_path // ""' 2>/dev/null)
+                echo "$ts 📖 Read: $tool_detail"
+                ;;
+              Write)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.file_path // ""' 2>/dev/null)
+                echo "$ts ✏️  Write: $tool_detail"
+                ;;
+              Edit)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.file_path // ""' 2>/dev/null)
+                echo "$ts 🔧 Edit: $tool_detail"
+                ;;
+              Bash)
+                tool_detail=$(echo "$tool_json" | jq -r '(.input.command // "") | .[0:120]' 2>/dev/null)
+                echo "$ts 💻 Bash: $tool_detail"
+                ;;
+              Glob)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.pattern // ""' 2>/dev/null)
+                echo "$ts 🔍 Glob: $tool_detail"
+                ;;
+              Grep)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.pattern // ""' 2>/dev/null)
+                local grep_path
+                grep_path=$(echo "$tool_json" | jq -r '.input.path // ""' 2>/dev/null)
+                [[ -n "$grep_path" ]] && tool_detail="$tool_detail in $grep_path"
+                echo "$ts 🔎 Grep: $tool_detail"
+                ;;
+              Task)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.description // ""' 2>/dev/null)
+                echo "$ts 🤖 Task: $tool_detail"
+                ;;
+              WebFetch|WebSearch)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.url // .input.query // ""' 2>/dev/null)
+                echo "$ts 🌐 $tool_name: $tool_detail"
+                ;;
+              *)
+                echo "$ts 🔨 $tool_name"
+                ;;
+            esac
+            last_activity=$now
+          done <<< "$tool_uses"
+        fi
+        ;;
+      result)
+        # Final result - capture cost info if available
+        local cost_info
+        cost_info=$(echo "$line" | jq -r '
+          if .total_cost_usd then "cost: $" + (.total_cost_usd | tostring)
+          else empty
+          end' 2>/dev/null) || true
+        if [[ -n "$cost_info" ]]; then
+          echo "$ts 💰 $label $cost_info"
+        fi
+        ;;
+    esac
+
+    # Periodic heartbeat if no tool activity for 2 minutes
+    if [[ $((now - last_activity)) -ge 120 ]]; then
+      echo "$ts 💓 $label still running... (${minutes}m ${seconds}s elapsed, $tool_count tools called)"
+      last_activity=$now
+    fi
+  done
+
+  echo "$ts ✅ $label stream ended ($tool_count tool calls)"
 }
 
 run_claude() {
@@ -428,30 +503,18 @@ run_claude() {
 
   cd "$PROJECT_DIR"
 
-  # Start heartbeat to show progress every 2 minutes
-  start_heartbeat "$claude_start" "$label"
-
-  # Run Claude Code with text output for clean logs
-  # CLAUDE_CONFIG_DIR isolates from global ~/.claude/CLAUDE.md while still loading project CLAUDE.md
-  local claude_exit_code=0
-  claude --dangerously-skip-permissions \
-    --output-format text \
-    -p "$prompt" &
-  CLAUDE_PID=$!
-  log_info "$label started (PID: $CLAUDE_PID)"
-
-  wait "$CLAUDE_PID" || claude_exit_code=$?
-  CLAUDE_PID=""
-
-  stop_heartbeat
-
-  if [[ $claude_exit_code -ne 0 ]]; then
-    log_error "$label failed (exit code: $claude_exit_code) after $(timer_elapsed "$claude_start")"
+  # Run Claude Code with stream-json for real-time tool visibility
+  # Pipeline runs in foreground so Ctrl+C propagates naturally via SIGPIPE
+  # pipefail (set at top) ensures claude's exit code propagates through the pipe
+  if claude --dangerously-skip-permissions \
+    --output-format stream-json \
+    -p "$prompt" 2>&1 | parse_claude_stream "$label" "$claude_start"; then
+    log_info "$label finished in $(timer_elapsed "$claude_start")"
+    return 0
+  else
+    log_error "$label failed after $(timer_elapsed "$claude_start")"
     return 1
   fi
-
-  log_info "$label finished in $(timer_elapsed "$claude_start")"
-  return 0
 }
 
 # =============================================================================
@@ -1849,30 +1912,13 @@ on_failure() {
 on_interrupt() {
   echo ""
   log_warn "Interrupted by user (Ctrl+C)"
-
-  # Kill the Claude process if running
-  if [[ -n "$CLAUDE_PID" ]]; then
-    log_info "Stopping Claude Code (PID: $CLAUDE_PID)..."
-    kill "$CLAUDE_PID" 2>/dev/null || true
-    wait "$CLAUDE_PID" 2>/dev/null || true
-    CLAUDE_PID=""
-  fi
-
-  stop_heartbeat
   stop_postgres_container
-
   log_info "Cleanup complete. Exiting."
   exit 130
 }
 
 cleanup() {
   # Called on script exit (normal or error)
-  if [[ -n "$CLAUDE_PID" ]]; then
-    kill "$CLAUDE_PID" 2>/dev/null || true
-    wait "$CLAUDE_PID" 2>/dev/null || true
-    CLAUDE_PID=""
-  fi
-  stop_heartbeat
   stop_postgres_container
 }
 
