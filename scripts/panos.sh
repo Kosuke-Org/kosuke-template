@@ -386,29 +386,71 @@ git_get_diff() {
 # CLAUDE CODE WRAPPER
 # =============================================================================
 
+HEARTBEAT_PID=""
+CLAUDE_PID=""
+
+start_heartbeat() {
+  local start_time="$1"
+  local label="${2:-Claude Code}"
+  (
+    while true; do
+      sleep 120
+      local now
+      now=$(date +%s)
+      local elapsed=$((now - start_time))
+      local minutes=$((elapsed / 60))
+      local seconds=$((elapsed % 60))
+      echo "[$(date '+%H:%M:%S')] 💓 $label still running... (${minutes}m ${seconds}s elapsed)"
+    done
+  ) &
+  HEARTBEAT_PID=$!
+}
+
+stop_heartbeat() {
+  if [[ -n "$HEARTBEAT_PID" ]]; then
+    kill "$HEARTBEAT_PID" 2>/dev/null || true
+    wait "$HEARTBEAT_PID" 2>/dev/null || true
+    HEARTBEAT_PID=""
+  fi
+}
+
 run_claude() {
   local prompt="$1"
+  local label="${2:-Claude Code}"
 
   local prompt_chars=${#prompt}
   local prompt_words
   prompt_words=$(echo "$prompt" | wc -w | tr -d ' ')
-  log_info "Running Claude Code agent... (prompt: ${prompt_chars} chars, ~${prompt_words} words)"
+  log_info "Running $label... (prompt: ${prompt_chars} chars, ~${prompt_words} words)"
 
   local claude_start
   claude_start=$(timer_start)
 
   cd "$PROJECT_DIR"
 
+  # Start heartbeat to show progress every 2 minutes
+  start_heartbeat "$claude_start" "$label"
+
   # Run Claude Code with text output for clean logs
   # CLAUDE_CONFIG_DIR isolates from global ~/.claude/CLAUDE.md while still loading project CLAUDE.md
-  if ! claude --dangerously-skip-permissions \
+  local claude_exit_code=0
+  claude --dangerously-skip-permissions \
     --output-format text \
-    -p "$prompt"; then
-    log_error "Claude Code execution failed after $(timer_elapsed "$claude_start")"
+    -p "$prompt" &
+  CLAUDE_PID=$!
+  log_info "$label started (PID: $CLAUDE_PID)"
+
+  wait "$CLAUDE_PID" || claude_exit_code=$?
+  CLAUDE_PID=""
+
+  stop_heartbeat
+
+  if [[ $claude_exit_code -ne 0 ]]; then
+    log_error "$label failed (exit code: $claude_exit_code) after $(timer_elapsed "$claude_start")"
     return 1
   fi
 
-  log_info "Claude Code finished in $(timer_elapsed "$claude_start")"
+  log_info "$label finished in $(timer_elapsed "$claude_start")"
   return 0
 }
 
@@ -855,7 +897,7 @@ Create '"$MAP_FILE"' with the following structure:
 
 **CRITICAL:** All generated fields represent the **FINAL STATE** after implementation based on requirements, not the current state.'
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Map Generator"
 
   if [[ ! -f "$MAP_FILE" ]]; then
     log_error "Map file was not created at $MAP_FILE"
@@ -1085,7 +1127,7 @@ Check kosuke-template: [specific file paths for repo-inspector-agent to analyze]
 - **Map.json**: Navigation/endpoints are separate, not in tickets.json
 - **Keep vs Remove**: Based on Phase 1 architectural decisions, not assumptions'
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Ticket Generator"
 
   if [[ ! -f "$TICKETS_FILE" ]]; then
     log_error "Tickets file was not created at $TICKETS_FILE"
@@ -1261,7 +1303,7 @@ The build system handles all quality checks automatically. Focus ONLY on impleme
 
 Begin by exploring the current codebase, then implement the ticket systematically.'
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Ship [$ticket_id]"
 
   log_success "Implementation completed for $ticket_id in $(timer_elapsed "$ship_start")"
   log_git_diff_stats
@@ -1477,7 +1519,7 @@ The build system handles all quality checks automatically. Focus ONLY on reviewi
 Review the changes shown in the diff and fix any issues you find.'
   fi
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Review [$ticket_id]"
 
   log_success "Review completed for $ticket_id in $(timer_elapsed "$review_start")"
   log_git_diff_stats
@@ -1543,7 +1585,7 @@ Just run the 3 commands. Fix errors only if they occur.
 PROMPT
 )
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Migrate [$context]"
 
   log_success "Database migrations completed"
 }
@@ -1660,7 +1702,7 @@ DO be patient with large refactors - 50+ errors is normal for breaking changes
 
 Begin by staging all changes and attempting to commit. If pre-commit hooks fail, fix the issues and retry until successful."
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Commit"
 
   log_success "Commit completed"
 }
@@ -1784,7 +1826,7 @@ build_tickets() {
 }
 
 # =============================================================================
-# ERROR HANDLING
+# ERROR HANDLING & SIGNAL TRAPS
 # =============================================================================
 
 on_failure() {
@@ -1804,8 +1846,33 @@ on_failure() {
   exit $exit_code
 }
 
+on_interrupt() {
+  echo ""
+  log_warn "Interrupted by user (Ctrl+C)"
+
+  # Kill the Claude process if running
+  if [[ -n "$CLAUDE_PID" ]]; then
+    log_info "Stopping Claude Code (PID: $CLAUDE_PID)..."
+    kill "$CLAUDE_PID" 2>/dev/null || true
+    wait "$CLAUDE_PID" 2>/dev/null || true
+    CLAUDE_PID=""
+  fi
+
+  stop_heartbeat
+  stop_postgres_container
+
+  log_info "Cleanup complete. Exiting."
+  exit 130
+}
+
 cleanup() {
   # Called on script exit (normal or error)
+  if [[ -n "$CLAUDE_PID" ]]; then
+    kill "$CLAUDE_PID" 2>/dev/null || true
+    wait "$CLAUDE_PID" 2>/dev/null || true
+    CLAUDE_PID=""
+  fi
+  stop_heartbeat
   stop_postgres_container
 }
 
@@ -1830,8 +1897,9 @@ main() {
   cd "$PROJECT_DIR"
   bun run prepare
 
-  # Set up cleanup trap (runs on any exit)
+  # Set up traps
   trap 'cleanup' EXIT
+  trap 'on_interrupt' INT TERM
 
   # Start PostgreSQL container
   start_postgres_container
