@@ -496,6 +496,8 @@ parse_claude_stream() {
   local last_activity
   last_activity=$(date +%s)
   local tool_count=0
+  local ts
+  ts="[$(date '+%H:%M:%S')]"
 
   while IFS= read -r line; do
     # Skip empty lines
