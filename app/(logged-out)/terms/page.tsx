@@ -23,7 +23,7 @@ export default function TermsPage() {
             </CardHeader>
             <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
               <p>
-                By accessing and using Kosuke Template, you accept and agree to be bound by the
+                By accessing and using Test, you accept and agree to be bound by the
                 terms and provision of this agreement. If you do not agree to abide by the above,
                 please do not use this service.
               </p>
@@ -36,7 +36,7 @@ export default function TermsPage() {
             </CardHeader>
             <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
               <p>
-                Permission is granted to temporarily download one copy of Kosuke Template per device
+                Permission is granted to temporarily download one copy of Test per device
                 for personal, non-commercial transitory viewing only. This is the grant of a
                 license, not a transfer of title, and under this license you may not:
               </p>
@@ -124,7 +124,7 @@ export default function TermsPage() {
             </CardHeader>
             <CardContent className="prose prose-neutral dark:prose-invert max-w-none">
               <p>
-                In no case shall Kosuke Template, nor its directors, employees, partners, agents,
+                In no case shall Test, nor its directors, employees, partners, agents,
                 suppliers, or affiliates, be liable for any indirect, incidental, punitive, special,
                 or consequential damages arising out of or in connection with your use of the
                 service.

@@ -63,7 +63,7 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
     >
       <div className="container flex h-10 items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Image src={logoUrl} alt="Kosuke Template" width={160} height={28} />
+          <Image src={logoUrl} alt="Test" width={160} height={28} />
         </Link>
 
         {/* Desktop navigation */}

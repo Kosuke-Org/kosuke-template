@@ -27,7 +27,7 @@ export function BaseLayout({ preview, children }: BaseLayoutProps) {
             <Section className="rounded-xl bg-white p-10 shadow-lg">
               {/* Header */}
               <Section className="mb-10 text-center">
-                <Text className="m-0 mb-2 text-3xl font-black text-stone-900">Kosuke Template</Text>
+                <Text className="m-0 mb-2 text-3xl font-black text-stone-900">Test</Text>
               </Section>
 
               {/* Main Content */}

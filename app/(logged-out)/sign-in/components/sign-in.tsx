@@ -47,7 +47,7 @@ export const SignIn = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sign in to Kosuke Template</CardTitle>
+        <CardTitle>Sign in to Test</CardTitle>
         <CardDescription>Welcome back! Please sign in to continue</CardDescription>
       </CardHeader>
       <CardContent>

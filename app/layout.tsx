@@ -23,8 +23,8 @@ const ogImageSquare = `${baseUrl}/og-image-square.png`;
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    template: '%s | Kosuke Template',
-    default: 'Kosuke Template',
+    template: '%s | Test',
+    default: 'Test',
   },
   description:
     'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
@@ -40,11 +40,11 @@ export const metadata: Metadata = {
     'Starter Template',
     'Boilerplate',
   ],
-  authors: [{ name: 'Kosuke Template' }],
-  creator: 'Kosuke Template',
-  publisher: 'Kosuke Template',
+  authors: [{ name: 'Test' }],
+  creator: 'Test',
+  publisher: 'Test',
   openGraph: {
-    title: 'Kosuke Template - Production-Ready Next.js Starter',
+    title: 'Test - Production-Ready Next.js Starter',
     description:
       'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
     type: 'website',
@@ -53,19 +53,19 @@ export const metadata: Metadata = {
         url: ogImage,
         width: 1200,
         height: 630,
-        alt: 'Kosuke Template - Production-Ready Next.js Starter',
+        alt: 'Test - Production-Ready Next.js Starter',
       },
       {
         url: ogImageSquare,
         width: 500,
         height: 500,
-        alt: 'Kosuke Template - Production-Ready Next.js Starter',
+        alt: 'Test - Production-Ready Next.js Starter',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Kosuke Template - Production-Ready Next.js Starter',
+    title: 'Test - Production-Ready Next.js Starter',
     description:
       'Production-ready Next.js template with auth, billing, database, and deployment. Skip the boilerplate and ship features fast.',
     images: [
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
         url: ogImage,
         width: 1200,
         height: 630,
-        alt: 'Kosuke Template - Production-Ready Next.js Starter',
+        alt: 'Test - Production-Ready Next.js Starter',
       },
     ],
   },
