@@ -610,13 +610,25 @@ run_claude() {
   # Run Claude Code with stream-json for real-time tool visibility
   # Pipeline runs in foreground so Ctrl+C propagates naturally via SIGPIPE
   # pipefail (set at top) ensures claude's exit code propagates through the pipe
+  # tee captures raw output to a temp file for debugging on failure
+  local raw_output_file
+  raw_output_file=$(mktemp /tmp/panos-claude-XXXXXX)
+
   if claude --dangerously-skip-permissions \
     --output-format stream-json \
-    -p "$prompt" 2>&1 | parse_claude_stream "$label" "$claude_start"; then
+    -p "$prompt" 2>&1 | tee "$raw_output_file" | parse_claude_stream "$label" "$claude_start"; then
+    rm -f "$raw_output_file"
     log_info "$label finished in $(timer_elapsed "$claude_start")"
     return 0
   else
     log_error "$label failed after $(timer_elapsed "$claude_start")"
+    if [[ -s "$raw_output_file" ]]; then
+      log_error "Raw Claude output (last 30 lines):"
+      tail -30 "$raw_output_file" >&2
+    else
+      log_error "Claude produced no output at all — check auth (run 'claude' interactively) or rate limits"
+    fi
+    rm -f "$raw_output_file"
     return 1
   fi
 }
