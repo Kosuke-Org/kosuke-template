@@ -615,6 +615,7 @@ run_claude() {
   raw_output_file=$(mktemp /tmp/panos-claude-XXXXXX)
 
   if claude --dangerously-skip-permissions \
+    --verbose \
     --output-format stream-json \
     -p "$prompt" 2>&1 | tee "$raw_output_file" | parse_claude_stream "$label" "$claude_start"; then
     rm -f "$raw_output_file"
