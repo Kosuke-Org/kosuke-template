@@ -21,7 +21,7 @@
 #
 # Prerequisites:
 #   - Claude Code CLI must be authenticated (run `claude` first)
-#   - Docker must be running (script creates its own PostgreSQL container)
+#   - Docker must be running (script creates PostgreSQL + Redis containers)
 #
 # =============================================================================
 
@@ -40,6 +40,14 @@ NO_COMMIT=false
 POSTGRES_CONTAINER_NAME=""
 POSTGRES_PORT=""
 POSTGRES_URL=""
+
+# Redis container (created at runtime)
+REDIS_CONTAINER_NAME=""
+REDIS_PORT=""
+REDIS_URL=""
+
+# .env backup (restored on cleanup)
+ENV_BACKUP_FILE=""
 
 # State files (set after PROJECT_DIR is resolved)
 KOSUKE_DIR=""
@@ -112,7 +120,7 @@ Options:
 
 Prerequisites:
   - Claude Code CLI must be authenticated (run `claude` first to authenticate)
-  - Docker must be running (script creates its own PostgreSQL container)
+  - Docker must be running (script creates PostgreSQL + Redis containers)
 
 Examples:
   ./panos.sh                                    # Run in current directory
@@ -232,6 +240,100 @@ stop_postgres_container() {
     log_info "Stopping PostgreSQL container..."
     docker rm -f "$POSTGRES_CONTAINER_NAME" >/dev/null 2>&1 || true
     log_success "PostgreSQL container stopped"
+  fi
+}
+
+# =============================================================================
+# REDIS CONTAINER MANAGEMENT
+# =============================================================================
+
+start_redis_container() {
+  log_info "Starting Redis container..."
+
+  # Generate unique container name
+  REDIS_CONTAINER_NAME="panos-redis-$$"
+
+  # Find a random available port
+  REDIS_PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+
+  # Start Redis container (matches docker-compose.yml config)
+  docker run -d \
+    --name "$REDIS_CONTAINER_NAME" \
+    -p "$REDIS_PORT:6379" \
+    redis:7.4-alpine \
+    redis-server --appendonly yes \
+    >/dev/null
+
+  # Build connection URL
+  REDIS_URL="redis://localhost:$REDIS_PORT"
+
+  # Wait for Redis to be ready
+  log_info "Waiting for Redis to be ready on port $REDIS_PORT..."
+  local retries=30
+  while ! docker exec "$REDIS_CONTAINER_NAME" redis-cli ping >/dev/null 2>&1; do
+    retries=$((retries - 1))
+    if [[ $retries -le 0 ]]; then
+      log_error "Redis container failed to start"
+      stop_redis_container
+      return 1
+    fi
+    sleep 1
+  done
+
+  log_success "Redis container started (port: $REDIS_PORT)"
+}
+
+stop_redis_container() {
+  if [[ -n "$REDIS_CONTAINER_NAME" ]]; then
+    log_info "Stopping Redis container..."
+    docker rm -f "$REDIS_CONTAINER_NAME" >/dev/null 2>&1 || true
+    log_success "Redis container stopped"
+  fi
+}
+
+# =============================================================================
+# .ENV BACKUP & OVERWRITE
+# =============================================================================
+
+backup_env() {
+  ENV_BACKUP_FILE="$PROJECT_DIR/.env.panos-backup"
+  local env_file="$PROJECT_DIR/.env"
+
+  if [[ -f "$env_file" ]]; then
+    cp "$env_file" "$ENV_BACKUP_FILE"
+    log_info "Backed up .env to .env.panos-backup"
+
+    # Replace POSTGRES_URL if it exists, otherwise append
+    if grep -q '^POSTGRES_URL=' "$env_file"; then
+      sed -i '' "s|^POSTGRES_URL=.*|POSTGRES_URL=\"$POSTGRES_URL\"|" "$env_file"
+    else
+      echo "POSTGRES_URL=\"$POSTGRES_URL\"" >> "$env_file"
+    fi
+
+    # Replace REDIS_URL if it exists, otherwise append
+    if grep -q '^REDIS_URL=' "$env_file"; then
+      sed -i '' "s|^REDIS_URL=.*|REDIS_URL=\"$REDIS_URL\"|" "$env_file"
+    else
+      echo "REDIS_URL=\"$REDIS_URL\"" >> "$env_file"
+    fi
+
+    log_success ".env updated with container URLs"
+  else
+    log_warn "No .env file found — creating one with container URLs"
+    echo "POSTGRES_URL=\"$POSTGRES_URL\"" > "$env_file"
+    echo "REDIS_URL=\"$REDIS_URL\"" >> "$env_file"
+  fi
+
+  # Export so child processes (Claude) inherit them
+  export POSTGRES_URL
+  export REDIS_URL
+}
+
+restore_env() {
+  if [[ -n "$ENV_BACKUP_FILE" ]] && [[ -f "$ENV_BACKUP_FILE" ]]; then
+    cp "$ENV_BACKUP_FILE" "$PROJECT_DIR/.env"
+    rm -f "$ENV_BACKUP_FILE"
+    log_success ".env restored from backup"
   fi
 }
 
@@ -1614,20 +1716,22 @@ You are a database migration specialist. Execute database migrations quickly and
 
 ${context_section}**EXECUTE THESE 3 COMMANDS IN ORDER:**
 
+The environment already has POSTGRES_URL and REDIS_URL set correctly (both in .env and exported). Just run the commands directly.
+
 1. **Generate migrations:**
    \`\`\`bash
-   POSTGRES_URL="$POSTGRES_URL" bun run db:generate
+   bun run db:generate
    \`\`\`
-   If this hangs for more than 10 seconds, use: \`POSTGRES_URL="$POSTGRES_URL" drizzle-kit push --force\`
+   If this hangs for more than 10 seconds, use: \`drizzle-kit push --force\`
 
 2. **Apply migrations:**
    \`\`\`bash
-   POSTGRES_URL="$POSTGRES_URL" bun run db:migrate
+   bun run db:migrate
    \`\`\`
 
 3. **Seed database:**
    \`\`\`bash
-   POSTGRES_URL="$POSTGRES_URL" bun run db:seed
+   bun run db:seed
    \`\`\`
    If seed script doesn't exist, skip this step (not an error).
 
@@ -1643,6 +1747,7 @@ ${context_section}**EXECUTE THESE 3 COMMANDS IN ORDER:**
 - Create temporary validation scripts
 - Explore the database structure manually
 - Do extensive file reading before running commands
+- Prefix commands with POSTGRES_URL= or REDIS_URL= (already set in environment)
 
 Just run the 3 commands. Fix errors only if they occur.
 PROMPT
@@ -1903,8 +2008,10 @@ on_failure() {
 
   log_error "Panos workflow failed at step $current_step with exit code $exit_code"
 
-  # Cleanup PostgreSQL container
+  # Cleanup containers and restore .env
   stop_postgres_container
+  stop_redis_container
+  restore_env
 
   exit $exit_code
 }
@@ -1913,6 +2020,8 @@ on_interrupt() {
   echo ""
   log_warn "Interrupted by user (Ctrl+C)"
   stop_postgres_container
+  stop_redis_container
+  restore_env
   log_info "Cleanup complete. Exiting."
   exit 130
 }
@@ -1920,6 +2029,8 @@ on_interrupt() {
 cleanup() {
   # Called on script exit (normal or error)
   stop_postgres_container
+  stop_redis_container
+  restore_env
 }
 
 # =============================================================================
@@ -1947,8 +2058,12 @@ main() {
   trap 'cleanup' EXIT
   trap 'on_interrupt' INT TERM
 
-  # Start PostgreSQL container
+  # Start containers
   start_postgres_container
+  start_redis_container
+
+  # Backup .env and overwrite with container URLs
+  backup_env
 
   local resume_step
   resume_step=$(get_resume_step)
@@ -1959,6 +2074,7 @@ main() {
   log_info "Interactive: $INTERACTIVE"
   log_info "No commit mode: $NO_COMMIT"
   log_info "PostgreSQL URL: $POSTGRES_URL"
+  log_info "Redis URL: $REDIS_URL"
   echo ""
 
   # Set up error trap
