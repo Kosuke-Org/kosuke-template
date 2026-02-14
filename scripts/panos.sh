@@ -49,6 +49,9 @@ REDIS_URL=""
 # .env backup (restored on cleanup)
 ENV_BACKUP_FILE=""
 
+# PID of background Claude pipeline (for Ctrl+C kill)
+CLAUDE_PIPE_PID=""
+
 # State files (set after PROJECT_DIR is resolved)
 KOSUKE_DIR=""
 STATE_FILE=""
@@ -608,16 +611,27 @@ run_claude() {
   cd "$PROJECT_DIR"
 
   # Run Claude Code with stream-json for real-time tool visibility
-  # Pipeline runs in foreground so Ctrl+C propagates naturally via SIGPIPE
-  # pipefail (set at top) ensures claude's exit code propagates through the pipe
-  # tee captures raw output to a temp file for debugging on failure
+  # Pipeline runs in a BACKGROUND SUBSHELL so that `wait` is interruptible
+  # by Ctrl+C (bash defers INT traps for foreground pipelines, but not for wait).
+  # tee captures raw output to a temp file for debugging on failure.
   local raw_output_file
   raw_output_file=$(mktemp /tmp/panos-claude-XXXXXX)
 
-  if claude --dangerously-skip-permissions \
-    --verbose \
-    --output-format stream-json \
-    -p "$prompt" 2>&1 | tee "$raw_output_file" | parse_claude_stream "$label" "$claude_start"; then
+  (
+    set -o pipefail
+    claude --dangerously-skip-permissions \
+      --verbose \
+      --output-format stream-json \
+      -p "$prompt" 2>&1 | tee "$raw_output_file" | parse_claude_stream "$label" "$claude_start"
+  ) &
+  CLAUDE_PIPE_PID=$!
+
+  # wait is interruptible by signals — Ctrl+C fires the INT trap immediately
+  local pipe_exit=0
+  wait "$CLAUDE_PIPE_PID" || pipe_exit=$?
+  CLAUDE_PIPE_PID=""
+
+  if [[ $pipe_exit -eq 0 ]]; then
     rm -f "$raw_output_file"
     log_info "$label finished in $(timer_elapsed "$claude_start")"
     return 0
@@ -2012,6 +2026,17 @@ build_tickets() {
 # ERROR HANDLING & SIGNAL TRAPS
 # =============================================================================
 
+kill_claude_pipeline() {
+  if [[ -n "$CLAUDE_PIPE_PID" ]] && kill -0 "$CLAUDE_PIPE_PID" 2>/dev/null; then
+    # Kill the subshell's children first (claude, tee, parse_claude_stream)
+    pkill -TERM -P "$CLAUDE_PIPE_PID" 2>/dev/null || true
+    # Then kill the subshell itself
+    kill -TERM "$CLAUDE_PIPE_PID" 2>/dev/null || true
+    wait "$CLAUDE_PIPE_PID" 2>/dev/null || true
+    CLAUDE_PIPE_PID=""
+  fi
+}
+
 on_failure() {
   local exit_code=$?
   local state
@@ -2023,7 +2048,7 @@ on_failure() {
 
   log_error "Panos workflow failed at step $current_step with exit code $exit_code"
 
-  # Cleanup containers and restore .env
+  kill_claude_pipeline
   stop_postgres_container
   stop_redis_container
   restore_env
@@ -2034,6 +2059,7 @@ on_failure() {
 on_interrupt() {
   echo ""
   log_warn "Interrupted by user (Ctrl+C)"
+  kill_claude_pipeline
   stop_postgres_container
   stop_redis_container
   restore_env
@@ -2043,6 +2069,7 @@ on_interrupt() {
 
 cleanup() {
   # Called on script exit (normal or error)
+  kill_claude_pipeline
   stop_postgres_container
   stop_redis_container
   restore_env
