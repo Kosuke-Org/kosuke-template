@@ -46,8 +46,6 @@ REDIS_CONTAINER_NAME=""
 REDIS_PORT=""
 REDIS_URL=""
 
-# .env backup (restored on cleanup)
-ENV_BACKUP_FILE=""
 
 # PID of background Claude pipeline (for Ctrl+C kill)
 CLAUDE_PIPE_PID=""
@@ -295,17 +293,13 @@ stop_redis_container() {
 }
 
 # =============================================================================
-# .ENV BACKUP & OVERWRITE
+# .ENV UPDATE (write container URLs, no backup/restore)
 # =============================================================================
 
-backup_env() {
-  ENV_BACKUP_FILE="$PROJECT_DIR/.env.panos-backup"
+update_env() {
   local env_file="$PROJECT_DIR/.env"
 
   if [[ -f "$env_file" ]]; then
-    cp "$env_file" "$ENV_BACKUP_FILE"
-    log_info "Backed up .env to .env.panos-backup"
-
     # Replace POSTGRES_URL if it exists, otherwise append
     if grep -q '^POSTGRES_URL=' "$env_file"; then
       sed -i '' "s|^POSTGRES_URL=.*|POSTGRES_URL=\"$POSTGRES_URL\"|" "$env_file"
@@ -330,14 +324,6 @@ backup_env() {
   # Export so child processes (Claude) inherit them
   export POSTGRES_URL
   export REDIS_URL
-}
-
-restore_env() {
-  if [[ -n "$ENV_BACKUP_FILE" ]] && [[ -f "$ENV_BACKUP_FILE" ]]; then
-    cp "$ENV_BACKUP_FILE" "$PROJECT_DIR/.env"
-    rm -f "$ENV_BACKUP_FILE"
-    log_success ".env restored from backup"
-  fi
 }
 
 # =============================================================================
@@ -596,6 +582,27 @@ parse_claude_stream() {
   echo "$ts ✅ $label stream ended ($tool_count tool calls)"
 }
 
+# Parse raw stream-json output into a human-readable failure summary
+# Extracts text content and tool names instead of dumping raw JSON
+parse_failure_summary() {
+  local raw_file="$1"
+  jq -r '
+    if .type == "assistant" then
+      (.message.content[]? |
+        if .type == "text" then "💬 " + (.text | .[0:200])
+        elif .type == "tool_use" then "🔧 " + .name + ": " + ((.input.file_path // .input.command // .input.pattern // .input.description // "") | .[0:120])
+        else empty
+        end
+      )
+    elif .type == "result" then
+      if .total_cost_usd then "💰 Cost: $" + (.total_cost_usd | tostring)
+      else empty
+      end
+    else empty
+    end
+  ' "$raw_file" 2>/dev/null | tail -15
+}
+
 run_claude() {
   local prompt="$1"
   local label="${2:-Claude Code}"
@@ -610,19 +617,25 @@ run_claude() {
 
   cd "$PROJECT_DIR"
 
+  # Write prompt to a temp file to avoid "Argument list too long" (ARG_MAX)
+  # when prompts contain large git diffs, map.json content, or ticket descriptions.
+  local prompt_file
+  prompt_file=$(mktemp /tmp/panos-prompt-XXXXXX)
+  echo "$prompt" > "$prompt_file"
+
   # Run Claude Code with stream-json for real-time tool visibility
   # Pipeline runs in a BACKGROUND SUBSHELL so that `wait` is interruptible
   # by Ctrl+C (bash defers INT traps for foreground pipelines, but not for wait).
   # tee captures raw output to a temp file for debugging on failure.
+  # Prompt is piped via stdin to avoid OS argument length limits.
   local raw_output_file
   raw_output_file=$(mktemp /tmp/panos-claude-XXXXXX)
 
   (
     set -o pipefail
-    claude --dangerously-skip-permissions \
-      --verbose \
+    cat "$prompt_file" | claude --dangerously-skip-permissions \
       --output-format stream-json \
-      -p "$prompt" 2>&1 | tee "$raw_output_file" | parse_claude_stream "$label" "$claude_start"
+      -p "Follow the instructions from stdin." 2>&1 | tee "$raw_output_file" | parse_claude_stream "$label" "$claude_start"
   ) &
   CLAUDE_PIPE_PID=$!
 
@@ -631,6 +644,8 @@ run_claude() {
   wait "$CLAUDE_PIPE_PID" || pipe_exit=$?
   CLAUDE_PIPE_PID=""
 
+  rm -f "$prompt_file"
+
   if [[ $pipe_exit -eq 0 ]]; then
     rm -f "$raw_output_file"
     log_info "$label finished in $(timer_elapsed "$claude_start")"
@@ -638,8 +653,8 @@ run_claude() {
   else
     log_error "$label failed after $(timer_elapsed "$claude_start")"
     if [[ -s "$raw_output_file" ]]; then
-      log_error "Raw Claude output (last 30 lines):"
-      tail -30 "$raw_output_file" >&2
+      log_error "Claude failure summary (last 15 events):"
+      parse_failure_summary "$raw_output_file" >&2
     else
       log_error "Claude produced no output at all — check auth (run 'claude' interactively) or rate limits"
     fi
@@ -2051,7 +2066,6 @@ on_failure() {
   kill_claude_pipeline
   stop_postgres_container
   stop_redis_container
-  restore_env
 
   exit $exit_code
 }
@@ -2062,7 +2076,6 @@ on_interrupt() {
   kill_claude_pipeline
   stop_postgres_container
   stop_redis_container
-  restore_env
   log_info "Cleanup complete. Exiting."
   exit 130
 }
@@ -2072,7 +2085,6 @@ cleanup() {
   kill_claude_pipeline
   stop_postgres_container
   stop_redis_container
-  restore_env
 }
 
 # =============================================================================
@@ -2104,8 +2116,8 @@ main() {
   start_postgres_container
   start_redis_container
 
-  # Backup .env and overwrite with container URLs
-  backup_env
+  # Update .env with container URLs
+  update_env
 
   local resume_step
   resume_step=$(get_resume_step)
