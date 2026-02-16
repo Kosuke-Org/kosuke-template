@@ -582,25 +582,39 @@ parse_claude_stream() {
   echo "$ts ✅ $label stream ended ($tool_count tool calls)"
 }
 
-# Parse raw stream-json output into a human-readable failure summary
-# Extracts text content and tool names instead of dumping raw JSON
+# Parse raw stream-json output into a human-readable failure summary.
+# Extracts text content and tool names instead of dumping raw JSON.
+# Falls back to raw line display if jq parsing finds nothing.
 parse_failure_summary() {
   local raw_file="$1"
-  jq -r '
+  local parsed
+  parsed=$(jq -r '
     if .type == "assistant" then
       (.message.content[]? |
-        if .type == "text" then "💬 " + (.text | .[0:200])
-        elif .type == "tool_use" then "🔧 " + .name + ": " + ((.input.file_path // .input.command // .input.pattern // .input.description // "") | .[0:120])
+        if .type == "text" then "  💬 " + (.text | .[0:200])
+        elif .type == "tool_use" then "  🔧 " + .name + ": " + ((.input.file_path // .input.command // .input.pattern // .input.description // "") | .[0:120])
         else empty
         end
       )
     elif .type == "result" then
-      if .total_cost_usd then "💰 Cost: $" + (.total_cost_usd | tostring)
+      if .total_cost_usd then "  💰 Cost: $" + (.total_cost_usd | tostring)
+      elif .result then "  📋 Result: " + (.result | .[0:200])
       else empty
       end
+    elif .type == "error" then
+      "  ❌ Error: " + (.error.message // .error // "unknown" | .[0:200])
     else empty
     end
-  ' "$raw_file" 2>/dev/null | tail -15
+  ' "$raw_file" 2>/dev/null | tail -15)
+
+  if [[ -n "$parsed" ]]; then
+    echo "$parsed"
+  else
+    # Fallback: show truncated raw lines (handles non-JSON error messages)
+    echo "  (raw output, no JSON events found):"
+    # Use sed instead of while-read to avoid subshell buffering issues
+    tail -10 "$raw_file" | sed 's/^/  /' | cut -c1-200
+  fi
 }
 
 run_claude() {
@@ -617,25 +631,26 @@ run_claude() {
 
   cd "$PROJECT_DIR"
 
-  # Write prompt to a temp file to avoid "Argument list too long" (ARG_MAX)
-  # when prompts contain large git diffs, map.json content, or ticket descriptions.
-  local prompt_file
-  prompt_file=$(mktemp /tmp/panos-prompt-XXXXXX)
-  echo "$prompt" > "$prompt_file"
-
-  # Run Claude Code with stream-json for real-time tool visibility
+  # Run Claude Code with stream-json for real-time tool visibility.
   # Pipeline runs in a BACKGROUND SUBSHELL so that `wait` is interruptible
   # by Ctrl+C (bash defers INT traps for foreground pipelines, but not for wait).
-  # tee captures raw output to a temp file for debugging on failure.
-  # Prompt is piped via stdin to avoid OS argument length limits.
-  local raw_output_file
+  #
+  # stderr is captured separately so CLI errors (auth, flags, rate limits) are
+  # always visible on failure, not swallowed by the JSON stream parser.
+  #
+  # NOTE: Callers must keep prompts under ~900KB to avoid OS ARG_MAX (1MB).
+  # For large data (git diffs, etc.), write to a temp file and reference its
+  # path in the prompt instead of embedding content inline.
+  local raw_output_file stderr_file
   raw_output_file=$(mktemp /tmp/panos-claude-XXXXXX)
+  stderr_file=$(mktemp /tmp/panos-stderr-XXXXXX)
 
   (
     set -o pipefail
-    cat "$prompt_file" | claude --dangerously-skip-permissions \
+    claude --dangerously-skip-permissions \
+      --verbose \
       --output-format stream-json \
-      -p "Follow the instructions from stdin." 2>&1 | tee "$raw_output_file" | parse_claude_stream "$label" "$claude_start"
+      -p "$prompt" 2>"$stderr_file" | tee "$raw_output_file" | parse_claude_stream "$label" "$claude_start"
   ) &
   CLAUDE_PIPE_PID=$!
 
@@ -644,21 +659,31 @@ run_claude() {
   wait "$CLAUDE_PIPE_PID" || pipe_exit=$?
   CLAUDE_PIPE_PID=""
 
-  rm -f "$prompt_file"
-
   if [[ $pipe_exit -eq 0 ]]; then
-    rm -f "$raw_output_file"
+    rm -f "$raw_output_file" "$stderr_file"
     log_info "$label finished in $(timer_elapsed "$claude_start")"
     return 0
   else
     log_error "$label failed after $(timer_elapsed "$claude_start")"
+
+    # Show stderr first (CLI errors, auth issues, rate limits)
+    if [[ -s "$stderr_file" ]]; then
+      log_error "Claude stderr:"
+      tail -20 "$stderr_file" | while IFS= read -r line; do echo "  $line"; done >&2
+    fi
+
+    # Show parsed stream events or raw stdout fallback
     if [[ -s "$raw_output_file" ]]; then
-      log_error "Claude failure summary (last 15 events):"
+      log_error "Claude stream output (last 15 events):"
       parse_failure_summary "$raw_output_file" >&2
-    else
+    fi
+
+    # If neither file had content, generic error
+    if [[ ! -s "$stderr_file" ]] && [[ ! -s "$raw_output_file" ]]; then
       log_error "Claude produced no output at all — check auth (run 'claude' interactively) or rate limits"
     fi
-    rm -f "$raw_output_file"
+
+    rm -f "$raw_output_file" "$stderr_file"
     return 1
   fi
 }
@@ -1531,19 +1556,23 @@ review_command() {
   local review_start
   review_start=$(timer_start)
 
-  local git_diff
+  # Write git diff to a temp file to avoid ARG_MAX when diffs are large.
+  # Claude will read this file instead of receiving the diff inline.
+  local diff_file
+  diff_file=$(mktemp /tmp/panos-diff-XXXXXX.diff)
+
   if [[ "$NO_COMMIT" == "true" ]]; then
-    # In no-commit mode, get unstaged diff without staging
     cd "$PROJECT_DIR"
-    git_diff=$(git diff)
+    git diff > "$diff_file"
   else
-    # Stage changes to get diff
     git_stage_all
-    git_diff=$(git_get_diff)
+    cd "$PROJECT_DIR"
+    git diff --cached > "$diff_file"
   fi
 
-  if [[ -z "$git_diff" ]]; then
+  if [[ ! -s "$diff_file" ]]; then
     log_info "No changes to review"
+    rm -f "$diff_file"
     return 0
   fi
 
@@ -1560,7 +1589,7 @@ review_command() {
     prompt='You are a senior code reviewer and UI/UX expert conducting a comprehensive review of frontend changes.
 
 **Your Task:**
-Review the git diff below for:
+Review the git diff for:
 1. Compliance with project coding guidelines (CLAUDE.md will be loaded automatically)
 2. UI/UX design quality and consistency
 
@@ -1571,9 +1600,7 @@ Review the git diff below for:
 '"$ticket_description"'
 
 **Git Diff to Review:**
-```diff
-'"$git_diff"'
-```
+Read the diff file at: '"$diff_file"'
 
 **PART 1: Code Quality Review**
 
@@ -1648,7 +1675,7 @@ Your goal is to ensure BEAUTIFUL, POLISHED, PRODUCTION-READY interfaces worthy o
 - Dialogs: AlertTriangle for destructive, Trash for delete
 
 **Critical Instructions:**
-- Focus ONLY on the files and changes shown in the git diff above
+- Read the diff file first, then review the changes
 - For EACH issue found (code quality OR design), FIX it immediately
 - Do not just report issues - FIX them!
 - Make minimal necessary changes
@@ -1665,13 +1692,13 @@ Your goal is to ensure BEAUTIFUL, POLISHED, PRODUCTION-READY interfaces worthy o
 
 The build system handles all quality checks automatically. Focus ONLY on reviewing and fixing issues.
 
-Review the changes shown in the diff and fix any issues you find.'
+Read the diff file and review the changes, fixing any issues you find.'
   else
     # Backend review: Code quality only
     prompt='You are a senior code reviewer conducting a code quality review of recent changes.
 
 **Your Task:**
-Review the git diff below for compliance with the project'"'"'s coding guidelines (CLAUDE.md will be loaded automatically).
+Review the git diff for compliance with the project'"'"'s coding guidelines (CLAUDE.md will be loaded automatically).
 
 **Ticket Context:**
 - ID: '"$ticket_id"'
@@ -1680,9 +1707,7 @@ Review the git diff below for compliance with the project'"'"'s coding guideline
 '"$ticket_description"'
 
 **Git Diff to Review:**
-```diff
-'"$git_diff"'
-```
+Read the diff file at: '"$diff_file"'
 
 **Review Scope:**
 1. **Code Quality**: Check for violations of CLAUDE.md guidelines
@@ -1693,7 +1718,7 @@ Review the git diff below for compliance with the project'"'"'s coding guideline
 6. **Performance**: Look for obvious performance issues
 
 **Critical Instructions:**
-- Focus ONLY on the files and changes shown in the git diff above
+- Read the diff file first, then review the changes
 - Review the QUALITY of code that exists, not what'"'"'s missing
 - Identify ALL violations of CLAUDE.md rules in the changed code
 - For EACH issue found, FIX it immediately using search_replace or write tools
@@ -1713,23 +1738,12 @@ Review the git diff below for compliance with the project'"'"'s coding guideline
 
 The build system handles all quality checks automatically. Focus ONLY on reviewing and fixing code issues.
 
-**What to Look For in the Changes:**
-- Use of `any` type (should be avoided)
-- Missing error handling
-- Inconsistent naming conventions
-- Poor code organization
-- Missing JSDoc comments on exported functions
-- Improper use of dependencies
-- Code duplication
-- Overly complex functions
-- Missing type exports
-- Security vulnerabilities
-
-Review the changes shown in the diff and fix any issues you find.'
+Read the diff file and review the changes, fixing any issues you find.'
   fi
 
   run_claude "$prompt" "Review [$ticket_id]"
 
+  rm -f "$diff_file"
   log_success "Review completed for $ticket_id in $(timer_elapsed "$review_start")"
   log_git_diff_stats
 }
@@ -1808,14 +1822,14 @@ PROMPT
 
 commit_command() {
   local message="$1"
-  local context="${2:-}"
+  local context_file="${2:-}"
 
   log_info "Committing: $message"
 
   local context_section=""
-  if [[ -n "$context" ]]; then
+  if [[ -n "$context_file" ]] && [[ -f "$context_file" ]]; then
     context_section="**Project Context:**
-$context
+Read the project map file at: $context_file
 "
   fi
 
@@ -2015,12 +2029,7 @@ build_tickets() {
     # 4. Commit (if not in no-commit mode)
     log_info "[$total_substeps/$total_substeps] Committing $ticket_id..."
     if [[ "$NO_COMMIT" == "false" ]]; then
-      local map_context=""
-      if [[ -f "$MAP_FILE" ]]; then
-        map_context=$(cat "$MAP_FILE")
-      fi
-
-      if ! commit_command "feat($ticket_id): $ticket_title" "$map_context"; then
+      if ! commit_command "feat($ticket_id): $ticket_title" "$MAP_FILE"; then
         update_ticket_status "$ticket_id" "Error" "Commit failed"
         log_error "Failed to commit $ticket_id"
         return 1
@@ -2064,8 +2073,6 @@ on_failure() {
   log_error "Panos workflow failed at step $current_step with exit code $exit_code"
 
   kill_claude_pipeline
-  stop_postgres_container
-  stop_redis_container
 
   exit $exit_code
 }
@@ -2074,8 +2081,6 @@ on_interrupt() {
   echo ""
   log_warn "Interrupted by user (Ctrl+C)"
   kill_claude_pipeline
-  stop_postgres_container
-  stop_redis_container
   log_info "Cleanup complete. Exiting."
   exit 130
 }
@@ -2083,8 +2088,6 @@ on_interrupt() {
 cleanup() {
   # Called on script exit (normal or error)
   kill_claude_pipeline
-  stop_postgres_container
-  stop_redis_container
 }
 
 # =============================================================================
