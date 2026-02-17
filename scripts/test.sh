@@ -34,6 +34,9 @@ PROJECT_DIR=""
 APP_URL="http://localhost:3000"
 RECORD_GIF=false
 
+# PID of background Claude pipeline (for Ctrl+C kill)
+CLAUDE_PIPE_PID=""
+
 # State files (set after PROJECT_DIR is resolved)
 KOSUKE_DIR=""
 DOCS_FILE=""
@@ -151,6 +154,28 @@ log_step() {
 }
 
 # =============================================================================
+# TIMING HELPERS
+# =============================================================================
+
+timer_start() {
+  date +%s
+}
+
+timer_elapsed() {
+  local start_time="$1"
+  local end_time
+  end_time=$(date +%s)
+  local elapsed=$((end_time - start_time))
+  local minutes=$((elapsed / 60))
+  local seconds=$((elapsed % 60))
+  if [[ $minutes -gt 0 ]]; then
+    echo "${minutes}m ${seconds}s"
+  else
+    echo "${seconds}s"
+  fi
+}
+
+# =============================================================================
 # PREREQUISITES CHECK
 # =============================================================================
 
@@ -187,12 +212,249 @@ check_prerequisites() {
 }
 
 # =============================================================================
-# CLEANUP
+# STREAM PARSING (real-time tool activity logging)
 # =============================================================================
 
+# Parse stream-json output from Claude Code and display tool activity in real-time
+# Reads JSON lines from stdin, extracts tool_use events, and prints formatted logs
+parse_claude_stream() {
+  local label="$1"
+  local start_time="$2"
+  local last_activity
+  last_activity=$(date +%s)
+  local tool_count=0
+  local ts
+  ts="[$(date '+%H:%M:%S')]"
+
+  while IFS= read -r line; do
+    # Skip empty lines
+    [[ -z "$line" ]] && continue
+
+    # Extract the type field
+    local msg_type
+    msg_type=$(echo "$line" | jq -r '.type // empty' 2>/dev/null) || continue
+
+    local now
+    now=$(date +%s)
+    local elapsed=$((now - start_time))
+    local minutes=$((elapsed / 60))
+    local seconds=$((elapsed % 60))
+    local ts
+    ts="[$(date '+%H:%M:%S')]"
+
+    case "$msg_type" in
+      assistant)
+        # Agent is thinking/responding - extract tool_use from content blocks
+        local tool_uses
+        tool_uses=$(echo "$line" | jq -c '.message.content[]? | select(.type == "tool_use")' 2>/dev/null) || true
+        if [[ -n "$tool_uses" ]]; then
+          while IFS= read -r tool_json; do
+            tool_count=$((tool_count + 1))
+            local tool_name tool_detail
+            tool_name=$(echo "$tool_json" | jq -r '.name // "unknown"' 2>/dev/null)
+
+            case "$tool_name" in
+              Read)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.file_path // ""' 2>/dev/null)
+                echo "$ts 📖 Read: $tool_detail"
+                ;;
+              Write)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.file_path // ""' 2>/dev/null)
+                echo "$ts ✏️  Write: $tool_detail"
+                ;;
+              Edit)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.file_path // ""' 2>/dev/null)
+                echo "$ts 🔧 Edit: $tool_detail"
+                ;;
+              Bash)
+                tool_detail=$(echo "$tool_json" | jq -r '(.input.command // "") | .[0:120]' 2>/dev/null)
+                echo "$ts 💻 Bash: $tool_detail"
+                ;;
+              Glob)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.pattern // ""' 2>/dev/null)
+                echo "$ts 🔍 Glob: $tool_detail"
+                ;;
+              Grep)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.pattern // ""' 2>/dev/null)
+                local grep_path
+                grep_path=$(echo "$tool_json" | jq -r '.input.path // ""' 2>/dev/null)
+                [[ -n "$grep_path" ]] && tool_detail="$tool_detail in $grep_path"
+                echo "$ts 🔎 Grep: $tool_detail"
+                ;;
+              Task)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.description // ""' 2>/dev/null)
+                echo "$ts 🤖 Task: $tool_detail"
+                ;;
+              WebFetch|WebSearch)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.url // .input.query // ""' 2>/dev/null)
+                echo "$ts 🌐 $tool_name: $tool_detail"
+                ;;
+              *)
+                echo "$ts 🔨 $tool_name"
+                ;;
+            esac
+            last_activity=$now
+          done <<< "$tool_uses"
+        fi
+        ;;
+      result)
+        # Final result - capture cost info if available
+        local cost_info
+        cost_info=$(echo "$line" | jq -r '
+          if .total_cost_usd then "cost: $" + (.total_cost_usd | tostring)
+          else empty
+          end' 2>/dev/null) || true
+        if [[ -n "$cost_info" ]]; then
+          echo "$ts 💰 $label $cost_info"
+        fi
+        ;;
+    esac
+
+    # Periodic heartbeat if no tool activity for 2 minutes
+    if [[ $((now - last_activity)) -ge 120 ]]; then
+      echo "$ts 💓 $label still running... (${minutes}m ${seconds}s elapsed, $tool_count tools called)"
+      last_activity=$now
+    fi
+  done
+
+  echo "$ts ✅ $label stream ended ($tool_count tool calls)"
+}
+
+# Parse raw stream-json output into a human-readable failure summary.
+# Extracts text content and tool names instead of dumping raw JSON.
+# Falls back to raw line display if jq parsing finds nothing.
+parse_failure_summary() {
+  local raw_file="$1"
+  local parsed
+  parsed=$(jq -r '
+    if .type == "assistant" then
+      (.message.content[]? |
+        if .type == "text" then "  💬 " + (.text | .[0:200])
+        elif .type == "tool_use" then "  🔧 " + .name + ": " + ((.input.file_path // .input.command // .input.pattern // .input.description // "") | .[0:120])
+        else empty
+        end
+      )
+    elif .type == "result" then
+      if .total_cost_usd then "  💰 Cost: $" + (.total_cost_usd | tostring)
+      elif .result then "  📋 Result: " + (.result | .[0:200])
+      else empty
+      end
+    elif .type == "error" then
+      "  ❌ Error: " + (.error.message // .error // "unknown" | .[0:200])
+    else empty
+    end
+  ' "$raw_file" 2>/dev/null | tail -15)
+
+  if [[ -n "$parsed" ]]; then
+    echo "$parsed"
+  else
+    # Fallback: show truncated raw lines (handles non-JSON error messages)
+    echo "  (raw output, no JSON events found):"
+    # Use sed instead of while-read to avoid subshell buffering issues
+    tail -10 "$raw_file" | sed 's/^/  /' | cut -c1-200
+  fi
+}
+
+# =============================================================================
+# CLAUDE CODE WRAPPER
+# =============================================================================
+
+run_claude() {
+  local prompt="$1"
+  local label="${2:-Claude Code}"
+
+  local prompt_chars=${#prompt}
+  local prompt_words
+  prompt_words=$(echo "$prompt" | wc -w | tr -d ' ')
+  log_info "Running $label... (prompt: ${prompt_chars} chars, ~${prompt_words} words)"
+
+  local claude_start
+  claude_start=$(timer_start)
+
+  cd "$PROJECT_DIR"
+
+  # Run Claude Code with stream-json for real-time tool visibility.
+  # Pipeline runs in a BACKGROUND SUBSHELL so that `wait` is interruptible
+  # by Ctrl+C (bash defers INT traps for foreground pipelines, but not for wait).
+  #
+  # stderr is captured separately so CLI errors (auth, flags, rate limits) are
+  # always visible on failure, not swallowed by the JSON stream parser.
+  #
+  # NOTE: --chrome flag is added for browser-based testing.
+  local raw_output_file stderr_file
+  raw_output_file=$(mktemp /tmp/test-claude-XXXXXX)
+  stderr_file=$(mktemp /tmp/test-stderr-XXXXXX)
+
+  (
+    set -o pipefail
+    claude --dangerously-skip-permissions \
+      --chrome \
+      --verbose \
+      --output-format stream-json \
+      -p "$prompt" 2>"$stderr_file" | tee "$raw_output_file" | parse_claude_stream "$label" "$claude_start"
+  ) &
+  CLAUDE_PIPE_PID=$!
+
+  # wait is interruptible by signals — Ctrl+C fires the INT trap immediately
+  local pipe_exit=0
+  wait "$CLAUDE_PIPE_PID" || pipe_exit=$?
+  CLAUDE_PIPE_PID=""
+
+  if [[ $pipe_exit -eq 0 ]]; then
+    rm -f "$raw_output_file" "$stderr_file"
+    log_info "$label finished in $(timer_elapsed "$claude_start")"
+    return 0
+  else
+    log_error "$label failed after $(timer_elapsed "$claude_start")"
+
+    # Show stderr first (CLI errors, auth issues, rate limits)
+    if [[ -s "$stderr_file" ]]; then
+      log_error "Claude stderr:"
+      tail -20 "$stderr_file" | while IFS= read -r line; do echo "  $line"; done >&2
+    fi
+
+    # Show parsed stream events or raw stdout fallback
+    if [[ -s "$raw_output_file" ]]; then
+      log_error "Claude stream output (last 15 events):"
+      parse_failure_summary "$raw_output_file" >&2
+    fi
+
+    # If neither file had content, generic error
+    if [[ ! -s "$stderr_file" ]] && [[ ! -s "$raw_output_file" ]]; then
+      log_error "Claude produced no output at all — check auth (run 'claude' interactively) or rate limits"
+    fi
+
+    rm -f "$raw_output_file" "$stderr_file"
+    return 1
+  fi
+}
+
+# =============================================================================
+# ERROR HANDLING & SIGNAL TRAPS
+# =============================================================================
+
+kill_claude_pipeline() {
+  if [[ -n "$CLAUDE_PIPE_PID" ]] && kill -0 "$CLAUDE_PIPE_PID" 2>/dev/null; then
+    # Kill the subshell's children first (claude, tee, parse_claude_stream)
+    pkill -TERM -P "$CLAUDE_PIPE_PID" 2>/dev/null || true
+    # Then kill the subshell itself
+    kill -TERM "$CLAUDE_PIPE_PID" 2>/dev/null || true
+    wait "$CLAUDE_PIPE_PID" 2>/dev/null || true
+    CLAUDE_PIPE_PID=""
+  fi
+}
+
+on_interrupt() {
+  echo ""
+  log_warn "Interrupted by user (Ctrl+C)"
+  kill_claude_pipeline
+  log_info "Cleanup complete. Exiting."
+  exit 130
+}
+
 cleanup() {
-  # Placeholder for future cleanup tasks
-  :
+  # Called on script exit (normal or error)
+  kill_claude_pipeline
 }
 
 # =============================================================================
@@ -363,17 +625,11 @@ Create a markdown test report at $TEST_RESULTS_FILE with this structure:
 
 Begin testing now. Start by navigating to $APP_URL and systematically testing the application."
 
-  cd "$PROJECT_DIR"
-
   log_info "Starting Claude Code with Chrome integration..."
   log_info "This will open Chrome and perform automated testing"
   echo ""
 
-  # Run Claude Code with Chrome enabled
-  claude \
-    --chrome \
-    --dangerously-skip-permissions \
-    -p "$prompt"
+  run_claude "$prompt" "Web Tester"
 
   # Check if test results were created
   if [[ -f "$TEST_RESULTS_FILE" ]]; then
@@ -403,8 +659,9 @@ main() {
   # Ensure .kosuke directory exists
   mkdir -p "$KOSUKE_DIR"
 
-  # Set up cleanup trap
+  # Set up traps
   trap 'cleanup' EXIT
+  trap 'on_interrupt' INT TERM
 
   echo ""
   echo "================================================================================"
@@ -420,11 +677,17 @@ main() {
   check_prerequisites
 
   # Run web tests
+  local test_start
+  test_start=$(timer_start)
+
   run_web_tests
+
+  local total_elapsed
+  total_elapsed=$(timer_elapsed "$test_start")
 
   echo ""
   echo "================================================================================"
-  log_success "Web Testing Completed!"
+  log_success "Web Testing Completed! (Total: $total_elapsed)"
   echo "================================================================================"
   echo ""
   echo "Results:"
