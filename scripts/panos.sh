@@ -21,7 +21,7 @@
 #
 # Prerequisites:
 #   - Claude Code CLI must be authenticated (run `claude` first)
-#   - Docker must be running (script creates its own PostgreSQL container)
+#   - Docker must be running (script creates PostgreSQL + Redis containers)
 #
 # =============================================================================
 
@@ -40,6 +40,15 @@ NO_COMMIT=false
 POSTGRES_CONTAINER_NAME=""
 POSTGRES_PORT=""
 POSTGRES_URL=""
+
+# Redis container (created at runtime)
+REDIS_CONTAINER_NAME=""
+REDIS_PORT=""
+REDIS_URL=""
+
+
+# PID of background Claude pipeline (for Ctrl+C kill)
+CLAUDE_PIPE_PID=""
 
 # State files (set after PROJECT_DIR is resolved)
 KOSUKE_DIR=""
@@ -112,7 +121,7 @@ Options:
 
 Prerequisites:
   - Claude Code CLI must be authenticated (run `claude` first to authenticate)
-  - Docker must be running (script creates its own PostgreSQL container)
+  - Docker must be running (script creates PostgreSQL + Redis containers)
 
 Examples:
   ./panos.sh                                    # Run in current directory
@@ -148,6 +157,41 @@ log_separator() {
   echo ""
   echo "--------------------------------------------------------------------------------"
   echo ""
+}
+
+# =============================================================================
+# TIMING HELPERS
+# =============================================================================
+
+WORKFLOW_START_TIME=""
+
+timer_start() {
+  date +%s
+}
+
+timer_elapsed() {
+  local start_time="$1"
+  local end_time
+  end_time=$(date +%s)
+  local elapsed=$((end_time - start_time))
+  local minutes=$((elapsed / 60))
+  local seconds=$((elapsed % 60))
+  if [[ $minutes -gt 0 ]]; then
+    echo "${minutes}m ${seconds}s"
+  else
+    echo "${seconds}s"
+  fi
+}
+
+log_git_diff_stats() {
+  cd "$PROJECT_DIR"
+  local stats
+  stats=$(git diff --stat HEAD 2>/dev/null || git diff --stat 2>/dev/null || echo "")
+  if [[ -n "$stats" ]]; then
+    local summary
+    summary=$(echo "$stats" | tail -1)
+    log_info "Changes: $summary"
+  fi
 }
 
 # =============================================================================
@@ -198,6 +242,88 @@ stop_postgres_container() {
     docker rm -f "$POSTGRES_CONTAINER_NAME" >/dev/null 2>&1 || true
     log_success "PostgreSQL container stopped"
   fi
+}
+
+# =============================================================================
+# REDIS CONTAINER MANAGEMENT
+# =============================================================================
+
+start_redis_container() {
+  log_info "Starting Redis container..."
+
+  # Generate unique container name
+  REDIS_CONTAINER_NAME="panos-redis-$$"
+
+  # Find a random available port
+  REDIS_PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
+
+  # Start Redis container (matches docker-compose.yml config)
+  docker run -d \
+    --name "$REDIS_CONTAINER_NAME" \
+    -p "$REDIS_PORT:6379" \
+    redis:7.4-alpine \
+    redis-server --appendonly yes \
+    >/dev/null
+
+  # Build connection URL
+  REDIS_URL="redis://localhost:$REDIS_PORT"
+
+  # Wait for Redis to be ready
+  log_info "Waiting for Redis to be ready on port $REDIS_PORT..."
+  local retries=30
+  while ! docker exec "$REDIS_CONTAINER_NAME" redis-cli ping >/dev/null 2>&1; do
+    retries=$((retries - 1))
+    if [[ $retries -le 0 ]]; then
+      log_error "Redis container failed to start"
+      stop_redis_container
+      return 1
+    fi
+    sleep 1
+  done
+
+  log_success "Redis container started (port: $REDIS_PORT)"
+}
+
+stop_redis_container() {
+  if [[ -n "$REDIS_CONTAINER_NAME" ]]; then
+    log_info "Stopping Redis container..."
+    docker rm -f "$REDIS_CONTAINER_NAME" >/dev/null 2>&1 || true
+    log_success "Redis container stopped"
+  fi
+}
+
+# =============================================================================
+# .ENV UPDATE (write container URLs, no backup/restore)
+# =============================================================================
+
+update_env() {
+  local env_file="$PROJECT_DIR/.env"
+
+  if [[ -f "$env_file" ]]; then
+    # Replace POSTGRES_URL if it exists, otherwise append
+    if grep -q '^POSTGRES_URL=' "$env_file"; then
+      sed -i '' "s|^POSTGRES_URL=.*|POSTGRES_URL=\"$POSTGRES_URL\"|" "$env_file"
+    else
+      echo "POSTGRES_URL=\"$POSTGRES_URL\"" >> "$env_file"
+    fi
+
+    # Replace REDIS_URL if it exists, otherwise append
+    if grep -q '^REDIS_URL=' "$env_file"; then
+      sed -i '' "s|^REDIS_URL=.*|REDIS_URL=\"$REDIS_URL\"|" "$env_file"
+    else
+      echo "REDIS_URL=\"$REDIS_URL\"" >> "$env_file"
+    fi
+
+    log_success ".env updated with container URLs"
+  else
+    log_warn "No .env file found — creating one with container URLs"
+    echo "POSTGRES_URL=\"$POSTGRES_URL\"" > "$env_file"
+    echo "REDIS_URL=\"$REDIS_URL\"" >> "$env_file"
+  fi
+
+  # Export so child processes (Claude) inherit them
+  export POSTGRES_URL
+  export REDIS_URL
 }
 
 # =============================================================================
@@ -351,23 +477,215 @@ git_get_diff() {
 # CLAUDE CODE WRAPPER
 # =============================================================================
 
+# Parse stream-json output from Claude Code and display tool activity in real-time
+# Reads JSON lines from stdin, extracts tool_use events, and prints formatted logs
+parse_claude_stream() {
+  local label="$1"
+  local start_time="$2"
+  local last_activity
+  last_activity=$(date +%s)
+  local tool_count=0
+  local ts
+  ts="[$(date '+%H:%M:%S')]"
+
+  while IFS= read -r line; do
+    # Skip empty lines
+    [[ -z "$line" ]] && continue
+
+    # Extract the type field
+    local msg_type
+    msg_type=$(echo "$line" | jq -r '.type // empty' 2>/dev/null) || continue
+
+    local now
+    now=$(date +%s)
+    local elapsed=$((now - start_time))
+    local minutes=$((elapsed / 60))
+    local seconds=$((elapsed % 60))
+    local ts
+    ts="[$(date '+%H:%M:%S')]"
+
+    case "$msg_type" in
+      assistant)
+        # Agent is thinking/responding - extract tool_use from content blocks
+        local tool_uses
+        tool_uses=$(echo "$line" | jq -c '.message.content[]? | select(.type == "tool_use")' 2>/dev/null) || true
+        if [[ -n "$tool_uses" ]]; then
+          while IFS= read -r tool_json; do
+            tool_count=$((tool_count + 1))
+            local tool_name tool_detail
+            tool_name=$(echo "$tool_json" | jq -r '.name // "unknown"' 2>/dev/null)
+
+            case "$tool_name" in
+              Read)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.file_path // ""' 2>/dev/null)
+                echo "$ts 📖 Read: $tool_detail"
+                ;;
+              Write)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.file_path // ""' 2>/dev/null)
+                echo "$ts ✏️  Write: $tool_detail"
+                ;;
+              Edit)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.file_path // ""' 2>/dev/null)
+                echo "$ts 🔧 Edit: $tool_detail"
+                ;;
+              Bash)
+                tool_detail=$(echo "$tool_json" | jq -r '(.input.command // "") | .[0:120]' 2>/dev/null)
+                echo "$ts 💻 Bash: $tool_detail"
+                ;;
+              Glob)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.pattern // ""' 2>/dev/null)
+                echo "$ts 🔍 Glob: $tool_detail"
+                ;;
+              Grep)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.pattern // ""' 2>/dev/null)
+                local grep_path
+                grep_path=$(echo "$tool_json" | jq -r '.input.path // ""' 2>/dev/null)
+                [[ -n "$grep_path" ]] && tool_detail="$tool_detail in $grep_path"
+                echo "$ts 🔎 Grep: $tool_detail"
+                ;;
+              Task)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.description // ""' 2>/dev/null)
+                echo "$ts 🤖 Task: $tool_detail"
+                ;;
+              WebFetch|WebSearch)
+                tool_detail=$(echo "$tool_json" | jq -r '.input.url // .input.query // ""' 2>/dev/null)
+                echo "$ts 🌐 $tool_name: $tool_detail"
+                ;;
+              *)
+                echo "$ts 🔨 $tool_name"
+                ;;
+            esac
+            last_activity=$now
+          done <<< "$tool_uses"
+        fi
+        ;;
+      result)
+        # Final result - capture cost info if available
+        local cost_info
+        cost_info=$(echo "$line" | jq -r '
+          if .total_cost_usd then "cost: $" + (.total_cost_usd | tostring)
+          else empty
+          end' 2>/dev/null) || true
+        if [[ -n "$cost_info" ]]; then
+          echo "$ts 💰 $label $cost_info"
+        fi
+        ;;
+    esac
+
+    # Periodic heartbeat if no tool activity for 2 minutes
+    if [[ $((now - last_activity)) -ge 120 ]]; then
+      echo "$ts 💓 $label still running... (${minutes}m ${seconds}s elapsed, $tool_count tools called)"
+      last_activity=$now
+    fi
+  done
+
+  echo "$ts ✅ $label stream ended ($tool_count tool calls)"
+}
+
+# Parse raw stream-json output into a human-readable failure summary.
+# Extracts text content and tool names instead of dumping raw JSON.
+# Falls back to raw line display if jq parsing finds nothing.
+parse_failure_summary() {
+  local raw_file="$1"
+  local parsed
+  parsed=$(jq -r '
+    if .type == "assistant" then
+      (.message.content[]? |
+        if .type == "text" then "  💬 " + (.text | .[0:200])
+        elif .type == "tool_use" then "  🔧 " + .name + ": " + ((.input.file_path // .input.command // .input.pattern // .input.description // "") | .[0:120])
+        else empty
+        end
+      )
+    elif .type == "result" then
+      if .total_cost_usd then "  💰 Cost: $" + (.total_cost_usd | tostring)
+      elif .result then "  📋 Result: " + (.result | .[0:200])
+      else empty
+      end
+    elif .type == "error" then
+      "  ❌ Error: " + (.error.message // .error // "unknown" | .[0:200])
+    else empty
+    end
+  ' "$raw_file" 2>/dev/null | tail -15)
+
+  if [[ -n "$parsed" ]]; then
+    echo "$parsed"
+  else
+    # Fallback: show truncated raw lines (handles non-JSON error messages)
+    echo "  (raw output, no JSON events found):"
+    # Use sed instead of while-read to avoid subshell buffering issues
+    tail -10 "$raw_file" | sed 's/^/  /' | cut -c1-200
+  fi
+}
+
 run_claude() {
   local prompt="$1"
+  local label="${2:-Claude Code}"
 
-  log_info "Running Claude Code agent..."
+  local prompt_chars=${#prompt}
+  local prompt_words
+  prompt_words=$(echo "$prompt" | wc -w | tr -d ' ')
+  log_info "Running $label... (prompt: ${prompt_chars} chars, ~${prompt_words} words)"
+
+  local claude_start
+  claude_start=$(timer_start)
 
   cd "$PROJECT_DIR"
 
-  # Run Claude Code with text output for clean logs
-  # CLAUDE_CONFIG_DIR isolates from global ~/.claude/CLAUDE.md while still loading project CLAUDE.md
-  if ! claude --dangerously-skip-permissions \
-    --output-format text \
-    -p "$prompt"; then
-    log_error "Claude Code execution failed"
+  # Run Claude Code with stream-json for real-time tool visibility.
+  # Pipeline runs in a BACKGROUND SUBSHELL so that `wait` is interruptible
+  # by Ctrl+C (bash defers INT traps for foreground pipelines, but not for wait).
+  #
+  # stderr is captured separately so CLI errors (auth, flags, rate limits) are
+  # always visible on failure, not swallowed by the JSON stream parser.
+  #
+  # NOTE: Callers must keep prompts under ~900KB to avoid OS ARG_MAX (1MB).
+  # For large data (git diffs, etc.), write to a temp file and reference its
+  # path in the prompt instead of embedding content inline.
+  local raw_output_file stderr_file
+  raw_output_file=$(mktemp /tmp/panos-claude-XXXXXX)
+  stderr_file=$(mktemp /tmp/panos-stderr-XXXXXX)
+
+  (
+    set -o pipefail
+    claude --dangerously-skip-permissions \
+      --verbose \
+      --output-format stream-json \
+      -p "$prompt" 2>"$stderr_file" | tee "$raw_output_file" | parse_claude_stream "$label" "$claude_start"
+  ) &
+  CLAUDE_PIPE_PID=$!
+
+  # wait is interruptible by signals — Ctrl+C fires the INT trap immediately
+  local pipe_exit=0
+  wait "$CLAUDE_PIPE_PID" || pipe_exit=$?
+  CLAUDE_PIPE_PID=""
+
+  if [[ $pipe_exit -eq 0 ]]; then
+    rm -f "$raw_output_file" "$stderr_file"
+    log_info "$label finished in $(timer_elapsed "$claude_start")"
+    return 0
+  else
+    log_error "$label failed after $(timer_elapsed "$claude_start")"
+
+    # Show stderr first (CLI errors, auth issues, rate limits)
+    if [[ -s "$stderr_file" ]]; then
+      log_error "Claude stderr:"
+      tail -20 "$stderr_file" | while IFS= read -r line; do echo "  $line"; done >&2
+    fi
+
+    # Show parsed stream events or raw stdout fallback
+    if [[ -s "$raw_output_file" ]]; then
+      log_error "Claude stream output (last 15 events):"
+      parse_failure_summary "$raw_output_file" >&2
+    fi
+
+    # If neither file had content, generic error
+    if [[ ! -s "$stderr_file" ]] && [[ ! -s "$raw_output_file" ]]; then
+      log_error "Claude produced no output at all — check auth (run 'claude' interactively) or rate limits"
+    fi
+
+    rm -f "$raw_output_file" "$stderr_file"
     return 1
   fi
-
-  return 0
 }
 
 # =============================================================================
@@ -813,7 +1131,7 @@ Create '"$MAP_FILE"' with the following structure:
 
 **CRITICAL:** All generated fields represent the **FINAL STATE** after implementation based on requirements, not the current state.'
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Map Generator"
 
   if [[ ! -f "$MAP_FILE" ]]; then
     log_error "Map file was not created at $MAP_FILE"
@@ -1043,7 +1361,7 @@ Check kosuke-template: [specific file paths for repo-inspector-agent to analyze]
 - **Map.json**: Navigation/endpoints are separate, not in tickets.json
 - **Keep vs Remove**: Based on Phase 1 architectural decisions, not assumptions'
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Ticket Generator"
 
   if [[ ! -f "$TICKETS_FILE" ]]; then
     log_error "Tickets file was not created at $TICKETS_FILE"
@@ -1075,7 +1393,19 @@ ship_command() {
   local ticket_type
   ticket_type=$(echo "$ticket_data" | jq -r '.type')
 
+  local ticket_category
+  ticket_category=$(echo "$ticket_data" | jq -r '.category // "unknown"')
+  local ticket_effort
+  ticket_effort=$(echo "$ticket_data" | jq -r '.estimatedEffort // "?"')
+  local ticket_desc_preview
+  ticket_desc_preview=$(echo "$ticket_description" | head -c 120 | tr '\n' ' ')
+
   log_info "Implementing: $ticket_id - $ticket_title"
+  log_info "  Category: $ticket_category | Effort: $ticket_effort/10"
+  log_info "  Description: ${ticket_desc_preview}..."
+
+  local ship_start
+  ship_start=$(timer_start)
 
   local schema_instructions=""
   if [[ "$ticket_id" == *"SCHEMA"* ]]; then
@@ -1207,9 +1537,10 @@ The build system handles all quality checks automatically. Focus ONLY on impleme
 
 Begin by exploring the current codebase, then implement the ticket systematically.'
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Ship [$ticket_id]"
 
-  log_success "Implementation completed for $ticket_id"
+  log_success "Implementation completed for $ticket_id in $(timer_elapsed "$ship_start")"
+  log_git_diff_stats
 }
 
 # =============================================================================
@@ -1222,19 +1553,26 @@ review_command() {
 
   log_info "Reviewing changes for $ticket_id ($ticket_type)..."
 
-  local git_diff
+  local review_start
+  review_start=$(timer_start)
+
+  # Write git diff to a temp file to avoid ARG_MAX when diffs are large.
+  # Claude will read this file instead of receiving the diff inline.
+  local diff_file
+  diff_file=$(mktemp /tmp/panos-diff-XXXXXX.diff)
+
   if [[ "$NO_COMMIT" == "true" ]]; then
-    # In no-commit mode, get unstaged diff without staging
     cd "$PROJECT_DIR"
-    git_diff=$(git diff)
+    git diff > "$diff_file"
   else
-    # Stage changes to get diff
     git_stage_all
-    git_diff=$(git_get_diff)
+    cd "$PROJECT_DIR"
+    git diff --cached > "$diff_file"
   fi
 
-  if [[ -z "$git_diff" ]]; then
+  if [[ ! -s "$diff_file" ]]; then
     log_info "No changes to review"
+    rm -f "$diff_file"
     return 0
   fi
 
@@ -1251,7 +1589,7 @@ review_command() {
     prompt='You are a senior code reviewer and UI/UX expert conducting a comprehensive review of frontend changes.
 
 **Your Task:**
-Review the git diff below for:
+Review the git diff for:
 1. Compliance with project coding guidelines (CLAUDE.md will be loaded automatically)
 2. UI/UX design quality and consistency
 
@@ -1262,9 +1600,7 @@ Review the git diff below for:
 '"$ticket_description"'
 
 **Git Diff to Review:**
-```diff
-'"$git_diff"'
-```
+Read the diff file at: '"$diff_file"'
 
 **PART 1: Code Quality Review**
 
@@ -1339,7 +1675,7 @@ Your goal is to ensure BEAUTIFUL, POLISHED, PRODUCTION-READY interfaces worthy o
 - Dialogs: AlertTriangle for destructive, Trash for delete
 
 **Critical Instructions:**
-- Focus ONLY on the files and changes shown in the git diff above
+- Read the diff file first, then review the changes
 - For EACH issue found (code quality OR design), FIX it immediately
 - Do not just report issues - FIX them!
 - Make minimal necessary changes
@@ -1356,13 +1692,13 @@ Your goal is to ensure BEAUTIFUL, POLISHED, PRODUCTION-READY interfaces worthy o
 
 The build system handles all quality checks automatically. Focus ONLY on reviewing and fixing issues.
 
-Review the changes shown in the diff and fix any issues you find.'
+Read the diff file and review the changes, fixing any issues you find.'
   else
     # Backend review: Code quality only
     prompt='You are a senior code reviewer conducting a code quality review of recent changes.
 
 **Your Task:**
-Review the git diff below for compliance with the project'"'"'s coding guidelines (CLAUDE.md will be loaded automatically).
+Review the git diff for compliance with the project'"'"'s coding guidelines (CLAUDE.md will be loaded automatically).
 
 **Ticket Context:**
 - ID: '"$ticket_id"'
@@ -1371,9 +1707,7 @@ Review the git diff below for compliance with the project'"'"'s coding guideline
 '"$ticket_description"'
 
 **Git Diff to Review:**
-```diff
-'"$git_diff"'
-```
+Read the diff file at: '"$diff_file"'
 
 **Review Scope:**
 1. **Code Quality**: Check for violations of CLAUDE.md guidelines
@@ -1384,7 +1718,7 @@ Review the git diff below for compliance with the project'"'"'s coding guideline
 6. **Performance**: Look for obvious performance issues
 
 **Critical Instructions:**
-- Focus ONLY on the files and changes shown in the git diff above
+- Read the diff file first, then review the changes
 - Review the QUALITY of code that exists, not what'"'"'s missing
 - Identify ALL violations of CLAUDE.md rules in the changed code
 - For EACH issue found, FIX it immediately using search_replace or write tools
@@ -1404,24 +1738,14 @@ Review the git diff below for compliance with the project'"'"'s coding guideline
 
 The build system handles all quality checks automatically. Focus ONLY on reviewing and fixing code issues.
 
-**What to Look For in the Changes:**
-- Use of `any` type (should be avoided)
-- Missing error handling
-- Inconsistent naming conventions
-- Poor code organization
-- Missing JSDoc comments on exported functions
-- Improper use of dependencies
-- Code duplication
-- Overly complex functions
-- Missing type exports
-- Security vulnerabilities
-
-Review the changes shown in the diff and fix any issues you find.'
+Read the diff file and review the changes, fixing any issues you find.'
   fi
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Review [$ticket_id]"
 
-  log_success "Review completed for $ticket_id"
+  rm -f "$diff_file"
+  log_success "Review completed for $ticket_id in $(timer_elapsed "$review_start")"
+  log_git_diff_stats
 }
 
 # =============================================================================
@@ -1450,20 +1774,22 @@ You are a database migration specialist. Execute database migrations quickly and
 
 ${context_section}**EXECUTE THESE 3 COMMANDS IN ORDER:**
 
+The environment already has POSTGRES_URL and REDIS_URL set correctly (both in .env and exported). Just run the commands directly.
+
 1. **Generate migrations:**
    \`\`\`bash
-   POSTGRES_URL="$POSTGRES_URL" bun run db:generate
+   bun run db:generate
    \`\`\`
-   If this hangs for more than 10 seconds, use: \`POSTGRES_URL="$POSTGRES_URL" drizzle-kit push --force\`
+   If this hangs for more than 10 seconds, use: \`drizzle-kit push --force\`
 
 2. **Apply migrations:**
    \`\`\`bash
-   POSTGRES_URL="$POSTGRES_URL" bun run db:migrate
+   bun run db:migrate
    \`\`\`
 
 3. **Seed database:**
    \`\`\`bash
-   POSTGRES_URL="$POSTGRES_URL" bun run db:seed
+   bun run db:seed
    \`\`\`
    If seed script doesn't exist, skip this step (not an error).
 
@@ -1479,12 +1805,13 @@ ${context_section}**EXECUTE THESE 3 COMMANDS IN ORDER:**
 - Create temporary validation scripts
 - Explore the database structure manually
 - Do extensive file reading before running commands
+- Prefix commands with POSTGRES_URL= or REDIS_URL= (already set in environment)
 
 Just run the 3 commands. Fix errors only if they occur.
 PROMPT
 )
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Migrate [$context]"
 
   log_success "Database migrations completed"
 }
@@ -1495,14 +1822,14 @@ PROMPT
 
 commit_command() {
   local message="$1"
-  local context="${2:-}"
+  local context_file="${2:-}"
 
   log_info "Committing: $message"
 
   local context_section=""
-  if [[ -n "$context" ]]; then
+  if [[ -n "$context_file" ]] && [[ -f "$context_file" ]]; then
     context_section="**Project Context:**
-$context
+Read the project map file at: $context_file
 "
   fi
 
@@ -1601,7 +1928,7 @@ DO be patient with large refactors - 50+ errors is normal for breaking changes
 
 Begin by staging all changes and attempting to commit. If pre-commit hooks fail, fix the issues and retry until successful."
 
-  run_claude "$prompt"
+  run_claude "$prompt" "Commit"
 
   log_success "Commit completed"
 }
@@ -1636,8 +1963,11 @@ build_tickets() {
     local ticket_title
     ticket_title=$(echo "$ticket_data" | jq -r '.title')
 
+    local ticket_start
+    ticket_start=$(timer_start)
+
     log_separator
-    log_info "Processing ticket $ticket_num/$ticket_count: $ticket_id"
+    log_step "Ticket $ticket_num/$ticket_count: $ticket_id"
     log_info "Title: $ticket_title"
     log_info "Type: $ticket_type"
 
@@ -1654,7 +1984,16 @@ build_tickets() {
     # Update status to InProgress
     update_ticket_status "$ticket_id" "InProgress"
 
+    # Determine total sub-steps for this ticket type
+    local total_substeps=2  # ship + commit/skip
+    if [[ "$ticket_type" == "schema" ]]; then
+      total_substeps=2  # ship + migrate
+    elif [[ "$ticket_type" == "backend" ]] || [[ "$ticket_type" == "frontend" ]]; then
+      total_substeps=3  # ship + review + commit/skip
+    fi
+
     # 1. Ship (implement)
+    log_info "[1/$total_substeps] Shipping $ticket_id..."
     if ! ship_command "$ticket_id"; then
       update_ticket_status "$ticket_id" "Error" "Implementation failed"
       log_error "Failed to implement $ticket_id"
@@ -1664,6 +2003,7 @@ build_tickets() {
 
     # 2. Migrate (schema tickets only)
     if [[ "$ticket_type" == "schema" ]]; then
+      log_info "[2/$total_substeps] Migrating database for $ticket_id..."
       if ! migrate_command "$ticket_id"; then
         update_ticket_status "$ticket_id" "Error" "Migration failed"
         log_error "Failed to migrate $ticket_id"
@@ -1674,6 +2014,7 @@ build_tickets() {
 
     # 3. Review (backend/frontend only)
     if [[ "$ticket_type" == "backend" ]] || [[ "$ticket_type" == "frontend" ]]; then
+      log_info "[2/$total_substeps] Reviewing $ticket_id ($ticket_type)..."
       if ! review_command "$ticket_id" "$ticket_type"; then
         update_ticket_status "$ticket_id" "Error" "Review failed"
         log_error "Failed to review $ticket_id"
@@ -1686,13 +2027,9 @@ build_tickets() {
     update_ticket_status "$ticket_id" "Done"
 
     # 4. Commit (if not in no-commit mode)
+    log_info "[$total_substeps/$total_substeps] Committing $ticket_id..."
     if [[ "$NO_COMMIT" == "false" ]]; then
-      local map_context=""
-      if [[ -f "$MAP_FILE" ]]; then
-        map_context=$(cat "$MAP_FILE")
-      fi
-
-      if ! commit_command "feat($ticket_id): $ticket_title" "$map_context"; then
+      if ! commit_command "feat($ticket_id): $ticket_title" "$MAP_FILE"; then
         update_ticket_status "$ticket_id" "Error" "Commit failed"
         log_error "Failed to commit $ticket_id"
         return 1
@@ -1703,15 +2040,26 @@ build_tickets() {
       update_ticket_execution_status "$ticket_id" "commitStatus" "skipped"
     fi
 
-    log_success "Completed: $ticket_id"
+    log_success "Completed: $ticket_id in $(timer_elapsed "$ticket_start")"
   done
 
-  log_success "All tickets processed!"
+  log_success "All $ticket_count tickets processed!"
 }
 
 # =============================================================================
-# ERROR HANDLING
+# ERROR HANDLING & SIGNAL TRAPS
 # =============================================================================
+
+kill_claude_pipeline() {
+  if [[ -n "$CLAUDE_PIPE_PID" ]] && kill -0 "$CLAUDE_PIPE_PID" 2>/dev/null; then
+    # Kill the subshell's children first (claude, tee, parse_claude_stream)
+    pkill -TERM -P "$CLAUDE_PIPE_PID" 2>/dev/null || true
+    # Then kill the subshell itself
+    kill -TERM "$CLAUDE_PIPE_PID" 2>/dev/null || true
+    wait "$CLAUDE_PIPE_PID" 2>/dev/null || true
+    CLAUDE_PIPE_PID=""
+  fi
+}
 
 on_failure() {
   local exit_code=$?
@@ -1724,15 +2072,22 @@ on_failure() {
 
   log_error "Panos workflow failed at step $current_step with exit code $exit_code"
 
-  # Cleanup PostgreSQL container
-  stop_postgres_container
+  kill_claude_pipeline
 
   exit $exit_code
 }
 
+on_interrupt() {
+  echo ""
+  log_warn "Interrupted by user (Ctrl+C)"
+  kill_claude_pipeline
+  log_info "Cleanup complete. Exiting."
+  exit 130
+}
+
 cleanup() {
   # Called on script exit (normal or error)
-  stop_postgres_container
+  kill_claude_pipeline
 }
 
 # =============================================================================
@@ -1756,11 +2111,16 @@ main() {
   cd "$PROJECT_DIR"
   bun run prepare
 
-  # Set up cleanup trap (runs on any exit)
+  # Set up traps
   trap 'cleanup' EXIT
+  trap 'on_interrupt' INT TERM
 
-  # Start PostgreSQL container
+  # Start containers
   start_postgres_container
+  start_redis_container
+
+  # Update .env with container URLs
+  update_env
 
   local resume_step
   resume_step=$(get_resume_step)
@@ -1771,19 +2131,25 @@ main() {
   log_info "Interactive: $INTERACTIVE"
   log_info "No commit mode: $NO_COMMIT"
   log_info "PostgreSQL URL: $POSTGRES_URL"
+  log_info "Redis URL: $REDIS_URL"
   echo ""
 
   # Set up error trap
   trap 'on_failure' ERR
 
+  WORKFLOW_START_TIME=$(timer_start)
+
   # Step 1: Gather requirements
   if [[ $resume_step -le 1 ]]; then
+    local step1_start
+    step1_start=$(timer_start)
     log_step "STEP 1/5: Gathering Requirements"
     requirements_command
     if [[ "$NO_COMMIT" == "false" ]]; then
       git_commit_simple "chore: generate requirements (panos step 1/5)" || true
     fi
     mark_step_completed 1
+    log_info "Step 1 completed in $(timer_elapsed "$step1_start")"
   else
     log_info "Skipping Step 1 (already completed)"
   fi
@@ -1797,12 +2163,15 @@ main() {
 
   # Step 2: Generate project map
   if [[ $resume_step -le 2 ]]; then
+    local step2_start
+    step2_start=$(timer_start)
     log_step "STEP 2/5: Generating Project Map"
     map_command
     if [[ "$NO_COMMIT" == "false" ]]; then
       git_commit_simple "chore: generate project map (panos step 2/5)" || true
     fi
     mark_step_completed 2
+    log_info "Step 2 completed in $(timer_elapsed "$step2_start")"
   else
     log_info "Skipping Step 2 (already completed)"
   fi
@@ -1816,12 +2185,15 @@ main() {
 
   # Step 3: Generate implementation tickets
   if [[ $resume_step -le 3 ]]; then
+    local step3_start
+    step3_start=$(timer_start)
     log_step "STEP 3/5: Generating Implementation Tickets"
     tickets_command
     if [[ "$NO_COMMIT" == "false" ]]; then
       git_commit_simple "chore: generate implementation tickets (panos step 3/5)" || true
     fi
     mark_step_completed 3
+    log_info "Step 3 completed in $(timer_elapsed "$step3_start")"
   else
     log_info "Skipping Step 3 (already completed)"
   fi
@@ -1835,9 +2207,12 @@ main() {
 
   # Step 4: Build implementation tickets
   if [[ $resume_step -le 4 ]]; then
+    local step4_start
+    step4_start=$(timer_start)
     log_step "STEP 4/5: Building Implementation Tickets"
     build_tickets
     mark_step_completed 4
+    log_info "Step 4 completed in $(timer_elapsed "$step4_start")"
   else
     log_info "Skipping Step 4 (already completed)"
   fi
@@ -1851,6 +2226,8 @@ main() {
 
   # Step 5: Final commit
   if [[ $resume_step -le 5 ]]; then
+    local step5_start
+    step5_start=$(timer_start)
     log_step "STEP 5/5: Final Commit"
     if [[ "$NO_COMMIT" == "false" ]]; then
       commit_command "chore: panos workflow complete" || true
@@ -1858,14 +2235,18 @@ main() {
       log_info "Skipping final commit (--no-commit mode)"
     fi
     mark_step_completed 5
+    log_info "Step 5 completed in $(timer_elapsed "$step5_start")"
   else
     log_info "Skipping Step 5 (already completed)"
   fi
 
   # Success!
+  local total_elapsed
+  total_elapsed=$(timer_elapsed "$WORKFLOW_START_TIME")
+
   echo ""
   echo "================================================================================"
-  log_success "Panos Workflow Completed Successfully!"
+  log_success "Panos Workflow Completed Successfully! (Total: $total_elapsed)"
   echo "================================================================================"
   echo ""
   echo "Summary:"
@@ -1878,6 +2259,8 @@ main() {
   else
     echo "  5. ⏭️  Commits skipped (--no-commit mode)"
   fi
+  echo ""
+  echo "Total time: $total_elapsed"
   echo ""
   echo "Next step: Run ./scripts/test.sh to perform web testing with Claude Code"
   echo ""
