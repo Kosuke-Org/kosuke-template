@@ -61,6 +61,24 @@ describe('validatePlannerInput', () => {
     expect(errors).toContain('Air fractions add up to more than 100%.');
     expect(errors).toContain('GF low cannot be greater than GF high.');
   });
+
+  it('rejects non-finite profile values and invalid switch depths', () => {
+    const errors = validatePlannerInput(
+      [{ depthMeters: Number.NaN, durationMinutes: Number.POSITIVE_INFINITY }],
+      air,
+      [
+        {
+          ...ean50,
+          switchDepthMeters: -3,
+        },
+      ],
+      config
+    );
+
+    expect(errors).toContain('Segment 1 depth must be greater than 0 meters.');
+    expect(errors).toContain('Segment 1 duration must be greater than 0 minutes.');
+    expect(errors).toContain('EAN50 switch depth must be 0 meters or deeper.');
+  });
 });
 
 describe('planDive', () => {

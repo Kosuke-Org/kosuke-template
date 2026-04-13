@@ -289,6 +289,17 @@ function maxOperatingDepthMeters(gas: DecoGas, maxPpo2: number) {
   return Math.max(0, (maxPpo2 / gas.oxygenFraction - SURFACE_PRESSURE_BAR) * 10);
 }
 
+function isFinitePositiveNumber(value: number) {
+  return Number.isFinite(value) && value > 0;
+}
+
+function isFiniteNonNegativeNumber(value: number) {
+  return Number.isFinite(value) && value >= 0;
+}
+
+/**
+ * Validates a segment-based dive profile, gases, and planner settings before schedule generation.
+ */
 export function validatePlannerInput(
   profile: DiveSegment[],
   backGas: DecoGas,
@@ -303,11 +314,11 @@ export function validatePlannerInput(
   }
 
   profile.forEach((segment, index) => {
-    if (segment.depthMeters <= 0) {
+    if (!isFinitePositiveNumber(segment.depthMeters)) {
       errors.push(`Segment ${index + 1} depth must be greater than 0 meters.`);
     }
 
-    if (segment.durationMinutes <= 0) {
+    if (!isFinitePositiveNumber(segment.durationMinutes)) {
       errors.push(`Segment ${index + 1} duration must be greater than 0 minutes.`);
     }
   });
@@ -315,24 +326,32 @@ export function validatePlannerInput(
   gases.forEach((gas) => {
     const nitrogenFraction = getNitrogenFraction(gas);
 
-    if (gas.oxygenFraction <= 0 || gas.oxygenFraction > 1) {
+    if (!Number.isFinite(gas.oxygenFraction) || gas.oxygenFraction <= 0 || gas.oxygenFraction > 1) {
       errors.push(`${gas.label} oxygen fraction must be between 0 and 1.`);
     }
 
-    if (gas.heliumFraction < 0 || gas.heliumFraction > 1) {
+    if (!Number.isFinite(gas.heliumFraction) || gas.heliumFraction < 0 || gas.heliumFraction > 1) {
       errors.push(`${gas.label} helium fraction must be between 0 and 1.`);
     }
 
     if (nitrogenFraction < 0) {
       errors.push(`${gas.label} fractions add up to more than 100%.`);
     }
+
+    if (!isFiniteNonNegativeNumber(gas.switchDepthMeters)) {
+      errors.push(`${gas.label} switch depth must be 0 meters or deeper.`);
+    }
   });
 
-  if (config.gradientFactorLow <= 0 || config.gradientFactorLow > 1) {
+  if (!Number.isFinite(config.gradientFactorLow) || config.gradientFactorLow <= 0 || config.gradientFactorLow > 1) {
     errors.push('GF low must be between 1% and 100%.');
   }
 
-  if (config.gradientFactorHigh <= 0 || config.gradientFactorHigh > 1) {
+  if (
+    !Number.isFinite(config.gradientFactorHigh) ||
+    config.gradientFactorHigh <= 0 ||
+    config.gradientFactorHigh > 1
+  ) {
     errors.push('GF high must be between 1% and 100%.');
   }
 
@@ -340,13 +359,19 @@ export function validatePlannerInput(
     errors.push('GF low cannot be greater than GF high.');
   }
 
-  if (config.descentRateMetersPerMinute <= 0 || config.ascentRateMetersPerMinute <= 0) {
+  if (
+    !isFinitePositiveNumber(config.descentRateMetersPerMinute) ||
+    !isFinitePositiveNumber(config.ascentRateMetersPerMinute)
+  ) {
     errors.push('Ascent and descent rates must be greater than 0.');
   }
 
   return errors;
 }
 
+/**
+ * Calculates a Bühlmann ZHL-16C ascent schedule with gradient factors for the supplied dive profile.
+ */
 export function planDive(
   profile: DiveSegment[],
   backGas: DecoGas,

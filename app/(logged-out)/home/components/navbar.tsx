@@ -172,6 +172,11 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
+                      <Link href="/deco-planner">
+                        <Button variant="ghost" className="w-full justify-start">
+                          Deco planner
+                        </Button>
+                      </Link>
                       <Link href={dashboardUrl}>
                         <Button variant="ghost" className="w-full justify-start">
                           <User className="mr-2 h-4 w-4" />
