@@ -68,6 +68,9 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
 
         {/* Desktop navigation */}
         <nav className="hidden items-center gap-6 md:flex">
+          <Link href="/deco-planner" className="text-muted-foreground hover:text-foreground text-sm transition-colors">
+            Deco planner
+          </Link>
           {isSignedIn ? (
             // Show user profile for logged-in users
             <div className="flex items-center gap-3">
@@ -208,6 +211,11 @@ export default function Navbar({ variant = 'standard', className }: NavbarProps)
                 ) : (
                   // Mobile navigation for logged-out users
                   <>
+                    <Link href="/deco-planner">
+                      <Button variant="ghost" className="w-full justify-start">
+                        Deco planner
+                      </Button>
+                    </Link>
                     <Link href="/sign-in">
                       <Button variant="ghost" className="w-full justify-start">
                         Log in
