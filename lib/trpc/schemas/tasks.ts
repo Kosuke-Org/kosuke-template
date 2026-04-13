@@ -8,7 +8,7 @@ import { z } from 'zod';
 export const createTaskSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255),
   description: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high']).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
   dueDate: z.date().optional(),
   organizationId: z.uuid().optional(),
 });
@@ -18,7 +18,7 @@ export const updateTaskSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   description: z.string().nullable().optional(),
   completed: z.boolean().optional(),
-  priority: z.enum(['low', 'medium', 'high']).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
   dueDate: z.date().nullable().optional(),
   organizationId: z.uuid().nullable().optional(),
 });
@@ -26,7 +26,7 @@ export const updateTaskSchema = z.object({
 export const taskListFiltersSchema = z
   .object({
     completed: z.boolean().optional(),
-    priority: z.enum(['low', 'medium', 'high']).optional(),
+    priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
     searchQuery: z.string().optional(),
     organizationId: z.uuid().nullable().optional(), // Can filter by org or null (personal)
   })
