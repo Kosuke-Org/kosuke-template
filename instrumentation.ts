@@ -41,6 +41,12 @@ export async function register() {
     validateEnvironmentVariables();
   }
 
+  // Temporary: force the production server to crash on startup so Kosuke can
+  // exercise the real failed-deploy path for this test project.
+  if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NODE_ENV === 'production') {
+    throw new Error('Temporary forced startup failure for production deploy testing');
+  }
+
   // Initialize Sentry in production
   if (process.env.NEXT_PUBLIC_SENTRY_DSN && process.env.NODE_ENV === 'production') {
     console.log('📊 Initializing Sentry...');
