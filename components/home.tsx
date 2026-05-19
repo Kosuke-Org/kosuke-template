@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 import { motion } from 'framer-motion';
 import { ArrowRight, Code2, Database, Lock, Rocket, Sparkles, Star, Zap } from 'lucide-react';
@@ -53,13 +54,16 @@ export function Home() {
       {/* Hero Section - Terminal First */}
       <section className="px-4 pt-12 pb-16 sm:px-6 sm:pt-20 sm:pb-32">
         <div className="container mx-auto max-w-6xl">
-          {/* Main headline */}
-          <motion.div
-            className="mb-8 text-center sm:mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+          <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+            {/* Left: Main headline and CTA */}
+            <div className="flex-1">
+              {/* Main headline */}
+              <motion.div
+                className="mb-8 text-center lg:text-left sm:mb-16"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -97,38 +101,57 @@ export function Home() {
             </p>
           </motion.div>
 
-          {/* CTA Buttons */}
-          <motion.div
-            className="flex flex-col items-center justify-center gap-3 px-2 sm:flex-row sm:gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            {user ? (
-              // Logged-in user CTAs
-              <Button size="lg" className="w-full sm:w-auto" asChild>
-                <Link href={dashboardUrl}>
-                  <Rocket className="mr-2 h-4 w-4" />
-                  Go to Dashboard
-                </Link>
-              </Button>
-            ) : (
-              // Logged-out user CTAs
-              <Button size="lg" className="w-full sm:w-auto" asChild>
-                <Link href="https://github.com/Kosuke-Org/kosuke-template" target="_blank">
-                  <Rocket className="mr-2 h-4 w-4" />
-                  git clone kosuke
-                </Link>
-              </Button>
-            )}
+              {/* CTA Buttons */}
+              <motion.div
+                className="flex flex-col items-center lg:items-start justify-center gap-3 px-2 sm:flex-row sm:gap-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+              >
+                {user ? (
+                  // Logged-in user CTAs
+                  <Button size="lg" className="w-full sm:w-auto" asChild>
+                    <Link href={dashboardUrl}>
+                      <Rocket className="mr-2 h-4 w-4" />
+                      Go to Dashboard
+                    </Link>
+                  </Button>
+                ) : (
+                  // Logged-out user CTAs
+                  <Button size="lg" className="w-full sm:w-auto" asChild>
+                    <Link href="https://github.com/Kosuke-Org/kosuke-template" target="_blank">
+                      <Rocket className="mr-2 h-4 w-4" />
+                      git clone kosuke
+                    </Link>
+                  </Button>
+                )}
 
-            <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
-              <Link href="https://github.com/Kosuke-Org/kosuke-template#readme" target="_blank">
-                <Code2 className="mr-2 h-4 w-4" />
-                Documentation
-              </Link>
-            </Button>
-          </motion.div>
+                <Button size="lg" variant="outline" className="w-full sm:w-auto" asChild>
+                  <Link href="https://github.com/Kosuke-Org/kosuke-template#readme" target="_blank">
+                    <Code2 className="mr-2 h-4 w-4" />
+                    Documentation
+                  </Link>
+                </Button>
+              </motion.div>
+            </div>
+
+            {/* Right: Pikachu decoration */}
+            <motion.div
+              className="flex-shrink-0 w-full sm:w-80 lg:w-96 flex justify-center lg:justify-end"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <Image
+                src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/25.png"
+                alt="Pikachu"
+                width={350}
+                height={350}
+                priority
+                className="w-full max-w-sm h-auto drop-shadow-lg"
+              />
+            </motion.div>
+          </div>
         </div>
       </section>
 
