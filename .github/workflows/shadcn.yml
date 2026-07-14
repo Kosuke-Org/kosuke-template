@@ -23,6 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       HUSKY: 0 # Disable Husky hooks in CI - we run checks explicitly
+      # Empty in repos with no Slack secret; the notify steps below skip themselves
+      # rather than curl an empty URL and fail the whole run.
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
     steps:
       - name: Checkout repository
@@ -188,20 +191,20 @@ jobs:
           echo "View the [Actions tab](https://github.com/${{ github.repository }}/actions) for detailed logs." >> $GITHUB_STEP_SUMMARY
 
       - name: Notify Slack - Skipped (PR Already Open)
-        if: steps.check-changes.outputs.has_changes == 'true' && steps.check-pr.outputs.should_create == 'false'
+        if: env.SLACK_WEBHOOK_URL != '' && steps.check-changes.outputs.has_changes == 'true' && steps.check-pr.outputs.should_create == 'false'
         run: |
-          curl -X POST --data "{\"text\":\"⏭️ Shadcn/UI Components Update Skipped\nReason: PR already open (#${{ steps.check-pr.outputs.existing_pr }})\nPR: https://github.com/${{ github.repository }}/pull/${{ steps.check-pr.outputs.existing_pr }}\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
+          curl -X POST --data "{\"text\":\"⏭️ Shadcn/UI Components Update Skipped\nReason: PR already open (#${{ steps.check-pr.outputs.existing_pr }})\nPR: https://github.com/${{ github.repository }}/pull/${{ steps.check-pr.outputs.existing_pr }}\"}" "$SLACK_WEBHOOK_URL"
 
       - name: Notify Slack - Success
-        if: success() && !(steps.check-changes.outputs.has_changes == 'true' && steps.check-pr.outputs.should_create == 'false')
+        if: success() && env.SLACK_WEBHOOK_URL != '' && !(steps.check-changes.outputs.has_changes == 'true' && steps.check-pr.outputs.should_create == 'false')
         run: |
           PR_URL=""
           if [[ "${{ steps.create-pr.outputs.pull-request-number }}" != "" ]]; then
             PR_URL="https://github.com/${{ github.repository }}/pull/${{ steps.create-pr.outputs.pull-request-number }}"
           fi
-          curl -X POST --data "{\"text\":\"✅ Shadcn/UI Components Updated Successfully\n${PR_URL}\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
+          curl -X POST --data "{\"text\":\"✅ Shadcn/UI Components Updated Successfully\n${PR_URL}\"}" "$SLACK_WEBHOOK_URL"
 
       - name: Notify Slack - Failure
-        if: failure()
+        if: failure() && env.SLACK_WEBHOOK_URL != ''
         run: |
-          curl -X POST --data "{\"text\":\"❌ Shadcn/UI Components Update Failed\nAction: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" ${{ secrets.SLACK_WEBHOOK_URL }}
+          curl -X POST --data "{\"text\":\"❌ Shadcn/UI Components Update Failed\nAction: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" "$SLACK_WEBHOOK_URL"
