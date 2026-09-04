@@ -35,6 +35,8 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)',
   '/privacy',
   '/terms',
+  // Preview-proxy Origin reproduction: must be reachable without a session.
+  '/origin-probe',
   // SEO and metadata routes
   '/robots.txt',
   '/sitemap.xml',
