@@ -14,32 +14,27 @@ vi.mock('@/lib/db/drizzle', () => ({
   },
 }));
 
-// Mock xlsx library
-vi.mock('xlsx', () => ({
-  default: {
-    utils: {
-      aoa_to_sheet: vi.fn(() => ({})),
-      book_new: vi.fn(() => ({})),
-      book_append_sheet: vi.fn(),
-    },
-    write: vi.fn((workbook, options) => {
-      if (options.type === 'base64') {
-        return 'base64data';
-      }
-      return 'csv,data,here';
-    }),
-  },
-  utils: {
-    aoa_to_sheet: vi.fn(() => ({})),
-    book_new: vi.fn(() => ({})),
-    book_append_sheet: vi.fn(),
-  },
-  write: vi.fn((workbook, options) => {
-    if (options.type === 'base64') {
-      return 'base64data';
-    }
-    return 'csv,data,here';
-  }),
+// Mock the exceljs library
+// The workbook writers return buffers, exactly like the real ones, so the
+// service's own base64/utf8 encoding is exercised rather than faked.
+const excelMocks = vi.hoisted(() => {
+  const xlsxBytes = Buffer.from('base64data');
+  const csvBytes = Buffer.from('csv,data,here');
+
+  const addRows = vi.fn();
+  const addWorksheet = vi.fn(() => ({ addRows }));
+  const writeXlsxBuffer = vi.fn(async () => xlsxBytes);
+  const writeCsvBuffer = vi.fn(async () => csvBytes);
+
+  return { xlsxBytes, csvBytes, addRows, addWorksheet, writeXlsxBuffer, writeCsvBuffer };
+});
+
+vi.mock('exceljs', () => ({
+  Workbook: vi.fn(() => ({
+    addWorksheet: excelMocks.addWorksheet,
+    xlsx: { writeBuffer: excelMocks.writeXlsxBuffer },
+    csv: { writeBuffer: excelMocks.writeCsvBuffer },
+  })),
 }));
 
 describe('OrderService', () => {
@@ -714,6 +709,16 @@ describe('OrderService', () => {
 
       expect(result.data).toBe('csv,data,here');
       expect(result.filename).toMatch(/^orders-\d{4}-\d{2}-\d{2}\.csv$/);
+      expect(excelMocks.writeCsvBuffer).toHaveBeenCalled();
+      expect(excelMocks.writeXlsxBuffer).not.toHaveBeenCalled();
+
+      // The sheet is built from a header row followed by one row per order
+      expect(excelMocks.addWorksheet).toHaveBeenCalledWith('Orders');
+      expect(excelMocks.addRows).toHaveBeenCalledWith([
+        ['Order ID', 'Customer Name', 'Status', 'Amount', 'Order Date', 'Notes'],
+        ['1', 'Customer 1', 'pending', '100.00', '2024-01-15', 'Note 1'],
+        ['2', 'Customer 2', 'completed', '200.00', '2024-01-16', ''],
+      ]);
     });
 
     it('should export orders as Excel', async () => {
@@ -744,8 +749,12 @@ describe('OrderService', () => {
         type: 'excel',
       });
 
-      expect(result.data).toBe('base64data');
+      // The workbook bytes are returned base64-encoded so they survive JSON transport
+      expect(result.data).toBe(excelMocks.xlsxBytes.toString('base64'));
+      expect(Buffer.from(result.data, 'base64')).toEqual(excelMocks.xlsxBytes);
       expect(result.filename).toMatch(/^orders-\d{4}-\d{2}-\d{2}\.xlsx$/);
+      expect(excelMocks.writeXlsxBuffer).toHaveBeenCalled();
+      expect(excelMocks.writeCsvBuffer).not.toHaveBeenCalled();
     });
 
     it('should throw error for unsupported export type', async () => {
