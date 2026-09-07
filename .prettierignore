@@ -18,3 +18,7 @@ cli
 playwright-report
 test-results
 e2e/.auth
+
+# Symlink to CLAUDE.md. prettier errors on an explicitly-passed symlink,
+# which is how lint-staged invokes it, so every commit staging this file fails.
+AGENTS.md

@@ -16,7 +16,7 @@ import {
   extractRequestMetadata,
 } from '@/lib/ai/utils';
 import { ApiResponseHandler } from '@/lib/api/responses';
-import { requireUser } from '@/lib/auth/guards';
+import { requireOrgAccess, requireUser } from '@/lib/auth/guards';
 import { db } from '@/lib/db/drizzle';
 import { chatMessages, chatSessions, documents } from '@/lib/db/schema';
 import * as llmLogsService from '@/lib/services/llm-logs-service';
@@ -32,7 +32,7 @@ const googleProvider = createGoogle({
  * Chat streaming endpoint with RAG (Retrieval-Augmented Generation)
  *
  * Handles:
- * - Authentication and session validation
+ * - Authentication, chat-session ownership, and current organization membership
  * - Request body validation with Zod
  * - Streaming responses with Google Gemini
  * - Message persistence with source metadata
@@ -75,6 +75,13 @@ export async function POST(req: Request) {
   if (!chatSession) {
     return ApiResponseHandler.notFound('Chat session not found');
   }
+
+  // The chat session's organizationId is a stored value, not a current claim:
+  // the row outlives the membership that created it. Re-check membership before
+  // any org-scoped resource (file search store, RAG settings, document proxy
+  // URLs) is reached, so removing a member actually revokes their access.
+  const access = await requireOrgAccess(req, chatSession.organizationId);
+  if (!access.ok) return access.response;
 
   // Get existing messages count from database to determine what's new
   const existingMessages = await db
