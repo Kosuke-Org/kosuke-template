@@ -29,6 +29,11 @@ const knipConfig = {
     'drizzle-zod',
     '@trpc/next',
   ],
+  // Playwright specs are run by the Playwright CLI, not imported anywhere.
+  playwright: {
+    config: ['playwright.config.ts'],
+    entry: ['e2e/**/*.{setup,spec}.ts'],
+  },
   ignoreBinaries: ['shadcn'],
   rules: {
     files: 'error',

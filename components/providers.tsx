@@ -21,6 +21,10 @@ const handleUnauthorizedError = (error: unknown) => {
     signOut({
       fetchOptions: {
         onSuccess: () => {
+          // Intentional hard navigation: a full document load after session
+          // revocation discards every in-memory client cache (React Query,
+          // Zustand, tRPC). A soft router.push() would keep that state alive.
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination
           window.location.href = '/sign-in';
         },
       },

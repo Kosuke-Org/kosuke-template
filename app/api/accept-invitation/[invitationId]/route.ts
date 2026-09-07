@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
+import { requireUser } from '@/lib/auth/guards';
 import { auth } from '@/lib/auth/providers';
 import { getOrgById } from '@/lib/organizations';
 
@@ -13,12 +14,11 @@ export async function GET(
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   try {
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const authenticated = await requireUser(request);
 
-    if (!session?.user) {
-      // Not signed in, redirect to sign-in and preserve this API URL as redirect target
+    if (!authenticated.ok) {
+      // Browser navigation, so redirect through sign-in instead of returning the
+      // guard's 401, preserving this API URL as the post-sign-in target.
       const signInUrl = new URL('/sign-in', baseUrl);
       signInUrl.searchParams.set('redirect', request.nextUrl.pathname);
       return NextResponse.redirect(signInUrl);
