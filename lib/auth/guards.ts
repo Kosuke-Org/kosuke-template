@@ -63,7 +63,11 @@ function getSessionUser(request: GuardRequest): Promise<SessionUser | null> {
   if (cached) return cached;
 
   const pending = auth.api
-    .getSession({ headers: request.headers })
+    // Disable the cookie cache so an authorization decision is never made from a
+    // session snapshot that is up to `cookieCache.maxAge` old. This matches
+    // `createTRPCContext` and keeps a revoked role or membership from surviving
+    // in a cookie. The memo below means it still costs one lookup per request.
+    .getSession({ headers: request.headers, query: { disableCookieCache: true } })
     .then((sessionData) => sessionData?.user ?? null);
 
   sessionUserByHeaders.set(request.headers, pending);

@@ -126,6 +126,18 @@ describe('Auth guards', () => {
       if (!result.ok) throw new Error('expected success');
       expect(result.user).toEqual(memberUser);
     });
+
+    it('bypasses the cookie cache so a revoked session cannot linger', async () => {
+      auth.api.getSession.mockResolvedValue({ user: memberUser });
+      const request = makeRequest();
+
+      await requireUser(request);
+
+      expect(auth.api.getSession).toHaveBeenCalledWith({
+        headers: request.headers,
+        query: { disableCookieCache: true },
+      });
+    });
   });
 
   describe('requireOrgAccess', () => {
