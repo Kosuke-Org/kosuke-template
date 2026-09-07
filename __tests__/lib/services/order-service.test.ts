@@ -29,13 +29,17 @@ const excelMocks = vi.hoisted(() => {
   return { xlsxBytes, csvBytes, addRows, addWorksheet, writeXlsxBuffer, writeCsvBuffer };
 });
 
-vi.mock('exceljs', () => ({
-  Workbook: vi.fn(() => ({
+vi.mock('exceljs', () => {
+  const Workbook = vi.fn(() => ({
     addWorksheet: excelMocks.addWorksheet,
     xlsx: { writeBuffer: excelMocks.writeXlsxBuffer },
     csv: { writeBuffer: excelMocks.writeCsvBuffer },
-  })),
-}));
+  }));
+
+  // exceljs is CommonJS and is consumed via its default export, so the mock
+  // has to expose the same shape.
+  return { default: { Workbook }, Workbook };
+});
 
 describe('OrderService', () => {
   const mockOrganizationId = 'org-123';

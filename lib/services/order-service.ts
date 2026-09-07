@@ -3,7 +3,7 @@
  * Handles all order-related business logic and database operations
  */
 import { and, asc, count, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm';
-import { Workbook } from 'exceljs';
+import ExcelJS from 'exceljs';
 
 import { db } from '@/lib/db/drizzle';
 import {
@@ -355,7 +355,7 @@ export async function exportOrders(params: {
     order.notes || '',
   ]);
 
-  const workbook = new Workbook();
+  const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Orders');
   worksheet.addRows([headers, ...rows]);
 
