@@ -236,4 +236,77 @@ describe('proxy', () => {
     expect(res?.type).toBe('redirect');
     expect(res?.url).toContain('/org/test-org/dashboard');
   });
+
+  /**
+   * Regression tests for the middleware/proxy bypass class fixed in Next.js 16.2.5
+   * (GHSA-492v-c6pp-mqqv, GHSA-267c-6grr-h53f, GHSA-36qx-fr4f-26g5).
+   *
+   * `createRouteMatcher` is the only thing gating anonymous access to every
+   * non-public route, including the multi-tenant `/org/[slug]/...` segments.
+   * These tests pin the matcher's boundaries so that widening it later — for
+   * example switching the wildcard check to a bare `pathname.startsWith(baseRoute)`,
+   * or matching on the raw request URL instead of the normalized pathname —
+   * fails loudly instead of silently opening an authentication bypass.
+   */
+  describe('route matcher bypass regressions', () => {
+    const expectGated = (res: { type: string; url?: string } | undefined, pathname: string) => {
+      expect(res?.type).toBe('redirect');
+      expect(res?.url).toContain('/sign-in');
+      expect(res?.url).toContain(`redirect=${encodeURIComponent(pathname)}`);
+    };
+
+    it('does not treat a dot-traversal path that resolves to a protected route as public', async () => {
+      // Raw path opens with the public `/sign-in` prefix but resolves to a
+      // protected org route. A matcher reading the raw URL would allow it.
+      const res = await proxy(makeReq('/sign-in/../org/acme/dashboard'));
+      expectGated(res, '/org/acme/dashboard');
+    });
+
+    it('does not treat a traversal out of a public route into org settings as public', async () => {
+      const res = await proxy(makeReq('/privacy/../settings/billing'));
+      expectGated(res, '/settings/billing');
+    });
+
+    it('does not treat an encoded traversal inside a dynamic segment as public', async () => {
+      // `%2f` is not decoded during URL normalization, so the whole thing stays
+      // one opaque `[slug]` segment under `/org` and must remain gated.
+      const res = await proxy(makeReq('/org/acme/..%2f..%2fsign-in'));
+      expectGated(res, '/org/acme/..%2f..%2fsign-in');
+    });
+
+    it('does not treat a dynamic parameter containing a public route name as public', async () => {
+      // `[slug]` === 'sign-in'. The public matcher must anchor on the full
+      // pathname, never on a public route name appearing anywhere inside it.
+      for (const pathname of ['/org/sign-in/dashboard', '/org/sign-up/settings', '/org/terms']) {
+        const res = await proxy(makeReq(pathname));
+        expectGated(res, pathname);
+      }
+    });
+
+    it('does not treat a public route prefix without a segment boundary as public', async () => {
+      // `/sign-in(.*)` must only match `/sign-in` or `/sign-in/...`.
+      // A bare startsWith would wrongly make all of these public.
+      for (const pathname of ['/sign-inevil', '/sign-in-attacker', '/terms-and-conditions']) {
+        const res = await proxy(makeReq(pathname));
+        expectGated(res, pathname);
+      }
+    });
+
+    it('does not treat a double-slash variant of a public route as public', async () => {
+      const res = await proxy(makeReq('//sign-in'));
+      expectGated(res, '//sign-in');
+    });
+
+    it('matches on the normalized pathname, so the matcher and the router agree', async () => {
+      // `/org/foo/../../sign-in` and its %2e-encoded form both normalize to
+      // `/sign-in` before the matcher runs. Allowing them is correct precisely
+      // because that is also the route Next.js will serve — matcher and router
+      // must never disagree about which path is being requested.
+      for (const pathname of ['/org/foo/../../sign-in', '/org/foo/%2e%2e/%2e%2e/sign-in']) {
+        const req = makeReq(pathname);
+        expect(req.nextUrl.pathname).toBe('/sign-in');
+        expect(await proxy(req)).toEqual({ type: 'next' });
+      }
+    });
+  });
 });
