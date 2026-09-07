@@ -379,4 +379,37 @@ describe('Auth guards', () => {
       expect(result.response.status).toBe(404);
     });
   });
+
+  describe('session freshness', () => {
+    /**
+     * `createTRPCContext` reads the session with `disableCookieCache: true`. If a
+     * guard ever reads it with the cookie cache on, REST would keep honouring a
+     * revoked session for up to `cookieCache.maxAge` while tRPC rejects it in the
+     * same instant. Every entry point a handler can call is pinned here, not just
+     * `requireUser`, so a guard that grows its own session read is caught too.
+     */
+    it('requests an uncached session from every entry point', async () => {
+      auth.api.getSession.mockResolvedValue({ user: adminUser });
+      db.query.orgMemberships.findFirst.mockResolvedValue(ownerMembership);
+
+      const entryPoints = [
+        (request: Request) => requireUser(request),
+        (request: Request) => requireOrgAccess(request, ORG_ID),
+        (request: Request) => requireOrgOwner(request, ORG_ID),
+        (request: Request) => requireSuperAdmin(request),
+      ];
+
+      for (const run of entryPoints) {
+        const request = makeRequest();
+        await run(request);
+
+        expect(auth.api.getSession).toHaveBeenCalledWith({
+          headers: request.headers,
+          query: { disableCookieCache: true },
+        });
+      }
+
+      expect(auth.api.getSession).toHaveBeenCalledTimes(entryPoints.length);
+    });
+  });
 });
