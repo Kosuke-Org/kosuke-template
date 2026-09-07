@@ -6,7 +6,7 @@ import { and, eq } from 'drizzle-orm';
 
 import { extractDocumentIdFromFilename, extractRelevantSources } from '@/lib/ai/utils';
 import { ApiResponseHandler } from '@/lib/api/responses';
-import { auth } from '@/lib/auth/providers';
+import { requireUser } from '@/lib/auth/guards';
 import { db } from '@/lib/db/drizzle';
 import { chatMessages, chatSessions, documents } from '@/lib/db/schema';
 import * as llmLogsService from '@/lib/services/llm-logs-service';
@@ -33,11 +33,10 @@ const googleGenerativeAIProvider = createGoogleGenerativeAI({
  * @returns Streaming response with UIMessage format
  */
 export async function POST(req: Request) {
-  const session = await auth.api.getSession({ headers: req.headers });
+  const authenticated = await requireUser(req);
+  if (!authenticated.ok) return authenticated.response;
 
-  if (!session?.user?.id) {
-    return ApiResponseHandler.unauthorized();
-  }
+  const { user } = authenticated;
 
   // Check if Google AI API key is configured
   if (!process.env.GOOGLE_AI_API_KEY) {
@@ -60,7 +59,7 @@ export async function POST(req: Request) {
 
   // Validate and load session
   const chatSession = await db.query.chatSessions.findFirst({
-    where: and(eq(chatSessions.id, chatSessionId), eq(chatSessions.userId, session.user.id)),
+    where: and(eq(chatSessions.id, chatSessionId), eq(chatSessions.userId, user.id)),
   });
 
   if (!chatSession) {
@@ -212,7 +211,7 @@ export async function POST(req: Request) {
           responseTimeMs: responseTime,
           finishReason: finishReason,
           generationConfig,
-          userId: session.user.id,
+          userId: user.id,
           organizationId: chatSession.organizationId,
           chatSessionId: chatSession.id,
         });
@@ -225,7 +224,7 @@ export async function POST(req: Request) {
             feature: 'chat',
             operation: 'save_messages',
             chatSessionId: chatSession.id,
-            userId: session.user.id,
+            userId: user.id,
             organizationId: chatSession.organizationId,
           },
           contexts: {
