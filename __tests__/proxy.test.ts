@@ -268,8 +268,9 @@ describe('proxy', () => {
     });
 
     it('does not treat an encoded traversal inside a dynamic segment as public', async () => {
-      // `%2f` is not decoded during URL normalization, so the whole thing stays
-      // one opaque `[slug]` segment under `/org` and must remain gated.
+      // `%2f` is not decoded during URL normalization, so `..%2f..%2fsign-in`
+      // stays a single opaque segment under `/org/[slug]` rather than climbing
+      // out to `/sign-in`, and the request must remain gated.
       const res = await proxy(makeReq('/org/acme/..%2f..%2fsign-in'));
       expectGated(res, '/org/acme/..%2f..%2fsign-in');
     });
@@ -284,8 +285,9 @@ describe('proxy', () => {
     });
 
     it('does not treat a public route prefix without a segment boundary as public', async () => {
-      // `/sign-in(.*)` must only match `/sign-in` or `/sign-in/...`.
-      // A bare startsWith would wrongly make all of these public.
+      // Wildcard routes like `/sign-in(.*)` must only match `/sign-in` or
+      // `/sign-in/...`, and exact routes like `/terms` must not prefix-match at
+      // all. A bare startsWith would wrongly make all of these public.
       for (const pathname of ['/sign-inevil', '/sign-in-attacker', '/terms-and-conditions']) {
         const res = await proxy(makeReq(pathname));
         expectGated(res, pathname);
