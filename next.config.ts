@@ -3,6 +3,9 @@ import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
+  // Allows an isolated build output (used by the Playwright e2e server) so the
+  // e2e app can run alongside an already-running dev server. Defaults to `.next`.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   serverExternalPackages: ['ioredis', 'bullmq'],
   images: {
     remotePatterns: [

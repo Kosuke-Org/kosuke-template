@@ -1,4 +1,5 @@
 .next
+.next-e2e
 build
 coverage
 node_modules
@@ -14,3 +15,6 @@ pnpm-lock.yaml
 bun.lock
 lib/db/migrations
 cli
+playwright-report
+test-results
+e2e/.auth

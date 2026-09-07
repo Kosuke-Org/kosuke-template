@@ -17,6 +17,7 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
     "prepare": "husky install",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -125,6 +126,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@faker-js/faker": "^9.9.0",
+    "@playwright/test": "^1.63.0",
     "@react-email/preview-server": "5.0.1",
     "@tailwindcss/postcss": "^4.1.11",
     "@testing-library/dom": "^10.0.0",

@@ -13,6 +13,7 @@
  */
 import { faker } from '@faker-js/faker';
 import { eq } from 'drizzle-orm';
+import type Stripe from 'stripe';
 
 import { getStripe } from '@/lib/billing/client';
 import { withPrefix } from '@/lib/billing/lookup-keys';
@@ -59,7 +60,17 @@ function calculatePeriodEnd(startDate: Date): Date {
 async function seed() {
   console.log('🌱 Starting database seed...\n');
   console.log('📌 Note: If you encounter duplicate key errors, run `bun run db:reset`');
-  const stripe = await getStripe();
+
+  // Stripe is optional: the seed must still produce usable users, organizations
+  // and demo data when no API key is configured (local setups, CI, e2e runs).
+  let stripe: Stripe | null = null;
+
+  try {
+    stripe = await getStripe();
+  } catch {
+    console.warn('  ⚠️  Stripe is not configured - seeding without subscriptions.\n');
+  }
+
   try {
     const janeSmithEmail = 'jane+kosuke_test@example.com';
     const johnDoeEmail = 'john+kosuke_test@example.com';
@@ -166,6 +177,8 @@ async function seed() {
     let freePriceId: string | null = null;
 
     try {
+      if (!stripe) throw new Error('Stripe is not configured');
+
       const freeTierLookupKey = withPrefix(SubscriptionTier.FREE_MONTHLY);
       console.log(
         `  🔍 Fetching free tier price from Stripe (lookup key: ${freeTierLookupKey})...`
@@ -192,7 +205,7 @@ async function seed() {
     // Create subscription for Jane's organization (Free tier - with Stripe customer and subscription)
     let janeOrgSubscription: NewOrgSubscription;
 
-    if (freePriceId) {
+    if (stripe && freePriceId) {
       try {
         console.log("  🔄 Creating Stripe customer and subscription for Jane's organization...");
 
@@ -258,7 +271,7 @@ async function seed() {
     // Create subscription for John's organization (Free tier - with Stripe customer and subscription)
     let johnOrgSubscription: NewOrgSubscription;
 
-    if (freePriceId) {
+    if (stripe && freePriceId) {
       try {
         console.log("  🔄 Creating Stripe customer and subscription for John's organization...");
 
