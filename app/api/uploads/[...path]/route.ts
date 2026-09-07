@@ -4,42 +4,55 @@
  * This route serves files from the local uploads/ directory in development only.
  * In production, files are served directly from S3 using presigned URLs.
  *
- * Security:
- * - Authenticates user via Better Auth
- * - Verifies organization membership
- * - Validates document exists in database
- * - Prevents directory traversal attacks
+ * Security (see `lib/auth/guards.ts`):
+ * - requireUser: authenticates the user before anything else is revealed
+ * - requireOrgAccess: verifies membership of the organization owning the path
+ * - requireOrgDocument: verifies a document row exists for that storage path
+ * - resolveUploadPath: resolves the path and asserts it stays inside UPLOAD_DIR
  */
 import { NextRequest, NextResponse } from 'next/server';
 
 import { readFile } from 'fs/promises';
 import path from 'path';
 
-import { and, eq } from 'drizzle-orm';
-
 import { ApiResponseHandler } from '@/lib/api';
-import { auth } from '@/lib/auth/providers';
-import { db } from '@/lib/db/drizzle';
-import { documents, orgMemberships } from '@/lib/db/schema';
+import { requireOrgAccess, requireOrgDocument, requireUser } from '@/lib/auth/guards';
 import { getContentTypeByExtension } from '@/lib/documents/constants';
 
 const UPLOAD_DIR = path.join(process.cwd(), 'uploads');
 
+/**
+ * Resolve a request-supplied relative path against UPLOAD_DIR and assert the
+ * result is still inside it. Returns null for anything that escapes.
+ *
+ * This is the authoritative traversal check: it compares resolved absolute
+ * paths rather than pattern-matching the raw string, so encoded, nested, and
+ * absolute-path payloads are all covered.
+ */
+function resolveUploadPath(relativePath: string): string | null {
+  const root = path.resolve(UPLOAD_DIR);
+  const resolved = path.resolve(root, relativePath);
+
+  return resolved.startsWith(root + path.sep) ? resolved : null;
+}
+
 export async function GET(request: NextRequest, props: { params: Promise<{ path: string[] }> }) {
   try {
     const params = await props.params;
-    const session = await auth.api.getSession({ headers: await request.headers });
-    const user = session?.user;
 
-    if (!user?.id) {
-      return ApiResponseHandler.unauthorized();
-    }
+    const authenticated = await requireUser(request);
+    if (!authenticated.ok) return authenticated.response;
 
     // Reconstruct the file path from the URL segments
     const filePath = params.path.join('/');
 
     // Security: Prevent directory traversal attacks
     if (filePath.includes('..') || filePath.startsWith('/')) {
+      return ApiResponseHandler.badRequest('Invalid file path');
+    }
+
+    const fullPath = resolveUploadPath(filePath);
+    if (!fullPath) {
       return ApiResponseHandler.badRequest('Invalid file path');
     }
 
@@ -51,32 +64,13 @@ export async function GET(request: NextRequest, props: { params: Promise<{ path:
 
     const organizationId = pathParts[1];
 
-    // Check if user has access to this organization
-    const membership = await db
-      .select()
-      .from(orgMemberships)
-      .where(
-        and(eq(orgMemberships.organizationId, organizationId), eq(orgMemberships.userId, user.id))
-      )
-      .limit(1);
+    const access = await requireOrgAccess(request, organizationId);
+    if (!access.ok) return access.response;
 
-    if (membership.length === 0) {
-      return ApiResponseHandler.forbidden('You do not have access to this organization');
-    }
-
-    // Verify the document exists in the database and belongs to this organization
-    const document = await db
-      .select()
-      .from(documents)
-      .where(and(eq(documents.storageUrl, filePath), eq(documents.organizationId, organizationId)))
-      .limit(1);
-
-    if (document.length === 0) {
-      return ApiResponseHandler.notFound('Document not found');
-    }
+    const found = await requireOrgDocument(organizationId, { storageUrl: filePath });
+    if (!found.ok) return found.response;
 
     // Serve the file from local storage
-    const fullPath = path.join(UPLOAD_DIR, filePath);
     const fileBuffer = await readFile(fullPath);
 
     // Determine content type from file extension using centralized constants
@@ -86,7 +80,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ path:
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${document[0].displayName}"`,
+        'Content-Disposition': `attachment; filename="${found.document.displayName}"`,
         'Cache-Control': `private, max-age=${DOWNLOAD_CACHE_MAX_AGE}`,
       },
     });
