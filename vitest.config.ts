@@ -10,7 +10,14 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     include: ['__tests__/**/*.{test,spec}.{ts,tsx}'],
-    exclude: ['**/node_modules/**', '**/.next/**', '__tests__/setup/**'],
+    // e2e/ belongs to Playwright — keep the two runners from colliding.
+    exclude: [
+      '**/node_modules/**',
+      '**/.next/**',
+      '**/.next-e2e/**',
+      'e2e/**',
+      '__tests__/setup/**',
+    ],
     unstubEnvs: true,
     unstubGlobals: true,
     coverage: {

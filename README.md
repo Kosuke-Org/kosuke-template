@@ -171,6 +171,7 @@ bun run stripe:seed       # Create/sync products & prices in Stripe using lookup
 bun run test              # Run tests
 bun run test:watch        # Run tests in watch mode
 bun run test:coverage     # Generate test coverage report
+bun run test:e2e          # Run Playwright browser tests (see e2e/README.md)
 bun run lint              # Run linter
 bun run typecheck         # Run type check
 bun run format            # Format code
@@ -333,6 +334,17 @@ bun run test:watch
 # With coverage report
 bun run test:coverage
 ```
+
+Browser-level smoke tests live in `e2e/` and run with Playwright. They need a
+seeded database and download Chromium the first time:
+
+```bash
+bunx playwright install --with-deps chromium
+bun run db:migrate && bun run db:seed
+bun run test:e2e
+```
+
+See [`e2e/README.md`](./e2e/README.md) for what they cover and how they are wired up.
 
 ### Getting Help
 
