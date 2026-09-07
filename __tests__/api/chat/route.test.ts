@@ -41,7 +41,8 @@ vi.mock('@sentry/nextjs', () => ({
 }));
 
 vi.mock('@ai-sdk/google', () => ({
-  createGoogleGenerativeAI: () =>
+  // AI SDK v7 renamed the provider factory from createGoogleGenerativeAI to createGoogle.
+  createGoogle: () =>
     Object.assign(
       vi.fn(() => 'gemini-model'),
       {
@@ -50,10 +51,13 @@ vi.mock('@ai-sdk/google', () => ({
     ),
 }));
 
+// AI SDK v7 returns the stream through createUIMessageStreamResponse({ stream: toUIMessageStream(...) })
+// rather than result.toUIMessageStreamResponse(). Mock the surface the route actually calls.
 vi.mock('ai', () => ({
   convertToModelMessages: vi.fn((messages) => messages),
+  toUIMessageStream: vi.fn(() => 'ui-message-stream'),
+  createUIMessageStreamResponse: vi.fn(() => new Response('stream', { status: 200 })),
   streamText: vi.fn(() => ({
-    toUIMessageStreamResponse: vi.fn(() => new Response('stream', { status: 200 })),
     totalUsage: Promise.resolve({}),
     request: Promise.resolve({ body: null }),
   })),
