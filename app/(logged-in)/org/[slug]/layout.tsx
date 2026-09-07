@@ -9,7 +9,7 @@ export default async function OrgLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
   const caller = await createCaller();

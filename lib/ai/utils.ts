@@ -61,3 +61,46 @@ export function extractDocumentIdFromFilename(filename: string): string | null {
   const match = filename.match(uuidPattern);
   return match ? match[1] : null;
 }
+
+/**
+ * Extract the generation config and resolved system instruction from the
+ * request body the AI SDK recorded for a step.
+ *
+ * AI SDK v7 exposes `request.body` as an already-parsed object (typed
+ * `unknown`); v5 exposed it as a JSON string. Both are handled so the LLM log
+ * keeps its observability data either way — the string form silently produced
+ * nulls after the upgrade, and `unknown` means the compiler cannot flag it.
+ *
+ * Requires `include: { requestBody: true }` on the call; v7 omits request
+ * bodies from step results by default.
+ */
+export function extractRequestMetadata(body: unknown): {
+  generationConfig: string | null;
+  systemPrompt: string | null;
+} {
+  let parsed: unknown = body;
+
+  if (typeof parsed === 'string') {
+    try {
+      parsed = JSON.parse(parsed);
+    } catch {
+      return { generationConfig: null, systemPrompt: null };
+    }
+  }
+
+  if (typeof parsed !== 'object' || parsed === null) {
+    return { generationConfig: null, systemPrompt: null };
+  }
+
+  const { generationConfig, systemInstruction } = parsed as {
+    generationConfig?: unknown;
+    systemInstruction?: { parts?: { text?: unknown }[] };
+  };
+
+  const systemPromptText = systemInstruction?.parts?.[0]?.text;
+
+  return {
+    generationConfig: generationConfig ? JSON.stringify(generationConfig) : null,
+    systemPrompt: typeof systemPromptText === 'string' ? systemPromptText : null,
+  };
+}

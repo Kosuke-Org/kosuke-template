@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractDocumentIdFromFilename, extractRelevantSources } from '@/lib/ai/utils';
+import {
+  extractDocumentIdFromFilename,
+  extractRelevantSources,
+  extractRequestMetadata,
+} from '@/lib/ai/utils';
 
 describe('ai/utils', () => {
   describe('extractRelevantSources', () => {
@@ -95,6 +99,67 @@ describe('ai/utils', () => {
       expect(
         extractDocumentIdFromFilename('550E8400-E29B-41D4-A716-446655440000-document.pdf')
       ).toBe('550E8400-E29B-41D4-A716-446655440000');
+    });
+  });
+  describe('extractRequestMetadata', () => {
+    // AI SDK v7 hands back an already-parsed object. This is the shape the
+    // chat route actually receives, and `request.body` is typed `unknown`, so
+    // only a test can catch a regression here.
+    it('should read generationConfig and systemInstruction from an object body', () => {
+      expect(
+        extractRequestMetadata({
+          generationConfig: { temperature: 0.4, topP: 0.9 },
+          systemInstruction: { parts: [{ text: 'You are a helpful assistant.' }] },
+          contents: [{ role: 'user', parts: [{ text: 'hi' }] }],
+        })
+      ).toEqual({
+        generationConfig: '{"temperature":0.4,"topP":0.9}',
+        systemPrompt: 'You are a helpful assistant.',
+      });
+    });
+
+    it('should still read a JSON string body (the pre-v7 shape)', () => {
+      expect(
+        extractRequestMetadata(
+          JSON.stringify({
+            generationConfig: { temperature: 0.2 },
+            systemInstruction: { parts: [{ text: 'Be concise.' }] },
+          })
+        )
+      ).toEqual({
+        generationConfig: '{"temperature":0.2}',
+        systemPrompt: 'Be concise.',
+      });
+    });
+
+    it('should return nulls when the body carries neither field', () => {
+      expect(extractRequestMetadata({ contents: [] })).toEqual({
+        generationConfig: null,
+        systemPrompt: null,
+      });
+    });
+
+    it('should serialize an empty generationConfig rather than dropping it', () => {
+      // Google sends `generationConfig: {}` when no sampling settings are set.
+      expect(extractRequestMetadata({ generationConfig: {} })).toEqual({
+        generationConfig: '{}',
+        systemPrompt: null,
+      });
+    });
+
+    it('should return nulls for unusable bodies', () => {
+      expect(extractRequestMetadata(undefined)).toEqual({
+        generationConfig: null,
+        systemPrompt: null,
+      });
+      expect(extractRequestMetadata(null)).toEqual({
+        generationConfig: null,
+        systemPrompt: null,
+      });
+      expect(extractRequestMetadata('not json')).toEqual({
+        generationConfig: null,
+        systemPrompt: null,
+      });
     });
   });
 });
