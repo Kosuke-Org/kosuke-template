@@ -42,7 +42,7 @@ We welcome contributions to improve Kosuke Template! This guide helps you set up
 
 Before contributing, ensure you have:
 
-- **Node.js 20+**: [nodejs.org](https://nodejs.org)
+- **Node.js 22+**: [nodejs.org](https://nodejs.org)
 - **Bun**: [bun.sh](https://bun.sh) - `curl -fsSL https://bun.sh/install | bash`
 - **Docker Desktop**: [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)
 - **Git**: [git-scm.com](https://git-scm.com)

@@ -3,7 +3,7 @@
  * Handles all order-related business logic and database operations
  */
 import { and, asc, count, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 import { db } from '@/lib/db/drizzle';
 import {
@@ -355,28 +355,28 @@ export async function exportOrders(params: {
     order.notes || '',
   ]);
 
-  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Orders');
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Orders');
+  worksheet.addRows([headers, ...rows]);
 
   const timestamp = new Date().toISOString().split('T')[0];
   const fileName = `orders-${timestamp}`;
 
   switch (type) {
     case 'excel': {
-      const excelBuffer = XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
+      const excelBuffer = await workbook.xlsx.writeBuffer();
 
       return {
-        data: excelBuffer,
+        data: Buffer.from(excelBuffer).toString('base64'),
         filename: `${fileName}.xlsx`,
       };
     }
 
     case 'csv': {
-      const csvData = XLSX.write(workbook, { type: 'string', bookType: 'csv' });
+      const csvBuffer = await workbook.csv.writeBuffer();
 
       return {
-        data: csvData,
+        data: Buffer.from(csvBuffer).toString('utf8'),
         filename: `${fileName}.csv`,
       };
     }
