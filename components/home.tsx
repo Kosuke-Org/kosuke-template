@@ -87,7 +87,7 @@ export function Home() {
             </motion.div>
 
             <h1 className="mb-4 px-2 text-3xl leading-tight font-bold tracking-tight sm:mb-6 sm:text-5xl lg:text-7xl">
-              Skip the boilerplate
+              BlaBla
               <br />
               Ship features
             </h1>
