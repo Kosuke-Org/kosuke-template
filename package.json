@@ -95,7 +95,7 @@
     "drizzle-zod": "^0.8.3",
     "embla-carousel-react": "^8.6.0",
     "exceljs": "^4.4.0",
-    "framer-motion": "^12.23.26",
+    "framer-motion": "^13.2.0",
     "input-otp": "^1.4.2",
     "ioredis": "^5.8.2",
     "lucide-react": "^0.562.0",
