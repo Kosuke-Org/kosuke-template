@@ -27,6 +27,13 @@ export const MAX_AMOUNT = 10000;
 /** Working days a parcel spends with the carrier once it has shipped. */
 const TRANSIT_DAYS = 3;
 
+/** Working days an order still needs to leave the warehouse, by status. */
+const LEAD_DAYS: Partial<Record<OrderStatus, number>> = {
+  pending: 2,
+  processing: 1,
+  shipped: 0,
+};
+
 /**
  * The window an order should arrive in, or null once it is delivered or
  * cancelled. Orders that have not shipped add the days they still need to
@@ -34,8 +41,7 @@ const TRANSIT_DAYS = 3;
  */
 export function deliveryWindow(status: OrderStatus, orderDate: Date): [Date, Date] | null {
   if (status === 'delivered' || status === 'cancelled') return null;
-  const leadDays = status === 'shipped' ? 0 : status === 'processing' ? 1 : 2;
-  const from = addWorkingDays(orderDate, leadDays + TRANSIT_DAYS);
+  const from = addWorkingDays(orderDate, (LEAD_DAYS[status] ?? 0) + TRANSIT_DAYS);
   return [from, addWorkingDays(from, 2)];
 }
 
