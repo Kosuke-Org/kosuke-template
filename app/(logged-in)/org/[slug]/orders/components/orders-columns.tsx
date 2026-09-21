@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-import { statusColors } from '../utils';
+import { deliveryWindow, statusColors } from '../utils';
 
 // Infer OrderWithDetails from tRPC router output
 type RouterOutput = inferRouterOutputs<AppRouter>;
@@ -138,6 +138,15 @@ export function getOrderColumns(
         />
       ),
       cell: ({ row }) => formatDate(row.original.orderDate),
+    },
+    {
+      id: 'delivery',
+      header: () => <DataTableColumnHeader title="Delivery" />,
+      cell: ({ row }) => {
+        const window = deliveryWindow(row.original.status, row.original.orderDate);
+        if (!window) return <span className="text-muted-foreground">—</span>;
+        return `${formatDate(window[0])} – ${formatDate(window[1])}`;
+      },
     },
     {
       id: 'actions',
