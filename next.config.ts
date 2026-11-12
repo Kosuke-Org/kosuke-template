@@ -3,6 +3,9 @@ import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: process.env.NEXT_PUBLIC_APP_URL
+    ? [new URL(process.env.NEXT_PUBLIC_APP_URL).hostname]
+    : [],
   // Allows an isolated build output (used by the Playwright e2e server) so the
   // e2e app can run alongside an already-running dev server. Defaults to `.next`.
   distDir: process.env.NEXT_DIST_DIR || '.next',
