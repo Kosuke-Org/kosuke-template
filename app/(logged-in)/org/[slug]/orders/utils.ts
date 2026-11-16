@@ -23,3 +23,27 @@ export const statusColors: Record<OrderStatus, string> = {
 };
 
 export const MAX_AMOUNT = 10000;
+
+/** Working days a parcel spends with the carrier once it has shipped. */
+const TRANSIT_DAYS = 3;
+
+/**
+ * The window an order should arrive in, or null once it is delivered or
+ * cancelled. Orders that have not shipped add the days they still need to
+ * leave the warehouse.
+ */
+export function deliveryWindow(status: OrderStatus, orderDate: Date): [Date, Date] | null {
+  if (status === 'delivered' || status === 'cancelled') return null;
+  const leadDays = status === 'shipped' ? 0 : status === 'processing' ? 1 : 2;
+  const from = addWorkingDays(orderDate, leadDays + TRANSIT_DAYS);
+  return [from, addWorkingDays(from, 2)];
+}
+
+function addWorkingDays(date: Date, days: number): Date {
+  const out = new Date(date);
+  for (let left = days; left > 0; ) {
+    out.setDate(out.getDate() + 1);
+    if (out.getDay() !== 0 && out.getDay() !== 6) left -= 1;
+  }
+  return out;
+}
